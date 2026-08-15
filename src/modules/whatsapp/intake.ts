@@ -10,6 +10,7 @@ import {
   MEM_ORG_ID,
   supabaseReady,
 } from '@/lib/data/memory-store'
+import { classifyFaultText } from '@/modules/tickets/classify'
 import { parseStoreCodeFromText } from '@/modules/tickets/constants'
 import { createTicket } from '@/modules/tickets/service'
 import { WA_COPY } from './copy'
@@ -321,14 +322,16 @@ async function createTicketFromIntake(params: {
       ? `${description.slice(0, 77)}…`
       : description || 'דיווח WhatsApp'
 
+  const classified = classifyFaultText(description || '')
+
   const ticket = await createTicket({
     storeCode: store.code,
     storeId: store.id.startsWith('demo-') ? undefined : store.id,
     countryCode: 'IL',
     description: description || '(תמונה ללא טקסט)',
     title,
-    category: 'other',
-    priority: 'medium',
+    category: classified.category,
+    priority: classified.priority,
     source,
     reporterPhone: waId,
     language: 'he',

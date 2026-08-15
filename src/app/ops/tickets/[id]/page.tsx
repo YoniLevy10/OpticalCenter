@@ -14,6 +14,10 @@ import {
   getById,
   listInternalTechnicians,
 } from '@/modules/tickets/service'
+import {
+  formatSlaLabelHe,
+  isSlaBreached,
+} from '@/modules/tickets/sla'
 import { TicketActions } from './ticket-actions'
 
 export const dynamic = 'force-dynamic'
@@ -66,6 +70,27 @@ export default async function TicketDetailPage({
               <span className="text-xs text-zinc-500">
                 {TICKET_SOURCE_LABELS_HE[ticket.source as TicketSourceLabel] ??
                   ticket.source}
+              </span>
+              <span
+                className={
+                  isSlaBreached({
+                    priority: ticket.priority,
+                    sla_respond_by: ticket.sla_respond_by,
+                    sla_resolve_by: ticket.sla_resolve_by,
+                    status: ticket.status,
+                    resolved_at: ticket.resolved_at,
+                  })
+                    ? 'rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700'
+                    : 'rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600'
+                }
+              >
+                {formatSlaLabelHe({
+                  priority: ticket.priority,
+                  sla_respond_by: ticket.sla_respond_by,
+                  sla_resolve_by: ticket.sla_resolve_by,
+                  status: ticket.status,
+                  resolved_at: ticket.resolved_at,
+                })}
               </span>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">

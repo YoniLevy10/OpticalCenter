@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { OpsShell } from '@/components/layout/ops-shell'
+import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
@@ -28,6 +29,9 @@ export default async function OpsDashboardPage() {
           : 'מצב דמו (זיכרון) — ללא מיגרציות Supabase'
       }
     >
+      <div className="mb-4 flex justify-end">
+        <SeedDemoTicketButton />
+      </div>
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'תקלות פתוחות', value: open.length },

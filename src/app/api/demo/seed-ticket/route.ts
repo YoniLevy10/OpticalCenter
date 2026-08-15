@@ -57,8 +57,13 @@ async function seed(request: Request) {
 
     let assigned = ticket
     const techId = resolveTechId(null) ?? DEMO_TECH_ID
+    let assignError: string | null = null
     if (assignFlag) {
-      assigned = await assign(ticket.id, techId, techId)
+      try {
+        assigned = await assign(ticket.id, techId, techId)
+      } catch (e) {
+        assignError = e instanceof Error ? e.message : 'שיוך נכשל'
+      }
     }
 
     return NextResponse.json({
@@ -74,6 +79,7 @@ async function seed(request: Request) {
       detailPath: `/ops/tickets/${assigned.id}`,
       techPath: `/tech/${assigned.id}?techId=${encodeURIComponent(techId)}`,
       techId,
+      assignError,
     })
   } catch (err) {
     const message =

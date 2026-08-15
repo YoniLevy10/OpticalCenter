@@ -1,23 +1,34 @@
-import Link from 'next/link'
-import { OpsShell } from '@/components/layout/ops-shell'
+import { TechShell } from '@/components/layout/tech-shell'
+import { TechJobList } from '@/app/tech/tech-job-list'
+import { fetchTechTickets, resolveTechId } from '@/modules/tickets/tech'
 
-export default function TechPortalPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function TechPortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ techId?: string }>
+}) {
+  const params = await searchParams
+  const techId = resolveTechId(params.techId ?? null)
+  const { tickets, fromDb, error } = await fetchTechTickets(techId)
+
   return (
-    <OpsShell
-      title="פורטל טכנאי"
-      subtitle="שלב הבא: עבודות משויכות, עדכון סטטוס, תמונות וסגירה"
+    <TechShell
+      title="העבודות שלי"
+      subtitle={
+        techId
+          ? `צוות תחזוקה פנימי · ${techId.slice(0, 8)}…`
+          : 'MVP · העבירו techId בשורת הכתובת'
+      }
+      techId={techId}
     >
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-10 text-center">
-        <p className="text-sm text-zinc-600">
-          כאן יופיעו תקלות שמשויכות לצוות התחזוקה של Optical Center בישראל.
-        </p>
-        <Link
-          href="/ops/tickets"
-          className="mt-4 inline-block text-sm text-sky-700 hover:underline"
-        >
-          חזרה לתקלות
-        </Link>
-      </div>
-    </OpsShell>
+      {error ? (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
+        </div>
+      ) : null}
+      <TechJobList tickets={tickets} techId={techId} fromDb={fromDb} />
+    </TechShell>
   )
 }

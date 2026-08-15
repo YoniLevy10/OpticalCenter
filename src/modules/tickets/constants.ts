@@ -58,6 +58,16 @@ export const TICKET_SOURCE_LABELS_HE: Record<TicketSourceLabel, string> = {
   demo: 'הדגמה',
 }
 
+export const TICKET_CATEGORY_LABELS_HE: Record<string, string> = {
+  hvac: 'מיזוג',
+  electrical: 'חשמל',
+  plumbing: 'אינסטלציה',
+  security: 'אבטחה',
+  it: 'מחשוב / קופה',
+  cleaning: 'ניקיון',
+  other: 'אחר',
+}
+
 export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   created: 'נוצרה',
   status_changed: 'שינוי סטטוס',

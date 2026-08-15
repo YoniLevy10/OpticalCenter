@@ -1,0 +1,20 @@
+{
+  "name": "MaintainOS טכנאי",
+  "short_name": "MaintainOS",
+  "description": "פורטל טכנאי — Optical Center ישראל",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/tech",
+  "scope": "/tech",
+  "display": "standalone",
+  "background_color": "#f4f4f5",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/vercel.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

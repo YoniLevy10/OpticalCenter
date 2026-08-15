@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { OpsShell } from '@/components/layout/ops-shell'
 import { PriorityDot, StatusBadge } from '@/components/ui/badges'
+import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { listTickets } from '@/modules/tickets/service'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 
@@ -18,6 +19,15 @@ export default async function TicketsPage() {
           : 'מצב דמו (זיכרון) — ללא מיגרציות'
       }
     >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-zinc-500">
+          שיוך טכנאי מתבצע במסך הפרטים · פורטל טכנאי ב־
+          <Link href="/tech" className="underline underline-offset-2">
+            /tech
+          </Link>
+        </p>
+        <SeedDemoTicketButton />
+      </div>
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-zinc-100 bg-zinc-50 text-xs text-zinc-500">
@@ -34,13 +44,7 @@ export default async function TicketsPage() {
               <tr>
                 <td colSpan={5} className="px-3 py-10 text-center text-zinc-500">
                   אין תקלות להצגה. השתמשו בסימולטור WhatsApp או ב־
-                  <Link
-                    href="/api/demo/seed-ticket"
-                    className="underline underline-offset-2"
-                  >
-                    יצירת תקלת הדגמה
-                  </Link>
-                  .
+                  <span className="font-medium text-zinc-700">תקלת הדגמה לטכנאי</span>.
                 </td>
               </tr>
             ) : (

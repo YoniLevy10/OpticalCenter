@@ -19,22 +19,50 @@ Next.js 15 · TypeScript · Tailwind · Supabase · Vercel
 ## הרצה מקומית
 
 ```bash
-cp .env.example .env.local   # אם צריך
+cp .env.example .env.local
 npm install
 npm run dev
+```
+
+בלי מיגרציות על Supabase האפליקציה נופלת אוטומטית ל־**memory backend** לדמו.
+
+## סקריפט דמו (E2E)
+
+1. `/ops/simulator` — שלחו `STORE_172` ואז `המזגן הראשי לא עובד`
+2. `/ops/tickets` — פתחו את התקלה, שייכו טכנאי
+3. או לחצו **תקלת הדגמה לטכנאי** (יוצר + משייך)
+4. `/tech` — התחילו טיפול → סיום עם הערה
+
+API מהיר:
+
+```bash
+curl -X POST localhost:3000/api/demo/whatsapp \
+  -H 'content-type: application/json' \
+  -d '{"wa_id":"972501111111","text":"STORE_172"}'
+
+curl -X POST localhost:3000/api/demo/whatsapp \
+  -H 'content-type: application/json' \
+  -d '{"wa_id":"972501111111","text":"המזגן הראשי לא עובד"}'
+
+curl 'localhost:3000/api/demo/seed-ticket?assign=1'
 ```
 
 ## Supabase
 
 מיגרציות ב־`supabase/migrations/`.
 
-להחלה על הפרויקט (דורש DB password):
-
 ```bash
-npx supabase db push --project-ref pfsxuylbnpbcgjehuaqo
+# דורש סיסמת DB מ־Supabase Dashboard → Database settings
+SUPABASE_DB_PASSWORD=... node scripts/apply-migrations.mjs
 ```
 
-או להריץ את קבצי ה־SQL ב־Supabase SQL Editor.
+או להריץ את קבצי ה־SQL ב־SQL Editor לפי סדר השם.
+
+אופציונלי לכפות זיכרון גם כשיש DB:
+
+```bash
+MAINTAINOS_FORCE_MEMORY=1
+```
 
 ## מסמכים
 
