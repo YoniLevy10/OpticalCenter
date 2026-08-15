@@ -1,5 +1,6 @@
 import { TechShell } from '@/components/layout/tech-shell'
 import { TechJobList } from '@/app/tech/tech-job-list'
+import { TechRealtimeHint } from '@/app/tech/tech-realtime-hint'
 import { fetchTechTickets, resolveTechId } from '@/modules/tickets/tech'
 
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,7 @@ export default async function TechPortalPage({
       }
       techId={techId}
     >
+      <TechRealtimeHint />
       {error ? (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
@@ -32,3 +34,4 @@ export default async function TechPortalPage({
     </TechShell>
   )
 }
+

@@ -3,12 +3,44 @@ import { OpsShell } from '@/components/layout/ops-shell'
 import { PriorityDot, StatusBadge } from '@/components/ui/badges'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { listTickets } from '@/modules/tickets/service'
-import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
+import {
+  OPEN_TICKET_STATUSES,
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+  type TicketPriority,
+  type TicketStatus,
+} from '@/modules/tickets/constants'
 
 export const dynamic = 'force-dynamic'
 
-export default async function TicketsPage() {
+export default async function TicketsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; priority?: string; q?: string }>
+}) {
+  const sp = await searchParams
   const { tickets, backend } = await listTickets()
+
+  const statusFilter = (sp.status || '').trim()
+  const priorityFilter = (sp.priority || '').trim()
+  const q = (sp.q || '').trim().toLowerCase()
+
+  const filtered = tickets.filter((t) => {
+    if (statusFilter === 'open') {
+      if (
+        !OPEN_TICKET_STATUSES.includes(
+          t.status as (typeof OPEN_TICKET_STATUSES)[number],
+        )
+      )
+        return false
+    } else if (statusFilter && t.status !== statusFilter) return false
+    if (priorityFilter && t.priority !== priorityFilter) return false
+    if (q) {
+      const hay = `${t.display_number ?? ''} ${t.description} ${t.stores?.name ?? ''} ${t.stores?.code ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
 
   return (
     <OpsShell
@@ -19,15 +51,58 @@ export default async function TicketsPage() {
           : 'מצב דמו (זיכרון) — ללא מיגרציות'
       }
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-zinc-500">
-          שיוך טכנאי מתבצע במסך הפרטים · פורטל טכנאי ב־
-          <Link href="/tech" className="underline underline-offset-2">
-            /tech
-          </Link>
-        </p>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <form className="flex flex-wrap items-end gap-2 text-xs">
+          <label className="text-zinc-600">
+            סטטוס
+            <select
+              name="status"
+              defaultValue={statusFilter}
+              className="mt-1 block rounded-md border border-zinc-200 bg-white px-2 py-1.5"
+            >
+              <option value="">הכל</option>
+              <option value="open">פתוחות</option>
+              {TICKET_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-zinc-600">
+            עדיפות
+            <select
+              name="priority"
+              defaultValue={priorityFilter}
+              className="mt-1 block rounded-md border border-zinc-200 bg-white px-2 py-1.5"
+            >
+              <option value="">הכל</option>
+              {TICKET_PRIORITIES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-zinc-600">
+            חיפוש
+            <input
+              name="q"
+              defaultValue={sp.q ?? ''}
+              placeholder="OC / חנות / טקסט"
+              className="mt-1 block w-40 rounded-md border border-zinc-200 px-2 py-1.5"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white"
+          >
+            סנן
+          </button>
+        </form>
         <SeedDemoTicketButton />
       </div>
+
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-zinc-100 bg-zinc-50 text-xs text-zinc-500">
@@ -40,15 +115,14 @@ export default async function TicketsPage() {
             </tr>
           </thead>
           <tbody>
-            {tickets.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-3 py-10 text-center text-zinc-500">
-                  אין תקלות להצגה. השתמשו בסימולטור WhatsApp או ב־
-                  <span className="font-medium text-zinc-700">תקלת הדגמה לטכנאי</span>.
+                  אין תקלות להצגה לפי הסינון.
                 </td>
               </tr>
             ) : (
-              tickets.map((t) => (
+              filtered.map((t) => (
                 <tr
                   key={t.id}
                   className="border-b border-zinc-50 hover:bg-zinc-50/80"
