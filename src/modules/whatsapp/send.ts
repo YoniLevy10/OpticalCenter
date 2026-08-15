@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logEvent } from '@/lib/logging'
+import { shouldSendWhatsApp, type OutboundPurpose } from './cost-policy'
 
 export type SendWhatsAppParams = {
   toWaId: string
@@ -9,6 +11,7 @@ export type SendWhatsAppParams = {
   supabase?: SupabaseClient
   /** Force dry-run (simulator / tests) even if access token is present. */
   forceDryRun?: boolean
+  purpose?: OutboundPurpose
 }
 
 /**
@@ -20,7 +23,19 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
   dryRun: boolean
   waMessageId: string | null
   error?: string
+  skippedByPolicy?: boolean
 }> {
+  const purpose = params.purpose ?? 'intake_reply'
+  if (!shouldSendWhatsApp(purpose)) {
+    logEvent('whatsapp:send', 'info', 'skipped_by_cost_policy', { purpose })
+    return {
+      ok: true,
+      dryRun: true,
+      waMessageId: null,
+      skippedByPolicy: true,
+    }
+  }
+
   const token = params.forceDryRun ? null : process.env.WHATSAPP_ACCESS_TOKEN
   const phoneNumberId =
     params.phoneNumberId ||
@@ -67,10 +82,9 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
       error = e instanceof Error ? e.message : 'send failed'
     }
   } else {
-    console.info('[whatsapp:dry-run]', {
+    logEvent('whatsapp:send', 'info', 'dry_run', {
       to: params.toWaId,
       phoneNumberId,
-      text: params.text,
     })
     waMessageId = `dryrun_${Date.now()}`
   }
@@ -82,7 +96,7 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
       direction: 'outbound',
       body: params.text,
       wa_message_id: waMessageId,
-      raw: { dryRun, ok, error: error ?? null },
+      raw: { dryRun, ok, error: error ?? null, purpose },
     })
   }
 

@@ -67,3 +67,10 @@ MAINTAINOS_FORCE_MEMORY=1
 ## מסמכים
 
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- [`docs/SECURITY.md`](docs/SECURITY.md)
+- [`docs/MESSAGING_COST_POLICY.md`](docs/MESSAGING_COST_POLICY.md)
+
+## סקריפט דמו
+
+ראה גם `scripts/e2e-demo.mjs` ו־`npm test` (כולל demo-flow).

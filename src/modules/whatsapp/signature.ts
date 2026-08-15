@@ -8,7 +8,8 @@ export function verifyWhatsAppSignature(
   rawBody: string,
   signatureHeader: string | null,
 ): boolean {
-  const secret = process.env.WHATSAPP_APP_SECRET
+  const secret =
+    process.env.WHATSAPP_APP_SECRET || process.env.WA_APP_SECRET
   if (!secret) return true
   if (!signatureHeader?.startsWith('sha256=')) return false
   const expected = createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex')

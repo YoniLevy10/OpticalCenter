@@ -153,6 +153,23 @@ export async function resolveStoreByCode(
   }
 }
 
+/** Hybrid identity step 1: known wa_id → store_phones mapping. */
+export async function resolveStoreByWaId(
+  supabase: SupabaseClient | null,
+  waId: string,
+): Promise<StoreRow | null> {
+  if (!supabase || !waId) return null
+  const { data } = await supabase
+    .from('store_phones')
+    .select('store_id, stores ( id, code, name, organization_id, country_id, region_id )')
+    .eq('wa_id', waId)
+    .limit(1)
+    .maybeSingle()
+  const stores = data?.stores as StoreRow | StoreRow[] | null | undefined
+  if (!stores) return null
+  return Array.isArray(stores) ? stores[0] ?? null : stores
+}
+
 async function markProcessed(
   supabase: SupabaseClient | null,
   messageId: string,
@@ -404,6 +421,29 @@ export async function processInboundMessage(
     const text = message.text?.trim() || null
     const storeCodeFromText = text ? parseStoreCodeFromText(text) : null
     let source = inferSourceFromText(text, message.sourceHint)
+
+    // Hybrid identity: known phone → store, before asking for code
+    if ((!session.store_id || session.state === 'awaiting_store') && !storeCodeFromText) {
+      const byPhone = await resolveStoreByWaId(supabase, message.waId)
+      if (byPhone) {
+        await updateSession(supabase, session, {
+          store_id: byPhone.id,
+          store_code: byPhone.code,
+          state: 'awaiting_description',
+        })
+        session = {
+          ...session,
+          store_id: byPhone.id,
+          store_code: byPhone.code,
+          state: 'awaiting_description',
+        }
+        if (!text && !message.mediaUrl) {
+          const reply = WA_COPY.askDescription(byPhone.name, byPhone.code)
+          await sendReply(supabase, message, country, reply, null, options)
+          return { ok: true, reply, state: 'awaiting_description' }
+        }
+      }
+    }
 
     if (storeCodeFromText) {
       const store = await resolveStoreByCode(

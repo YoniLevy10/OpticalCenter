@@ -7,6 +7,7 @@ const NAV = [
   { href: '/ops/stores', label: 'חנויות' },
   { href: '/ops/simulator', label: 'סימולטור' },
   { href: '/tech', label: 'פורטל טכנאי' },
+  { href: '/login', label: 'התחברות' },
 ]
 
 export function OpsShell({

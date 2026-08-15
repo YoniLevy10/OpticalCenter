@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
   const mode = sp.get('hub.mode')
   const token = sp.get('hub.verify_token')
   const challenge = sp.get('hub.challenge')
-  const expected = process.env.WHATSAPP_VERIFY_TOKEN
+  const expected =
+    process.env.WHATSAPP_VERIFY_TOKEN || process.env.WA_VERIFY_TOKEN
 
   if (mode === 'subscribe' && expected && token === expected && challenge) {
     return new NextResponse(challenge, {
