@@ -52,9 +52,14 @@ export default async function OpsDashboardPage() {
             </Link>
           </div>
           <div className="px-4 py-6 text-sm text-zinc-500">
-            {tickets.length === 0
-              ? 'עדיין אין תקלות. בשלב הבא נחבר WhatsApp / סימולטור דיווח.'
-              : null}
+            {tickets.length === 0 ? (
+              <>
+                עדיין אין תקלות.{' '}
+                <Link href="/ops/simulator" className="text-sky-700 hover:underline">
+                  נסו את סימולטור WhatsApp
+                </Link>
+              </>
+            ) : null}
           </div>
         </section>
 
