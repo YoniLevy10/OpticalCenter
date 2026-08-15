@@ -7,8 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "npm run build && MAINTAINOS_FORCE_MEMORY=1 playwright test --project=chromium",
+    "test:e2e:all": "npm run build && MAINTAINOS_FORCE_MEMORY=1 playwright test",
+    "test:qa": "npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build",
+    "test:qa:load": "node scripts/qa-load.mjs",
     "db:migrate": "node scripts/apply-migrations.mjs"
   },
   "dependencies": {
@@ -30,7 +35,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

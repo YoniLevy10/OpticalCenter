@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-08-15T23:19:22.501Z",
+  "config": {
+    "STORE_COUNT": 800,
+    "TICKET_COUNT": 10000
+  },
+  "timings_ms": {
+    "synth_stores": 0.24,
+    "synth_tickets": 7.79,
+    "slice_100": 0,
+    "filters": 6.47,
+    "total": 14.5
+  },
+  "observations": [
+    "Product listTickets() currently caps ~100 rows then filters in memory — search cannot see tickets beyond the cap.",
+    "At 10k tickets, full client/server in-memory scan of the full set is possible in Node but not exposed by API.",
+    "Multi-country stores in this synthetic set are not enforced by DB constraints in initial schema.",
+    "N+1 risk: ticket detail loads messages/events; list pages should avoid per-row detail fetches."
+  ],
+  "metrics": {
+    "stores": 800,
+    "tickets": 10000,
+    "ui_cap_simulated": 100,
+    "open_in_cap": 67,
+    "q_mazgan_in_cap": 100,
+    "full_scan_hits": 1,
+    "list_payload_bytes_cap100": 23328
+  },
+  "bottlenecks": [
+    {
+      "id": "LIST_CAP_100",
+      "severity": "P1",
+      "detail": "In-memory filter after limit=100 makes search/filters incomplete at scale."
+    },
+    {
+      "id": "NO_SERVER_SEARCH",
+      "severity": "P1",
+      "detail": "No DB ilike/indexed search path for ticket number/store/description."
+    },
+    {
+      "id": "HIERARCHY_CONSTRAINTS",
+      "severity": "P0",
+      "detail": "Synthetic cross-country rows possible; schema lacks same-country enforcement."
+    }
+  ]
+}
