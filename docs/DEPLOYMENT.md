@@ -12,10 +12,17 @@ Required env:
 
 ## Vercel
 1. Project linked to `YoniLevy10/OpticalCenter`
-2. Set the same env vars for **Production** + **Preview**
-3. Production URL (team): `https://optical-center-yonilevy10s-projects.vercel.app`
-4. Disable **Deployment Protection / Vercel Authentication** if you need a public demo without SSO
-5. Do **not** use `optical-center.vercel.app` (unrelated site) or dead `optical-center-rose` aliases
+2. **Root Directory** must be empty / repo root (not a subfolder)
+3. Framework Preset: **Next.js**
+4. Build Command: `next build` (do **not** use `--turbopack` in production)
+5. Set env vars for Production + Preview (Supabase URL/anon/service_role, `NEXT_PUBLIC_APP_URL`)
+6. Production domain: use the project Production URL from Vercel → Domains
+7. Disable **Deployment Protection / Vercel Authentication** for public demos
+8. Do **not** bookmark old `*-qag9…-*.vercel.app` deployment hashes — they expire / 404 when superseded
+9. Do **not** use `optical-center.vercel.app` (unrelated site) or dead `optical-center-rose` aliases
+
+After each merge to `main`, open:
+Vercel → Project **optical-center** → **Deployments** → latest **Production** → **Visit**
 
 ## Meta WhatsApp (when ready)
 - `WHATSAPP_PHONE_NUMBER_ID`
