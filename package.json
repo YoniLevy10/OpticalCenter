@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "node scripts/apply-migrations.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -33,5 +34,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "pg": "^8.23.0"
   }
 }

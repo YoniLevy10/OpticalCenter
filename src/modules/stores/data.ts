@@ -20,7 +20,17 @@ export type TicketRow = {
   source: string
   created_at: string
   store_id: string
-  stores?: { code: string; name: string; city: string | null } | null
+  assigned_to?: string | null
+  title?: string | null
+  updated_at?: string
+  sla_respond_by?: string | null
+  sla_resolve_by?: string | null
+  stores?: {
+    code: string
+    name: string
+    city: string | null
+    address?: string | null
+  } | null
 }
 
 /** Fallback seed when DB migrations not applied yet — mirrors Israel demo stores. */
@@ -56,16 +66,9 @@ export async function fetchStores(): Promise<{ stores: StoreRow[]; fromDb: boole
 
 export async function fetchTickets(): Promise<{ tickets: TicketRow[]; fromDb: boolean }> {
   try {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(
-        'id, number, display_number, status, priority, category, description, source, created_at, store_id, stores(code, name, city)',
-      )
-      .order('created_at', { ascending: false })
-      .limit(100)
-    if (error) return { tickets: [], fromDb: false }
-    return { tickets: (data as unknown as TicketRow[]) ?? [], fromDb: true }
+    const { listTickets } = await import('@/modules/tickets/service')
+    const { tickets, backend } = await listTickets()
+    return { tickets, fromDb: backend === 'supabase' }
   } catch {
     return { tickets: [], fromDb: false }
   }
