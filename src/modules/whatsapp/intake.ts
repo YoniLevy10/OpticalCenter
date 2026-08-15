@@ -1,9 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createSystemClient } from '@/lib/supabase/system'
 import {
   memAddMessage,
   memDedupe,
-  memFindStoreByCode,
   memGetSession,
   memUpsertSession,
   MEM_COUNTRY_ID,
@@ -59,8 +58,10 @@ const DEMO_COUNTRY: CountryRow = {
 }
 
 function admin(): SupabaseClient {
-  return createAdminClient()
+  return createSystemClient('whatsapp_intake')
 }
+
+void DEMO_COUNTRY
 
 function isIdentityOnly(text: string | null, storeCode: string): boolean {
   if (!text) return false
@@ -76,42 +77,48 @@ export async function resolveCountryByPhoneNumberId(
   supabase: SupabaseClient | null,
   phoneNumberId: string | null,
 ): Promise<CountryRow | null> {
-  if (!supabase) return DEMO_COUNTRY
+  const strict =
+    process.env.NODE_ENV === 'production' &&
+    process.env.MAINTAINOS_FORCE_MEMORY !== '1' &&
+    process.env.MAINTAINOS_WA_DEV_BYPASS !== '1'
 
-  const id =
-    phoneNumberId ||
-    process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
-    process.env.WHATSAPP_PHONE_NUMBER_ID ||
-    null
+  if (!supabase) {
+    const { memResolveCountryByPhoneNumberId } = await import(
+      '@/lib/data/memory-store'
+    )
+    return memResolveCountryByPhoneNumberId(phoneNumberId)
+  }
 
-  if (id) {
+  const id = phoneNumberId?.trim() || null
+  if (!id) {
+    if (strict) return null
+    // Dev only: allow env default mapping
+    const envId =
+      process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+      process.env.WHATSAPP_PHONE_NUMBER_ID ||
+      null
+    if (!envId) return null
     const { data } = await supabase
       .from('countries')
       .select(
         'id, organization_id, code, whatsapp_phone_number_id, whatsapp_access_token',
       )
-      .eq('whatsapp_phone_number_id', id)
+      .eq('whatsapp_phone_number_id', envId)
       .maybeSingle()
-    if (data) return data as CountryRow
+    return (data as CountryRow) ?? null
   }
 
-  const { data: il } = await supabase
+  const { data } = await supabase
     .from('countries')
     .select(
       'id, organization_id, code, whatsapp_phone_number_id, whatsapp_access_token',
     )
-    .eq('code', 'IL')
+    .eq('whatsapp_phone_number_id', id)
     .maybeSingle()
-  if (il) return il as CountryRow
+  if (data) return data as CountryRow
 
-  const { data: anyCountry } = await supabase
-    .from('countries')
-    .select(
-      'id, organization_id, code, whatsapp_phone_number_id, whatsapp_access_token',
-    )
-    .limit(1)
-    .maybeSingle()
-  return (anyCountry as CountryRow) ?? DEMO_COUNTRY
+  // Unknown phone_number_id — never guess IL/any country
+  return null
 }
 
 export async function resolveStoreByCode(
@@ -120,14 +127,15 @@ export async function resolveStoreByCode(
   code: string,
 ): Promise<StoreRow | null> {
   if (!supabase) {
-    const s = memFindStoreByCode(code)
+    const { memFindStoreByCodeInCountry } = await import('@/lib/data/memory-store')
+    const s = memFindStoreByCodeInCountry(countryId, code)
     if (!s) return null
     return {
       id: s.id,
       code: s.code,
       name: s.name,
-      organization_id: MEM_ORG_ID,
-      country_id: MEM_COUNTRY_ID,
+      organization_id: s.organization_id ?? MEM_ORG_ID,
+      country_id: s.country_id,
       region_id: s.region_id,
     }
   }
@@ -139,35 +147,32 @@ export async function resolveStoreByCode(
     .eq('code', code)
     .eq('is_active', true)
     .maybeSingle()
-  if (data) return data as StoreRow
-
-  const s = memFindStoreByCode(code)
-  if (!s) return null
-  return {
-    id: s.id,
-    code: s.code,
-    name: s.name,
-    organization_id: MEM_ORG_ID,
-    country_id: countryId || MEM_COUNTRY_ID,
-    region_id: s.region_id,
-  }
+  return (data as StoreRow) ?? null
 }
 
 /** Hybrid identity step 1: known wa_id → store_phones mapping. */
 export async function resolveStoreByWaId(
   supabase: SupabaseClient | null,
   waId: string,
+  countryId?: string | null,
 ): Promise<StoreRow | null> {
-  if (!supabase || !waId) return null
-  const { data } = await supabase
+  if (!waId) return null
+  if (!supabase) {
+    const { memResolveStoreByWaId } = await import('@/lib/data/memory-store')
+    return memResolveStoreByWaId(waId, countryId ?? null)
+  }
+  const q = supabase
     .from('store_phones')
-    .select('store_id, stores ( id, code, name, organization_id, country_id, region_id )')
+    .select(
+      'store_id, stores ( id, code, name, organization_id, country_id, region_id )',
+    )
     .eq('wa_id', waId)
-    .limit(1)
-    .maybeSingle()
+  const { data } = await q.limit(1).maybeSingle()
   const stores = data?.stores as StoreRow | StoreRow[] | null | undefined
   if (!stores) return null
-  return Array.isArray(stores) ? stores[0] ?? null : stores
+  const store = Array.isArray(stores) ? stores[0] ?? null : stores
+  if (countryId && store && store.country_id !== countryId) return null
+  return store
 }
 
 async function markProcessed(
@@ -323,6 +328,7 @@ async function updateSession(
 
 async function createTicketFromIntake(params: {
   store: StoreRow
+  country: CountryRow
   description: string
   mediaUrl: string | null
   waId: string
@@ -331,8 +337,17 @@ async function createTicketFromIntake(params: {
   inboundText: string | null
   useMemory: boolean
 }): Promise<{ ticketId: string; displayNumber: string }> {
-  const { store, description, mediaUrl, waId, messageId, source, inboundText, useMemory } =
-    params
+  const {
+    store,
+    country,
+    description,
+    mediaUrl,
+    waId,
+    messageId,
+    source,
+    inboundText,
+    useMemory,
+  } = params
 
   const title =
     description.length > 80
@@ -343,15 +358,15 @@ async function createTicketFromIntake(params: {
 
   const ticket = await createTicket({
     storeCode: store.code,
-    storeId: store.id.startsWith('demo-') ? undefined : store.id,
-    countryCode: 'IL',
+    storeId: store.id,
+    countryCode: country.code,
     description: description || '(תמונה ללא טקסט)',
     title,
     category: classified.category,
     priority: classified.priority,
     source,
     reporterPhone: waId,
-    language: 'he',
+    language: country.code === 'FR' ? 'fr' : 'he',
   })
 
   const displayNumber =
@@ -424,7 +439,11 @@ export async function processInboundMessage(
 
     // Hybrid identity: known phone → store, before asking for code
     if ((!session.store_id || session.state === 'awaiting_store') && !storeCodeFromText) {
-      const byPhone = await resolveStoreByWaId(supabase, message.waId)
+      const byPhone = await resolveStoreByWaId(
+        supabase,
+        message.waId,
+        country.id,
+      )
       if (byPhone) {
         await updateSession(supabase, session, {
           store_id: byPhone.id,
@@ -566,6 +585,7 @@ async function finalizeTicket(params: {
 
   const { ticketId, displayNumber } = await createTicketFromIntake({
     store,
+    country,
     description,
     mediaUrl: message.mediaUrl,
     waId: message.waId,
@@ -631,7 +651,10 @@ export async function processDemoInbound(input: {
       input.messageId ||
       `demo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     waId: input.waId.replace(/\D/g, '') || input.waId,
-    phoneNumberId: process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID || null,
+    phoneNumberId:
+      process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+      process.env.WHATSAPP_PHONE_NUMBER_ID ||
+      'wa_phone_il_demo',
     text: storePrefill,
     mediaUrl: input.mediaUrl || null,
     mediaKind: input.mediaUrl ? 'image' : null,

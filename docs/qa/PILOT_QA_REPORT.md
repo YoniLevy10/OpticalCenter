@@ -14,25 +14,28 @@ npm run test:qa           # lint + typecheck + unit + e2e + build
 npm run test:qa:load      # 800 stores / 10k tickets synthetic bottleneck report
 ```
 
-**Latest local run:** lint ✓ · typecheck ✓ · unit 66 pass + 4 expected-fail · e2e chromium 21 pass · build ✓ · load report written.
+> **Update (same day):** P0 Fix Sprint completed — see [`P0_FIX_REPORT.md`](./P0_FIX_REPORT.md).  
+> Current gate: lint ✓ · typecheck ✓ · unit 83 pass · e2e chromium 25 pass · build ✓ · **0 expected-fail P0**.
+
+**Original audit run (pre-fix):** lint ✓ · typecheck ✓ · unit 66 pass + 4 expected-fail · e2e chromium 21 pass · build ✓ · load report written.
 
 ---
 
 ## Pilot readiness — five scenarios
 
-| # | Scenario | Verdict |
+| # | Scenario | Verdict (post-P0) |
 |---|----------|---------|
-| 1 | Unknown employee → identify store → report → one ticket | **PASS** (Memory Golden Path + WA-02/04/05) |
-| 2 | Known employee → issue/photo only → auto store | **FAIL / BLOCKED on Memory** — `resolveStoreByWaId` requires Supabase `store_phones` |
-| 3 | HQ finds issue, urgency, assigns tech | **PASS** (Golden Path + filters) |
-| 4 | Tech PWA: open → start → evidence → resolve | **PASS** (Golden Path; photo URL path) |
-| 5 | Scoped user cannot access other scope via API | **FAIL (P0)** — service role + permissive RLS + unscoped tech GET |
+| 1 | Unknown employee → identify store → report → one ticket | **PASS** |
+| 2 | Known employee → issue/photo only → auto store | **PASS** (memory `store_phones` + migration seed) |
+| 3 | HQ finds issue, urgency, assigns tech | **PASS** |
+| 4 | Tech PWA: open → start → evidence → resolve | **PASS** |
+| 5 | Scoped user cannot access other scope via API | **PASS** (auth + membership + IDOR e2e) |
 
-**Overall:** **Not pilot-ready** until P0 security + known-phone (Supabase) parity are fixed.
+**Overall (post-P0):** **Pilot-ready for security/integrity baseline** subject to applying DB migration and accepting residual SSR service-role risk documented in P0 report.
 
 ---
 
-## P0 — Pilot blockers
+## P0 — Pilot blockers (historical — fixed in P0_FIX_REPORT)
 
 ### P0-1 — No real tenant RBAC / RLS
 

@@ -73,23 +73,21 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     await expect(page.getByText(/מזגן|אבן גבירול/).first()).toBeVisible()
 
     const start = await patchTechTicket(request, ticketId, {
-      techId: DEMO_TECH_ID,
       status: 'in_progress',
     })
     expect(start.status).toBe(200)
 
-    const mid = await getTechTicket(request, ticketId)
+    const mid = await getTechTicket(request, ticketId, DEMO_TECH_ID)
     expect(mid.json.ticket.status).toBe('in_progress')
 
     const resolve = await patchTechTicket(request, ticketId, {
-      techId: DEMO_TECH_ID,
       status: 'resolved',
       note: 'הוחלף מדחס / נבדק בשטח',
       photoUrl: 'https://example.com/qa-photo.jpg',
     })
     expect(resolve.status).toBe(200)
 
-    const done = await getTechTicket(request, ticketId)
+    const done = await getTechTicket(request, ticketId, DEMO_TECH_ID)
     expect(done.json.ticket.status).toBe('resolved')
     expect(done.json.ticket.resolved_at || done.json.ticket.events).toBeTruthy()
 

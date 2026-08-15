@@ -29,16 +29,24 @@ describe('WhatsApp intake matrix (memory)', () => {
     process.env.MAINTAINOS_FORCE_MEMORY = '1'
   })
 
-  it('WA-01 known phone — N/A on memory (resolveStoreByWaId null)', async () => {
-    // Documented parity gap: store_phones lookup requires Supabase.
-    const waId = `97250${Date.now().toString().slice(-7)}`
+  it('WA-01 known phone skips store ask (memory store_phones)', async () => {
+    const { MEM_KNOWN_EMPLOYEE_WA, MEM_WA_PHONE_IL } = await import(
+      '@/lib/data/memory-store'
+    )
+    const before = memListTickets().length
     const r = await processInboundMessage(
-      msg({ text: 'המזגן לא עובד', waId }),
+      msg({
+        text: 'המזגן לא עובד',
+        waId: MEM_KNOWN_EMPLOYEE_WA,
+        phoneNumberId: MEM_WA_PHONE_IL,
+      }),
       { skipOutboundGraph: true },
     )
     expect(r.ok).toBe(true)
-    expect(r.ticketId).toBeFalsy()
-    expect(r.state === 'awaiting_store' || (r.reply || '').length > 0).toBe(true)
+    expect(r.ticketId).toBeTruthy()
+    expect(memListTickets().length).toBe(before + 1)
+    const ticket = memListTickets().find((t) => t.id === r.ticketId)
+    expect(ticket?.stores?.code).toBe('172')
   })
 
   it('WA-02 unknown phone asks for store; no ticket', async () => {
@@ -225,16 +233,35 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(second.ticketId).not.toBe(first.ticketId)
   })
 
-  it('WA-12 multi-country — blocked without seeded FR country phone_number_id', async () => {
-    // Document gap: memory uses DEMO_COUNTRY only.
+  it('WA-12 France phone_number_id + 172 → FR store not IL', async () => {
+    const { MEM_WA_PHONE_FR } = await import('@/lib/data/memory-store')
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
     const r = await processInboundMessage(
       msg({
-        text: 'STORE_172',
-        phoneNumberId: 'france-phone-number-id-not-seeded',
+        text: 'STORE_172 clim en panne',
+        waId,
+        phoneNumberId: MEM_WA_PHONE_FR,
       }),
       { skipOutboundGraph: true },
     )
-    // Should still resolve Israel demo store today — flag for report
     expect(r.ok).toBe(true)
+    expect(r.ticketId).toBeTruthy()
+    const ticket = memListTickets().find((t) => t.id === r.ticketId)
+    expect(ticket?.stores?.name).toMatch(/Paris/i)
+    expect(ticket?.country_id).toBe('33333333-3333-3333-3333-333333333333')
+  })
+
+  it('WA-12 unknown phone_number_id fails safely', async () => {
+    const r = await processInboundMessage(
+      msg({
+        text: 'STORE_172',
+        phoneNumberId: 'totally-unknown-phone-id',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(false)
+    expect(r.ticketId).toBeFalsy()
   })
 })

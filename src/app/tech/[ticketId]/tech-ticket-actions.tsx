@@ -86,8 +86,8 @@ export function TechTicketActions({
       const res = await fetch(`/api/tech/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
-          techId,
           note: note.trim() || undefined,
           resolution_note: note.trim() || undefined,
           photoUrl: photoUrl.trim() || undefined,

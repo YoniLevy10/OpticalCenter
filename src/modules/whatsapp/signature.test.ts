@@ -3,12 +3,28 @@ import { describe, expect, it } from 'vitest'
 import { verifyWhatsAppSignature } from '@/modules/whatsapp/signature'
 
 describe('WhatsApp webhook signature', () => {
-  it('allows when secret unset (dev)', () => {
+  it('allows when secret unset in non-production', () => {
+    const prev = process.env.WHATSAPP_APP_SECRET
+    const strict = process.env.MAINTAINOS_WA_PROD_STRICT
+    delete process.env.WHATSAPP_APP_SECRET
+    delete process.env.WA_APP_SECRET
+    delete process.env.MAINTAINOS_WA_PROD_STRICT
+    process.env.MAINTAINOS_FORCE_MEMORY = '1'
+    expect(verifyWhatsAppSignature('{}', null)).toBe(true)
+    if (prev) process.env.WHATSAPP_APP_SECRET = prev
+    if (strict) process.env.MAINTAINOS_WA_PROD_STRICT = strict
+  })
+
+  it('rejects missing secret in production-like mode', () => {
     const prev = process.env.WHATSAPP_APP_SECRET
     delete process.env.WHATSAPP_APP_SECRET
     delete process.env.WA_APP_SECRET
-    expect(verifyWhatsAppSignature('{}', null)).toBe(true)
+    delete process.env.MAINTAINOS_WA_DEV_BYPASS
+    process.env.MAINTAINOS_WA_PROD_STRICT = '1'
+    expect(verifyWhatsAppSignature('{}', null)).toBe(false)
     if (prev) process.env.WHATSAPP_APP_SECRET = prev
+    else delete process.env.WHATSAPP_APP_SECRET
+    delete process.env.MAINTAINOS_WA_PROD_STRICT
   })
 
   it('rejects missing/invalid signature when secret set', () => {

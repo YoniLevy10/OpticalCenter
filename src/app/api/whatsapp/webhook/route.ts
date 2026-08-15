@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 /**
  * Inbound WhatsApp messages.
  * Always 200 so Meta does not retry storms; errors are logged.
- * Signature checked only when WHATSAPP_APP_SECRET is set.
+ * Signature required in production-like mode; optional only in explicit dev/demo bypass.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     if (!verifyWhatsAppSignature(rawBody, signature)) {
       console.warn('[whatsapp:webhook] invalid signature')
-      return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 200 })
+      return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 401 })
     }
 
     let body: unknown

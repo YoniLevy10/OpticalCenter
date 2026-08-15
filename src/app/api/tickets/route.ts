@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { TICKET_PRIORITIES } from '@/modules/tickets/constants'
 import { createTicket } from '@/modules/tickets/service'
+import {
+  authErrorResponse,
+  requireActor,
+} from '@/lib/auth/request-actor'
+import { AuthError, actorHasHqAccess } from '@/lib/auth/types'
 
 const createSchema = z.object({
   storeId: z.string().uuid().optional(),
@@ -22,6 +27,10 @@ const createSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const actor = await requireActor(request)
+    if (!actorHasHqAccess(actor)) {
+      throw new AuthError('אין הרשאת HQ', 403)
+    }
     const body = await request.json()
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) {
@@ -40,6 +49,7 @@ export async function POST(request: Request) {
     const ticket = await createTicket(parsed.data)
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (err) {
+    if (err instanceof AuthError) return authErrorResponse(err)
     const message = err instanceof Error ? err.message : 'שגיאה ביצירת תקלה'
     return NextResponse.json({ error: message }, { status: 400 })
   }

@@ -26,13 +26,14 @@ export default defineConfig({
     { name: 'mobile-safari', use: { ...devices['iPhone 13'] } },
   ],
   webServer: {
-    command: `MAINTAINOS_FORCE_MEMORY=1 npx next start -p ${PORT}`,
+    command: `MAINTAINOS_FORCE_MEMORY=1 MAINTAINOS_ALLOW_TEST_AUTH=1 npx next start -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
       ...process.env,
       MAINTAINOS_FORCE_MEMORY: '1',
+      MAINTAINOS_ALLOW_TEST_AUTH: '1',
       PORT: String(PORT),
     },
   },

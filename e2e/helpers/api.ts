@@ -1,7 +1,16 @@
 import { APIRequestContext, expect } from '@playwright/test'
+import { DEMO_ACTORS } from '../../src/lib/auth/memory-memberships'
+import { signTestBearer } from '../../src/lib/auth/types'
 
-export const DEMO_TECH_ID = '11111111-1111-4111-8111-111111111111'
-export const OTHER_TECH_ID = '22222222-2222-4222-8222-222222222222'
+export const DEMO_TECH_ID = DEMO_ACTORS.techA
+export const OTHER_TECH_ID = DEMO_ACTORS.techB
+export const HQ_ADMIN_ID = DEMO_ACTORS.globalAdmin
+
+export function authHeaders(profileId: string) {
+  return {
+    Authorization: `Bearer ${signTestBearer(profileId)}`,
+  }
+}
 
 export function uniqueWaId(prefix = '97250') {
   const n = Math.floor(Math.random() * 1_000_0000)
@@ -39,16 +48,19 @@ export async function demoWhatsApp(
   },
 ): Promise<DemoWaResult> {
   const res = await request.post('/api/demo/whatsapp', { data: body })
-  const json = (await res.json()) as DemoWaResult
-  return json
+  return (await res.json()) as DemoWaResult
 }
 
 export async function patchTicket(
   request: APIRequestContext,
   id: string,
   body: { status?: string; assignedTo?: string },
+  asProfileId = HQ_ADMIN_ID,
 ) {
-  const res = await request.patch(`/api/tickets/${id}`, { data: body })
+  const res = await request.patch(`/api/tickets/${id}`, {
+    data: body,
+    headers: authHeaders(asProfileId),
+  })
   const json = await res.json()
   return { status: res.status(), json }
 }
@@ -57,14 +69,27 @@ export async function patchTechTicket(
   request: APIRequestContext,
   id: string,
   body: Record<string, unknown>,
+  asProfileId = DEMO_TECH_ID,
 ) {
-  const res = await request.patch(`/api/tech/tickets/${id}`, { data: body })
+  // techId in body must be ignored by server — strip before send
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { techId: _techId, ...rest } = body
+  const res = await request.patch(`/api/tech/tickets/${id}`, {
+    data: rest,
+    headers: authHeaders(asProfileId),
+  })
   const json = await res.json()
   return { status: res.status(), json }
 }
 
-export async function getTechTicket(request: APIRequestContext, id: string) {
-  const res = await request.get(`/api/tech/tickets/${id}`)
+export async function getTechTicket(
+  request: APIRequestContext,
+  id: string,
+  asProfileId?: string | null,
+) {
+  const res = await request.get(`/api/tech/tickets/${id}`, {
+    headers: asProfileId ? authHeaders(asProfileId) : undefined,
+  })
   const json = await res.json()
   return { status: res.status(), json }
 }
