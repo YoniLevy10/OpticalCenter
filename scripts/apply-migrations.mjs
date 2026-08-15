@@ -45,7 +45,8 @@ try {
 
 const host =
   process.env.SUPABASE_DB_HOST ||
-  `aws-0-eu-central-1.pooler.supabase.com`
+  // Optical Center project region (IPv4 pooler). Override if needed.
+  `aws-1-eu-west-1.pooler.supabase.com`
 const url = `postgresql://postgres.${ref}:${encodeURIComponent(password)}@${host}:6543/postgres`
 
 const client = new pg.default.Client({
