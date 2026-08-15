@@ -1,5 +1,11 @@
 import type { TicketStatus } from '@/modules/tickets/constants'
+import { TICKET_STATUSES } from '@/modules/tickets/constants'
 
+/**
+ * Allowed status transitions for HQ / technician workflows.
+ * Flow: new → triaged → assigned → in_progress → waiting_parts → resolved → closed
+ * Cancellation is allowed from any non-terminal open state.
+ */
 export const ALLOWED_TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
   new: ['triaged', 'assigned', 'cancelled'],
   triaged: ['assigned', 'cancelled'],
@@ -27,14 +33,5 @@ export function nextStatuses(from: TicketStatus): TicketStatus[] {
 }
 
 export function isTicketStatus(value: string): value is TicketStatus {
-  return [
-    'new',
-    'triaged',
-    'assigned',
-    'in_progress',
-    'waiting_parts',
-    'resolved',
-    'closed',
-    'cancelled',
-  ].includes(value)
+  return (TICKET_STATUSES as readonly string[]).includes(value)
 }
