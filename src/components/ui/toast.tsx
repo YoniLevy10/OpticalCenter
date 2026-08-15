@@ -22,7 +22,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 start-4 z-[60] flex w-[min(92vw,320px)] flex-col gap-2">
+      <div
+        className="pointer-events-none fixed start-4 z-[60] flex w-[min(92vw,320px)] flex-col gap-2"
+        style={{
+          bottom:
+            'calc(var(--mobile-bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px) + 12px)',
+        }}
+      >
         {items.map((t) => (
           <div
             key={t.id}

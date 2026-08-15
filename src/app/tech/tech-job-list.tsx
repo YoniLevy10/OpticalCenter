@@ -57,8 +57,8 @@ export function TechJobList({
             onClick={() => setTab(t)}
             className={
               tab === t
-                ? 'flex-1 rounded-[var(--radius-sm)] bg-surface px-2 py-2 text-[13px] font-medium text-foreground shadow-sm'
-                : 'flex-1 rounded-[var(--radius-sm)] px-2 py-2 text-[13px] text-muted'
+                ? 'flex min-h-[var(--touch-min)] flex-1 items-center justify-center rounded-[var(--radius-sm)] bg-surface px-2 text-[13px] font-medium text-foreground shadow-sm'
+                : 'flex min-h-[var(--touch-min)] flex-1 items-center justify-center rounded-[var(--radius-sm)] px-2 text-[13px] text-muted'
             }
           >
             {TECH_TAB_LABELS_HE[t]}

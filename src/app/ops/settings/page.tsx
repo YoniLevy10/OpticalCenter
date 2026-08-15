@@ -40,6 +40,16 @@ export default function SettingsPage() {
           </Link>
         ))}
       </div>
+
+      <div id="maintenance" className="scroll-mt-24">
+        <Card className="mt-4 p-4">
+          <h2 className="text-[14px] font-medium">תחזוקה מערכתית</h2>
+          <p className="mt-2 text-[13px] text-muted">
+            Stub לפיילוט — ניהול ספקים חיצוניים, חוזים ותחזוקה מונעת יתווספו כאן.
+            כרגע השימוש העיקרי הוא תקלות HQ ופורטל טכנאי.
+          </p>
+        </Card>
+      </div>
     </OpsShell>
   )
 }

@@ -1,19 +1,37 @@
-/* Minimal MaintainOS service worker — app shell offline fallback */
-const CACHE = 'maintainos-shell-v1'
-const SHELL = ['/', '/ops', '/tech', '/offline.html', '/manifest.webmanifest', '/icons/icon-192.svg']
+/* MaintainOS service worker — shell precache + controlled updates (no silent skipWaiting) */
+const CACHE = 'maintainos-shell-v2'
+const SHELL = [
+  '/',
+  '/ops',
+  '/tech',
+  '/offline.html',
+  '/manifest.webmanifest',
+  '/manifest-tech.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
+]
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()),
-  )
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)))
+  // Do NOT skipWaiting here — client shows update banner and messages SKIP_WAITING
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
-    ).then(() => self.clients.claim()),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+      )
+      .then(() => self.clients.claim()),
   )
+})
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
 
 self.addEventListener('fetch', (event) => {
@@ -22,7 +40,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url)
   if (url.origin !== self.location.origin) return
 
-  // Network-first for app pages; cache fallback to offline
+  // Never intercept API / auth — always network
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/auth')) {
+    return
+  }
+
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)

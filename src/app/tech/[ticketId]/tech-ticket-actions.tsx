@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { TICKET_STATUS_LABELS_HE, type TicketStatus } from '@/modules/tickets/constants'
 import { nextStatusActions } from '@/modules/tickets/tech'
+import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/input'
 
 export function TechTicketActions({
   ticketId,
@@ -64,97 +66,94 @@ export function TechTicketActions({
   return (
     <div className="space-y-4">
       {!canAct ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          כדי לעדכן סטטוס הוסיפו <code className="text-xs">?techId=...</code> לכתובת.
+        <p className="rounded-[var(--radius-md)] border border-warning/30 bg-warning-soft px-3 py-2 text-[13px] text-warning">
+          כדי לעדכן סטטוס הוסיפו <code className="text-[12px]">?techId=...</code> לכתובת.
         </p>
       ) : null}
 
       {isUnassigned && canAct ? (
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="lg"
           disabled={pending}
           onClick={() => void submit({ claim: true })}
-          className="w-full rounded-xl bg-sky-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
           תפיסת עבודה
-        </button>
+        </Button>
       ) : null}
 
       {(isMine || isUnassigned) && actions.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-zinc-500">עדכון סטטוס</p>
+          <p className="text-[12px] font-medium text-muted">עדכון סטטוס</p>
           <div className="flex flex-col gap-2">
             {actions.map((next) => (
-              <button
+              <Button
                 key={next}
                 type="button"
+                size="lg"
+                variant={next === 'resolved' ? 'primary' : 'default'}
                 disabled={pending || !canAct}
                 onClick={() =>
                   void submit({ status: next, claim: isUnassigned ? true : undefined })
                 }
-                className={
-                  next === 'resolved'
-                    ? 'w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60'
-                    : 'w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-800 disabled:opacity-60'
-                }
               >
                 {statusActionLabel(status as TicketStatus, next)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       ) : null}
 
       {status === 'resolved' ? (
-        <p className="text-sm text-emerald-700">העבודה סומנה כהושלמה.</p>
+        <p className="text-[13px] text-success">העבודה סומנה כהושלמה.</p>
       ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="tech-note" className="block text-xs font-medium text-zinc-500">
+        <label htmlFor="tech-note" className="block text-[12px] font-medium text-muted">
           הערת פתרון / שטח
         </label>
-        <textarea
+        <Textarea
           id="tech-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder="מה בוצע בשטח… (חובה מומלצת בסיום)"
-          className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+          className="min-h-[96px] text-[16px] md:text-[13px]"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="tech-photo" className="block text-xs font-medium text-zinc-500">
+        <label htmlFor="tech-photo" className="block text-[12px] font-medium text-muted">
           קישור לתמונה (אופציונלי)
         </label>
-        <input
+        <Input
           id="tech-photo"
           type="url"
           value={photoUrl}
           onChange={(e) => setPhotoUrl(e.target.value)}
           placeholder="https://…"
-          className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
           dir="ltr"
         />
-        <p className="text-[11px] text-zinc-400">MVP: ללא העלאה — הדביקו URL או דלגו.</p>
+        <p className="text-[11px] text-faint">MVP: ללא העלאה — הדביקו URL או דלגו.</p>
       </div>
 
-      <button
+      <Button
         type="button"
+        size="lg"
         disabled={pending || !canAct || (!note.trim() && !photoUrl.trim())}
         onClick={() => void submit(isUnassigned ? { claim: true } : {})}
-        className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-medium text-zinc-800 disabled:opacity-50"
       >
         שמירת הערה / תמונה
-      </button>
+      </Button>
 
       {error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="rounded-[var(--radius-md)] border border-danger/20 bg-danger-soft px-3 py-2 text-[13px] text-danger">
           {error}
         </p>
       ) : null}
       {message ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="rounded-[var(--radius-md)] border border-success/20 bg-success-soft px-3 py-2 text-[13px] text-success">
           {message}
         </p>
       ) : null}

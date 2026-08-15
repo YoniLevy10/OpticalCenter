@@ -111,19 +111,19 @@ export default async function OpsDashboardPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/ops/stores"
-              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
+              className="inline-flex min-h-[var(--touch-min)] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] hover:bg-canvas md:min-h-0 md:py-1.5 md:text-[12px]"
             >
               חנויות וקישורים
             </Link>
             <Link
               href="/ops/settings"
-              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
+              className="inline-flex min-h-[var(--touch-min)] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] hover:bg-canvas md:min-h-0 md:py-1.5 md:text-[12px]"
             >
               הגדרות / סימולטור
             </Link>
             <Link
               href="/tech"
-              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
+              className="inline-flex min-h-[var(--touch-min)] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] hover:bg-canvas md:min-h-0 md:py-1.5 md:text-[12px]"
             >
               פורטל טכנאי
             </Link>

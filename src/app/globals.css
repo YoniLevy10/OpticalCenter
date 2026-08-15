@@ -25,6 +25,14 @@
   --radius-lg: 12px;
   --row-h: 42px;
   --shadow-modal: 0 8px 30px rgba(26, 26, 26, 0.08);
+  --mobile-bottom-nav-height: 64px;
+  --sidebar-width: 220px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --touch-min: 44px;
   --background: var(--canvas);
   --foreground: var(--text);
 }

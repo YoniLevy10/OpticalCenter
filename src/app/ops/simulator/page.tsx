@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export default function SimulatorPage() {
   return (
     <OpsShell
-      pathname="/ops/settings"
+      pathname="/ops/simulator"
       title="סימולטור WhatsApp"
       subtitle="כלי פיתוח · אותו intake כמו ה־webhook"
     >

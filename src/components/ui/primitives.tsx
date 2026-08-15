@@ -65,7 +65,7 @@ export function FilterChip({
     <a
       href={href}
       className={cn(
-        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] transition-colors',
+        'inline-flex h-8 max-md:min-h-[var(--touch-min)] items-center rounded-full border px-3 text-[12px] transition-colors',
         active
           ? 'border-accent/30 bg-accent-soft text-accent'
           : 'border-border bg-surface text-muted hover:text-foreground',

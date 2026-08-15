@@ -15,8 +15,9 @@ const buttonVariants = cva(
         ghost: 'text-muted hover:bg-canvas hover:text-foreground',
       },
       size: {
-        sm: 'h-8 px-2.5',
-        md: 'h-9 px-3',
+        sm: 'h-8 px-2.5 md:h-8 max-md:min-h-[var(--touch-min)] max-md:px-3',
+        md: 'h-9 px-3 max-md:min-h-[var(--touch-min)]',
+        lg: 'min-h-[var(--touch-min)] px-4 text-[14px] w-full',
       },
     },
     defaultVariants: { variant: 'default', size: 'md' },

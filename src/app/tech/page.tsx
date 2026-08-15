@@ -26,7 +26,7 @@ export default async function TechPortalPage({
     >
       <TechRealtimeHint />
       {error ? (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <div className="mb-3 rounded-[var(--radius-md)] border border-danger/20 bg-danger-soft px-3 py-2 text-[13px] text-danger">
           {error}
         </div>
       ) : null}
