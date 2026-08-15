@@ -5,6 +5,7 @@ const NAV = [
   { href: '/ops', label: 'לוח בקרה' },
   { href: '/ops/tickets', label: 'תקלות' },
   { href: '/ops/stores', label: 'חנויות' },
+  { href: '/ops/simulator', label: 'סימולטור' },
   { href: '/tech', label: 'פורטל טכנאי' },
 ]
 

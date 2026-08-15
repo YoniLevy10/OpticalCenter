@@ -1,27 +1,31 @@
 import Link from 'next/link'
 import { OpsShell } from '@/components/layout/ops-shell'
-import { fetchStores, fetchTickets } from '@/modules/stores/data'
+import { fetchStores } from '@/modules/stores/data'
+import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OpsDashboardPage() {
-  const [{ stores, fromDb: storesFromDb }, { tickets, fromDb: ticketsFromDb }] =
-    await Promise.all([fetchStores(), fetchTickets()])
+  const [{ stores, fromDb: storesFromDb }, { tickets, backend }] =
+    await Promise.all([fetchStores(), listTickets()])
 
   const open = tickets.filter((t) =>
-    OPEN_TICKET_STATUSES.includes(t.status as (typeof OPEN_TICKET_STATUSES)[number]),
+    OPEN_TICKET_STATUSES.includes(
+      t.status as (typeof OPEN_TICKET_STATUSES)[number],
+    ),
   )
-  const critical = open.filter((t) => t.priority === 'critical' || t.priority === 'high')
-  const fromDb = storesFromDb && ticketsFromDb
+  const critical = open.filter(
+    (t) => t.priority === 'critical' || t.priority === 'high',
+  )
 
   return (
     <OpsShell
       title="לוח בקרה"
       subtitle={
-        fromDb
+        backend === 'supabase' && storesFromDb
           ? 'נתונים חיים מ־Supabase'
-          : 'מצב הדגמה — יש להריץ מיגרציות Supabase כדי לחבר DB'
+          : 'מצב דמו (זיכרון) — ללא מיגרציות Supabase'
       }
     >
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -47,21 +51,63 @@ export default async function OpsDashboardPage() {
         <section className="rounded-lg border border-zinc-200 bg-white">
           <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
             <h2 className="text-sm font-medium">תקלות אחרונות</h2>
-            <Link href="/ops/tickets" className="text-xs text-zinc-500 hover:text-zinc-800">
+            <Link
+              href="/ops/tickets"
+              className="text-xs text-zinc-500 hover:text-zinc-800"
+            >
               הכל
             </Link>
           </div>
-          <div className="px-4 py-6 text-sm text-zinc-500">
-            {tickets.length === 0
-              ? 'עדיין אין תקלות. בשלב הבא נחבר WhatsApp / סימולטור דיווח.'
-              : null}
-          </div>
+          {tickets.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-zinc-500">
+              עדיין אין תקלות.{' '}
+              <Link href="/ops/simulator" className="underline underline-offset-2">
+                סימולטור WhatsApp
+              </Link>{' '}
+              או{' '}
+              <Link
+                href="/api/demo/seed-ticket"
+                className="underline underline-offset-2"
+              >
+                תקלת הדגמה
+              </Link>
+              .
+            </div>
+          ) : (
+            <ul className="divide-y divide-zinc-50">
+              {tickets.slice(0, 6).map((t) => (
+                <li key={t.id}>
+                  <Link
+                    href={`/ops/tickets/${t.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-zinc-50"
+                  >
+                    <span className="truncate">
+                      <span className="font-medium tabular-nums">
+                        {t.display_number ??
+                          (t.number != null ? `OC-${t.number}` : '—')}
+                      </span>
+                      <span className="text-zinc-500">
+                        {' '}
+                        · {t.stores?.name ?? 'חנות'}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-zinc-500">
+                      {t.status}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="rounded-lg border border-zinc-200 bg-white">
           <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
             <h2 className="text-sm font-medium">זיהוי חנות</h2>
-            <Link href="/ops/stores" className="text-xs text-zinc-500 hover:text-zinc-800">
+            <Link
+              href="/ops/stores"
+              className="text-xs text-zinc-500 hover:text-zinc-800"
+            >
               חנויות ו־QR/NFC
             </Link>
           </div>
