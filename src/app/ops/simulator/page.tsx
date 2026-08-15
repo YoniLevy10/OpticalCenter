@@ -6,12 +6,12 @@ export const dynamic = 'force-dynamic'
 export default function SimulatorPage() {
   return (
     <OpsShell
+      pathname="/ops/settings"
       title="סימולטור WhatsApp"
-      subtitle="דיווח ללא Meta — אותו שירות קליטה כמו ה־webhook"
+      subtitle="כלי פיתוח · אותו intake כמו ה־webhook"
     >
-      <p className="mb-4 max-w-2xl text-sm text-zinc-600">
-        זרימה: זיהוי חנות (`STORE_172` או קוד מספרי) ← תיאור תקלה (אופציונלי: תמונה) ← פתיחת
-        תקלה ואישור בעברית. מספר WhatsApp אחד לכל מדינה; קוד חנות מספרי בלבד.
+      <p className="mb-4 max-w-2xl text-[13px] text-muted">
+        זרימה: `STORE_172` ← תיאור תקלה ← אישור. נגיש גם מ־הגדרות.
       </p>
       <SimulatorForm />
     </OpsShell>

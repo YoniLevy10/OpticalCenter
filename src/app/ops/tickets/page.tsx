@@ -1,17 +1,38 @@
 import Link from 'next/link'
 import { OpsShell } from '@/components/layout/ops-shell'
-import { PriorityDot, StatusBadge } from '@/components/ui/badges'
+import { PriorityDot, StatusBadge, SlaChip } from '@/components/ui/badges'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
+import { FilterChip, EmptyState, SurfaceTable } from '@/components/ui/primitives'
+import { Input } from '@/components/ui/input'
 import { listTickets } from '@/modules/tickets/service'
 import {
   OPEN_TICKET_STATUSES,
-  TICKET_PRIORITIES,
-  TICKET_STATUSES,
   type TicketPriority,
   type TicketStatus,
 } from '@/modules/tickets/constants'
+import { formatSlaLabelHe, isSlaBreached } from '@/modules/tickets/sla'
+import { formatDistanceToNow } from 'date-fns'
+import { he } from 'date-fns/locale'
 
 export const dynamic = 'force-dynamic'
+
+const SEGMENTS = [
+  { key: 'open', label: 'פתוחות' },
+  { key: 'new', label: 'חדש' },
+  { key: 'critical', label: 'קריטי' },
+  { key: 'assigned', label: 'משויך' },
+  { key: 'in_progress', label: 'בטיפול' },
+  { key: 'waiting_parts', label: 'ממתין' },
+  { key: 'resolved', label: 'נפתר' },
+] as const
+
+function ageLabel(iso: string) {
+  try {
+    return formatDistanceToNow(new Date(iso), { addSuffix: true, locale: he })
+  } catch {
+    return '—'
+  }
+}
 
 export default async function TicketsPage({
   searchParams,
@@ -20,8 +41,7 @@ export default async function TicketsPage({
 }) {
   const sp = await searchParams
   const { tickets, backend } = await listTickets()
-
-  const statusFilter = (sp.status || '').trim()
+  const statusFilter = (sp.status || 'open').trim()
   const priorityFilter = (sp.priority || '').trim()
   const q = (sp.q || '').trim().toLowerCase()
 
@@ -33,138 +53,139 @@ export default async function TicketsPage({
         )
       )
         return false
+    } else if (statusFilter === 'critical') {
+      if (t.priority !== 'critical' && t.priority !== 'high') return false
     } else if (statusFilter && t.status !== statusFilter) return false
     if (priorityFilter && t.priority !== priorityFilter) return false
     if (q) {
-      const hay = `${t.display_number ?? ''} ${t.description} ${t.stores?.name ?? ''} ${t.stores?.code ?? ''}`.toLowerCase()
+      const hay =
+        `${t.display_number ?? ''} ${t.description} ${t.stores?.name ?? ''} ${t.stores?.code ?? ''}`.toLowerCase()
       if (!hay.includes(q)) return false
     }
     return true
   })
 
+  const qs = new URLSearchParams()
+  if (sp.q) qs.set('q', sp.q)
+  if (sp.priority) qs.set('priority', sp.priority)
+
   return (
     <OpsShell
+      pathname="/ops/tickets"
       title="תקלות"
-      subtitle={
-        backend === 'supabase'
-          ? 'מקור: Supabase'
-          : 'מצב דמו (זיכרון) — ללא מיגרציות'
-      }
+      subtitle={backend === 'supabase' ? 'תיבת תפעול' : 'תיבת תפעול · דמו'}
+      actions={<SeedDemoTicketButton />}
     >
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <form className="flex flex-wrap items-end gap-2 text-xs">
-          <label className="text-zinc-600">
-            סטטוס
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              className="mt-1 block rounded-md border border-zinc-200 bg-white px-2 py-1.5"
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {SEGMENTS.map((s) => {
+          const params = new URLSearchParams(qs)
+          params.set('status', s.key)
+          return (
+            <FilterChip
+              key={s.key}
+              href={`/ops/tickets?${params.toString()}`}
+              active={statusFilter === s.key}
             >
-              <option value="">הכל</option>
-              <option value="open">פתוחות</option>
-              {TICKET_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-zinc-600">
-            עדיפות
-            <select
-              name="priority"
-              defaultValue={priorityFilter}
-              className="mt-1 block rounded-md border border-zinc-200 bg-white px-2 py-1.5"
-            >
-              <option value="">הכל</option>
-              {TICKET_PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-zinc-600">
-            חיפוש
-            <input
-              name="q"
-              defaultValue={sp.q ?? ''}
-              placeholder="OC / חנות / טקסט"
-              className="mt-1 block w-40 rounded-md border border-zinc-200 px-2 py-1.5"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white"
-          >
-            סנן
-          </button>
-        </form>
-        <SeedDemoTicketButton />
+              {s.label}
+            </FilterChip>
+          )
+        })}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b border-zinc-100 bg-zinc-50 text-xs text-zinc-500">
-            <tr>
-              <th className="px-3 py-2 text-right font-medium">מס׳</th>
-              <th className="px-3 py-2 text-right font-medium">חנות</th>
-              <th className="px-3 py-2 text-right font-medium">תיאור</th>
-              <th className="px-3 py-2 text-right font-medium">עדיפות</th>
-              <th className="px-3 py-2 text-right font-medium">סטטוס</th>
+      <form className="mb-4 flex gap-2">
+        <input type="hidden" name="status" value={statusFilter} />
+        <Input
+          name="q"
+          defaultValue={sp.q ?? ''}
+          placeholder="חיפוש: OC / חנות / תיאור"
+          className="max-w-sm"
+        />
+        <button
+          type="submit"
+          className="h-9 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-[13px] hover:bg-canvas"
+        >
+          חפש
+        </button>
+      </form>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          title="אין תקלות לפי הסינון"
+          description="נסו לשנות סגמנט או ליצור תקלת הדגמה."
+          action={<SeedDemoTicketButton />}
+        />
+      ) : (
+        <SurfaceTable>
+          <thead>
+            <tr className="border-b border-border bg-canvas/70 text-start text-[11px] font-medium text-muted">
+              <th className="px-3 py-2">עדיפות</th>
+              <th className="px-3 py-2">מס׳</th>
+              <th className="px-3 py-2">חנות</th>
+              <th className="px-3 py-2">תקלה</th>
+              <th className="px-3 py-2">סטטוס</th>
+              <th className="px-3 py-2">גיל</th>
+              <th className="px-3 py-2">SLA</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-10 text-center text-zinc-500">
-                  אין תקלות להצגה לפי הסינון.
-                </td>
-              </tr>
-            ) : (
-              filtered.map((t) => (
+            {filtered.map((t) => {
+              const breached = isSlaBreached({
+                status: t.status,
+                sla_respond_by: (t as { sla_respond_by?: string }).sla_respond_by,
+                sla_resolve_by: (t as { sla_resolve_by?: string }).sla_resolve_by,
+              })
+              return (
                 <tr
                   key={t.id}
-                  className="border-b border-zinc-50 hover:bg-zinc-50/80"
+                  className="border-b border-border/80 transition-colors hover:bg-canvas/80"
+                  style={{ height: 'var(--row-h)' }}
                 >
-                  <td className="px-3 py-2 font-medium tabular-nums">
+                  <td className="px-3">
+                    <PriorityDot priority={t.priority as TicketPriority} />
+                  </td>
+                  <td className="px-3 font-medium tabular-nums">
                     <Link
                       href={`/ops/tickets/${t.id}`}
-                      className="text-zinc-900 underline-offset-2 hover:underline"
+                      className="hover:text-accent"
                     >
                       {t.display_number ??
                         (t.number != null ? `OC-${t.number}` : '—')}
                     </Link>
                   </td>
-                  <td className="px-3 py-2">
-                    <Link href={`/ops/tickets/${t.id}`} className="block">
-                      <div className="font-medium">{t.stores?.name ?? '—'}</div>
-                      <div className="text-xs text-zinc-500">
-                        {t.stores?.code ? `#${t.stores.code}` : ''}
-                        {t.stores?.city ? ` · ${t.stores.city}` : ''}
-                      </div>
-                    </Link>
+                  <td className="px-3">
+                    <div className="font-medium">{t.stores?.name ?? '—'}</div>
+                    <div className="text-[11px] text-faint">
+                      {t.stores?.code ? `#${t.stores.code}` : ''}
+                    </div>
                   </td>
-                  <td className="max-w-[280px] truncate px-3 py-2 text-zinc-700">
-                    <Link
-                      href={`/ops/tickets/${t.id}`}
-                      className="hover:text-zinc-900"
-                    >
-                      {t.description || t.category}
-                    </Link>
+                  <td className="max-w-[280px] truncate px-3 text-muted">
+                    <Link href={`/ops/tickets/${t.id}`}>{t.description}</Link>
                   </td>
-                  <td className="px-3 py-2">
-                    <PriorityDot priority={t.priority as TicketPriority} />
-                  </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3">
                     <StatusBadge status={t.status as TicketStatus} />
                   </td>
+                  <td className="px-3 text-[12px] text-muted">
+                    {ageLabel(t.created_at)}
+                  </td>
+                  <td className="px-3">
+                    <SlaChip
+                      breached={breached}
+                      label={formatSlaLabelHe({
+                        priority: t.priority,
+                        status: t.status,
+                        sla_respond_by: (t as { sla_respond_by?: string })
+                          .sla_respond_by,
+                        sla_resolve_by: (t as { sla_resolve_by?: string })
+                          .sla_resolve_by,
+                      })}
+                    />
+                  </td>
                 </tr>
-              ))
-            )}
+              )
+            })}
           </tbody>
-        </table>
-      </div>
+        </SurfaceTable>
+      )}
     </OpsShell>
   )
 }

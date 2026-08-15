@@ -3,43 +3,43 @@ import {
   TICKET_PRIORITY_LABELS_HE,
   TICKET_STATUS_LABELS_HE,
 } from '@/modules/tickets/constants'
-import { cn } from '@/lib/utils'
+import { StatusDot } from '@/components/ui/primitives'
+
+/** Quiet status: color only when attention is needed. */
+function statusTone(
+  status: string,
+): 'neutral' | 'warning' | 'success' | 'info' | 'accent' {
+  if (status === 'waiting_parts') return 'warning'
+  if (status === 'resolved') return 'success'
+  if (status === 'in_progress') return 'info'
+  if (status === 'new' || status === 'triaged') return 'accent'
+  return 'neutral'
+}
 
 export function StatusBadge({ status }: { status: TicketStatus | string }) {
   const label = TICKET_STATUS_LABELS_HE[status as TicketStatus] ?? status
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        status === 'new' && 'bg-sky-50 text-sky-700',
-        status === 'assigned' && 'bg-violet-50 text-violet-700',
-        status === 'in_progress' && 'bg-amber-50 text-amber-800',
-        status === 'waiting_parts' && 'bg-orange-50 text-orange-800',
-        status === 'resolved' && 'bg-emerald-50 text-emerald-700',
-        status === 'closed' && 'bg-zinc-100 text-zinc-600',
-        status === 'cancelled' && 'bg-zinc-100 text-zinc-500',
-        status === 'triaged' && 'bg-indigo-50 text-indigo-700',
-      )}
-    >
-      {label}
-    </span>
-  )
+  return <StatusDot tone={statusTone(status)} label={label} />
 }
 
 export function PriorityDot({ priority }: { priority: TicketPriority | string }) {
   const label = TICKET_PRIORITY_LABELS_HE[priority as TicketPriority] ?? priority
+  const tone =
+    priority === 'critical' || priority === 'high'
+      ? 'danger'
+      : priority === 'medium'
+        ? 'warning'
+        : 'neutral'
+  return <StatusDot tone={tone} label={label} />
+}
+
+export function SlaChip({
+  breached,
+  label,
+}: {
+  breached?: boolean
+  label: string
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600">
-      <span
-        className={cn(
-          'h-2 w-2 rounded-full',
-          priority === 'critical' && 'bg-red-700',
-          priority === 'high' && 'bg-red-500',
-          priority === 'medium' && 'bg-amber-400',
-          priority === 'low' && 'bg-emerald-500',
-        )}
-      />
-      {label}
-    </span>
+    <StatusDot tone={breached ? 'danger' : 'neutral'} label={label} />
   )
 }

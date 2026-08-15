@@ -1,9 +1,12 @@
 import Link from 'next/link'
 import { OpsShell } from '@/components/layout/ops-shell'
+import { Card } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
+import { StatusBadge, PriorityDot } from '@/components/ui/badges'
+
 
 export const dynamic = 'force-dynamic'
 
@@ -22,106 +25,110 @@ export default async function OpsDashboardPage() {
 
   return (
     <OpsShell
-      title="לוח בקרה"
+      pathname="/ops"
+      title="סקירה"
       subtitle={
         backend === 'supabase' && storesFromDb
-          ? 'נתונים חיים מ־Supabase'
-          : 'מצב דמו (זיכרון) — ללא מיגרציות Supabase'
+          ? 'נתונים חיים · Optical Center ישראל'
+          : 'מצב דמו'
       }
+      actions={<SeedDemoTicketButton />}
     >
-      <div className="mb-4 flex justify-end">
-        <SeedDemoTicketButton />
-      </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { label: 'תקלות פתוחות', value: open.length },
-          { label: 'גבוה / קריטי', value: critical.length },
-          { label: 'חנויות', value: stores.length },
+          { label: 'פתוחות', value: open.length },
+          {
+            label: 'גבוה / קריטי',
+            value: critical.length,
+            attention: critical.length > 0,
+          },
           { label: 'סה״כ תקלות', value: tickets.length },
+          { label: 'חנויות', value: stores.length },
         ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-3"
-          >
-            <div className="text-xs text-zinc-500">{kpi.label}</div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
+          <Card key={kpi.label} className="px-3 py-3">
+            <div className="text-[11px] text-muted">{kpi.label}</div>
+            <div
+              className={`mt-1 text-[24px] font-semibold tabular-nums tracking-tight ${
+                kpi.attention ? 'text-danger' : 'text-foreground'
+              }`}
+            >
               {kpi.value}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-lg border border-zinc-200 bg-white">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-            <h2 className="text-sm font-medium">תקלות אחרונות</h2>
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-[14px] font-medium">דורש תשומת לב</h2>
             <Link
-              href="/ops/tickets"
-              className="text-xs text-zinc-500 hover:text-zinc-800"
+              href="/ops/tickets?status=open"
+              className="text-[12px] text-muted hover:text-foreground"
             >
-              הכל
+              כל התקלות
             </Link>
           </div>
-          {tickets.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-zinc-500">
-              עדיין אין תקלות.{' '}
-              <Link href="/ops/simulator" className="underline underline-offset-2">
-                סימולטור WhatsApp
-              </Link>{' '}
-              או{' '}
-              <Link
-                href="/api/demo/seed-ticket"
-                className="underline underline-offset-2"
-              >
-                תקלת הדגמה
-              </Link>
-              .
-            </div>
-          ) : (
-            <ul className="divide-y divide-zinc-50">
-              {tickets.slice(0, 6).map((t) => (
-                <li key={t.id}>
-                  <Link
-                    href={`/ops/tickets/${t.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-zinc-50"
-                  >
-                    <span className="truncate">
+          <ul className="divide-y divide-border">
+            {tickets.slice(0, 6).map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/ops/tickets/${t.id}`}
+                  className="flex items-center gap-3 px-4 py-[11px] transition-colors hover:bg-canvas"
+                >
+                  <PriorityDot priority={t.priority} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
                       <span className="font-medium tabular-nums">
-                        {t.display_number ??
-                          (t.number != null ? `OC-${t.number}` : '—')}
+                        {t.display_number ?? `OC-${t.number}`}
                       </span>
-                      <span className="text-zinc-500">
-                        {' '}
-                        · {t.stores?.name ?? 'חנות'}
+                      <span className="truncate text-muted">
+                        {t.stores?.name ?? '—'}
                       </span>
-                    </span>
-                    <span className="shrink-0 text-xs text-zinc-500">
-                      {t.status}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                    </div>
+                    <p className="truncate text-[12px] text-muted">
+                      {t.description}
+                    </p>
+                  </div>
+                  <StatusBadge status={t.status} />
+                </Link>
+              </li>
+            ))}
+            {tickets.length === 0 ? (
+              <li className="px-4 py-10 text-center text-[13px] text-muted">
+                אין תקלות עדיין
+              </li>
+            ) : null}
+          </ul>
+        </Card>
 
-        <section className="rounded-lg border border-zinc-200 bg-white">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-            <h2 className="text-sm font-medium">זיהוי חנות</h2>
+        <Card className="p-4">
+          <h2 className="text-[14px] font-medium">זיהוי חנות</h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            QR / NFC / קוד מספרי (`172`) → WhatsApp → קריאה. עדכוני סטטוס נשארים
+            ב־HQ ובפורטל הטכנאי — לא ב־WhatsApp.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/ops/stores"
-              className="text-xs text-zinc-500 hover:text-zinc-800"
+              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
             >
-              חנויות ו־QR/NFC
+              חנויות וקישורים
+            </Link>
+            <Link
+              href="/ops/settings"
+              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
+            >
+              הגדרות / סימולטור
+            </Link>
+            <Link
+              href="/tech"
+              className="rounded-[var(--radius-md)] border border-border px-3 py-1.5 text-[12px] hover:bg-canvas"
+            >
+              פורטל טכנאי
             </Link>
           </div>
-          <ul className="space-y-2 px-4 py-4 text-sm text-zinc-600">
-            <li>QR לכל חנות → WhatsApp עם קוד החנות</li>
-            <li>NFC → אותו לינק כמו ה־QR</li>
-            <li>שיחה ידנית עם קוד מספרי (למשל 172)</li>
-            <li>מספר WhatsApp נפרד לכל מדינה (פיילוט: ישראל)</li>
-          </ul>
-        </section>
+        </Card>
       </div>
     </OpsShell>
   )

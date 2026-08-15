@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next'
 export const metadata: Metadata = {
   title: 'MaintainOS · טכנאי',
   description: 'פורטל טכנאי — Optical Center ישראל',
-  manifest: '/manifest.webmanifest',
+  manifest: '/manifest-tech.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'MaintainOS טכנאי',
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#18181b',
+  themeColor: '#8b1e2d',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
