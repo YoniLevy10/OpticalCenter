@@ -61,7 +61,7 @@ export default async function TicketDetailPage({
       <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         <Link
           href="/ops/tickets"
-          className="mb-4 inline-block text-[12px] text-muted hover:text-foreground"
+          className="mb-4 inline-flex min-h-[var(--touch-min)] items-center text-[13px] text-muted hover:text-foreground md:min-h-0 md:text-[12px]"
         >
           → חזרה לתקלות
         </Link>

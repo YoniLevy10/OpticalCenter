@@ -17,7 +17,7 @@ export function TechRealtimeHint() {
   }, [router])
 
   return (
-    <p className="mb-3 text-[11px] text-zinc-400">
+    <p className="mb-3 text-[11px] text-faint">
       {ready
         ? 'מעודכן בזמן אמת (Supabase Realtime)'
         : 'רענון אוטומטי כל 30 שניות'}

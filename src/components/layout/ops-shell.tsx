@@ -14,10 +14,12 @@ import {
   FlaskConical,
   LogIn,
   Search,
+  UserRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Drawer } from '@/components/ui/overlay'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/primitives'
 
 const SIDEBAR = [
   { href: '/ops', label: 'סקירה', match: (p: string) => p === '/ops', icon: LayoutDashboard },
@@ -152,22 +154,22 @@ export function OpsShell({
                 />
               </div>
             </div>
-            <div className="text-[11px] text-faint">ישראל</div>
+            <div className="flex items-center gap-3">
+              <span className="hidden text-[11px] text-faint sm:inline">ישראל</span>
+              <Link
+                href="/login"
+                className="inline-flex min-h-[var(--touch-min)] items-center gap-1.5 rounded-[var(--radius-md)] px-2 text-[12px] text-muted hover:bg-canvas hover:text-foreground md:min-h-0 md:h-8"
+                title="פרופיל / התחברות"
+              >
+                <UserRound className="h-4 w-4" />
+                <span className="hidden md:inline">פרופיל</span>
+              </Link>
+            </div>
           </div>
         </header>
 
         <main className="px-4 py-5 pb-[calc(var(--mobile-bottom-nav-height)+env(safe-area-inset-bottom)+16px)] md:pb-5">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h1 className="text-[21px] font-semibold tracking-tight">{title}</h1>
-              {subtitle ? (
-                <p className="mt-1 text-[13px] text-muted">{subtitle}</p>
-              ) : null}
-            </div>
-            {actions ? (
-              <div className="flex items-center gap-2">{actions}</div>
-            ) : null}
-          </div>
+          <PageHeader title={title} subtitle={subtitle} actions={actions} />
           {/* Desktop search form target for tickets via GET redirect helper */}
           <form id="ops-global-search" action="/ops/tickets" method="get" className="hidden" />
           {children}

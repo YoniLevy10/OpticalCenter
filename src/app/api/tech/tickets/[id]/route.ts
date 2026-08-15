@@ -15,10 +15,18 @@ const BodySchema = z.object({
   resolution_note: z.string().max(4000).optional(),
   photoUrl: z
     .string()
+    .max(320_000)
     .optional()
-    .refine((v) => !v || v === '' || /^https?:\/\//i.test(v), {
-      message: 'photoUrl must be http(s) URL',
-    }),
+    .refine(
+      (v) =>
+        !v ||
+        v === '' ||
+        /^https?:\/\//i.test(v) ||
+        /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(v),
+      {
+        message: 'photoUrl must be http(s) or compressed data:image URL',
+      },
+    ),
   claim: z.boolean().optional(),
 })
 

@@ -7,7 +7,6 @@ import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { StatusBadge, PriorityDot } from '@/components/ui/badges'
 
-
 export const dynamic = 'force-dynamic'
 
 export default async function OpsDashboardPage() {
@@ -23,6 +22,23 @@ export default async function OpsDashboardPage() {
     (t) => t.priority === 'critical' || t.priority === 'high',
   )
 
+  const kpis: {
+    label: string
+    value: number
+    href: string
+    attention?: boolean
+  }[] = [
+    { label: 'פתוחות', value: open.length, href: '/ops/tickets?status=open' },
+    {
+      label: 'גבוה / קריטי',
+      value: critical.length,
+      href: '/ops/tickets?status=critical',
+      attention: critical.length > 0,
+    },
+    { label: 'סה״כ תקלות', value: tickets.length, href: '/ops/tickets?status=open' },
+    { label: 'חנויות', value: stores.length, href: '/ops/stores' },
+  ]
+
   return (
     <OpsShell
       pathname="/ops"
@@ -35,26 +51,19 @@ export default async function OpsDashboardPage() {
       actions={<SeedDemoTicketButton />}
     >
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          { label: 'פתוחות', value: open.length },
-          {
-            label: 'גבוה / קריטי',
-            value: critical.length,
-            attention: critical.length > 0,
-          },
-          { label: 'סה״כ תקלות', value: tickets.length },
-          { label: 'חנויות', value: stores.length },
-        ].map((kpi) => (
-          <Card key={kpi.label} className="px-3 py-3">
-            <div className="text-[11px] text-muted">{kpi.label}</div>
-            <div
-              className={`mt-1 text-[24px] font-semibold tabular-nums tracking-tight ${
-                kpi.attention ? 'text-danger' : 'text-foreground'
-              }`}
-            >
-              {kpi.value}
-            </div>
-          </Card>
+        {kpis.map((kpi) => (
+          <Link key={kpi.label} href={kpi.href} className="block">
+            <Card className="min-h-[var(--touch-min)] px-3 py-3 transition-colors active:bg-canvas md:min-h-0">
+              <div className="text-[11px] text-muted">{kpi.label}</div>
+              <div
+                className={`mt-1 text-[24px] font-semibold tabular-nums tracking-tight ${
+                  kpi.attention ? 'text-danger' : 'text-foreground'
+                }`}
+              >
+                {kpi.value}
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -64,7 +73,7 @@ export default async function OpsDashboardPage() {
             <h2 className="text-[14px] font-medium">דורש תשומת לב</h2>
             <Link
               href="/ops/tickets?status=open"
-              className="text-[12px] text-muted hover:text-foreground"
+              className="inline-flex min-h-[var(--touch-min)] items-center text-[12px] text-muted hover:text-foreground md:min-h-0"
             >
               כל התקלות
             </Link>
@@ -74,7 +83,7 @@ export default async function OpsDashboardPage() {
               <li key={t.id}>
                 <Link
                   href={`/ops/tickets/${t.id}`}
-                  className="flex items-center gap-3 px-4 py-[11px] transition-colors hover:bg-canvas"
+                  className="flex min-h-[var(--touch-min)] items-center gap-3 px-4 py-[11px] transition-colors hover:bg-canvas md:min-h-0"
                 >
                   <PriorityDot priority={t.priority} />
                   <div className="min-w-0 flex-1">

@@ -1,7 +1,11 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/primitives'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -35,37 +39,47 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
-      <h1 className="text-xl font-semibold tracking-tight">התחברות MaintainOS</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+    <div
+      className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center bg-canvas px-4 text-foreground"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] bg-accent text-[10px] font-semibold text-white">
+          OC
+        </span>
+        <span className="text-[13px] font-semibold">MaintainOS</span>
+      </div>
+      <h1 className="text-[21px] font-semibold tracking-tight">התחברות</h1>
+      <p className="mt-1 text-[13px] text-muted">
         פיילוט ישראל · קישור קסם למייל (Supabase Auth)
       </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-3">
-        <label className="block text-sm">
-          אימייל
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm"
-            placeholder="you@optical-center.demo"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {busy ? 'שולח…' : 'שלח קישור'}
-        </button>
-      </form>
-      {status ? <p className="mt-4 text-sm text-zinc-600">{status}</p> : null}
-      <p className="mt-8 text-xs text-zinc-400">
+      <Card className="mt-6 p-4">
+        <form onSubmit={onSubmit} className="space-y-3">
+          <label className="block text-[13px]">
+            אימייל
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1"
+              placeholder="you@optical-center.demo"
+            />
+          </label>
+          <Button type="submit" variant="primary" size="lg" disabled={busy}>
+            {busy ? 'שולח…' : 'שלח קישור'}
+          </Button>
+        </form>
+        {status ? <p className="mt-4 text-[13px] text-muted">{status}</p> : null}
+      </Card>
+      <p className="mt-6 text-[12px] text-faint">
         בפיילוט אפשר גם להיכנס ישירות ל־
-        <a href="/ops" className="underline">
+        <Link href="/ops" className="text-accent underline">
           /ops
-        </a>{' '}
+        </Link>{' '}
         בלי Auth.
       </p>
     </div>

@@ -1,11 +1,28 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import { Camera, ImagePlus, Link2, X } from 'lucide-react'
 import { TICKET_STATUS_LABELS_HE, type TicketStatus } from '@/modules/tickets/constants'
 import { nextStatusActions } from '@/modules/tickets/tech'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/input'
+
+async function fileToCompressedDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const maxEdge = 960
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
+  const w = Math.max(1, Math.round(bitmap.width * scale))
+  const h = Math.max(1, Math.round(bitmap.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas')
+  ctx.drawImage(bitmap, 0, 0, w, h)
+  bitmap.close()
+  return canvas.toDataURL('image/jpeg', 0.72)
+}
 
 export function TechTicketActions({
   ticketId,
@@ -19,8 +36,12 @@ export function TechTicketActions({
   assignedTo: string | null
 }) {
   const router = useRouter()
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
   const [note, setNote] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
+  const [preview, setPreview] = useState<string | null>(null)
+  const [showUrl, setShowUrl] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -29,6 +50,30 @@ export function TechTicketActions({
   const isMine = Boolean(techId && assignedTo === techId)
   const isUnassigned = !assignedTo
   const actions = nextStatusActions(status)
+
+  async function onPick(file: File | null) {
+    if (!file) return
+    setError(null)
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file)
+      if (dataUrl.length > 280_000) {
+        setError('התמונה גדולה מדי — נסו לצלם מחדש או לשלוח קישור')
+        return
+      }
+      setPhotoUrl(dataUrl)
+      setPreview(dataUrl)
+      setShowUrl(false)
+    } catch {
+      setError('לא ניתן לקרוא את התמונה')
+    }
+  }
+
+  function clearPhoto() {
+    setPhotoUrl('')
+    setPreview(null)
+    if (cameraRef.current) cameraRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
+  }
 
   async function submit(body: Record<string, unknown>) {
     if (!techId) {
@@ -56,7 +101,7 @@ export function TechTicketActions({
       }
       setMessage('נשמר בהצלחה')
       setNote('')
-      setPhotoUrl('')
+      clearPhoto()
       startTransition(() => router.refresh())
     } catch {
       setError('שגיאת רשת')
@@ -124,18 +169,79 @@ export function TechTicketActions({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="tech-photo" className="block text-[12px] font-medium text-muted">
-          קישור לתמונה (אופציונלי)
-        </label>
-        <Input
-          id="tech-photo"
-          type="url"
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
-          placeholder="https://…"
-          dir="ltr"
+        <p className="text-[12px] font-medium text-muted">תמונה מהשטח</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="lg"
+            disabled={pending || !canAct}
+            onClick={() => cameraRef.current?.click()}
+          >
+            <Camera className="h-4 w-4" />
+            מצלמה
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            disabled={pending || !canAct}
+            onClick={() => galleryRef.current?.click()}
+          >
+            <ImagePlus className="h-4 w-4" />
+            גלריה
+          </Button>
+        </div>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => void onPick(e.target.files?.[0] ?? null)}
         />
-        <p className="text-[11px] text-faint">MVP: ללא העלאה — הדביקו URL או דלגו.</p>
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void onPick(e.target.files?.[0] ?? null)}
+        />
+
+        {preview ? (
+          <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={preview} alt="תצוגה מקדימה" className="max-h-48 w-full object-cover" />
+            <button
+              type="button"
+              onClick={clearPhoto}
+              className="absolute end-2 top-2 inline-flex size-9 items-center justify-center rounded-full bg-surface/95 text-foreground shadow-sm"
+              aria-label="הסר תמונה"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className="inline-flex min-h-[var(--touch-min)] items-center gap-1.5 text-[12px] text-muted"
+          onClick={() => setShowUrl((v) => !v)}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          {showUrl ? 'הסתר קישור' : 'או הדביקו קישור לתמונה'}
+        </button>
+        {showUrl ? (
+          <Input
+            id="tech-photo"
+            type="url"
+            value={photoUrl.startsWith('data:') ? '' : photoUrl}
+            onChange={(e) => {
+              setPhotoUrl(e.target.value)
+              setPreview(e.target.value || null)
+            }}
+            placeholder="https://…"
+            dir="ltr"
+          />
+        ) : null}
       </div>
 
       <Button

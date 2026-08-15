@@ -2,7 +2,8 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f7f5" />
     <title>MaintainOS · אופליין</title>
     <style>
       body {
@@ -11,9 +12,10 @@
         background: #f7f7f5;
         color: #1a1a1a;
         display: grid;
-        min-height: 100vh;
+        min-height: 100dvh;
         place-items: center;
-        padding: 24px;
+        padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
       }
       .card {
         max-width: 360px;
@@ -23,7 +25,13 @@
         padding: 24px;
         text-align: center;
       }
-      a { color: #8b1e2d; }
+      a {
+        color: #8b1e2d;
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        padding: 0 8px;
+      }
     </style>
   </head>
   <body>
