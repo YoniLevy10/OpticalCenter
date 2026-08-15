@@ -1,0 +1,8 @@
+# Local research clones / scratch (not part of OpticalCenter product)
+research/
+.tmp/
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
