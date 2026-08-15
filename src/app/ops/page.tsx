@@ -51,11 +51,36 @@ export default async function OpsDashboardPage() {
               הכל
             </Link>
           </div>
-          <div className="px-4 py-6 text-sm text-zinc-500">
-            {tickets.length === 0
-              ? 'עדיין אין תקלות. בשלב הבא נחבר WhatsApp / סימולטור דיווח.'
-              : null}
-          </div>
+          {tickets.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-zinc-500">
+              עדיין אין תקלות. בשלב הבא נחבר WhatsApp / סימולטור דיווח.
+            </div>
+          ) : (
+            <ul className="divide-y divide-zinc-50">
+              {tickets.slice(0, 6).map((t) => (
+                <li key={t.id}>
+                  <Link
+                    href={`/ops/tickets/${t.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-zinc-50"
+                  >
+                    <span className="truncate">
+                      <span className="font-medium tabular-nums">
+                        {t.display_number ??
+                          (t.number != null ? `OC-${t.number}` : '—')}
+                      </span>
+                      <span className="text-zinc-500">
+                        {' '}
+                        · {t.stores?.name ?? 'חנות'}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-zinc-500">
+                      {t.status}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="rounded-lg border border-zinc-200 bg-white">

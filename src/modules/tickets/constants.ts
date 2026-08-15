@@ -40,6 +40,30 @@ export const OPEN_TICKET_STATUSES: TicketStatus[] = [
   'waiting_parts',
 ]
 
+export const TICKET_SOURCES = [
+  'whatsapp',
+  'qr_whatsapp',
+  'nfc_whatsapp',
+  'web_fallback',
+  'demo',
+] as const
+
+export type TicketSourceLabel = (typeof TICKET_SOURCES)[number]
+
+export const TICKET_SOURCE_LABELS_HE: Record<TicketSourceLabel, string> = {
+  whatsapp: 'WhatsApp',
+  qr_whatsapp: 'QR → WhatsApp',
+  nfc_whatsapp: 'NFC → WhatsApp',
+  web_fallback: 'טופס ווב',
+  demo: 'הדגמה',
+}
+
+export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
+  created: 'נוצרה',
+  status_changed: 'שינוי סטטוס',
+  assigned: 'שיוך טכנאי',
+}
+
 /** WhatsApp deep-link text that identifies a store (numeric code per country). */
 export function storeWhatsAppPrefill(storeCode: string): string {
   return `STORE_${storeCode}`
