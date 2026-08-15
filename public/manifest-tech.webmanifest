@@ -1,15 +1,15 @@
 {
-  "name": "MaintainOS",
-  "short_name": "MaintainOS",
-  "description": "תחזוקה תפעולית — Optical Center",
+  "name": "MaintainOS טכנאי",
+  "short_name": "טכנאי",
+  "description": "פורטל טכנאי — Optical Center ישראל",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/ops",
-  "scope": "/",
+  "start_url": "/tech",
+  "scope": "/tech",
   "display": "standalone",
   "display_override": ["standalone", "browser"],
   "background_color": "#f7f7f5",
-  "theme_color": "#f7f7f5",
+  "theme_color": "#8b1e2d",
   "icons": [
     {
       "src": "/icons/icon-192.svg",

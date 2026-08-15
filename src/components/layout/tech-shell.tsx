@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 export function TechShell({
   children,
@@ -13,27 +14,33 @@ export function TechShell({
   techId?: string | null
   backHref?: string
 }) {
-  const listHref = techId ? `/tech?techId=${encodeURIComponent(techId)}` : '/tech'
+  const listHref = techId
+    ? `/tech?techId=${encodeURIComponent(techId)}`
+    : '/tech'
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="min-h-screen bg-canvas text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
           {backHref ? (
             <Link
               href={backHref}
-              className="rounded-md px-2 py-1 text-sm text-sky-700 hover:bg-sky-50"
+              className="rounded-[var(--radius-md)] px-2 py-1 text-[13px] text-accent hover:bg-accent-soft"
             >
               חזרה
             </Link>
-          ) : null}
+          ) : (
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] bg-accent text-[10px] font-semibold text-white">
+              OC
+            </span>
+          )}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
-              MaintainOS · טכנאי
-            </p>
-            <h1 className="truncate text-lg font-semibold tracking-tight">{title}</h1>
+            <p className="text-[11px] text-faint">MaintainOS · טכנאי</p>
+            <h1 className="truncate text-[18px] font-semibold tracking-tight">
+              {title}
+            </h1>
             {subtitle ? (
-              <p className="mt-0.5 truncate text-xs text-zinc-500">{subtitle}</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted">{subtitle}</p>
             ) : null}
           </div>
         </div>
@@ -41,15 +48,20 @@ export function TechShell({
 
       <main className="mx-auto max-w-lg px-4 pb-24 pt-4">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-200 bg-white">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface">
         <div className="mx-auto flex max-w-lg">
           <Link
             href={listHref}
-            className="flex-1 py-3.5 text-center text-sm font-medium text-sky-800"
+            className={cn(
+              'flex-1 py-3.5 text-center text-[13px] font-medium text-accent',
+            )}
           >
-            עבודות
+            העבודות
           </Link>
-          <Link href="/ops/tickets" className="flex-1 py-3.5 text-center text-sm text-zinc-500">
+          <Link
+            href="/ops/tickets"
+            className="flex-1 py-3.5 text-center text-[13px] text-muted"
+          >
             HQ
           </Link>
         </div>
