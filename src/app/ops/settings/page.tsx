@@ -8,6 +8,11 @@ export const dynamic = 'force-dynamic'
 
 const LINKS = [
   {
+    href: '/ops/users',
+    title: 'משתמשים',
+    desc: 'הוספת טכנאים והרשאות',
+  },
+  {
     href: '/ops/simulator',
     title: 'סימולטור WhatsApp',
     desc: 'הרצת intake בלי Meta',

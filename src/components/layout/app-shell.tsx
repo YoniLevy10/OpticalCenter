@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Ellipsis, Inbox, Store, Wrench } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/overlay'
+import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
 /**
@@ -26,6 +27,7 @@ const PRIMARY = [
 
 const TOOLS = [
   { href: '/ops/settings', label: 'הגדרות' },
+  { href: '/ops/users', label: 'משתמשים' },
   { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
   { href: '/tech', label: 'פורטל טכנאי' },
 ]
@@ -119,7 +121,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </li>
             ))}
           </ul>
-          <div className="mt-2 flex items-center gap-2 px-2.5 py-2">
+          <div className="mt-2 px-2.5">
+            <LogoutButton className="w-full justify-start px-0" />
+          </div>
+          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
             <span
               aria-hidden
               className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
@@ -207,6 +212,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </li>
           ))}
         </ul>
+        <div className="mt-4">
+          <LogoutButton size="touch" variant="secondary" className="w-full" />
+        </div>
         <p className="t-caption mt-4 text-ink-3">
           Optical Center · פיילוט ישראל
         </p>

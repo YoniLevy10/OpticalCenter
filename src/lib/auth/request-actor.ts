@@ -7,7 +7,7 @@ import {
   parseTestBearer,
   testAuthAllowed,
 } from '@/lib/auth/types'
-import { memListMemberships } from '@/lib/auth/memory-memberships'
+import { memListMemberships, memGetProfile } from '@/lib/auth/memory-memberships'
 import { supabaseReady } from '@/lib/data/memory-store'
 
 async function loadMemberships(profileId: string) {
@@ -27,7 +27,12 @@ async function loadMemberships(profileId: string) {
 
 async function loadProfile(profileId: string) {
   if (!(await supabaseReady())) {
-    return { id: profileId, email: null, full_name: null }
+    const mem = memGetProfile(profileId)
+    return {
+      id: profileId,
+      email: mem?.email ?? null,
+      full_name: mem?.full_name ?? null,
+    }
   }
   const supabase = createSystemClient('auth_memberships')
   const { data } = await supabase

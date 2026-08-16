@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { techHref } from '@/lib/tech-href'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LogoutButton } from '@/components/auth/logout-button'
 
 /**
  * The technician is a field worker on a phone, often one-handed, often with bad
@@ -49,6 +50,7 @@ export function TechShell({
               <div className="t-meta mt-0.5 truncate text-ink-2">{subtitle}</div>
             ) : null}
           </div>
+          <LogoutButton className="shrink-0" />
         </div>
       </header>
 
