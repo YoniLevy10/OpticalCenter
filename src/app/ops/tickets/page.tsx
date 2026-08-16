@@ -30,6 +30,7 @@ import { QUEUE_SORTS } from '@/modules/tickets/queue'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
+import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,24 +62,58 @@ export default async function TicketsPage({
     redirect('/login')
   }
 
-  // Data still via listTickets (memory/system). When authVia === supabase_session,
-  // prefer createUserClient() reads later; filter below enforces scope either way.
+  // Prefer user-scoped Supabase (RLS) when session auth; else system/memory.
+  const resolved = await resolveTicketsSupabase(actor)
+  const hasFieldFilters = Boolean(
+    filters.status || filters.priority || filters.store || filters.tech || filters.q,
+  )
+
   const [ticketResult, storeResult, techRows] = await Promise.all([
-    listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
+    listTickets({
+      limit: 1000,
+      status: filters.status,
+      priority: filters.priority,
+      storeCode: filters.store,
+      assignedTo: filters.tech,
+      q: filters.q,
+      client: resolved?.client,
+    }).catch(() => ({ tickets: [], backend: 'memory' as const })),
     fetchStores().catch(() => ({ stores: [], fromDb: false })),
     listInternalTechnicians().catch(() => []),
   ])
 
+  const countResult = hasFieldFilters
+    ? await listTickets({
+        limit: 1000,
+        client: resolved?.client,
+      }).catch(() => ({ tickets: [] as typeof ticketResult.tickets }))
+    : ticketResult
+
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
+  const countBase = (countResult.tickets ?? fetched) as unknown as QueueTicket[]
+  const allScoped = actor ? scopeTicketsForActor(actor, countBase) : countBase
   const all = actor ? scopeTicketsForActor(actor, fetched) : fetched
   const technicians = techRows.map((t) => ({
     id: t.id,
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
 
-  const filtered = applyQueue(all, filters)
-  const counts = queueCounts(all)
-  const views = viewCounts(all)
+  // View + sort here; status/priority/store/tech/q already applied server-side when set.
+  const filtered = applyQueue(
+    all,
+    hasFieldFilters
+      ? {
+          ...filters,
+          status: undefined,
+          priority: undefined,
+          store: undefined,
+          tech: undefined,
+          q: undefined,
+        }
+      : filters,
+  )
+  const counts = queueCounts(allScoped)
+  const views = viewCounts(allScoped)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)

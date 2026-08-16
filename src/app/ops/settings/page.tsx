@@ -11,6 +11,9 @@ export const dynamic = 'force-dynamic'
 const LINKS = [
   { href: '/ops/users', title: 'משתמשים', desc: 'תפקידים והיקף גאוגרפי' },
   { href: '/ops/assets', title: 'נכסים', desc: 'ציוד לפי חנות + QR' },
+  { href: '/ops/vendors', title: 'ספקים', desc: 'שיגור Partner עם HMAC' },
+  { href: '/ops/activity', title: 'יומן פעילות', desc: 'אירועי תקלות גלובלי' },
+  { href: '/ops/status', title: 'סטטוס מערכת', desc: 'בריאות + מדיניות SLA' },
   { href: '/ops/inbox', title: 'תיבת WhatsApp', desc: 'השתלטות אנושית על שיחות' },
   { href: '/ops/reports', title: 'דוחות', desc: 'מגמות וייצוא' },
   { href: '/ops/stores/print-qr', title: 'הדפסת QR אצווה', desc: 'מדבקות לכל החנויות' },

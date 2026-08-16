@@ -215,11 +215,58 @@ export type MemAsset = {
   created_at: string
 }
 
+export type MemVendor = {
+  id: string
+  name: string
+  contact_phone: string | null
+  contact_email: string | null
+  specialties: string
+  active: boolean
+  webhook_url: string | null
+  /** Demo/partner HMAC secret — never expose to client UI. */
+  hmac_secret: string | null
+  created_at: string
+}
+
+export type MemPartnerDispatch = {
+  id: string
+  ticket_id: string
+  vendor_id: string
+  idempotency_key: string
+  status: 'queued' | 'sent' | 'failed' | 'ack'
+  request_hmac: string
+  payload: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export type MemPushSubscription = {
+  id: string
+  profile_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
+export type MemAuditEvent = {
+  id: string
+  ticket_id: string
+  ticket_display: string | null
+  event_type: string
+  actor_id: string | null
+  payload: Record<string, unknown>
+  created_at: string
+}
+
 type GlobalMem = {
   tickets: Map<string, MemTicket>
   sessions: Map<string, MemSession>
   processed: Set<string>
   assets: Map<string, MemAsset>
+  vendors: Map<string, MemVendor>
+  dispatches: Map<string, MemPartnerDispatch>
+  pushSubs: Map<string, MemPushSubscription>
   settings: MemSettings
   seq: number
 }
@@ -254,10 +301,14 @@ function store(): GlobalMem {
       sessions: new Map(),
       processed: new Set(),
       assets: new Map(),
+      vendors: new Map(),
+      dispatches: new Map(),
+      pushSubs: new Map(),
       settings: { ...DEFAULT_SETTINGS },
       seq: 18000,
     }
     seedDemoAssets(g.__maintainosMem)
+    seedDemoVendors(g.__maintainosMem)
   }
   // Backfill fields if an older in-process shape exists
   const mem = g.__maintainosMem
@@ -267,6 +318,12 @@ function store(): GlobalMem {
     mem.assets = new Map()
     seedDemoAssets(mem)
   }
+  if (!mem.vendors) {
+    mem.vendors = new Map()
+    seedDemoVendors(mem)
+  }
+  if (!mem.dispatches) mem.dispatches = new Map()
+  if (!mem.pushSubs) mem.pushSubs = new Map()
   if (!mem.settings) mem.settings = { ...DEFAULT_SETTINGS }
   return mem
 }
@@ -284,6 +341,33 @@ function seedDemoAssets(mem: GlobalMem) {
   mem.assets.set(row.id, row)
 }
 
+function seedDemoVendors(mem: GlobalMem) {
+  if (mem.vendors.size > 0) return
+  const now = new Date().toISOString()
+  mem.vendors.set('vendor-demo-coolair', {
+    id: 'vendor-demo-coolair',
+    name: 'CoolAir שירות מיזוג',
+    contact_phone: '972501234567',
+    contact_email: 'dispatch@coolair.example',
+    specialties: 'hvac',
+    active: true,
+    webhook_url: null,
+    hmac_secret: 'demo-partner-hmac-secret',
+    created_at: now,
+  })
+  mem.vendors.set('vendor-demo-electro', {
+    id: 'vendor-demo-electro',
+    name: 'אלקטרו-פלוס',
+    contact_phone: '972509876543',
+    contact_email: null,
+    specialties: 'electrical',
+    active: true,
+    webhook_url: null,
+    hmac_secret: 'demo-partner-hmac-secret-2',
+    created_at: now,
+  })
+}
+
 /** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
 export function memReset() {
   const g = globalThis as typeof globalThis & { __maintainosMem?: GlobalMem }
@@ -292,10 +376,14 @@ export function memReset() {
     sessions: new Map(),
     processed: new Set(),
     assets: new Map(),
+    vendors: new Map(),
+    dispatches: new Map(),
+    pushSubs: new Map(),
     settings: { ...DEFAULT_SETTINGS },
     seq: 18000,
   }
   seedDemoAssets(g.__maintainosMem)
+  seedDemoVendors(g.__maintainosMem)
   return g.__maintainosMem
 }
 
@@ -758,4 +846,196 @@ export function memUpdateSettings(patch: Partial<MemSettings>): MemSettings {
   const s = store().settings
   Object.assign(s, patch)
   return { ...s }
+}
+
+export function memListVendors(activeOnly = false): MemVendor[] {
+  const all = [...store().vendors.values()]
+  const filtered = activeOnly ? all.filter((v) => v.active) : all
+  return filtered.sort((a, b) => a.name.localeCompare(b.name, 'he'))
+}
+
+export function memGetVendor(id: string): MemVendor | undefined {
+  return store().vendors.get(id)
+}
+
+export function memCreateVendor(input: {
+  name: string
+  contact_phone?: string | null
+  contact_email?: string | null
+  specialties?: string
+  webhook_url?: string | null
+  hmac_secret?: string | null
+}): MemVendor {
+  const name = input.name.trim()
+  if (!name) throw new Error('שם ספק חובה')
+  const row: MemVendor = {
+    id: `vendor-${crypto.randomUUID()}`,
+    name,
+    contact_phone: input.contact_phone?.trim() || null,
+    contact_email: input.contact_email?.trim() || null,
+    specialties: input.specialties?.trim() || 'general',
+    active: true,
+    webhook_url: input.webhook_url?.trim() || null,
+    hmac_secret: input.hmac_secret?.trim() || `secret-${crypto.randomUUID().slice(0, 12)}`,
+    created_at: new Date().toISOString(),
+  }
+  store().vendors.set(row.id, row)
+  return row
+}
+
+export function memUpdateVendor(
+  id: string,
+  patch: Partial<
+    Pick<
+      MemVendor,
+      | 'name'
+      | 'contact_phone'
+      | 'contact_email'
+      | 'specialties'
+      | 'active'
+      | 'webhook_url'
+      | 'hmac_secret'
+    >
+  >,
+): MemVendor {
+  const row = store().vendors.get(id)
+  if (!row) throw new Error('ספק לא נמצא')
+  if (patch.name != null) {
+    const name = patch.name.trim()
+    if (!name) throw new Error('שם ספק חובה')
+    row.name = name
+  }
+  if (patch.contact_phone !== undefined)
+    row.contact_phone = patch.contact_phone?.trim() || null
+  if (patch.contact_email !== undefined)
+    row.contact_email = patch.contact_email?.trim() || null
+  if (patch.specialties != null) row.specialties = patch.specialties.trim() || 'general'
+  if (patch.active != null) row.active = patch.active
+  if (patch.webhook_url !== undefined)
+    row.webhook_url = patch.webhook_url?.trim() || null
+  if (patch.hmac_secret !== undefined)
+    row.hmac_secret = patch.hmac_secret?.trim() || row.hmac_secret
+  return row
+}
+
+export function memFindDispatchByIdempotency(
+  key: string,
+): MemPartnerDispatch | undefined {
+  return [...store().dispatches.values()].find((d) => d.idempotency_key === key)
+}
+
+export function memSaveDispatch(row: MemPartnerDispatch): MemPartnerDispatch {
+  store().dispatches.set(row.id, row)
+  return row
+}
+
+export function memListDispatches(ticketId?: string): MemPartnerDispatch[] {
+  const all = [...store().dispatches.values()]
+  const filtered = ticketId ? all.filter((d) => d.ticket_id === ticketId) : all
+  return filtered.sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
+export function memListRecentEvents(limit = 100): MemAuditEvent[] {
+  const events: MemAuditEvent[] = []
+  for (const t of store().tickets.values()) {
+    for (const e of t.events) {
+      events.push({
+        id: e.id,
+        ticket_id: t.id,
+        ticket_display: t.display_number,
+        event_type: e.event_type,
+        actor_id: e.actor_id ?? null,
+        payload: e.payload ?? {},
+        created_at: e.created_at,
+      })
+    }
+  }
+  return events
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, limit)
+}
+
+export function memUpsertPushSubscription(input: {
+  profile_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+}): MemPushSubscription {
+  const existing = [...store().pushSubs.values()].find(
+    (s) => s.endpoint === input.endpoint,
+  )
+  if (existing) {
+    existing.profile_id = input.profile_id
+    existing.p256dh = input.p256dh
+    existing.auth = input.auth
+    return existing
+  }
+  const row: MemPushSubscription = {
+    id: `push-${crypto.randomUUID()}`,
+    profile_id: input.profile_id,
+    endpoint: input.endpoint,
+    p256dh: input.p256dh,
+    auth: input.auth,
+    created_at: new Date().toISOString(),
+  }
+  store().pushSubs.set(row.id, row)
+  return row
+}
+
+export function memListPushSubscriptions(profileId?: string): MemPushSubscription[] {
+  const all = [...store().pushSubs.values()]
+  return profileId ? all.filter((s) => s.profile_id === profileId) : all
+}
+
+export function memDeletePushSubscription(endpoint: string): boolean {
+  const mem = store()
+  for (const [id, row] of mem.pushSubs) {
+    if (row.endpoint === endpoint) {
+      mem.pushSubs.delete(id)
+      return true
+    }
+  }
+  return false
+}
+
+export function memFilterTickets(
+  tickets: MemTicket[],
+  filters: {
+    status?: string
+    priority?: string
+    storeCode?: string
+    assignedTo?: string
+    q?: string
+  },
+): MemTicket[] {
+  const q = filters.q?.trim().toLowerCase()
+  return tickets.filter((t) => {
+    if (filters.status && t.status !== filters.status) return false
+    if (filters.priority && t.priority !== filters.priority) return false
+    if (filters.storeCode && t.stores?.code !== filters.storeCode) return false
+    if (filters.assignedTo === 'none' && t.assigned_to) return false
+    if (
+      filters.assignedTo &&
+      filters.assignedTo !== 'none' &&
+      t.assigned_to !== filters.assignedTo
+    ) {
+      return false
+    }
+    if (q) {
+      const hay = [
+        t.display_number ?? '',
+        t.number != null ? `OC-${t.number}` : '',
+        t.description,
+        t.title ?? '',
+        t.stores?.name ?? '',
+        t.stores?.code ?? '',
+        t.stores?.city ?? '',
+        t.category ?? '',
+      ]
+        .join(' ')
+        .toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
 }

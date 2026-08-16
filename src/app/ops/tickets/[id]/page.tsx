@@ -32,6 +32,7 @@ import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
+import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,11 +57,11 @@ export default async function TicketDetailPage({
     redirect('/login')
   }
 
-  // getById remains memory/system for this phase; scope with canReadTicket below.
-  // Future: createUserClient() when actor.authVia === 'supabase_session'.
+  // Prefer user-scoped client when authVia === supabase_session.
+  const resolved = await resolveTicketsSupabase(actor)
   let ticket
   try {
-    ticket = await getById(id)
+    ticket = await getById(id, { client: resolved?.client })
   } catch {
     ticket = null
   }

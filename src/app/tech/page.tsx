@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { TechShell } from '@/components/layout/tech-shell'
 import { TechJobList } from '@/app/tech/tech-job-list'
 import { TechRealtimeHint } from '@/app/tech/tech-realtime-hint'
+import { TechPushSubscribe } from '@/app/tech/tech-push-subscribe'
 import { ErrorState, Notice } from '@/components/ui/primitives'
 import { fetchTechTickets } from '@/modules/tickets/tech'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
@@ -54,6 +55,7 @@ export default async function TechPortalPage({
       }
     >
       <TechRealtimeHint />
+      <TechPushSubscribe />
 
       {error ? (
         <div className="mb-3">

@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { TICKET_PRIORITIES } from '@/modules/tickets/constants'
-import { createTicket } from '@/modules/tickets/service'
 import {
   authErrorResponse,
   requireActor,
 } from '@/lib/auth/request-actor'
 import { AuthError, actorHasHqAccess } from '@/lib/auth/types'
+import { listTickets } from '@/modules/tickets/service'
+import { createTicket } from '@/modules/tickets/service'
+import { TICKET_PRIORITIES } from '@/modules/tickets/constants'
+import { captureError } from '@/lib/monitoring'
+import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 
 const createSchema = z.object({
   storeId: z.string().uuid().optional(),
@@ -24,6 +27,34 @@ const createSchema = z.object({
   language: z.string().optional(),
   assetId: z.string().uuid().optional(),
 })
+
+export async function GET(request: Request) {
+  try {
+    const actor = await requireActor(request)
+    if (!actorHasHqAccess(actor)) {
+      throw new AuthError('אין הרשאת HQ', 403)
+    }
+    const url = new URL(request.url)
+    const resolved = await resolveTicketsSupabase(actor)
+    const { tickets, backend, mode } = await listTickets({
+      limit: Math.min(Number(url.searchParams.get('limit') || '200') || 200, 1000),
+      status: url.searchParams.get('status') || undefined,
+      priority: url.searchParams.get('priority') || undefined,
+      storeCode: url.searchParams.get('store') || undefined,
+      assignedTo: url.searchParams.get('tech') || undefined,
+      q: url.searchParams.get('q') || undefined,
+      client: resolved?.client,
+    })
+    return NextResponse.json({ tickets, backend, mode })
+  } catch (err) {
+    if (err instanceof AuthError) return authErrorResponse(err)
+    captureError(err, { route: 'GET /api/tickets' })
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'שגיאה' },
+      { status: 500 },
+    )
+  }
+}
 
 export async function POST(request: Request) {
   try {

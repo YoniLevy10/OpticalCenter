@@ -1,9 +1,11 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSystemClient } from '@/lib/supabase/system'
 import {
   memAssign,
   memCountryIdFromCode,
   memCreate,
   memDemoTechnicians,
+  memFilterTickets,
   memFindStoreByCodeInCountry,
   memFindStoreById,
   memGet,
@@ -137,32 +139,86 @@ function memToRecord(t: MemTicket): TicketRecord {
   }
 }
 
-export async function listTickets(limit = 100): Promise<{
+export type ListTicketsQuery = {
+  limit?: number
+  status?: string
+  priority?: string
+  storeCode?: string
+  /** Profile id, or `none` for unassigned. */
+  assignedTo?: string
+  q?: string
+  /** Optional user-scoped Supabase client (RLS). */
+  client?: SupabaseClient
+}
+
+export async function listTickets(
+  limitOrQuery: number | ListTicketsQuery = 100,
+): Promise<{
   tickets: TicketRow[]
   backend: 'supabase' | 'memory'
+  mode?: 'user' | 'system' | 'memory'
 }> {
+  const opts: ListTicketsQuery =
+    typeof limitOrQuery === 'number' ? { limit: limitOrQuery } : limitOrQuery
+  const limit = opts.limit ?? 100
+  const filters = {
+    status: opts.status,
+    priority: opts.priority,
+    storeCode: opts.storeCode,
+    assignedTo: opts.assignedTo,
+    q: opts.q,
+  }
+
   if (await supabaseReady()) {
-    const supabase = createSystemClient('tickets_service')
-    const { data, error } = await supabase
+    const supabase = opts.client ?? createSystemClient('tickets_service')
+    const storeJoin = filters.storeCode
+      ? 'stores!inner(code, name, city, address)'
+      : 'stores(code, name, city, address)'
+    let query = supabase
       .from('tickets')
       .select(
-        'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, stores(code, name, city, address)',
+        `id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, ${storeJoin}`,
       )
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .limit(Math.min(Math.max(limit * (filters.q ? 4 : 1), 1), 2000))
+
+    if (filters.status) query = query.eq('status', filters.status)
+    if (filters.priority) query = query.eq('priority', filters.priority)
+    if (filters.storeCode) query = query.eq('stores.code', filters.storeCode)
+    if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
+    else if (filters.assignedTo)
+      query = query.eq('assigned_to', filters.assignedTo)
+
+    const { data, error } = await query
     if (!error && data) {
-      return { tickets: data as unknown as TicketRow[], backend: 'supabase' }
+      let rows = data as unknown as TicketRow[]
+      if (filters.q?.trim()) {
+        rows = memFilterTickets(rows as unknown as MemTicket[], {
+          q: filters.q,
+        }) as unknown as TicketRow[]
+      }
+      return {
+        tickets: rows.slice(0, limit),
+        backend: 'supabase',
+        mode: opts.client ? 'user' : 'system',
+      }
     }
   }
+
+  const memRows = memFilterTickets(memListTickets(), filters).slice(0, limit)
   return {
-    tickets: memListTickets().slice(0, limit) as unknown as TicketRow[],
+    tickets: memRows as unknown as TicketRow[],
     backend: 'memory',
+    mode: 'memory',
   }
 }
 
-export async function getById(id: string): Promise<TicketDetail | null> {
+export async function getById(
+  id: string,
+  opts?: { client?: SupabaseClient },
+): Promise<TicketDetail | null> {
   if (await supabaseReady()) {
-    const supabase = createSystemClient('tickets_service')
+    const supabase = opts?.client ?? createSystemClient('tickets_service')
     const { data: ticket } = await supabase
       .from('tickets')
       .select('*, stores ( id, code, name, city, address )')

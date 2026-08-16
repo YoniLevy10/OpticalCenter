@@ -12,6 +12,7 @@ import {
   type EscalationCandidate,
 } from '@/modules/tickets/sla-escalation'
 import type { TicketPriority } from '@/modules/tickets/constants'
+import { notifySlaBreach } from '@/lib/email/ops-notify'
 
 export const runtime = 'nodejs'
 
@@ -86,6 +87,15 @@ async function applyEscalation(action: {
     kind: action.breachKind,
     from_priority: action.fromPriority,
     to_priority: action.toPriority,
+  })
+
+  // Email HQ when notify_email / Resend configured.
+  const ticket = memGet(action.ticketId)
+  void notifySlaBreach({
+    ticketId: action.ticketId,
+    displayNumber: ticket?.display_number,
+    breachKind: action.breachKind,
+    priority: action.toPriority,
   })
 
   // Optional manager notify — log when no manager phone configured.
