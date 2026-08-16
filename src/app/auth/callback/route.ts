@@ -4,6 +4,7 @@ import { createSystemClient } from '@/lib/supabase/system'
 import { resolveHomePath } from '@/lib/auth/home-path'
 import type { Actor } from '@/lib/auth/types'
 import { memListMemberships } from '@/lib/auth/memory-memberships'
+import { ensurePilotAccessForAuthUser } from '@/lib/auth/seed-pilot-user'
 import { supabaseReady } from '@/lib/data/memory-store'
 
 async function loadMemberships(profileId: string): Promise<Actor['memberships']> {
@@ -46,6 +47,13 @@ export async function GET(request: Request) {
     if (!user) {
       return NextResponse.redirect(`${origin}/login?error=auth`)
     }
+
+    // Known pilot emails get profile + global_admin if missing
+    await ensurePilotAccessForAuthUser({
+      userId: user.id,
+      email: user.email,
+      fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
+    })
 
     const memberships = await loadMemberships(user.id)
     const home = resolveHomePath({ memberships })

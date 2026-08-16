@@ -1,4 +1,5 @@
 import type { Membership, MemberRole } from '@/lib/auth/types'
+import { PILOT_OWNER, normalizeEmail } from '@/lib/auth/pilot-users'
 import {
   DEMO_TECH_ID,
   MEM_COUNTRY_ID,
@@ -6,7 +7,7 @@ import {
 } from '@/lib/data/memory-store'
 
 const OTHER_TECH = '22222222-2222-4222-8222-222222222222'
-const HQ_GLOBAL = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const HQ_GLOBAL = PILOT_OWNER.id
 const HQ_COUNTRY_IL = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 const HQ_REGION_JLM = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
 const HQ_STORE_172 = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
@@ -75,7 +76,7 @@ function m(
 function seedDefaultMemberships(mem: GlobalAuthMem) {
   ensureProfile(mem, DEMO_TECH_ID, 'טכנאי דמו א׳', 'tech-a@demo.local')
   ensureProfile(mem, OTHER_TECH, 'טכנאי דמו ב׳', 'tech-b@demo.local')
-  ensureProfile(mem, HQ_GLOBAL, 'מנהל מערכת', 'admin@demo.local')
+  ensureProfile(mem, HQ_GLOBAL, PILOT_OWNER.fullName, PILOT_OWNER.email)
   ensureProfile(mem, HQ_COUNTRY_IL, 'מנהל מדינה IL', 'country-il@demo.local')
   ensureProfile(mem, HQ_REGION_JLM, 'מנהל אזור ירושלים', 'region-jlm@demo.local')
   ensureProfile(mem, HQ_STORE_172, 'מנהל חנות 172', 'store-172@demo.local')
@@ -142,6 +143,14 @@ export function memSetMemberships(profileId: string, rows: Membership[]) {
 
 export function memGetProfile(profileId: string): MemProfile | null {
   return store().profiles.get(profileId) ?? null
+}
+
+export function memFindProfileByEmail(email: string): MemProfile | null {
+  const key = normalizeEmail(email)
+  for (const profile of store().profiles.values()) {
+    if (profile.email && normalizeEmail(profile.email) === key) return profile
+  }
+  return null
 }
 
 export function memUpsertProfile(profile: MemProfile): MemProfile {
