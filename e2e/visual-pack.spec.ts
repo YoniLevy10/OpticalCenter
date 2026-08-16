@@ -1,6 +1,10 @@
 import { test, expect, type Page, type Locator } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { createStore172Ticket, DEMO_TECH_ID, patchTicket } from './helpers/api'
+import {
+  createStore172Ticket,
+  OTHER_TECH_ID,
+  patchTicket,
+} from './helpers/api'
 
 const MAX_DIFF = 0.03
 
@@ -17,20 +21,22 @@ async function gotoStable(page: Page, path: string) {
   await page.waitForLoadState('networkidle').catch(() => undefined)
 }
 
-function liveMasks(page: Page): Locator[] {
+/** Live clocks + numeric ticket ids that drift between runs. */
+function dynamicMasks(page: Page): Locator[] {
   return [
     page.locator('[data-live="sla"]'),
     page.locator('[data-live="age"]'),
     page.locator('.live-sla'),
     page.locator('.live-age'),
+    page.locator('.t-num'),
   ]
 }
 
 async function shot(page: Page, name: string) {
   await expect(page).toHaveScreenshot(name, {
     maxDiffPixelRatio: MAX_DIFF,
-    fullPage: true,
-    mask: liveMasks(page),
+    // Viewport only — fullPage height drifts as the memory store accumulates tickets.
+    mask: dynamicMasks(page),
   })
 }
 
@@ -45,14 +51,25 @@ test.describe('Visual regression pack', () => {
   test('critical routes across viewports', async ({ page, request }) => {
     test.setTimeout(180_000)
 
-    const { ticketId } = await createStore172Ticket(request)
-    await patchTicket(request, ticketId, { assignedTo: DEMO_TECH_ID })
+    // Unique copy + OTHER_TECH so list pages stay stable even if prior e2e
+    // tests already seeded DEMO_TECH_ID jobs in the shared memory store.
+    const marker = `VISUAL_PACK_${Date.now()}`
+    const { ticketId } = await createStore172Ticket(request, {
+      text: `המזגן הראשי לא עובד ${marker}`,
+    })
+    await patchTicket(request, ticketId, { assignedTo: OTHER_TECH_ID })
 
     const routes: { key: string; path: string }[] = [
-      { key: 'ops-tickets-open', path: '/ops/tickets?view=open' },
+      {
+        key: 'ops-tickets-open',
+        path: `/ops/tickets?view=open&q=${encodeURIComponent(marker)}`,
+      },
       { key: 'ops-ticket-detail', path: `/ops/tickets/${ticketId}` },
-      { key: 'tech-jobs', path: `/tech?techId=${DEMO_TECH_ID}` },
-      { key: 'tech-job-detail', path: `/tech/${ticketId}?techId=${DEMO_TECH_ID}` },
+      { key: 'tech-jobs', path: `/tech?techId=${OTHER_TECH_ID}` },
+      {
+        key: 'tech-job-detail',
+        path: `/tech/${ticketId}?techId=${OTHER_TECH_ID}`,
+      },
       { key: 'login', path: '/login' },
     ]
 
@@ -79,12 +96,12 @@ test.describe('A11y critical routes', () => {
     request,
   }) => {
     const { ticketId } = await createStore172Ticket(request)
-    await patchTicket(request, ticketId, { assignedTo: DEMO_TECH_ID })
+    await patchTicket(request, ticketId, { assignedTo: OTHER_TECH_ID })
 
     for (const path of [
       `/ops/tickets/${ticketId}`,
-      `/tech?techId=${DEMO_TECH_ID}`,
-      `/tech/${ticketId}?techId=${DEMO_TECH_ID}`,
+      `/tech?techId=${OTHER_TECH_ID}`,
+      `/tech/${ticketId}?techId=${OTHER_TECH_ID}`,
     ]) {
       await gotoStable(page, path)
       const results = await new AxeBuilder({ page })
