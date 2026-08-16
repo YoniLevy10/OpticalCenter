@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { assign, getById, updateStatus, type TicketRecord } from '@/modules/tickets/service'
+import {
+  assign,
+  getById,
+  listInternalTechnicians,
+  updateStatus,
+  type TicketRecord,
+} from '@/modules/tickets/service'
 import { TICKET_STATUSES } from '@/modules/tickets/constants'
 import {
   authErrorResponse,
@@ -11,6 +17,13 @@ import {
   actorHasHqAccess,
   canMutateHqTicket,
 } from '@/lib/auth/types'
+import {
+  isLifecycleEvent,
+  notifyReporter,
+  notifyTechnicianAssigned,
+} from '@/modules/notifications/lifecycle'
+import { DEMO_TECH_ID, memDemoTechnicians } from '@/lib/data/memory-store'
+import { logEvent } from '@/lib/logging'
 
 const patchSchema = z
   .object({
@@ -20,6 +33,40 @@ const patchSchema = z
   .refine((v) => v.status != null || v.assignedTo != null, {
     message: 'יש לציין status או assignedTo',
   })
+
+async function resolveTechProfile(assignedTo: string) {
+  const techs = await listInternalTechnicians()
+  const fromList = techs.find((t) => t.id === assignedTo)
+  if (fromList && 'phone' in fromList && fromList.phone) {
+    return fromList as {
+      id: string
+      full_name: string | null
+      email: string | null
+      phone?: string | null
+    }
+  }
+  const mem = memDemoTechnicians().find((t) => t.id === assignedTo)
+  if (mem) {
+    return {
+      id: mem.id,
+      full_name: mem.full_name,
+      email: mem.email,
+      phone: 'phone' in mem ? (mem as { phone?: string }).phone ?? null : null,
+    }
+  }
+  // Fallback: demo tech id known from seed
+  if (assignedTo === DEMO_TECH_ID) {
+    return {
+      id: DEMO_TECH_ID,
+      full_name: 'יוסי כהן',
+      email: 'yossi.cohen@optical-center.demo',
+      phone: '+972501000001',
+    }
+  }
+  return fromList
+    ? { ...fromList, phone: null }
+    : { id: assignedTo, full_name: null, email: null, phone: null }
+}
 
 export async function PATCH(
   request: Request,
@@ -50,11 +97,46 @@ export async function PATCH(
     }
 
     let ticket: TicketRecord = existing
+    let assignedTechId: string | null = null
+
     if (parsed.data.assignedTo) {
       ticket = await assign(id, parsed.data.assignedTo, actor.id)
+      assignedTechId = parsed.data.assignedTo
     }
     if (parsed.data.status) {
       ticket = await updateStatus(id, parsed.data.status, actor.id)
+    }
+
+    // Refresh detail for templates (store name, assignee).
+    const detail = (await getById(id)) ?? { ...ticket, stores: null, assignee: null }
+
+    try {
+      if (assignedTechId) {
+        const tech = await resolveTechProfile(assignedTechId)
+        await notifyTechnicianAssigned(
+          {
+            ...detail,
+            assigned_to: assignedTechId,
+          },
+          tech,
+        )
+      }
+
+      const lifecycleStatus =
+        parsed.data.status && isLifecycleEvent(parsed.data.status)
+          ? parsed.data.status
+          : assignedTechId && detail.status === 'assigned'
+            ? 'assigned'
+            : null
+
+      if (lifecycleStatus) {
+        await notifyReporter(detail, lifecycleStatus)
+      }
+    } catch (e) {
+      logEvent('api:tickets', 'warn', 'lifecycle_notify_failed', {
+        ticketId: id,
+        error: e instanceof Error ? e.message : String(e),
+      })
     }
 
     return NextResponse.json({ ticket })

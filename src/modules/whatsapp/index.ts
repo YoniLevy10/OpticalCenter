@@ -10,4 +10,9 @@ export {
   resolveStoreByWaId,
 } from './intake'
 export { shouldSendWhatsApp } from './cost-policy'
+export {
+  resolveInboundMediaUrl,
+  isDirectHttpsMediaUrl,
+  parseMetaMediaId,
+} from './media'
 export type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'

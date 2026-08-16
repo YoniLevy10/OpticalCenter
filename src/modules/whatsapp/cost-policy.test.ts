@@ -7,8 +7,8 @@ describe('shouldSendWhatsApp', () => {
     expect(shouldSendWhatsApp('ticket_confirmation')).toBe(true)
   })
 
-  it('blocks status spam and marketing', () => {
-    expect(shouldSendWhatsApp('status_update')).toBe(false)
+  it('allows lifecycle status updates; blocks marketing', () => {
+    expect(shouldSendWhatsApp('status_update')).toBe(true)
     expect(shouldSendWhatsApp('marketing')).toBe(false)
   })
 })

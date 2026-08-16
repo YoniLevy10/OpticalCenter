@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader, EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,9 @@ import {
   type QueueTicket,
 } from '@/modules/tickets/queue'
 import { QUEUE_SORTS } from '@/modules/tickets/queue'
+import { getServerActor } from '@/lib/auth/server-actor'
+import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,13 +56,21 @@ export default async function TicketsPage({
   const filters = parseQueueParams(sp)
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
 
+  const actor = await getServerActor()
+  if (!actor && !shouldAllowDemoEntry()) {
+    redirect('/login')
+  }
+
+  // Data still via listTickets (memory/system). When authVia === supabase_session,
+  // prefer createUserClient() reads later; filter below enforces scope either way.
   const [ticketResult, storeResult, techRows] = await Promise.all([
     listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
     fetchStores().catch(() => ({ stores: [], fromDb: false })),
     listInternalTechnicians().catch(() => []),
   ])
 
-  const all = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
+  const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
+  const all = actor ? scopeTicketsForActor(actor, fetched) : fetched
   const technicians = techRows.map((t) => ({
     id: t.id,
     name: t.full_name || t.email || t.id.slice(0, 8),

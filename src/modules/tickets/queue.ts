@@ -53,6 +53,9 @@ export type QueueTicket = {
   first_response_at?: string | null
   resolved_at?: string | null
   store_id?: string
+  organization_id?: string
+  country_id?: string
+  region_id?: string
   stores?: {
     code?: string
     name?: string

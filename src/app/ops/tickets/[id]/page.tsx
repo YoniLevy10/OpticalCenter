@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
@@ -28,6 +28,9 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { getServerActor } from '@/lib/auth/server-actor'
+import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +50,13 @@ export default async function TicketDetailPage({
 }) {
   const { id } = await params
 
+  const actor = await getServerActor()
+  if (!actor && !shouldAllowDemoEntry()) {
+    redirect('/login')
+  }
+
+  // getById remains memory/system for this phase; scope with canReadTicket below.
+  // Future: createUserClient() when actor.authVia === 'supabase_session'.
   let ticket
   try {
     ticket = await getById(id)
@@ -54,6 +64,7 @@ export default async function TicketDetailPage({
     ticket = null
   }
   if (!ticket) notFound()
+  if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
   const [technicians, storedAttachments] = await Promise.all([
     listInternalTechnicians().catch(() => []),

@@ -20,11 +20,16 @@ export type TicketRow = {
   source: string
   created_at: string
   store_id: string
+  organization_id?: string
+  country_id?: string
+  region_id?: string
   assigned_to?: string | null
   title?: string | null
   updated_at?: string
   sla_respond_by?: string | null
   sla_resolve_by?: string | null
+  first_response_at?: string | null
+  resolved_at?: string | null
   stores?: {
     code: string
     name: string

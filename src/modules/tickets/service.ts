@@ -48,6 +48,7 @@ export type TicketRecord = {
   assigned_to: string | null
   sla_respond_by: string | null
   sla_resolve_by: string | null
+  first_response_at: string | null
   resolved_at: string | null
   closed_at: string | null
   created_at: string
@@ -81,7 +82,7 @@ export type TicketDetail = TicketRecord & {
     city: string | null
     address: string | null
   } | null
-  assignee: { id: string; full_name: string | null; email: string | null } | null
+  assignee: { id: string; full_name: string | null; email: string | null; phone?: string | null } | null
   messages: TicketMessage[]
   events: TicketEvent[]
   backend?: 'supabase' | 'memory'
@@ -128,6 +129,7 @@ function memToRecord(t: MemTicket): TicketRecord {
     assigned_to: t.assigned_to,
     sla_respond_by: t.sla_respond_by,
     sla_resolve_by: t.sla_resolve_by,
+    first_response_at: t.first_response_at ?? null,
     resolved_at: t.resolved_at,
     closed_at: t.closed_at,
     created_at: t.created_at,
@@ -144,7 +146,7 @@ export async function listTickets(limit = 100): Promise<{
     const { data, error } = await supabase
       .from('tickets')
       .select(
-        'id, number, display_number, status, priority, category, description, source, created_at, store_id, assigned_to, stores(code, name, city)',
+        'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, stores(code, name, city, address)',
       )
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -181,7 +183,7 @@ export async function getById(id: string): Promise<TicketDetail | null> {
         ticket.assigned_to
           ? supabase
               .from('profiles')
-              .select('id, full_name, email')
+              .select('id, full_name, email, phone')
               .eq('id', ticket.assigned_to)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
@@ -461,24 +463,38 @@ export async function appendEvent(
 }
 
 export async function listInternalTechnicians(): Promise<
-  { id: string; full_name: string | null; email: string | null }[]
+  { id: string; full_name: string | null; email: string | null; phone?: string | null }[]
 > {
   if (await supabaseReady()) {
     const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('memberships')
-      .select('profile_id, profiles ( id, full_name, email )')
+      .select('profile_id, profiles ( id, full_name, email, phone )')
       .eq('role', 'internal_technician')
 
     if (error) return memDemoTechnicians()
 
     const seen = new Set<string>()
-    const result: { id: string; full_name: string | null; email: string | null }[] =
-      []
+    const result: {
+      id: string
+      full_name: string | null
+      email: string | null
+      phone?: string | null
+    }[] = []
     for (const row of data ?? []) {
       const profile = row.profiles as
-        | { id: string; full_name: string | null; email: string | null }
-        | { id: string; full_name: string | null; email: string | null }[]
+        | {
+            id: string
+            full_name: string | null
+            email: string | null
+            phone?: string | null
+          }
+        | {
+            id: string
+            full_name: string | null
+            email: string | null
+            phone?: string | null
+          }[]
         | null
       const p = Array.isArray(profile) ? profile[0] : profile
       if (!p?.id || seen.has(p.id)) continue

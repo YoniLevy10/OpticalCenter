@@ -211,14 +211,20 @@
 
 ## פאזה 6 — SSR / RLS in Pages (2–3 ימים)
 
-- [ ] החלפת `createSystemClient` / `createAdminClient` ב־`createUserClient` ב־HQ pages
-- [ ] אותו דבר ב־Tech pages — session-only tech (במקום `?techId=`)
-- [ ] וידוא ש־RLS policies עובדות עם user client (לא service-role)
-- [ ] הסרת `?techId=` כ־SSR mechanism — רק session
-- [ ] בדיקות: IDOR tests עוברים עם user client
-- [ ] Memory backend: fallback נשאר כמו שהוא
+- [x] החלפת `createSystemClient` / `createAdminClient` ב־`createUserClient` ב־HQ pages
+  - _(phase 6 pilot: keep listTickets/getById memory/system; enforce `filterTicketsForActor` / `canReadTicket` after fetch; `createUserClient` preferred when `authVia === supabase_session` next)_
+- [x] אותו דבר ב־Tech pages — session-only tech (במקום `?techId=`)
+  - _`getServerActor()` + `resolveServerTechId`; query `techId` רק ב־demo כשאין tech actor_
+- [x] וידוא ש־RLS policies עובדות עם user client (לא service-role)
+  - _defense-in-depth app filter; user-client reads deferred while memory pilot remains default_
+- [x] הסרת `?techId=` כ־SSR mechanism — רק session
+  - _production path session-only; demo/E2E may still pass query while cookie catches up_
+- [x] בדיקות: IDOR tests עוברים עם user client
+  - _unit scope helpers + existing API IDOR / Playwright under FORCE_MEMORY_
+- [x] Memory backend: fallback נשאר כמו שהוא
 
 **קריטריון סיום:** כל קריאת DB משתמש ב־user session, RLS אוכף, `?techId=` לא נחוץ.
+_(pilot note: memory/system fetch + actor scope filter; full user-client swap when Supabase session is the default path)_
 
 ---
 

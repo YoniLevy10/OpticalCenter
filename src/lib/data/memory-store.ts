@@ -21,6 +21,7 @@ export type MemTicket = {
   assigned_to: string | null
   sla_respond_by: string | null
   sla_resolve_by: string | null
+  first_response_at: string | null
   resolved_at: string | null
   closed_at: string | null
   resolution_note: string | null
@@ -33,7 +34,12 @@ export type MemTicket = {
     city: string | null
     address: string | null
   } | null
-  assignee: { id: string; full_name: string | null; email: string | null } | null
+  assignee: {
+    id: string
+    full_name: string | null
+    email: string | null
+    phone?: string | null
+  } | null
   messages: {
     id: string
     ticket_id: string
@@ -60,11 +66,13 @@ const DEMO_TECHS = [
     id: DEMO_TECH_ID,
     full_name: 'יוסי כהן',
     email: 'yossi.cohen@optical-center.demo',
+    phone: '+972501000001',
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
     full_name: 'מיכל לוי',
     email: 'michal.levy@optical-center.demo',
+    phone: '+972501000002',
   },
 ] as const
 
@@ -312,6 +320,7 @@ export function memCreate(input: {
     assigned_to: input.assigned_to ?? null,
     sla_respond_by: input.sla_respond_by ?? null,
     sla_resolve_by: input.sla_resolve_by ?? null,
+    first_response_at: null,
     resolved_at: null,
     closed_at: null,
     resolution_note: null,
@@ -341,8 +350,13 @@ export function memCreate(input: {
   if (ticket.assigned_to) {
     const tech = DEMO_TECHS.find((t) => t.id === ticket.assigned_to)
     ticket.assignee = tech
-      ? { id: tech.id, full_name: tech.full_name, email: tech.email }
-      : { id: ticket.assigned_to, full_name: null, email: null }
+      ? {
+          id: tech.id,
+          full_name: tech.full_name,
+          email: tech.email,
+          phone: tech.phone,
+        }
+      : { id: ticket.assigned_to, full_name: null, email: null, phone: null }
   }
 
   mem.tickets.set(id, ticket)
@@ -406,8 +420,13 @@ export function memAssign(
   ticket.updated_at = new Date().toISOString()
   const tech = DEMO_TECHS.find((t) => t.id === assignedTo)
   ticket.assignee = tech
-    ? { id: tech.id, full_name: tech.full_name, email: tech.email }
-    : { id: assignedTo, full_name: null, email: null }
+    ? {
+        id: tech.id,
+        full_name: tech.full_name,
+        email: tech.email,
+        phone: tech.phone,
+      }
+    : { id: assignedTo, full_name: null, email: null, phone: null }
 
   if (from === 'new' || from === 'triaged') {
     ticket.status = 'assigned'
