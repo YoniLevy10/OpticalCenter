@@ -27,13 +27,36 @@ Depth and motion exist, but most of the product stays quiet.
 **Allowed “wow” moments (only these):**
 
 1. **Login** — centered brand mark with `--shadow-pop`
-2. **Dashboard KPI cards** — hover lift + `--shadow-hover`
+2. **Dashboard exception / elevated surfaces** — rare `--shadow-hover` only where intentional (not default Panel)
 3. **Modal** — `animate-scale-in` entrance
 
 Everywhere else: color transitions, no bounce/scale on nav or queue rows, no list
 stagger on daily queues. `.stagger` is reserved for dashboard first-impression lists.
 
 ---
+
+## 0b. Ops console structure
+
+### Dashboard — action console
+
+1. Compact `PageHeader` (hidden on mobile when AppShell already titles the page)
+2. **Stat strip** — peer metrics in one band (open / breached / unassigned); click → existing `queueHref`
+3. Thin SLA banner (single line)
+4. **Exception list** (hero) — up to 8 tickets: breached first, then unassigned; row → ticket detail
+5. Secondary panels: category · technician load
+6. Chart / load **bars use `--signal-progress` or ink** — never `--tenant`
+
+### Queue — dense Linear-like chrome
+
+- Mobile: hide page `PageHeader` (`hidden md:flex`)
+- Attention counts live in the toolbar band (not a separate tall block)
+- Desktop: store / tech / priority filters visible in the toolbar; BottomSheet is mobile-only
+- Sticky table header; compact empty state inside flush Panel; dense pagination footer
+
+### Panel elevation
+
+`Panel` defaults to **border only** (no `--shadow-1`). Add shadow explicitly for
+KPI/elevated moments, login brand, or modal — not for every card on the page.
 
 ## 1. Token architecture — three layers
 
@@ -78,9 +101,9 @@ indicator. **Forbidden** on ticket status, priority, SLA, data rows, charts.
 
 | Token | Intent |
 |---|---|
-| `--shadow-1` | panels / primary CTA rest |
+| `--shadow-1` | rare elevated rest (not default Panel) |
 | `--shadow-2` | rare intermediate |
-| `--shadow-hover` | **KPI cards only** |
+| `--shadow-hover` | intentional elevated hover only |
 | `--shadow-pop` | modal / login mark / toast |
 | `--dur-1` | `150ms` state |
 | `--dur-2` | `280ms` surfaces |

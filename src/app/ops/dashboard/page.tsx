@@ -1,90 +1,87 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Inbox, PackageOpen, UserMinus, Wrench } from 'lucide-react'
+import { AlertTriangle, Inbox, PackageOpen, Wrench } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
-import { PageHeader, Panel, PanelHeader, EmptyState } from '@/components/ui/primitives'
+import {
+  PageHeader,
+  Panel,
+  PanelHeader,
+  EmptyState,
+} from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { LiveSla } from '@/components/ui/time'
+import { StatusLabel, priorityEdgeClass } from '@/components/ui/signal'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
-import { queueHref } from '@/modules/tickets/queue'
+import { isBreached, queueHref } from '@/modules/tickets/queue'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
-function KpiCard({
-  label,
-  value,
-  href,
-  tone = 'default',
-  icon: Icon,
+function ticketNumber(t: QueueTicket): string {
+  return t.display_number ?? (t.number != null ? `OC-${t.number}` : '—')
+}
+
+function StatStrip({
+  open,
+  breached,
+  unassigned,
 }: {
-  label: string
-  value: number
-  href: string
-  tone?: 'default' | 'warn' | 'critical'
-  icon?: typeof Inbox
+  open: number
+  breached: number
+  unassigned: number
 }) {
-  const isActive =
-    (tone === 'critical' && value > 0) || (tone === 'warn' && value > 0)
-  const toneColor =
-    tone === 'critical' && value > 0
-      ? 'text-[var(--signal-critical)]'
-      : tone === 'warn' && value > 0
-        ? 'text-[var(--signal-warning)]'
-        : 'text-ink'
+  const items = [
+    {
+      label: 'פתוחות',
+      value: open,
+      href: queueHref({ view: 'open', sort: 'urgency' }),
+      tone: 'default' as const,
+    },
+    {
+      label: 'חריגות SLA',
+      value: breached,
+      href: queueHref({ view: 'attention', sort: 'sla' }),
+      tone: 'critical' as const,
+    },
+    {
+      label: 'לא משויכות',
+      value: unassigned,
+      href: queueHref({ view: 'unassigned', sort: 'urgency' }),
+      tone: 'warn' as const,
+    },
+  ]
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        'group relative overflow-hidden rounded-[var(--radius-lg)] border bg-surface p-5 shadow-[var(--shadow-1)] transition-all duration-[var(--dur-1)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] active:scale-[0.98]',
-        isActive && tone === 'critical'
-          ? 'border-[var(--signal-critical-line)]'
-          : isActive && tone === 'warn'
-            ? 'border-[var(--signal-warning-line)]'
-            : 'border-border',
-      )}
-    >
-      {/* Accent bar on top */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-x-0 top-0 h-[3px]',
-          isActive && tone === 'critical'
-            ? 'bg-[var(--signal-critical)]'
-            : isActive && tone === 'warn'
-              ? 'bg-[var(--signal-warning)]'
-              : 'bg-transparent',
-        )}
-      />
-
-      <div className="flex items-center justify-between">
-        <p className="t-caption text-ink-3">{label}</p>
-        {Icon ? (
-          <Icon
-            className={cn(
-              'h-4 w-4 text-ink-3 transition-colors group-hover:text-ink-2',
-              toneColor,
-            )}
-            aria-hidden
-          />
-        ) : null}
-      </div>
-
-      <p className={cn('t-display t-num mt-4', toneColor)}>{value}</p>
-
-      {/* Arrow on hover */}
-      <span
-        aria-hidden
-        className="absolute bottom-4 end-4 text-ink-3 opacity-0 transition-all duration-[var(--dur-1)] group-hover:translate-x-[-4px] group-hover:opacity-100 rtl:group-hover:translate-x-[4px]"
-      >
-        ←
-      </span>
-    </Link>
+    <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface rtl:divide-x-reverse">
+      {items.map((item) => {
+        const hot =
+          (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className="group px-4 py-3.5 transition-colors hover:bg-surface-sunken/40 sm:px-5"
+          >
+            <p className="t-caption text-ink-3">{item.label}</p>
+            <p
+              className={cn(
+                't-display t-num mt-1.5',
+                hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
+                hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
+                !hot && 'text-ink',
+              )}
+            >
+              {item.value}
+            </p>
+          </Link>
+        )
+      })}
+    </div>
   )
 }
 
@@ -95,23 +92,82 @@ function BarList({
 }) {
   const max = Math.max(1, ...items.map((i) => i.count))
   return (
-    <ul className="space-y-4 px-5 py-4">
+    <ul className="space-y-3.5 px-4 py-3.5">
       {items.map((item) => (
         <li key={item.label}>
-          <div className="mb-2 flex items-baseline justify-between gap-2">
+          <div className="mb-1.5 flex items-baseline justify-between gap-2">
             <span className="t-body truncate text-ink">{item.label}</span>
             <span className="t-body-strong t-num shrink-0 text-ink-2">
               {item.count}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
+          <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
             <div
-              className="h-full rounded-full bg-[var(--tenant)] transition-all duration-700 ease-[var(--ease)]"
+              className="h-full rounded-full bg-[var(--signal-progress)] transition-all duration-700 ease-[var(--ease)]"
               style={{ width: `${Math.round((item.count / max) * 100)}%` }}
             />
           </div>
         </li>
       ))}
+    </ul>
+  )
+}
+
+function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
+  if (tickets.length === 0) {
+    return (
+      <EmptyState
+        title="אין חריגים כרגע"
+        description="כשתופיע חריגת SLA או תקלה לא משויכת — היא תופיע כאן."
+        icon={Inbox}
+        className="py-12"
+      />
+    )
+  }
+
+  return (
+    <ul className="divide-y divide-border">
+      {tickets.map((t) => {
+        const breached = isBreached(t)
+        return (
+          <li key={t.id} className={cn('relative', priorityEdgeClass(t.priority))}>
+            <Link
+              href={`/ops/tickets/${t.id}`}
+              className="flex min-h-[56px] items-center gap-3 px-4 py-3 ps-5 transition-colors hover:bg-surface-sunken/40"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="t-caption t-num text-ink-3">
+                    {ticketNumber(t)}
+                  </span>
+                  {breached ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--signal-critical)]">
+                      <AlertTriangle className="h-3 w-3" aria-hidden />
+                      חריגה
+                    </span>
+                  ) : !t.assigned_to ? (
+                    <span className="t-caption text-[var(--signal-warning)]">
+                      לא משויך
+                    </span>
+                  ) : null}
+                </div>
+                <p className="t-body mt-0.5 line-clamp-1 text-ink">
+                  {t.title || t.description}
+                </p>
+                <p className="t-meta mt-0.5 truncate text-ink-2">
+                  {t.stores
+                    ? `${t.stores.name}${t.stores.code ? ` · #${t.stores.code}` : ''}`
+                    : 'ללא חנות'}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <LiveSla ticket={t} />
+                <StatusLabel status={t.status} />
+              </div>
+            </Link>
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -137,10 +193,11 @@ export default async function OpsDashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-5">
+      <div className="space-y-4">
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          className="hidden md:flex"
           actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/tickets">לתור התקלות</Link>
@@ -148,19 +205,18 @@ export default async function OpsDashboardPage() {
           }
         />
 
-        {/* Operational status banner */}
         <div
           className={cn(
-            'flex items-center gap-3 rounded-[var(--radius-lg)] border px-5 py-4',
+            'flex items-center gap-2.5 rounded-[var(--radius-md)] border px-3.5 py-2.5',
             kpis.breached > 0
               ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
-              : 'border-border bg-surface shadow-[var(--shadow-1)]',
+              : 'border-border bg-surface',
           )}
         >
           <span
             aria-hidden
             className={cn(
-              'h-2.5 w-2.5 rounded-full',
+              'h-2 w-2 shrink-0 rounded-full',
               kpis.breached > 0
                 ? 'animate-pulse bg-[var(--signal-critical)]'
                 : 'bg-[var(--signal-resolved)]',
@@ -168,7 +224,7 @@ export default async function OpsDashboardPage() {
           />
           <p
             className={cn(
-              't-body-strong',
+              't-body',
               kpis.breached > 0
                 ? 'text-[var(--signal-critical)]'
                 : 'text-ink-2',
@@ -180,67 +236,35 @@ export default async function OpsDashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <KpiCard
-            label="פתוחות"
-            value={kpis.open}
-            href={queueHref({ view: 'open', sort: 'urgency' })}
-            icon={Inbox}
-          />
-          <KpiCard
-            label="חריגות SLA"
-            value={kpis.breached}
-            href={queueHref({ view: 'attention', sort: 'sla' })}
-            tone="critical"
-            icon={AlertTriangle}
-          />
-          <KpiCard
-            label="לא משויכות"
-            value={kpis.unassigned}
-            href={queueHref({ view: 'unassigned', sort: 'urgency' })}
-            tone="warn"
-            icon={UserMinus}
-          />
-        </div>
+        <StatStrip
+          open={kpis.open}
+          breached={kpis.breached}
+          unassigned={kpis.unassigned}
+        />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Panel flush className="overflow-hidden">
+          <PanelHeader
+            title="דורש טיפול עכשיו"
+            meta={`${kpis.exceptions.length}`}
+            action={
+              <Link
+                href={queueHref({ view: 'attention', sort: 'urgency' })}
+                className="t-caption text-ink-3 hover:text-ink"
+              >
+                הכל
+              </Link>
+            }
+          />
+          <ExceptionList tickets={kpis.exceptions} />
+        </Panel>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Panel flush className="overflow-hidden">
             <PanelHeader title="לפי קטגוריה" meta={`${kpis.byCategory.length}`} />
             {kpis.byCategory.length === 0 ? (
               <EmptyState title="אין תקלות פתוחות" icon={PackageOpen} />
             ) : (
               <BarList items={kpis.byCategory} />
-            )}
-          </Panel>
-
-          <Panel flush className="overflow-hidden">
-            <PanelHeader title="חנויות מובילות" meta="פתוחות" />
-            {kpis.topStores.length === 0 ? (
-              <EmptyState title="אין נתונים" icon={Inbox} />
-            ) : (
-              <ul className="stagger divide-y divide-border">
-                {kpis.topStores.map((s) => (
-                  <li key={s.code}>
-                    <Link
-                      href={queueHref(
-                        { view: 'open', sort: 'urgency' },
-                        { store: s.code === '—' ? undefined : s.code },
-                      )}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-5 py-3 transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken/40"
-                    >
-                      <span className="t-body-strong t-num w-10 shrink-0 text-ink">
-                        {s.code}
-                      </span>
-                      <span className="t-body min-w-0 flex-1 truncate text-ink-2">
-                        {s.name}
-                      </span>
-                      <span className="t-meta t-num shrink-0 text-ink-3">
-                        {s.count}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             )}
           </Panel>
 

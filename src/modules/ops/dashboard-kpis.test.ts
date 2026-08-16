@@ -59,5 +59,6 @@ describe('computeDashboardKpis', () => {
     expect(kpis.byCategory[0]).toMatchObject({ key: 'hvac', count: 2 })
     expect(kpis.topStores[0]).toMatchObject({ code: '172', count: 2 })
     expect(kpis.techLoad[0]).toMatchObject({ id: 'tech-a', name: 'Yossi', count: 2 })
+    expect(kpis.exceptions.map((t) => t.id)).toEqual(['1'])
   })
 })

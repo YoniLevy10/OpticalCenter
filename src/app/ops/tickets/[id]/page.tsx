@@ -128,31 +128,31 @@ export default async function TicketDetailPage({
           </div>
 
           {/* Metadata strip — the "how urgent / who / SLA" */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2">
+            <div className="flex items-center gap-1.5">
               <span className="t-caption text-ink-3">עדיפות</span>
               <PriorityText priority={ticket.priority as TicketPriority} />
             </div>
 
-            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="t-caption text-ink-3">סטטוס</span>
               <StatusLabel status={ticket.status as TicketStatus} />
             </div>
 
-            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="t-caption text-ink-3">אחראי</span>
               <span className="t-body-strong text-ink">
                 {assignee?.full_name || assignee?.email || 'לא משויך'}
               </span>
             </div>
 
-            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="t-caption text-ink-3">SLA</span>
               <SlaBlock view={slaView} />
             </div>
@@ -189,10 +189,11 @@ export default async function TicketDetailPage({
           </div>
 
           {/* ---------- Side column ---------- */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
             {/*
-              Sticky above bottom nav on mobile (thumb zone); in-flow sidebar
-              panel on md+. Single TicketActions instance keeps state coherent.
+              Sticky above bottom nav on mobile (thumb zone); desktop sticks the
+              whole side column under the shell header. Single TicketActions
+              instance keeps state coherent.
             */}
             <div
               className="fixed inset-x-0 z-20 max-h-[min(50dvh,420px)] overflow-y-auto border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-sm bottom-[calc(var(--bottomnav-h)+var(--safe-b))] md:static md:inset-auto md:bottom-auto md:z-auto md:max-h-none md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"

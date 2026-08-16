@@ -15,7 +15,7 @@ import {
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
-import { AttentionStrip, QueueToolbar } from './queue-toolbar'
+import { QueueToolbar } from './queue-toolbar'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
 import {
@@ -89,10 +89,11 @@ export default async function TicketsPage({
 
   return (
     <AppShell>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <PageHeader
           title="תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          className="hidden md:flex"
           actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/simulator">דיווח לבדיקה</Link>
@@ -100,14 +101,13 @@ export default async function TicketsPage({
           }
         />
 
-        <AttentionStrip counts={counts} filters={filters} />
-
         <QueueToolbar
           filters={filters}
           viewCounts={views}
           stores={storeResult.stores.map((s) => ({ code: s.code, name: s.name }))}
           technicians={technicians}
           resultCount={filtered.length}
+          attention={counts}
         />
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
@@ -260,9 +260,11 @@ export default async function TicketsPage({
         </Panel>
 
         {totalPages > 1 ? (
-          <nav className="flex items-center justify-between gap-3">
+          <nav className="flex items-center justify-between gap-3 border-t border-border pt-3">
             <p className="t-meta t-num text-ink-3">
-              עמוד {current} מתוך {totalPages}
+              {(current - 1) * PAGE_SIZE + 1}–
+              {Math.min(current * PAGE_SIZE, filtered.length)} מתוך{' '}
+              {filtered.length}
             </p>
             <div className="flex gap-2">
               <Button
