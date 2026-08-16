@@ -2,37 +2,88 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MaintainOS · אופליין</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>MaintainOS · אין חיבור</title>
     <style>
+      :root {
+        --canvas: #f7f7f5;
+        --surface: #ffffff;
+        --border: #e8e8e4;
+        --ink: #1a1a18;
+        --ink-2: #6b6b66;
+        --ink-3: #9a9a94;
+        --warning: #b07a1a;
+        --warning-soft: #fbf3e3;
+        --warning-line: #eddfc2;
+      }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: system-ui, sans-serif;
-        background: #f7f7f5;
-        color: #1a1a1a;
-        display: grid;
         min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
         place-items: center;
         padding: 24px;
+        padding-top: calc(24px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
-      .card {
-        max-width: 360px;
-        background: #fff;
-        border: 1px solid #e8e8e4;
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
+      .card { max-width: 360px; width: 100%; }
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 24px;
       }
-      a { color: #8b1e2d; }
+      .dot {
+        width: 6px; height: 6px; border-radius: 999px;
+        background: var(--warning);
+      }
+      .eyebrow { font-size: 11px; color: var(--ink-3); margin: 0; }
+      h1 {
+        font-size: 19px; font-weight: 600; letter-spacing: -0.015em;
+        margin: 0 0 6px;
+      }
+      p { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+      .notice {
+        margin-top: 20px;
+        border: 1px solid var(--warning-line);
+        background: var(--warning-soft);
+        color: var(--warning);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+      button {
+        margin-top: 20px;
+        width: 100%;
+        height: 44px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--ink);
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      button:active { background: var(--canvas); }
     </style>
   </head>
   <body>
     <div class="card">
-      <strong>אין חיבור כרגע</strong>
-      <p style="color:#6b6b66;font-size:14px;line-height:1.5">
-        MaintainOS במצב אופליין בסיסי. נסו שוב כשהרשת חוזרת.
-      </p>
-      <p><a href="/ops">לסקירה</a> · <a href="/tech">לפורטל טכנאי</a></p>
+      <div class="mark">
+        <span class="dot"></span>
+        <p class="eyebrow">MaintainOS</p>
+      </div>
+      <h1>אין חיבור לרשת</h1>
+      <p>המסך הזה לא נטען במטמון. חזרו לחיבור כדי להמשיך לעבוד.</p>
+      <div class="notice">עדכונים שביצעתם לפני הניתוק כבר נשמרו.</div>
+      <button onclick="location.reload()">ניסיון חוזר</button>
     </div>
   </body>
 </html>

@@ -5,10 +5,13 @@ import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 
+/** Development affordance. Never rendered in primary navigation. */
 export function SeedDemoTicketButton({
   assignToTech = true,
+  size = 'sm',
 }: {
   assignToTech?: boolean
+  size?: 'sm' | 'block'
 }) {
   const router = useRouter()
   const toast = useToast()
@@ -26,11 +29,11 @@ export function SeedDemoTicketButton({
         ok?: boolean
         error?: string
         detailPath?: string
-        techPath?: string
         ticket?: { display_number?: string | null }
       }
       if (!res.ok || !data.ok) {
         setError(data.error ?? 'יצירת הדגמה נכשלה')
+        toast.push({ title: 'יצירת הדגמה נכשלה', tone: 'critical' })
         return
       }
       toast.push({
@@ -43,6 +46,7 @@ export function SeedDemoTicketButton({
       })
     } catch {
       setError('שגיאת רשת')
+      toast.push({ title: 'שגיאת רשת', tone: 'critical' })
     }
   }
 
@@ -50,14 +54,16 @@ export function SeedDemoTicketButton({
     <div>
       <Button
         type="button"
-        variant="primary"
-        size="sm"
+        variant="secondary"
+        size={size}
         disabled={pending}
         onClick={() => void seed()}
       >
         {pending ? 'יוצר…' : 'תקלת הדגמה'}
       </Button>
-      {error ? <p className="mt-1 text-[11px] text-danger">{error}</p> : null}
+      {error ? (
+        <p className="t-caption mt-1 text-[var(--signal-critical)]">{error}</p>
+      ) : null}
     </div>
   )
 }

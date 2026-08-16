@@ -1,11 +1,13 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createSystemClient } from '@/lib/supabase/system'
 import {
   memAssign,
+  memCountryIdFromCode,
   memCreate,
   memDemoTechnicians,
+  memFindStoreByCodeInCountry,
+  memFindStoreById,
   memGet,
   memListTickets,
-  memStore,
   memUpdateStatus,
   supabaseReady,
   type MemTicket,
@@ -138,7 +140,7 @@ export async function listTickets(limit = 100): Promise<{
   backend: 'supabase' | 'memory'
 }> {
   if (await supabaseReady()) {
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('tickets')
       .select(
@@ -158,7 +160,7 @@ export async function listTickets(limit = 100): Promise<{
 
 export async function getById(id: string): Promise<TicketDetail | null> {
   if (await supabaseReady()) {
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const { data: ticket } = await supabase
       .from('tickets')
       .select('*, stores ( id, code, name, city, address )')
@@ -215,8 +217,12 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
   const sla = computeSlaTimestamps(priority)
 
   if (await supabaseReady()) {
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const store = await resolveStore(supabase, input)
+    assertStoreHierarchy(store)
+    if (input.assetId) {
+      await assertAssetBelongsToStore(supabase, input.assetId, store.id)
+    }
     const { data, error } = await supabase
       .from('tickets')
       .insert({
@@ -254,17 +260,9 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
   if (!input.storeCode && !input.storeId) {
     throw new Error('יש לציין storeId או storeCode')
   }
-  const { DEMO_STORES } = await import('@/modules/stores/data')
-  const store =
-    (input.storeCode ? memStore(input.storeCode) : undefined) ??
-    (input.storeId ? DEMO_STORES.find((s) => s.id === input.storeId) : undefined)
-  if (!store) {
-    throw new Error(
-      input.storeCode
-        ? `חנות לא נמצאה: ${input.storeCode}`
-        : 'חנות לא נמצאה',
-    )
-  }
+
+  const store = resolveMemoryStore(input)
+  assertStoreHierarchy(store)
   return memToRecord(
     memCreate({
       store,
@@ -281,6 +279,71 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
   )
 }
 
+/** Service-layer hierarchy checks (DB triggers mirror these in Supabase). */
+export function assertStoreHierarchy(store: {
+  id: string
+  organization_id?: string | null
+  country_id?: string | null
+  region_id?: string | null
+}) {
+  if (!store.country_id || !store.region_id) {
+    throw new Error('Store is missing country/region hierarchy')
+  }
+  if (!store.organization_id) {
+    throw new Error('Store is missing organization hierarchy')
+  }
+}
+
+export function resolveMemoryStore(input: CreateTicketInput) {
+  if (input.storeId) {
+    const byId = memFindStoreById(input.storeId)
+    if (!byId) throw new Error('חנות לא נמצאה')
+    if (input.countryCode) {
+      const expected = memCountryIdFromCode(input.countryCode)
+      if (expected && byId.country_id !== expected) {
+        throw new Error('Store does not belong to the requested country')
+      }
+    }
+    return byId
+  }
+
+  if (!input.storeCode) {
+    throw new Error('יש לציין storeId או storeCode')
+  }
+
+  const countryId =
+    memCountryIdFromCode(input.countryCode) ??
+    (input.countryCode ? null : memCountryIdFromCode('IL'))
+  if (input.countryCode && !countryId) {
+    throw new Error(`מדינה לא נתמכת: ${input.countryCode}`)
+  }
+  const byCountry = memFindStoreByCodeInCountry(
+    countryId ?? memCountryIdFromCode('IL')!,
+    input.storeCode,
+  )
+  if (!byCountry) {
+    throw new Error(`חנות לא נמצאה: ${input.storeCode}`)
+  }
+  return byCountry
+}
+
+async function assertAssetBelongsToStore(
+  supabase: ReturnType<typeof createSystemClient>,
+  assetId: string,
+  storeId: string,
+) {
+  const { data, error } = await supabase
+    .from('assets')
+    .select('id, store_id')
+    .eq('id', assetId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('Asset not found')
+  if (data.store_id !== storeId) {
+    throw new Error('Asset does not belong to the selected store')
+  }
+}
+
 export async function updateStatus(
   id: string,
   nextStatus: string,
@@ -293,7 +356,7 @@ export async function updateStatus(
     if (!current) throw new Error('תקלה לא נמצאה')
     const from = current.status as TicketStatus
     assertTransition(from, nextStatus)
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const patch: Record<string, unknown> = { status: nextStatus }
     if (nextStatus === 'resolved') patch.resolved_at = new Date().toISOString()
     if (nextStatus === 'closed') patch.closed_at = new Date().toISOString()
@@ -338,7 +401,7 @@ export async function assign(
       patch.status = 'assigned'
       statusChanged = true
     }
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('tickets')
       .update(patch)
@@ -379,7 +442,7 @@ export async function appendEvent(
   payload: Record<string, unknown> = {},
 ): Promise<TicketEvent> {
   if (await supabaseReady()) {
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('ticket_events')
       .insert({
@@ -401,7 +464,7 @@ export async function listInternalTechnicians(): Promise<
   { id: string; full_name: string | null; email: string | null }[]
 > {
   if (await supabaseReady()) {
-    const supabase = createAdminClient()
+    const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('memberships')
       .select('profile_id, profiles ( id, full_name, email )')
@@ -435,7 +498,7 @@ type StoreResolved = {
 }
 
 async function resolveStore(
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: ReturnType<typeof createSystemClient>,
   input: CreateTicketInput,
 ): Promise<StoreResolved> {
   if (input.storeId) {

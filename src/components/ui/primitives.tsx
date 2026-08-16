@@ -1,101 +1,78 @@
 import { cn } from '@/lib/utils'
 
-export function Badge({
+/**
+ * Containers are the last resort. Prefer type and space, then a divider, then
+ * a hairline, and only then a Panel.
+ */
+
+export function Panel({
   children,
-  tone = 'neutral',
   className,
+  flush,
 }: {
   children: React.ReactNode
-  tone?: 'neutral' | 'accent' | 'danger' | 'warning' | 'success' | 'info'
   className?: string
+  /** No padding — for tables and lists that manage their own row rhythm. */
+  flush?: boolean
 }) {
   return (
-    <span
+    <section
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
-        tone === 'neutral' && 'bg-canvas text-muted',
-        tone === 'accent' && 'bg-accent-soft text-accent',
-        tone === 'danger' && 'bg-danger-soft text-danger',
-        tone === 'warning' && 'bg-warning-soft text-warning',
-        tone === 'success' && 'bg-success-soft text-success',
-        tone === 'info' && 'bg-info-soft text-info',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
+        !flush && 'p-4',
         className,
       )}
     >
       {children}
-    </span>
+    </section>
   )
 }
 
-export function StatusDot({
-  tone = 'neutral',
-  label,
+export function PanelHeader({
+  title,
+  meta,
+  action,
 }: {
-  tone?: 'neutral' | 'accent' | 'danger' | 'warning' | 'success' | 'info'
-  label: string
+  title: string
+  meta?: React.ReactNode
+  action?: React.ReactNode
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] text-muted">
-      <span
-        className={cn(
-          'h-1.5 w-1.5 rounded-full',
-          tone === 'neutral' && 'bg-border-strong',
-          tone === 'accent' && 'bg-accent',
-          tone === 'danger' && 'bg-danger',
-          tone === 'warning' && 'bg-warning',
-          tone === 'success' && 'bg-success',
-          tone === 'info' && 'bg-info',
-        )}
-      />
-      <span className="text-foreground">{label}</span>
-    </span>
-  )
-}
-
-export function FilterChip({
-  active,
-  children,
-  href,
-}: {
-  active?: boolean
-  children: React.ReactNode
-  href: string
-}) {
-  return (
-    <a
-      href={href}
-      className={cn(
-        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] transition-colors',
-        active
-          ? 'border-accent/30 bg-accent-soft text-accent'
-          : 'border-border bg-surface text-muted hover:text-foreground',
-      )}
-    >
-      {children}
-    </a>
+    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4">
+      <div className="flex items-baseline gap-2">
+        <h2 className="t-section text-ink">{title}</h2>
+        {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
+      </div>
+      {action}
+    </header>
   )
 }
 
 export function PageHeader({
   title,
-  subtitle,
+  meta,
   actions,
+  className,
 }: {
   title: string
-  subtitle?: string
+  meta?: React.ReactNode
   actions?: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-[21px] font-semibold tracking-tight text-foreground">
-          {title}
-        </h1>
-        {subtitle ? (
-          <p className="mt-1 text-[13px] text-muted">{subtitle}</p>
-        ) : null}
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2',
+        className,
+      )}
+    >
+      <div className="flex items-baseline gap-3">
+        <h1 className="t-title text-ink">{title}</h1>
+        {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex items-center gap-2">{actions}</div>
+      ) : null}
     </div>
   )
 }
@@ -104,42 +81,65 @@ export function EmptyState({
   title,
   description,
   action,
+  className,
 }: {
   title: string
   description?: string
   action?: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border bg-surface px-6 py-14 text-center">
-      <p className="text-[14px] font-medium text-foreground">{title}</p>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center px-6 py-16 text-center',
+        className,
+      )}
+    >
+      <p className="t-body-strong text-ink">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-sm text-[13px] text-muted">{description}</p>
+        <p className="t-body mt-1 max-w-xs text-ink-2">{description}</p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   )
 }
 
-export function Skeleton({ className }: { className?: string }) {
+export function ErrorState({
+  title = 'משהו השתבש',
+  description,
+  action,
+}: {
+  title?: string
+  description?: string
+  action?: React.ReactNode
+}) {
   return (
-    <div
-      className={cn('animate-pulse rounded-[var(--radius-sm)] bg-canvas', className)}
-    />
+    <div className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3">
+      <p className="t-body-strong text-[var(--signal-critical)]">{title}</p>
+      {description ? (
+        <p className="t-body mt-1 text-ink-2">{description}</p>
+      ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
   )
 }
 
-export function Card({
+export function Notice({
+  tone = 'neutral',
   children,
-  className,
 }: {
+  tone?: 'neutral' | 'warning' | 'progress'
   children: React.ReactNode
-  className?: string
 }) {
   return (
     <div
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface',
-        className,
+        't-body rounded-[var(--radius-md)] border px-3 py-2',
+        tone === 'neutral' && 'border-border bg-surface text-ink-2',
+        tone === 'warning' &&
+          'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
+        tone === 'progress' &&
+          'border-border bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
       )}
     >
       {children}
@@ -147,10 +147,61 @@ export function Card({
   )
 }
 
-export function SurfaceTable({ children }: { children: React.ReactNode }) {
+export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
-      <table className="w-full border-collapse text-[13px]">{children}</table>
+    <div
+      aria-hidden
+      className={cn(
+        'animate-shimmer rounded-[var(--radius-sm)] bg-sunken',
+        className,
+      )}
+    />
+  )
+}
+
+/** Skeleton that mirrors the real queue geometry rather than a spinner. */
+export function RowSkeleton({ rows = 8 }: { rows?: number }) {
+  return (
+    <div className="divide-y divide-border">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 px-4"
+          style={{ height: 'var(--row-h)' }}
+        >
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="hidden h-3 flex-1 md:block" />
+          <Skeleton className="hidden h-3 w-20 md:block" />
+          <Skeleton className="h-3 w-12" />
+        </div>
+      ))}
     </div>
   )
+}
+
+export function KeyValue({
+  label,
+  children,
+  ltr,
+}: {
+  label: string
+  children: React.ReactNode
+  ltr?: boolean
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2">
+      <dt className="t-body shrink-0 text-ink-2">{label}</dt>
+      <dd
+        dir={ltr ? 'ltr' : undefined}
+        className={cn('t-body text-end text-ink', ltr && 't-num')}
+      >
+        {children}
+      </dd>
+    </div>
+  )
+}
+
+export function Divider({ className }: { className?: string }) {
+  return <hr className={cn('border-t border-border', className)} />
 }

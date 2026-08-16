@@ -6,10 +6,33 @@ import type { TicketStatus } from '@/modules/tickets/constants'
 import { TICKET_STATUS_LABELS_HE } from '@/modules/tickets/constants'
 import { nextStatuses } from '@/modules/tickets/transitions'
 import { Button } from '@/components/ui/button'
-import { Select, Input } from '@/components/ui/input'
+import { Select, Field } from '@/components/ui/input'
+import { ErrorState } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 
 type Technician = { id: string; full_name: string | null; email: string | null }
+
+/**
+ * Action hierarchy matters: the forward move is primary, lateral moves are
+ * secondary, and cancellation is a signal-coloured last resort. Previously all
+ * transitions rendered as identical buttons, giving "cancel" the same weight
+ * as "assign".
+ */
+function classifyTransition(to: TicketStatus): 'primary' | 'secondary' | 'critical' {
+  if (to === 'cancelled') return 'critical'
+  if (to === 'assigned' || to === 'in_progress' || to === 'resolved')
+    return 'primary'
+  return 'secondary'
+}
+
+function transitionLabel(from: TicketStatus, to: TicketStatus): string {
+  if (to === 'assigned') return 'שיוך לטיפול'
+  if (to === 'in_progress') return from === 'resolved' ? 'פתיחה מחדש' : 'התחלת טיפול'
+  if (to === 'resolved') return 'סימון כנפתר'
+  if (to === 'closed') return 'סגירה'
+  if (to === 'cancelled') return 'ביטול תקלה'
+  return TICKET_STATUS_LABELS_HE[to] ?? to
+}
 
 export function TicketActions({
   ticketId,
@@ -25,89 +48,131 @@ export function TicketActions({
   const router = useRouter()
   const toast = useToast()
   const [pending, startTransition] = useTransition()
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [profileId, setProfileId] = useState(assignedTo ?? '')
-  const allowed = nextStatuses(status)
 
-  async function patch(body: Record<string, unknown>) {
+  const allowed = nextStatuses(status)
+  const primary = allowed.filter((s) => classifyTransition(s) === 'primary')
+  const secondary = allowed.filter((s) => classifyTransition(s) === 'secondary')
+  const destructive = allowed.filter((s) => classifyTransition(s) === 'critical')
+
+  async function patch(body: Record<string, unknown>, successText: string) {
     setError(null)
-    const res = await fetch(`/api/tickets/${ticketId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(data.error ?? 'שגיאה בעדכון')
-      return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'העדכון נכשל')
+        toast.push({ title: 'העדכון נכשל', tone: 'critical' })
+        return
+      }
+      toast.push({ title: successText, tone: 'success' })
+      startTransition(() => router.refresh())
+    } catch {
+      setError('שגיאת רשת — בדקו את החיבור ונסו שוב')
+      toast.push({ title: 'שגיאת רשת', tone: 'critical' })
+    } finally {
+      setBusy(false)
     }
-    toast.push({ title: 'התקלה עודכנה', tone: 'success' })
-    startTransition(() => router.refresh())
   }
+
+  const disabled = busy || pending
+  const hasTechnicians = technicians.length > 0
 
   return (
     <div className="space-y-5">
-      <section>
-        <h3 className="mb-2 text-[12px] font-medium text-muted">עדכון סטטוס</h3>
-        {allowed.length === 0 ? (
-          <p className="text-[13px] text-muted">אין מעברים נוספים.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {allowed.map((s) => (
-              <Button
-                key={s}
-                type="button"
-                size="sm"
-                disabled={pending}
-                onClick={() => void patch({ status: s })}
-              >
-                {TICKET_STATUS_LABELS_HE[s]}
-              </Button>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="mb-2 text-[12px] font-medium text-muted">שיוך טכנאי</h3>
-        <form
-          className="space-y-2"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!profileId.trim()) {
-              setError('יש לבחור טכנאי')
-              return
-            }
-            void patch({ assignedTo: profileId.trim() })
-          }}
-        >
-          {technicians.length > 0 ? (
+      <Field label="טכנאי מטפל">
+        {hasTechnicians ? (
+          <div className="flex gap-2">
             <Select
               value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
+              disabled={disabled}
+              onChange={(e) => {
+                const next = e.target.value
+                setProfileId(next)
+                if (next) void patch({ assignedTo: next }, 'הטכנאי שויך')
+              }}
             >
-              <option value="">— בחירה —</option>
+              <option value="">— ללא שיוך —</option>
               {technicians.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.full_name || t.email || t.id}
+                  {t.full_name || t.email || t.id.slice(0, 8)}
                 </option>
               ))}
             </Select>
-          ) : (
-            <Input
-              value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
-              placeholder="UUID טכנאי"
-              dir="ltr"
-            />
-          )}
-          <Button type="submit" variant="primary" size="sm" disabled={pending}>
-            שייך
-          </Button>
-        </form>
-      </section>
+          </div>
+        ) : (
+          <p className="t-body rounded-[var(--radius-md)] border border-border bg-canvas px-3 py-2 text-ink-2">
+            אין טכנאים זמינים לשיוך. הוסיפו טכנאים במסד הנתונים כדי לשייך תקלות.
+          </p>
+        )}
+      </Field>
 
-      {error ? <p className="text-[12px] text-danger">{error}</p> : null}
+      {allowed.length === 0 ? (
+        <p className="t-body text-ink-2">התקלה הגיעה למצב סופי.</p>
+      ) : (
+        <div className="space-y-2">
+          {primary.map((s) => (
+            <Button
+              key={s}
+              type="button"
+              variant={s === 'resolved' ? 'resolve' : 'primary'}
+              size="block"
+              disabled={disabled}
+              onClick={() =>
+                void patch({ status: s }, `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`)
+              }
+            >
+              {transitionLabel(status, s)}
+            </Button>
+          ))}
+
+          {secondary.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {secondary.map((s) => (
+                <Button
+                  key={s}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() =>
+                    void patch(
+                      { status: s },
+                      `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`,
+                    )
+                  }
+                >
+                  {transitionLabel(status, s)}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+
+          {destructive.map((s) => (
+            <Button
+              key={s}
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              className="text-[var(--signal-critical)] hover:bg-[var(--signal-critical-soft)]"
+              onClick={() => void patch({ status: s }, 'התקלה בוטלה')}
+            >
+              {transitionLabel(status, s)}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}
     </div>
   )
 }

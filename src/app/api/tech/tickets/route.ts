@@ -1,18 +1,30 @@
 import { NextResponse } from 'next/server'
 import { listTechTickets } from '@/modules/tech/service'
-import { resolveTechId } from '@/modules/tickets/tech'
+import {
+  authErrorResponse,
+  requireActor,
+} from '@/lib/auth/request-actor'
+import { AuthError, actorIsTech, actorPrimaryTechId } from '@/lib/auth/types'
 
 export const dynamic = 'force-dynamic'
 
-/** GET /api/tech/tickets — open/assigned jobs for the technician PWA. */
+/** GET /api/tech/tickets — jobs for the authenticated technician only. */
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url)
-    const techId = resolveTechId(url.searchParams.get('techId'))
+    const actor = await requireActor(request)
+    if (!actorIsTech(actor)) {
+      throw new AuthError('אין הרשאת טכנאי', 403)
+    }
+    const techId = actorPrimaryTechId(actor)
     const { tickets, backend } = await listTechTickets({ techId })
-    return NextResponse.json({ tickets, backend, techId })
+    // Extra filter: only assigned to self (or claimable assigned-unassigned pool already in service)
+    const scoped = tickets.filter(
+      (t) =>
+        t.assigned_to === techId ||
+        (!t.assigned_to && t.status === 'assigned'),
+    )
+    return NextResponse.json({ tickets: scoped, backend, techId })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'שגיאה בטעינת עבודות'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return authErrorResponse(err)
   }
 }

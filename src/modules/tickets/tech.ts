@@ -85,23 +85,28 @@ export async function fetchTechTickets(techId: string | null): Promise<{
   error?: string
 }> {
   try {
-    const supabase = createAdminClient()
-    let query = supabase
-      .from('tickets')
-      .select(
-        'id, number, display_number, status, priority, category, description, title, assigned_to, created_at, updated_at, store_id, stores(code, name, city, address)',
-      )
-      .in('status', TECH_LIST_STATUSES)
-      .order('updated_at', { ascending: false })
-      .limit(100)
+    const { supabaseReady } = await import('@/lib/data/memory-store')
+    if (await supabaseReady()) {
+      const supabase = createAdminClient()
+      let query = supabase
+        .from('tickets')
+        .select(
+          'id, number, display_number, status, priority, category, description, title, assigned_to, created_at, updated_at, store_id, stores(code, name, city, address)',
+        )
+        .in('status', TECH_LIST_STATUSES)
+        .order('updated_at', { ascending: false })
+        .limit(100)
 
-    if (techId) {
-      query = query.or(`assigned_to.eq.${techId},and(assigned_to.is.null,status.eq.assigned)`)
-    }
+      if (techId) {
+        query = query.or(
+          `assigned_to.eq.${techId},and(assigned_to.is.null,status.eq.assigned)`,
+        )
+      }
 
-    const { data, error } = await query
-    if (!error && data) {
-      return { tickets: (data as unknown as TechTicketRow[]) ?? [], fromDb: true }
+      const { data, error } = await query
+      if (!error && data) {
+        return { tickets: (data as unknown as TechTicketRow[]) ?? [], fromDb: true }
+      }
     }
   } catch {
     // fall through to memory / ticket service
@@ -126,31 +131,35 @@ export async function fetchTechTicket(ticketId: string): Promise<{
   error?: string
 }> {
   try {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(
-        `id, number, display_number, status, priority, category, description, title, assigned_to, created_at, updated_at, store_id,
+    const { supabaseReady } = await import('@/lib/data/memory-store')
+    if (await supabaseReady()) {
+      const supabase = createAdminClient()
+      const { data, error } = await supabase
+        .from('tickets')
+        .select(
+          `id, number, display_number, status, priority, category, description, title, assigned_to, created_at, updated_at, store_id,
          stores(code, name, city, address),
          ticket_events(id, event_type, payload, created_at, actor_id),
          ticket_attachments(id, url, kind, created_at)`,
-      )
-      .eq('id', ticketId)
-      .maybeSingle()
+        )
+        .eq('id', ticketId)
+        .maybeSingle()
 
-    if (!error && data) {
-      const row = data as unknown as TechTicketDetail & {
-        ticket_events?: TechTicketDetail['events']
-        ticket_attachments?: TechTicketDetail['attachments']
-      }
+      if (!error && data) {
+        const row = data as unknown as TechTicketDetail & {
+          ticket_events?: TechTicketDetail['events']
+          ticket_attachments?: TechTicketDetail['attachments']
+        }
 
-      const events = [...(row.ticket_events ?? [])].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
+        const events = [...(row.ticket_events ?? [])].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
 
-      return {
-        ticket: { ...row, events, attachments: row.ticket_attachments ?? [] },
-        fromDb: true,
+        return {
+          ticket: { ...row, events, attachments: row.ticket_attachments ?? [] },
+          fromDb: true,
+        }
       }
     }
   } catch {
