@@ -61,6 +61,9 @@ test.describe('Visual regression pack', () => {
   test('critical routes across viewports', async ({ page, request }) => {
     test.setTimeout(180_000)
 
+    // Isolate from tickets seeded by earlier e2e files in the shared memory store.
+    await request.post('/api/demo/reset-memory')
+
     // Unique copy + OTHER_TECH so list pages stay stable even if prior e2e
     // tests already seeded DEMO_TECH_ID jobs in the shared memory store.
     const marker = `VISUAL_PACK_${Date.now()}`

@@ -9,12 +9,13 @@ export function Panel({
   children,
   className,
   flush,
+  ...rest
 }: {
   children: React.ReactNode
   className?: string
   /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
-}) {
+} & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
@@ -22,6 +23,7 @@ export function Panel({
         !flush && 'p-4',
         className,
       )}
+      {...rest}
     >
       {children}
     </section>

@@ -224,6 +224,18 @@ function store(): GlobalMem {
   return mem
 }
 
+/** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
+export function memReset() {
+  const g = globalThis as typeof globalThis & { __maintainosMem?: GlobalMem }
+  g.__maintainosMem = {
+    tickets: new Map(),
+    sessions: new Map(),
+    processed: new Set(),
+    seq: 18000,
+  }
+  return g.__maintainosMem
+}
+
 export async function supabaseReady(): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
