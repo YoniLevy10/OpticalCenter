@@ -6,11 +6,26 @@ export type FaultClassification = {
 }
 
 /**
- * Dumb keyword rules for Israel pilot (Hebrew + common English equipment terms).
- * Not an AI chatbot — just enough to tag HVAC/electrical/etc for HQ triage.
+ * Conservative keyword rules for Israel pilot.
+ * Prefer false-high over missing a genuine safety-critical fault.
  */
 export function classifyFaultText(text: string): FaultClassification {
   const t = text.trim().toLowerCase()
+
+  // P0 hazards — check first
+  if (
+    /עשן|שריפה|אש\b|להבה|ניצוצ|ניצוצות|smoke|fire|spark|sparks|flames?/.test(
+      t,
+    ) ||
+    /ריח\s*שרוף|שרוף|burning\s*smell|electrical\s*smell|חוט\s*חשוף|exposed\s*wir/.test(
+      t,
+    ) ||
+    /(מים|נזיל).{0,24}(חשמל|לוח|שקע|ארון)|(חשמל|לוח|שקע).{0,24}(מים|נזיל)|water\s+near\s+electr/i.test(
+      t,
+    )
+  ) {
+    return { category: 'electrical_hazard', priority: 'critical' }
+  }
 
   if (
     /מזגן|מיזוג|מזגנים|קירור|חימום|hvac|air\s*cond|ac[\s-]/.test(t)

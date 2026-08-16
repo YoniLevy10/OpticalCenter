@@ -106,6 +106,7 @@ export async function patchTechTicket(opts: {
   resolution_note?: string
   note?: string
   claim?: boolean
+  photoUrl?: string
 }): Promise<TechTicketDetail> {
   const note = (opts.resolution_note ?? opts.note)?.trim()
   const current = await getById(opts.ticketId)
@@ -127,7 +128,6 @@ export async function patchTechTicket(opts: {
       throw new Error(`מעבר מ-${current.status} ל-${opts.status} אינו מותר`)
     }
 
-    // Prefer service updateStatus; memory path also stores resolution note.
     if (!(await supabaseReady()) && memGet(opts.ticketId)) {
       memUpdateStatus(opts.ticketId, opts.status, note ?? null, opts.techId)
     } else {
@@ -144,6 +144,30 @@ export async function patchTechTicket(opts: {
   } else if (note) {
     const { appendEvent } = await import('@/modules/tickets/service')
     await appendEvent(opts.ticketId, 'tech_note', opts.techId, { note })
+  }
+
+  if (opts.photoUrl?.trim()) {
+    const { appendEvent } = await import('@/modules/tickets/service')
+    await appendEvent(opts.ticketId, 'tech_photo', opts.techId, {
+      photo_url: opts.photoUrl.trim(),
+    })
+    if (!(await supabaseReady())) {
+      const { memAddMessage } = await import('@/lib/data/memory-store')
+      memAddMessage(opts.ticketId, {
+        channel: 'tech',
+        direction: 'inbound',
+        body: note ?? null,
+        media_url: opts.photoUrl.trim(),
+      })
+    } else {
+      const { createSystemClient } = await import('@/lib/supabase/system')
+      const supabase = createSystemClient('tech_attachment_insert')
+      await supabase.from('ticket_attachments').insert({
+        ticket_id: opts.ticketId,
+        url: opts.photoUrl.trim(),
+        kind: 'image',
+      })
+    }
   }
 
   const refreshed = await getTechTicket(opts.ticketId)

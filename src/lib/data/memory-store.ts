@@ -70,6 +70,116 @@ const DEMO_TECHS = [
 
 export const MEM_ORG_ID = '11111111-1111-1111-1111-111111111111'
 export const MEM_COUNTRY_ID = '22222222-2222-2222-2222-222222222222'
+export const MEM_COUNTRY_FR_ID = '33333333-3333-3333-3333-333333333333'
+export const MEM_WA_PHONE_IL = 'wa_phone_il_demo'
+export const MEM_WA_PHONE_FR = 'wa_phone_fr_demo'
+export const MEM_KNOWN_EMPLOYEE_WA = '972501112233'
+
+export type MemStore = StoreRow & {
+  organization_id: string
+  country_id: string
+}
+
+const MEM_STORES: MemStore[] = [
+  ...DEMO_STORES.map((s) => ({
+    ...s,
+    organization_id: MEM_ORG_ID,
+    country_id: MEM_COUNTRY_ID,
+  })),
+  {
+    id: 'demo-fr-172',
+    code: '172',
+    name: 'Paris Opéra',
+    city: 'Paris',
+    address: null,
+    region_id: 'idf',
+    organization_id: MEM_ORG_ID,
+    country_id: MEM_COUNTRY_FR_ID,
+  },
+]
+
+const MEM_PHONES: { wa_id: string; store_id: string; country_id: string }[] = [
+  {
+    wa_id: MEM_KNOWN_EMPLOYEE_WA,
+    store_id: 'demo-172',
+    country_id: MEM_COUNTRY_ID,
+  },
+]
+
+export function memResolveCountryByPhoneNumberId(phoneNumberId: string | null): {
+  id: string
+  organization_id: string
+  code: string
+  whatsapp_phone_number_id: string | null
+  whatsapp_access_token: string | null
+} | null {
+  const id =
+    phoneNumberId ||
+    process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    MEM_WA_PHONE_IL
+  if (id === MEM_WA_PHONE_FR || id === 'wa_phone_fr_demo') {
+    return {
+      id: MEM_COUNTRY_FR_ID,
+      organization_id: MEM_ORG_ID,
+      code: 'FR',
+      whatsapp_phone_number_id: MEM_WA_PHONE_FR,
+      whatsapp_access_token: null,
+    }
+  }
+  if (id === MEM_WA_PHONE_IL || id === process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID) {
+    return {
+      id: MEM_COUNTRY_ID,
+      organization_id: MEM_ORG_ID,
+      code: 'IL',
+      whatsapp_phone_number_id: MEM_WA_PHONE_IL,
+      whatsapp_access_token: null,
+    }
+  }
+  // Unknown — do not guess
+  if (phoneNumberId) return null
+  // Dev default when no phoneNumberId on message: IL demo line
+  return {
+    id: MEM_COUNTRY_ID,
+    organization_id: MEM_ORG_ID,
+    code: 'IL',
+    whatsapp_phone_number_id: MEM_WA_PHONE_IL,
+    whatsapp_access_token: null,
+  }
+}
+
+export function memFindStoreByCodeInCountry(
+  countryId: string,
+  code: string,
+): MemStore | undefined {
+  return MEM_STORES.find((s) => s.country_id === countryId && s.code === code)
+}
+
+export function memResolveStoreByWaId(
+  waId: string,
+  countryId: string | null,
+): {
+  id: string
+  code: string
+  name: string
+  organization_id: string
+  country_id: string
+  region_id: string
+} | null {
+  const row = MEM_PHONES.find((p) => p.wa_id === waId)
+  if (!row) return null
+  if (countryId && row.country_id !== countryId) return null
+  const store = MEM_STORES.find((s) => s.id === row.store_id)
+  if (!store) return null
+  return {
+    id: store.id,
+    code: store.code,
+    name: store.name,
+    organization_id: store.organization_id,
+    country_id: store.country_id,
+    region_id: store.region_id,
+  }
+}
 
 export type MemSession = {
   wa_id: string
@@ -127,7 +237,23 @@ export function memDemoTechnicians() {
 }
 
 export function memStore(code: string): StoreRow | undefined {
-  return DEMO_STORES.find((s) => s.code === code)
+  return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
+}
+
+export function memFindStoreById(id: string): MemStore | undefined {
+  return MEM_STORES.find((s) => s.id === id)
+}
+
+export function memCountryIdFromCode(code?: string | null): string | null {
+  if (!code) return null
+  const c = code.trim().toUpperCase()
+  if (c === 'IL') return MEM_COUNTRY_ID
+  if (c === 'FR') return MEM_COUNTRY_FR_ID
+  return null
+}
+
+export function memFindStoreByCode(code: string): MemStore | undefined {
+  return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
 }
 
 export function memListTickets(): MemTicket[] {
@@ -162,8 +288,14 @@ export function memCreate(input: {
   const now = new Date().toISOString()
   const ticket: MemTicket = {
     id,
-    organization_id: MEM_ORG_ID,
-    country_id: MEM_COUNTRY_ID,
+    organization_id:
+      'organization_id' in input.store && input.store.organization_id
+        ? String(input.store.organization_id)
+        : MEM_ORG_ID,
+    country_id:
+      'country_id' in input.store && input.store.country_id
+        ? String(input.store.country_id)
+        : MEM_COUNTRY_ID,
     region_id: ('region_id' in input.store && input.store.region_id) || 'ta',
     store_id: input.store.id,
     number,
@@ -345,10 +477,6 @@ export function memAddMessage(
   ticket.messages.push(row)
   ticket.updated_at = row.created_at
   return row
-}
-
-export function memFindStoreByCode(code: string): StoreRow | undefined {
-  return memStore(code)
 }
 
 export function memGetSession(waId: string): MemSession | undefined {

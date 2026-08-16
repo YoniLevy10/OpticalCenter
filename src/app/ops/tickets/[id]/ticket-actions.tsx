@@ -64,6 +64,7 @@ export function TicketActions({
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify(body),
       })
       const data = await res.json().catch(() => ({}))

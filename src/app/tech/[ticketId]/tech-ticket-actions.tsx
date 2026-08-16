@@ -96,8 +96,9 @@ export function TechTicketActions({
       const res = await fetch(`/api/tech/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        // Session/cookie is source of truth — do not send techId in the body.
         body: JSON.stringify({
-          techId,
           claim: isUnassigned ? true : undefined,
           ...body,
         }),
