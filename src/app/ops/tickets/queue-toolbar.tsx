@@ -67,7 +67,7 @@ export function AttentionStrip({
   ]
 
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2" data-visual="attention-strip">
       {items.map((item) => {
         const lit = item.value > 0 && item.tone !== 'idle'
         return (

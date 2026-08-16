@@ -29,18 +29,22 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator('.live-sla'),
     page.locator('.live-age'),
     page.locator('.t-num'),
-    // Lifecycle WA notifies embed display numbers + /tech/{uuid} links;
-    // bubble height still shifts layout — mask the whole chronology panel.
+    // Lifecycle WA notifies + chronology length vary by ticket id / prior seeds.
     page.locator('[data-visual="ticket-timeline"]'),
     page.locator('[data-activity-kind]'),
+    // Global queue counts grow as prior e2e tests seed the shared memory store.
+    page.locator('[data-visual="attention-strip"]'),
   ]
 }
 
 async function shot(page: Page, name: string) {
-  // Ops detail timeline/WA body length varies per ticket id — allow more slack.
-  const loose = name.startsWith('ops-ticket-detail')
+  // Detail + tech list drift with shared memory / WA body length.
+  const loose =
+    name.startsWith('ops-ticket-detail') ||
+    name.startsWith('tech-jobs') ||
+    name.startsWith('ops-tickets-open')
   await expect(page).toHaveScreenshot(name, {
-    maxDiffPixelRatio: loose ? 0.2 : MAX_DIFF,
+    maxDiffPixelRatio: loose ? 0.12 : MAX_DIFF,
     // Viewport only — fullPage height drifts as the memory store accumulates tickets.
     mask: dynamicMasks(page),
   })

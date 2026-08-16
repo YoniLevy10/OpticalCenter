@@ -29,13 +29,9 @@ export default async function TechPortalPage({
   const techId = resolveServerTechId(actor, params.techId ?? null)
   const { tickets: fetched, error } = await fetchTechTickets(techId)
 
-  // Defense in depth: only jobs for this tech (plus unassigned pool for internals).
+  // Defense in depth: SSR list is assigned-to-actor only (query techId is not SoT).
   const tickets = techId
-    ? fetched.filter(
-        (t) =>
-          t.assigned_to === techId ||
-          (!t.assigned_to && t.status === 'assigned'),
-      )
+    ? fetched.filter((t) => t.assigned_to === techId)
     : []
 
   const openCount = tickets.filter((t) =>
