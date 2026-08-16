@@ -22,18 +22,18 @@ function hasTech(memberships: Membership[]) {
 }
 
 /**
- * Post-login home: tech-only → /tech, otherwise HQ queue.
+ * Post-login home: tech-only → /tech, otherwise HQ dashboard.
  * Users with both HQ and tech memberships land in ops.
  *
  * Edge-safe: type-only import from auth/types (no node:crypto).
  */
 export function resolveHomePath(
   actor: Pick<Actor, 'memberships'>,
-): '/tech' | '/ops/tickets' {
+): '/tech' | '/ops/dashboard' {
   if (hasTech(actor.memberships) && !hasHq(actor.memberships)) {
     return '/tech'
   }
-  return '/ops/tickets'
+  return '/ops/dashboard'
 }
 
 /**

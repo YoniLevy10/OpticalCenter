@@ -86,6 +86,7 @@ export const MEM_KNOWN_EMPLOYEE_WA = '972501112233'
 export type MemStore = StoreRow & {
   organization_id: string
   country_id: string
+  is_active: boolean
 }
 
 const MEM_STORES: MemStore[] = [
@@ -93,6 +94,7 @@ const MEM_STORES: MemStore[] = [
     ...s,
     organization_id: MEM_ORG_ID,
     country_id: MEM_COUNTRY_ID,
+    is_active: s.is_active ?? true,
   })),
   {
     id: 'demo-fr-172',
@@ -103,6 +105,7 @@ const MEM_STORES: MemStore[] = [
     region_id: 'idf',
     organization_id: MEM_ORG_ID,
     country_id: MEM_COUNTRY_FR_ID,
+    is_active: true,
   },
 ]
 
@@ -274,6 +277,75 @@ export function memCountryIdFromCode(code?: string | null): string | null {
 
 export function memFindStoreByCode(code: string): MemStore | undefined {
   return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
+}
+
+export function memListStores(opts?: {
+  countryId?: string
+  activeOnly?: boolean
+}): MemStore[] {
+  const countryId = opts?.countryId ?? MEM_COUNTRY_ID
+  const activeOnly = opts?.activeOnly !== false
+  return MEM_STORES.filter((s) => {
+    if (s.country_id !== countryId) return false
+    if (activeOnly && !s.is_active) return false
+    return true
+  }).sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true }))
+}
+
+export function memCreateStore(input: {
+  code: string
+  name: string
+  city?: string | null
+  address?: string | null
+  region_id?: string
+  country_id?: string
+  organization_id?: string
+}): MemStore {
+  const code = input.code.trim()
+  if (!/^\d{1,6}$/.test(code)) {
+    throw new Error('קוד חנות חייב להיות מספרי (עד 6 ספרות)')
+  }
+  const countryId = input.country_id ?? MEM_COUNTRY_ID
+  if (MEM_STORES.some((s) => s.country_id === countryId && s.code === code)) {
+    throw new Error(`חנות עם קוד ${code} כבר קיימת`)
+  }
+  const store: MemStore = {
+    id: `demo-${countryId.slice(0, 4)}-${code}-${crypto.randomUUID().slice(0, 8)}`,
+    code,
+    name: input.name.trim(),
+    city: input.city?.trim() || null,
+    address: input.address?.trim() || null,
+    region_id: input.region_id?.trim() || 'ta',
+    organization_id: input.organization_id ?? MEM_ORG_ID,
+    country_id: countryId,
+    is_active: true,
+  }
+  MEM_STORES.push(store)
+  return store
+}
+
+export function memUpdateStore(
+  id: string,
+  patch: {
+    name?: string
+    city?: string | null
+    address?: string | null
+    region_id?: string
+    is_active?: boolean
+  },
+): MemStore {
+  const store = MEM_STORES.find((s) => s.id === id)
+  if (!store) throw new Error('חנות לא נמצאה')
+  if (patch.name !== undefined) {
+    const name = patch.name.trim()
+    if (!name) throw new Error('שם חנות חובה')
+    store.name = name
+  }
+  if (patch.city !== undefined) store.city = patch.city?.trim() || null
+  if (patch.address !== undefined) store.address = patch.address?.trim() || null
+  if (patch.region_id !== undefined) store.region_id = patch.region_id.trim() || store.region_id
+  if (patch.is_active !== undefined) store.is_active = patch.is_active
+  return store
 }
 
 export function memListTickets(): MemTicket[] {

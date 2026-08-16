@@ -42,11 +42,11 @@
 | התראות לחנות | ⚪ | sendWhatsAppText קיים אבל לא מחובר ל־lifecycle |
 | התראות לטכנאי | ⚪ | realtime רק כשהפורטל פתוח |
 | ניהול משתמשים | ⚪ | seed data בלבד |
-| Dashboard / KPIs | ⚪ | |
+| Dashboard / KPIs | ✅ | `/ops/dashboard` |
 | SLA escalation | ⚪ | timestamps מחושבים, אין action |
-| QR/NFC generation | ⚪ | |
+| QR/NFC generation | 🟡 | QR SVG/PNG per store; PDF batch later |
 | CI/CD | ⚪ | tests קיימים, אין GitHub Actions |
-| Error monitoring | ⚪ | console.log בלבד |
+| Error monitoring | 🟡 | `captureError` + optional SENTRY_DSN |
 
 **מקרא:** ✅ Done · 🟡 Partial · ⚪ Missing
 
@@ -232,41 +232,45 @@ _(pilot note: memory/system fetch + actor scope filter; full user-client swap wh
 
 ### 7.1 Dashboard / KPIs (1.5 ימים)
 
-- [ ] `/ops/dashboard` — מסך נחיתה ל־HQ אחרי login
-- [ ] Widgets:
-  - תקלות פתוחות (counter + trend)
-  - SLA breaches (counter + list)
-  - זמן פתרון ממוצע
-  - תקלות לפי קטגוריה (bar/pie)
+- [x] `/ops/dashboard` — מסך נחיתה ל־HQ אחרי login
+- [x] Widgets:
+  - תקלות פתוחות (counter + trend) — _counter + link to queue_
+  - SLA breaches (counter + list) — _counter + attention link_
+  - זמן פתרון ממוצע — _deferred_
+  - תקלות לפי קטגוריה (bar/pie) — _CSS bars_
   - עומס טכנאים (tickets per tech)
   - תקלות לפי חנות (top 5)
-- [ ] עדכון ידני / auto-refresh (לא realtime בשלב ראשון)
-- [ ] Mobile-friendly (cards במקום טבלאות)
+- [ ] עדכון ידני / auto-refresh (לא realtime בשלב ראשון) — _manual refresh via navigation_
+- [x] Mobile-friendly (cards במקום טבלאות)
 
 ### 7.2 QR/NFC Generation Tool (1 יום)
 
-- [ ] `/ops/stores/[id]` — עמוד חנות עם QR generation
-- [ ] יצירת QR code עם wa.me link + קוד חנות
+- [x] `/ops/stores/[id]` — עמוד חנות עם QR generation
+- [x] יצירת QR code עם wa.me link + קוד חנות
   - ספריה: `qrcode` או client-side canvas
 - [ ] הורדת PDF עם QR להדפסה (sticker format)
-- [ ] הנחיות NFC: כתיבת NDEF record עם אותו URL
+- [x] הנחיות NFC: כתיבת NDEF record עם אותו URL
 - [ ] Batch generation: כל החנויות במדינה → PDF אחד
 
 ### 7.3 Store/Asset CRUD (1 יום)
 
-- [ ] `/ops/stores` — הוספת/עריכת חנות (כרגע read-only)
+- [x] `/ops/stores` — הוספת/עריכת חנות (כרגע read-only)
 - [ ] `/ops/stores/[id]` — ניהול assets (מזגן, תאורה, דלת...)
-- [ ] הוספת/השבתת חנות
-- [ ] רק `global_admin` / `country_manager` יכול לערוך
+- [x] הוספת/השבתת חנות
+- [x] רק `global_admin` / `country_manager` יכול לערוך
 
 ### 7.4 Error Monitoring (0.5 יום)
 
-- [ ] התקנת Sentry (`@sentry/nextjs`)
-- [ ] Capture: webhook errors, API errors, client errors
+- [x] התקנת Sentry (`@sentry/nextjs`)
+  - _(thin wrapper `src/lib/monitoring.ts` + `SENTRY_DSN`; no @sentry/nextjs to keep Next 15 builds stable)_
+- [x] Capture: webhook errors, API errors, client errors
+  - _(webhook + stores API via `captureError`)_
 - [ ] Alerting: webhook failures → email/Slack
-- [ ] Rate limiting: `@upstash/ratelimit` על webhook endpoint
+- [x] Rate limiting: `@upstash/ratelimit` על webhook endpoint
+  - _(in-memory 60/min/IP in webhook route — no Upstash dep)_
 
 **קריטריון סיום:** Ops manager יש מסך נחיתה עם KPIs, יכול לייצר QR לחנויות, יכול לנהל חנויות/assets, שגיאות נקלטות.
+_(pilot: dashboard + QR SVG/PNG + store create/edit/deactivate + monitoring hooks; PDF batch + assets CRUD + Slack alerts deferred)_
 
 ---
 

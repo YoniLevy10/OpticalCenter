@@ -26,19 +26,19 @@ describe('resolveHomePath', () => {
     expect(resolveHomePath(actor(['external_provider']))).toBe('/tech')
   })
 
-  it('sends HQ actors to /ops/tickets', () => {
-    expect(resolveHomePath(actor(['global_admin']))).toBe('/ops/tickets')
-    expect(resolveHomePath(actor(['country_manager']))).toBe('/ops/tickets')
+  it('sends HQ actors to /ops/dashboard', () => {
+    expect(resolveHomePath(actor(['global_admin']))).toBe('/ops/dashboard')
+    expect(resolveHomePath(actor(['country_manager']))).toBe('/ops/dashboard')
   })
 
-  it('sends mixed HQ+tech to /ops/tickets', () => {
+  it('sends mixed HQ+tech to /ops/dashboard', () => {
     expect(
       resolveHomePath(actor(['global_maintenance', 'internal_technician'])),
-    ).toBe('/ops/tickets')
+    ).toBe('/ops/dashboard')
   })
 
   it('defaults empty memberships to ops', () => {
-    expect(resolveHomePath(actor([]))).toBe('/ops/tickets')
+    expect(resolveHomePath(actor([]))).toBe('/ops/dashboard')
   })
 })
 

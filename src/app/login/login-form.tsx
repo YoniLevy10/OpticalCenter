@@ -109,10 +109,10 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <p className="t-caption mt-8 text-ink-3">
             בפיילוט אפשר להיכנס ישירות אל{' '}
             <Link
-              href="/ops/tickets"
+              href="/ops/dashboard"
               className="text-ink-2 underline underline-offset-2"
             >
-              תיבת התקלות
+              לוח הבקרה
             </Link>
             .
           </p>

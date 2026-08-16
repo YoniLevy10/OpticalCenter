@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Ellipsis, Inbox, Store, Wrench } from 'lucide-react'
+import { Ellipsis, Inbox, LayoutDashboard, Store, Wrench } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
@@ -13,14 +13,20 @@ import { cn } from '@/lib/utils'
  *
  * Desktop: a 216px canvas-coloured sidebar separated by a hairline. It should
  * read as absence, not as a panel — no dark chrome, no elevation.
- * Mobile: a 3-slot bottom navigation, the third being More (a sheet), so tools
- * and settings never consume premium navigation space.
+ * Mobile: primary destinations in the bottom nav; More (a sheet) keeps tools
+ * and settings off the premium strip.
  *
  * Only working destinations are exposed. Reports was removed; the simulator and
  * settings live behind More.
  */
 
 const PRIMARY = [
+  {
+    href: '/ops/dashboard',
+    label: 'לוח בקרה',
+    icon: LayoutDashboard,
+    match: '/ops/dashboard',
+  },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
