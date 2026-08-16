@@ -122,7 +122,7 @@ export default async function TicketsPage({
           />
         ) : null}
 
-        <Panel flush className="overflow-hidden">
+        <Panel flush elevated className="overflow-hidden">
           {rows.length === 0 ? (
             <EmptyState
               title="אין תקלות בתצוגה הזו"

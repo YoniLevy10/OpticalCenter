@@ -1,33 +1,33 @@
-# MaintainOS — Operational Quiet v2
+# MaintainOS — Operational Quiet + Bamakor Pulse
 
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
 **Applies to:** every surface in `src/app/**`.
+**Pulse reference:** live Bamakor CSS (`#f9f9fb` / `#1a1a2e` / `#e8e8ed`) — adapted;
+**never** copy Bamakor product blue `#0066FF`.
 
 ---
 
 ## 0. Principle
 
-> **Color is a signal, not a surface.**
+> **Color is a signal, not a surface — but quiet still needs a pulse.**
 
-Ink and space carry hierarchy. Color is spent only where a decision is required.
-Corollary: if everything is colored, nothing is urgent.
+Ink and space carry hierarchy. Color is spent where a decision is required.
+Pulse = luminous canvas, navy ink, soft elevation, tenant-soft active chrome.
 
 Two supporting rules:
 
 1. **Differentiate by form, not by hue.** Priority, status and SLA are three orthogonal
    dimensions. They must never share a visual shape.
 2. **Containers are the last resort.** Type and space first, then a divider, then a
-   border, and only then a card.
+   border, and only then a card — with `elevated` for hero surfaces.
 
-### Restraint (v2)
+### Restraint + Pulse
 
-Depth and motion exist, but most of the product stays quiet.
+**Allowed “wow” moments:**
 
-**Allowed “wow” moments (only these):**
-
-1. **Login** — centered brand mark with `--shadow-pop`
-2. **Dashboard exception / elevated surfaces** — rare `--shadow-hover` only where intentional (not default Panel)
+1. **Login** — raised brand tile + soft tenant glow + `--shadow-pop`
+2. **Elevated panels** — `Panel elevated`, stat strip, exception hero (`--shadow-1`)
 3. **Modal** — `animate-scale-in` entrance
 
 Everywhere else: color transitions, no bounce/scale on nav or queue rows, no list
@@ -40,23 +40,23 @@ stagger on daily queues. `.stagger` is reserved for dashboard first-impression l
 ### Dashboard — action console
 
 1. Compact `PageHeader` (hidden on mobile when AppShell already titles the page)
-2. **Stat strip** — peer metrics in one band (open / breached / unassigned); click → existing `queueHref`
+2. **Stat strip** — peer metrics in one elevated band; click → existing `queueHref`
 3. Thin SLA banner (single line)
-4. **Exception list** (hero) — up to 8 tickets: breached first, then unassigned; row → ticket detail
+4. **Exception list** (hero, elevated) — up to 8 tickets; row → ticket detail
 5. Secondary panels: category · technician load
 6. Chart / load **bars use `--signal-progress` or ink** — never `--tenant`
 
 ### Queue — dense Linear-like chrome
 
 - Mobile: hide page `PageHeader` (`hidden md:flex`)
-- Attention counts live in the toolbar band (not a separate tall block)
-- Desktop: store / tech / priority filters visible in the toolbar; BottomSheet is mobile-only
-- Sticky table header; compact empty state inside flush Panel; dense pagination footer
+- Attention counts live in the toolbar band
+- Desktop filters visible; BottomSheet mobile-only
+- Sticky table header; compact empty state; dense pagination footer
 
 ### Panel elevation
 
-`Panel` defaults to **border only** (no `--shadow-1`). Add shadow explicitly for
-KPI/elevated moments, login brand, or modal — not for every card on the page.
+`Panel` defaults to **border only**. Pass `elevated` for hero surfaces (dashboard,
+queue table, stores table). Login brand / modal keep `--shadow-pop`.
 
 ## 1. Token architecture — three layers
 
@@ -64,15 +64,15 @@ KPI/elevated moments, login brand, or modal — not for every card on the page.
 
 | Token | Value | Use |
 |---|---|---|
-| `--canvas` | `#eef0f4` | app background |
+| `--canvas` | `#f5f6fa` | app background (Bamakor luminous family) |
 | `--surface` | `#ffffff` | panels, rows, sheets |
-| `--surface-sunken` | `#e4e7ed` | table headers, inert fills, active nav rest |
+| `--surface-sunken` | `#eef0f5` | table headers, inert fills |
 | `--surface-raised` | `#ffffff` | floating surfaces (popover / dropdown) |
-| `--border` | `#dce0e6` | default hairline |
-| `--border-strong` | `#c4c9d2` | emphasis |
-| `--ink` | `#1a1b1f` | primary text |
-| `--ink-2` | `#62656e` | secondary text |
-| `--ink-3` | `#9498a4` | tertiary / metadata |
+| `--border` | `#e8e8ed` | Bamakor hairline |
+| `--border-strong` | `#d2d4dc` | emphasis |
+| `--ink` | `#1a1a2e` | primary text (Bamakor navy) |
+| `--ink-2` | `#5c6070` | secondary text |
+| `--ink-3` | `#8b90a0` | tertiary / metadata |
 
 ### Layer 2 — Signal (identical for every tenant)
 
@@ -82,7 +82,7 @@ KPI/elevated moments, login brand, or modal — not for every card on the page.
 | `warning` | `#c08020` | `#fdf5e6` | approaching breach, blocked |
 | `progress` | `#3b6cb8` | `#eaf1fa` | actively being worked |
 | `resolved` | `#1e8a5a` | `#e8f6ee` | done |
-| `idle` | `#9498a4` | `#eef0f4` | no attention required |
+| `idle` | `#8b90a0` | `#f5f6fa` | no attention required |
 
 ### Layer 3 — Tenant
 
@@ -94,17 +94,18 @@ KPI/elevated moments, login brand, or modal — not for every card on the page.
 | `--tenant-line` | `#ecd8dc` |
 | `--tenant-contrast` | `#ffffff` |
 
-Permitted in **exactly three places**: logo mark · primary action fill · active nav
-indicator. **Forbidden** on ticket status, priority, SLA, data rows, charts.
+Permitted: logo mark · primary action fill · active nav (soft fill + indicator).
+**Forbidden** on ticket status, priority, SLA, data rows, charts. Never Bamakor blue.
 
 ### Elevation & motion
 
 | Token | Intent |
 |---|---|
-| `--shadow-1` | rare elevated rest (not default Panel) |
+| `--shadow-1` | elevated panels / sidebar edge / active segment |
 | `--shadow-2` | rare intermediate |
 | `--shadow-hover` | intentional elevated hover only |
 | `--shadow-pop` | modal / login mark / toast |
+| `--bottomnav-h` | `64px` (Bamakor mobile nav) |
 | `--dur-1` | `150ms` state |
 | `--dur-2` | `280ms` surfaces |
 | `--dur-3` | `400ms` rare long motion |
@@ -169,10 +170,11 @@ Time remaining, right-aligned. Warning ≤20% window; critical when breached.
 
 ## 5. Navigation
 
-Desktop: **surface** sidebar, hairline `border-e`, **no sidebar shadow**.
-Active nav: sunken fill + 2px tenant indicator. No translate / scale.
+Desktop: **surface** sidebar with soft `--shadow-1` edge.
+Active nav: `--tenant-soft` fill + tenant ink + 2px tenant indicator.
 
-Mobile: blur top bar with page title; bottom nav active = **tenant color only**.
+Mobile: blur top bar with page title; bottom nav height `--bottomnav-h: 64px`;
+active = **tenant color**.
 
 Primary: Dashboard · Tickets · Stores. Tools (settings, users, simulator, tech)
 live in sidebar footer / More sheet.

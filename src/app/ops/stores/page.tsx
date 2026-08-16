@@ -76,7 +76,7 @@ export default async function StoresPage({
           <p className="t-meta t-num text-ink-3">{filtered.length} תוצאות</p>
         </div>
 
-        <Panel flush className="overflow-hidden">
+        <Panel flush elevated className="overflow-hidden">
           {filtered.length === 0 ? (
             <EmptyState
               title="לא נמצאו חנויות"

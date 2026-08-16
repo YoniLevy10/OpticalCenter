@@ -10,17 +10,21 @@ export function Panel({
   children,
   className,
   flush,
+  elevated,
   ...rest
 }: {
   children: React.ReactNode
   className?: string
   /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
+  /** Soft Bamakor-style lift for hero / primary surfaces. */
+  elevated?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
         'rounded-[var(--radius-lg)] border border-border bg-surface',
+        elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
       )}
@@ -100,7 +104,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--signal-progress-soft)] text-[var(--signal-progress)] ring-1 ring-[color-mix(in_srgb,var(--signal-progress)_18%,transparent)]">
         <Icon className="h-5 w-5" aria-hidden strokeWidth={1.5} />
       </div>
       <p className="t-body-strong text-ink">{title}</p>

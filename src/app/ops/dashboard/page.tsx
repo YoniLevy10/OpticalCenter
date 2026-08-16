@@ -57,7 +57,7 @@ function StatStrip({
   ]
 
   return (
-    <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface rtl:divide-x-reverse">
+    <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-1)] rtl:divide-x-reverse">
       {items.map((item) => {
         const hot =
           (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
@@ -210,7 +210,7 @@ export default async function OpsDashboardPage() {
             'flex items-center gap-2.5 rounded-[var(--radius-md)] border px-3.5 py-2.5',
             kpis.breached > 0
               ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
-              : 'border-border bg-surface',
+              : 'border-border bg-surface shadow-[var(--shadow-1)]',
           )}
         >
           <span
@@ -242,7 +242,7 @@ export default async function OpsDashboardPage() {
           unassigned={kpis.unassigned}
         />
 
-        <Panel flush className="overflow-hidden">
+        <Panel flush elevated className="overflow-hidden">
           <PanelHeader
             title="דורש טיפול עכשיו"
             meta={`${kpis.exceptions.length}`}
@@ -259,7 +259,7 @@ export default async function OpsDashboardPage() {
         </Panel>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Panel flush className="overflow-hidden">
+          <Panel flush elevated className="overflow-hidden">
             <PanelHeader title="לפי קטגוריה" meta={`${kpis.byCategory.length}`} />
             {kpis.byCategory.length === 0 ? (
               <EmptyState title="אין תקלות פתוחות" icon={PackageOpen} />
@@ -268,7 +268,7 @@ export default async function OpsDashboardPage() {
             )}
           </Panel>
 
-          <Panel flush className="overflow-hidden">
+          <Panel flush elevated className="overflow-hidden">
             <PanelHeader title="עומס טכנאים" meta="משויכות פתוחות" />
             {kpis.techLoad.length === 0 ? (
               <EmptyState title="אין שיוכים פתוחים" icon={Wrench} />

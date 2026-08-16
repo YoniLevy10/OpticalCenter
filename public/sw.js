@@ -1,5 +1,5 @@
 /* Minimal MaintainOS service worker — app shell offline fallback */
-const CACHE = 'maintainos-shell-v2'
+const CACHE = 'maintainos-shell-v3'
 const SHELL = ['/ops/tickets', '/tech', '/offline.html', '/manifest.webmanifest', '/manifest-tech.webmanifest', '/icons/icon-192.svg']
 
 self.addEventListener('install', (event) => {
