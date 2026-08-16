@@ -8,6 +8,12 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
+/**
+ * Operational Quiet shell — v2
+ * Desktop: surface-coloured sidebar with visible shadow separation.
+ * Mobile: backdrop-blur top bar with dynamic page title, scaled nav.
+ */
+
 const PRIMARY = [
   {
     href: '/ops/dashboard',
@@ -59,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="dvh-screen bg-canvas text-ink">
       {/* ---------- Desktop sidebar ---------- */}
       <aside
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e shadow-[var(--shadow-1)] md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
@@ -69,10 +75,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <TenantMark />
           <div className="min-w-0">
             <p className="t-body-strong truncate text-ink">MaintainOS</p>
+            <p className="t-caption truncate text-ink-3">Optical Center</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-2.5 py-2">
+        <nav className="flex-1 px-3 py-3">
           <ul className="space-y-1">
             {PRIMARY.map((item) => {
               const active = isActive(pathname, item.match)
@@ -85,15 +92,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     className={cn(
                       't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-all duration-[var(--dur-1)]',
                       active
-                        ? 'bg-[var(--surface-sunken)] text-ink shadow-[var(--shadow-1)]'
-                        : 'text-ink-2 hover:bg-[var(--surface-sunken)]/60 hover:text-ink',
+                        ? 'bg-surface-sunken text-ink shadow-[var(--shadow-1)]'
+                        : 'text-ink-2 hover:bg-surface-sunken/60 hover:text-ink',
                       'hover:translate-x-0.5',
                     )}
                   >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'absolute inset-block-2 w-[2px] rounded-full start-0',
+                        active ? 'bg-[var(--tenant)]' : 'bg-transparent',
+                      )}
+                    />
                     <Icon
                       className={cn(
-                        'h-[18px] w-[18px] transition-transform duration-[var(--dur-1)]',
-                        active && 'scale-110',
+                        'shrink-0 transition-transform duration-[var(--dur-1)]',
+                        active ? 'h-[18px] w-[18px]' : 'h-4 w-4',
                       )}
                       aria-hidden
                     />
@@ -105,11 +119,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
 
-        <div className="border-t border-border px-2.5 py-2">
-          <div className="mb-1 flex items-center gap-2.5 px-2.5 py-1.5">
+        <div className="border-t border-border p-3">
+          <p className="t-caption px-2.5 pb-2 text-ink-3">כלים</p>
+          <ul className="space-y-0.5">
+            {TOOLS.map((t) => (
+              <li key={t.href}>
+                <Link
+                  href={t.href}
+                  className={cn(
+                    't-meta flex h-8 items-center rounded-[var(--radius-md)] px-2.5 transition-colors',
+                    isActive(pathname, t.href)
+                      ? 'text-ink'
+                      : 'text-ink-3 hover:text-ink-2',
+                  )}
+                >
+                  {t.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 px-2.5">
             <LogoutButton className="w-full justify-start px-0" />
           </div>
-          <div className="flex items-center gap-2 px-2.5 py-2">
+          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
             <span
               aria-hidden
               className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
@@ -128,8 +160,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
-          <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
-          <span className="t-caption ms-auto text-ink-3">ישראל</span>
+          <div className="min-w-0 flex-1">
+            <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
+          </div>
+          <span className="t-caption text-ink-3">Optical Center · ישראל</span>
         </div>
       </header>
 

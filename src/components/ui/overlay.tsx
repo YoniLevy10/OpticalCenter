@@ -5,13 +5,13 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const overlayClass =
-  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,22,0.35)] backdrop-blur-[2px]'
+  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,20,0.35)] backdrop-blur-[2px]'
 
 function CloseButton() {
   return (
     <Dialog.Close
       aria-label="סגירה"
-      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-ink-3 transition-colors hover:bg-canvas hover:text-ink"
+      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-ink-3 transition-all duration-[var(--dur-1)] hover:bg-surface-sunken hover:text-ink active:scale-90"
     >
       <X className="h-4 w-4" />
     </Dialog.Close>
@@ -43,7 +43,7 @@ export function Modal({
             className,
           )}
         >
-          <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-3.5">
             <div>
               <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
               {description ? (
@@ -54,7 +54,7 @@ export function Modal({
             </div>
             <CloseButton />
           </div>
-          <div className="p-4">{children}</div>
+          <div className="p-5">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -86,10 +86,10 @@ export function BottomSheet({
           className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-slide-up flex-col rounded-t-[var(--radius-xl)] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
           style={{ paddingBottom: 'var(--safe-b)' }}
         >
-          <div className="flex justify-center pt-2" aria-hidden>
+          <div className="flex justify-center pt-2.5" aria-hidden>
             <span className="h-1 w-10 rounded-full bg-border-strong" />
           </div>
-          <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-2">
+          <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-2">
             <div>
               <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
               {description ? (
@@ -100,7 +100,7 @@ export function BottomSheet({
             </div>
             <CloseButton />
           </div>
-          <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+          <div className="flex-1 overflow-y-auto px-5 pb-5">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

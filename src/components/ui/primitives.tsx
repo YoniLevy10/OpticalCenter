@@ -1,5 +1,10 @@
-import { cn } from '@/lib/utils'
 import { Inbox } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+/**
+ * Containers are the last resort. Prefer type and space, then a divider, then
+ * a hairline, and only then a Panel.
+ */
 
 export function Panel({
   children,
@@ -9,6 +14,7 @@ export function Panel({
 }: {
   children: React.ReactNode
   className?: string
+  /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
@@ -59,7 +65,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-1',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2',
         className,
       )}
     >
@@ -94,7 +100,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-sunken)] text-ink-3 ring-1 ring-border">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
         <Icon className="h-6 w-6" aria-hidden strokeWidth={1.5} />
       </div>
       <p className="t-body-strong text-ink">{title}</p>
@@ -158,6 +164,7 @@ export function Skeleton({ className }: { className?: string }) {
   )
 }
 
+/** Skeleton that mirrors the real queue geometry rather than a spinner. */
 export function RowSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <div className="divide-y divide-border">

@@ -24,9 +24,7 @@ export function OperationalRow({
 }: {
   href: string
   priority?: string | null
-  /** Ticket number or equivalent identity. */
   leading: React.ReactNode
-  /** Live SLA. */
   trailing?: React.ReactNode
   title: React.ReactNode
   subtitle?: React.ReactNode
@@ -37,7 +35,7 @@ export function OperationalRow({
     <Link
       href={href}
       className={cn(
-        'flex min-h-[80px] flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-all duration-[var(--dur-1)] active:scale-[0.99] active:bg-[var(--surface-sunken)] md:hover:bg-[var(--surface-sunken)]/40',
+        'flex min-h-[80px] flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-all duration-[var(--dur-1)] active:scale-[0.99] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
         priorityEdgeClass(priority),
         priorityRowClass(priority),
         className,

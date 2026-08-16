@@ -134,17 +134,19 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   return (
     <div className="dvh-screen safe-pt safe-pb flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
-        {/* Brand block */}
+        {/* Brand block — centered, premium */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] shadow-[var(--shadow-pop)]">
-            <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>OC</span>
+            <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>
+              OC
+            </span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
           <p className="t-body mt-1.5 text-ink-3">Optical Center · ניהול תחזוקה</p>
         </div>
 
-        {/* Mode tabs */}
-        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1">
+        {/* Mode tabs — refined */}
+        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 p-1">
           {(
             [
               { key: 'link', label: 'קישור במייל' },
@@ -168,7 +170,6 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           ))}
         </div>
 
-        {/* Forms */}
         {mode === 'link' ? (
           <form onSubmit={requestLink} className="space-y-4">
             <Field label="כתובת מייל" htmlFor="login-email">
@@ -207,7 +208,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </Field>
-            <Field label="קוד מהמייל" htmlFor="login-otp">
+            <Field
+              label="קוד מהמייל"
+              htmlFor="login-otp"
+              hint="6–8 ספרות שנשלחו למייל"
+            >
               <Input
                 id="login-otp"
                 type="text"
@@ -218,7 +223,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="12345678"
-                className="t-num tracking-[0.2em] text-center"
+                className="t-num text-center tracking-[0.2em]"
               />
             </Field>
             <Button
@@ -253,6 +258,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
               />
             </Field>
             <Button
@@ -266,13 +272,16 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </form>
         ) : null}
 
-        {/* Feedback */}
         {sent ? (
           <div className="mt-4">
             <Notice tone="progress">
               <div className="flex items-center gap-2">
-                <span aria-hidden className="h-2 w-2 rounded-full bg-[var(--signal-progress)] animate-pulse" />
-                {hint || 'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
+                <span
+                  aria-hidden
+                  className="h-2 w-2 animate-pulse rounded-full bg-[var(--signal-progress)]"
+                />
+                {hint ||
+                  'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
               </div>
             </Notice>
           </div>
@@ -284,9 +293,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
         ) : null}
 
-        {/* Demo entry */}
         {demoEntry ? (
-          <div className="mt-8 space-y-3 border-t border-border pt-6">
+          <div className="mt-8 space-y-3 border-t border-border pt-5">
             <Button
               type="button"
               variant="secondary"
@@ -310,6 +318,12 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             </p>
           </div>
         ) : null}
+
+        <p className="t-caption mt-6 text-ink-3">
+          אם Supabase Site URL עדיין מוגדר ל־localhost, קישור המייל יישבר —
+          השתמשו בסיסמה או בקוד. אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
+          יעבוד.
+        </p>
       </div>
     </div>
   )

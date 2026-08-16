@@ -12,7 +12,6 @@ import { LogoutButton } from '@/components/auth/logout-button'
  *  - no bottom tab bar (there is only one destination — the job list)
  *  - the primary action is sticky at the thumb, not buried in a sidebar
  */
-
 export function TechShell({
   children,
   title,
@@ -26,7 +25,6 @@ export function TechShell({
   subtitle?: React.ReactNode
   backHref?: string
   eyebrow?: string
-  /** Sticky bottom action zone — the next thing the technician must do. */
   actions?: React.ReactNode
 }) {
   return (
@@ -37,9 +35,8 @@ export function TechShell({
             <Link
               href={backHref}
               aria-label="חזרה"
-              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-all duration-[var(--dur-1)] active:scale-90 hover:bg-[var(--surface-sunken)]/60"
+              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-all duration-[var(--dur-1)] active:scale-90 hover:bg-surface-sunken/60"
             >
-              {/* Chevron points toward the start edge; mirrors under RTL. */}
               <ChevronRight className="h-5 w-5 rtl:rotate-0 ltr:rotate-180" />
             </Link>
           ) : null}
@@ -56,7 +53,7 @@ export function TechShell({
 
       <main
         className={cn(
-          'mx-auto w-full max-w-xl px-4 pt-4',
+          'mx-auto w-full max-w-xl px-4 pt-5',
           actions ? 'pb-actions' : 'pb-8',
         )}
       >
@@ -65,10 +62,10 @@ export function TechShell({
 
       {actions ? (
         <div
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-md px-4 pt-3"
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-md"
           style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
         >
-          <div className="mx-auto max-w-xl">{actions}</div>
+          <div className="mx-auto w-full max-w-xl px-4 pt-3">{actions}</div>
         </div>
       ) : null}
     </div>
