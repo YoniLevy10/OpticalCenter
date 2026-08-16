@@ -29,6 +29,8 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator('.live-sla'),
     page.locator('.live-age'),
     page.locator('.t-num'),
+    // Lifecycle WA notifies embed display numbers + /tech/{uuid} links.
+    page.locator('[data-activity-kind="message_out"]'),
   ]
 }
 
