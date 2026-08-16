@@ -26,8 +26,12 @@ const PRIMARY = [
 ]
 
 const TOOLS = [
+  { href: '/ops/inbox', label: 'תיבת WhatsApp' },
+  { href: '/ops/assets', label: 'נכסים' },
+  { href: '/ops/reports', label: 'דוחות' },
   { href: '/ops/settings', label: 'הגדרות' },
   { href: '/ops/users', label: 'משתמשים' },
+  { href: '/ops/stores/print-qr', label: 'הדפסת QR' },
   { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
   { href: '/tech', label: 'פורטל טכנאי' },
 ]
@@ -39,7 +43,11 @@ function isActive(pathname: string, match: string) {
 function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/dashboard')) return 'לוח בקרה'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
+  if (pathname.startsWith('/ops/stores/print-qr')) return 'הדפסת QR'
   if (pathname.startsWith('/ops/stores')) return 'חנויות'
+  if (pathname.startsWith('/ops/assets')) return 'נכסים'
+  if (pathname.startsWith('/ops/inbox')) return 'תיבת WhatsApp'
+  if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
   if (pathname.startsWith('/ops/simulator')) return 'סימולטור'

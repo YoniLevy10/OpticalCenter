@@ -73,7 +73,15 @@ export default async function StoresPage({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <StoreSearch initial={sp.q ?? ''} />
-          <p className="t-meta t-num text-ink-3">{filtered.length} תוצאות</p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/ops/stores/print-qr"
+              className="t-body text-ink-2 underline-offset-2 hover:text-ink hover:underline"
+            >
+              הדפסת QR
+            </Link>
+            <p className="t-meta t-num text-ink-3">{filtered.length} תוצאות</p>
+          </div>
         </div>
 
         <Panel flush elevated className="overflow-hidden">

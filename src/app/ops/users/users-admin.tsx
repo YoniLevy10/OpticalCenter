@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Field, Input } from '@/components/ui/input'
+import { Field, Input, Select } from '@/components/ui/input'
 import {
   EmptyState,
   ErrorState,
@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import type { MemberRole, Membership } from '@/lib/auth/types'
+
+type StoreOpt = { id: string; code: string; name: string }
 
 type UserRow = {
   id: string
@@ -30,16 +32,10 @@ const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'global_admin', label: 'מנהל מערכת' },
 ]
 
-const ROLE_LABEL: Record<string, string> = Object.fromEntries(
-  ROLE_OPTIONS.map((r) => [r.value, r.label]),
-)
+const IL_COUNTRY = '22222222-2222-2222-2222-222222222222'
+const FR_COUNTRY = '33333333-3333-3333-3333-333333333333'
 
-function primaryRole(user: UserRow): string {
-  const role = user.memberships[0]?.role
-  return role ? (ROLE_LABEL[role] ?? role) : '—'
-}
-
-export function UsersAdmin() {
+export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +44,8 @@ export function UsersAdmin() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<MemberRole>('internal_technician')
+  const [countryId, setCountryId] = useState<string>(IL_COUNTRY)
+  const [storeId, setStoreId] = useState<string>('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -81,6 +79,8 @@ export function UsersAdmin() {
           full_name: name.trim(),
           email: email.trim(),
           role,
+          country_id: countryId || null,
+          store_id: storeId || null,
         }),
       })
       const json = await res.json()
@@ -88,6 +88,7 @@ export function UsersAdmin() {
       setName('')
       setEmail('')
       setRole('internal_technician')
+      setStoreId('')
       setNotice('המשתמש נוסף')
       await load()
     } catch (err) {
@@ -119,17 +120,53 @@ export function UsersAdmin() {
     }
   }
 
+  async function onScopeChange(
+    user: UserRow,
+    patch: { country_id?: string | null; store_id?: string | null },
+  ) {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          membership_id: user.memberships[0]?.id,
+          ...patch,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'עדכון נכשל')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'עדכון נכשל')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function scopeLabel(m?: Membership) {
+    if (!m) return '—'
+    const parts: string[] = []
+    if (m.country_id === IL_COUNTRY) parts.push('IL')
+    else if (m.country_id === FR_COUNTRY) parts.push('FR')
+    else if (m.country_id) parts.push('מדינה')
+    if (m.store_id) {
+      const s = stores.find((x) => x.id === m.store_id)
+      parts.push(s ? `#${s.code}` : 'חנות')
+    }
+    return parts.join(' · ') || 'גלובלי'
+  }
+
   return (
     <div className="space-y-4">
-      {error ? (
-        <ErrorState title="שגיאה" description={error} />
-      ) : null}
+      {error ? <ErrorState title="שגיאה" description={error} /> : null}
       {notice ? <Notice tone="progress">{notice}</Notice> : null}
 
       <Panel flush className="overflow-hidden">
-        <PanelHeader title="הוספת טכנאי" meta="פרופיל + הרשאה" />
+        <PanelHeader title="הוספת משתמש" meta="פרופיל + היקף" />
         <form onSubmit={onCreate} className="space-y-3 p-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Field label="שם" htmlFor="user-name">
               <Input
                 id="user-name"
@@ -151,9 +188,8 @@ export function UsersAdmin() {
               />
             </Field>
             <Field label="תפקיד" htmlFor="user-role">
-              <select
+              <Select
                 id="user-role"
-                className="t-control h-9 w-full rounded-[var(--radius-md)] border border-border bg-surface px-2.5 text-ink"
                 value={role}
                 onChange={(e) => setRole(e.target.value as MemberRole)}
               >
@@ -162,7 +198,32 @@ export function UsersAdmin() {
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
+            </Field>
+            <Field label="מדינה" htmlFor="user-country">
+              <Select
+                id="user-country"
+                value={countryId}
+                onChange={(e) => setCountryId(e.target.value)}
+              >
+                <option value={IL_COUNTRY}>ישראל</option>
+                <option value={FR_COUNTRY}>צרפת</option>
+                <option value="">ללא (גלובלי)</option>
+              </Select>
+            </Field>
+            <Field label="חנות (אופציונלי)" htmlFor="user-store">
+              <Select
+                id="user-store"
+                value={storeId}
+                onChange={(e) => setStoreId(e.target.value)}
+              >
+                <option value="">כל החנויות בהיקף</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} · {s.name}
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
           <Button
@@ -191,40 +252,67 @@ export function UsersAdmin() {
                 <TH>שם</TH>
                 <TH>אימייל</TH>
                 <TH>תפקיד</TH>
+                <TH>היקף</TH>
+                <TH>חנות</TH>
               </THead>
               <TBody>
-                {users.map((u) => (
-                  <TR key={u.id}>
-                    <TD>
-                      <span className="t-body-strong text-ink">
-                        {u.full_name || '—'}
-                      </span>
-                    </TD>
-                    <TD>
-                      <span dir="ltr" className="t-meta t-num text-ink-2">
-                        {u.email || '—'}
-                      </span>
-                    </TD>
-                    <TD>
-                      <select
-                        className="t-control h-8 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
-                        value={u.memberships[0]?.role ?? 'internal_technician'}
-                        disabled={busy}
-                        aria-label={`תפקיד של ${u.full_name || u.email || u.id}`}
-                        onChange={(e) =>
-                          void onRoleChange(u, e.target.value as MemberRole)
-                        }
-                      >
-                        {ROLE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="sr-only">{primaryRole(u)}</span>
-                    </TD>
-                  </TR>
-                ))}
+                {users.map((u) => {
+                  const m = u.memberships[0]
+                  return (
+                    <TR key={u.id}>
+                      <TD>
+                        <span className="t-body-strong text-ink">
+                          {u.full_name || '—'}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span dir="ltr" className="t-meta t-num text-ink-2">
+                          {u.email || '—'}
+                        </span>
+                      </TD>
+                      <TD>
+                        <select
+                          className="t-control h-8 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
+                          value={m?.role ?? 'internal_technician'}
+                          disabled={busy}
+                          aria-label={`תפקיד של ${u.full_name || u.email || u.id}`}
+                          onChange={(e) =>
+                            void onRoleChange(u, e.target.value as MemberRole)
+                          }
+                        >
+                          {ROLE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </TD>
+                      <TD>
+                        <span className="t-caption text-ink-2">{scopeLabel(m)}</span>
+                      </TD>
+                      <TD>
+                        <select
+                          className="t-control h-8 max-w-[10rem] rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
+                          value={m?.store_id ?? ''}
+                          disabled={busy}
+                          aria-label={`חנות של ${u.full_name || u.id}`}
+                          onChange={(e) =>
+                            void onScopeChange(u, {
+                              store_id: e.target.value || null,
+                            })
+                          }
+                        >
+                          <option value="">—</option>
+                          {stores.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.code}
+                            </option>
+                          ))}
+                        </select>
+                      </TD>
+                    </TR>
+                  )
+                })}
               </TBody>
             </Table>
           </div>

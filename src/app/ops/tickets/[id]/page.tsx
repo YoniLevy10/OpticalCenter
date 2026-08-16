@@ -28,6 +28,7 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -231,8 +232,8 @@ export default async function TicketDetailPage({
                   {ticket.reporter_name ?? 'לא ידוע'}
                 </KeyValue>
                 {ticket.reporter_phone ? (
-                  <KeyValue label="טלפון" ltr>
-                    {ticket.reporter_phone}
+                  <KeyValue label="טלפון מדווח">
+                    <PhoneCallLink phone={ticket.reporter_phone} />
                   </KeyValue>
                 ) : null}
                 {ticket.stores?.address ? (

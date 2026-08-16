@@ -201,13 +201,49 @@ export type MemSession = {
   pending_description: string | null
   expires_at: string
   updated_at: string
+  /** HQ human takeover — bot pauses replies while true. */
+  human_takeover?: boolean
+  last_inbound?: string | null
+}
+
+export type MemAsset = {
+  id: string
+  store_id: string
+  code: string
+  name: string
+  asset_type: string
+  created_at: string
 }
 
 type GlobalMem = {
   tickets: Map<string, MemTicket>
   sessions: Map<string, MemSession>
   processed: Set<string>
+  assets: Map<string, MemAsset>
+  settings: MemSettings
   seq: number
+}
+
+export type MemSettings = {
+  brand_name: string
+  country_label: string
+  wa_business_phone: string
+  sla_respond_hours_critical: number
+  sla_respond_hours_high: number
+  sla_respond_hours_medium: number
+  sla_respond_hours_low: number
+  notify_email: string
+}
+
+const DEFAULT_SETTINGS: MemSettings = {
+  brand_name: 'Optical Center',
+  country_label: 'ישראל · עברית',
+  wa_business_phone: process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE ?? '',
+  sla_respond_hours_critical: 2,
+  sla_respond_hours_high: 4,
+  sla_respond_hours_medium: 8,
+  sla_respond_hours_low: 24,
+  notify_email: '',
 }
 
 function store(): GlobalMem {
@@ -217,14 +253,35 @@ function store(): GlobalMem {
       tickets: new Map(),
       sessions: new Map(),
       processed: new Set(),
+      assets: new Map(),
+      settings: { ...DEFAULT_SETTINGS },
       seq: 18000,
     }
+    seedDemoAssets(g.__maintainosMem)
   }
   // Backfill fields if an older in-process shape exists
   const mem = g.__maintainosMem
   if (!mem.sessions) mem.sessions = new Map()
   if (!mem.processed) mem.processed = new Set()
+  if (!mem.assets) {
+    mem.assets = new Map()
+    seedDemoAssets(mem)
+  }
+  if (!mem.settings) mem.settings = { ...DEFAULT_SETTINGS }
   return mem
+}
+
+function seedDemoAssets(mem: GlobalMem) {
+  if (mem.assets.size > 0) return
+  const row: MemAsset = {
+    id: 'asset-demo-ac04',
+    store_id: 'demo-172',
+    code: 'AC-04',
+    name: 'יחידת מיזוג ראשית',
+    asset_type: 'hvac',
+    created_at: new Date().toISOString(),
+  }
+  mem.assets.set(row.id, row)
 }
 
 /** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
@@ -234,8 +291,11 @@ export function memReset() {
     tickets: new Map(),
     sessions: new Map(),
     processed: new Set(),
+    assets: new Map(),
+    settings: { ...DEFAULT_SETTINGS },
     seq: 18000,
   }
+  seedDemoAssets(g.__maintainosMem)
   return g.__maintainosMem
 }
 
@@ -590,9 +650,12 @@ export function memUpsertSession(
   session: Omit<MemSession, 'updated_at' | 'expires_at'> & {
     updated_at?: string
     expires_at?: string
+    human_takeover?: boolean
+    last_inbound?: string | null
   },
 ): MemSession {
   const now = new Date().toISOString()
+  const existing = store().sessions.get(session.wa_id)
   const full: MemSession = {
     wa_id: session.wa_id,
     country_id: session.country_id,
@@ -604,6 +667,8 @@ export function memUpsertSession(
       session.expires_at ??
       new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     updated_at: session.updated_at ?? now,
+    human_takeover: session.human_takeover ?? existing?.human_takeover ?? false,
+    last_inbound: session.last_inbound ?? existing?.last_inbound ?? null,
   }
   store().sessions.set(full.wa_id, full)
   return full
@@ -615,4 +680,82 @@ export function memDedupe(messageId: string): boolean {
   if (mem.processed.has(messageId)) return true
   mem.processed.add(messageId)
   return false
+}
+
+export function memListSessions(): MemSession[] {
+  return [...store().sessions.values()].sort((a, b) =>
+    b.updated_at.localeCompare(a.updated_at),
+  )
+}
+
+export function memSetSessionTakeover(waId: string, human_takeover: boolean) {
+  const s = store().sessions.get(waId)
+  if (!s) throw new Error('שיחה לא נמצאה')
+  s.human_takeover = human_takeover
+  s.updated_at = new Date().toISOString()
+  return s
+}
+
+export function memListAssets(storeId?: string): MemAsset[] {
+  const all = [...store().assets.values()]
+  const filtered = storeId ? all.filter((a) => a.store_id === storeId) : all
+  return filtered.sort((a, b) => a.code.localeCompare(b.code, 'he'))
+}
+
+export function memCreateAsset(input: {
+  store_id: string
+  code: string
+  name: string
+  asset_type?: string
+}): MemAsset {
+  const code = input.code.trim().toUpperCase()
+  if ([...store().assets.values()].some(
+    (a) => a.store_id === input.store_id && a.code === code,
+  )) {
+    throw new Error('קוד נכס כבר קיים בחנות זו')
+  }
+  const row: MemAsset = {
+    id: `asset-${crypto.randomUUID()}`,
+    store_id: input.store_id,
+    code,
+    name: input.name.trim(),
+    asset_type: input.asset_type?.trim() || 'other',
+    created_at: new Date().toISOString(),
+  }
+  store().assets.set(row.id, row)
+  return row
+}
+
+export function memUpdateAsset(
+  id: string,
+  patch: Partial<Pick<MemAsset, 'name' | 'code' | 'asset_type'>>,
+): MemAsset {
+  const row = store().assets.get(id)
+  if (!row) throw new Error('נכס לא נמצא')
+  if (patch.code && patch.code !== row.code) {
+    const code = patch.code.trim().toUpperCase()
+    if ([...store().assets.values()].some(
+      (a) => a.store_id === row.store_id && a.code === code && a.id !== id,
+    )) {
+      throw new Error('קוד נכס כבר קיים בחנות זו')
+    }
+    row.code = code
+  }
+  if (patch.name != null) row.name = patch.name.trim()
+  if (patch.asset_type != null) row.asset_type = patch.asset_type.trim() || 'other'
+  return row
+}
+
+export function memDeleteAsset(id: string) {
+  if (!store().assets.delete(id)) throw new Error('נכס לא נמצא')
+}
+
+export function memGetSettings(): MemSettings {
+  return { ...store().settings }
+}
+
+export function memUpdateSettings(patch: Partial<MemSettings>): MemSettings {
+  const s = store().settings
+  Object.assign(s, patch)
+  return { ...s }
 }

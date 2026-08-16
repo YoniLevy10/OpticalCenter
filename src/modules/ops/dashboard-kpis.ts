@@ -29,6 +29,9 @@ export type DashboardKpis = {
   techLoad: TechLoad[]
   /** Open tickets that need action now — breached first, then unassigned. */
   exceptions: QueueTicket[]
+  /** Average hours to resolve among resolved tickets with resolved_at. */
+  avgResolveHours: number | null
+  resolvedCount: number
 }
 
 /**
@@ -99,6 +102,21 @@ export function computeDashboardKpis(
     })
     .slice(0, 8)
 
+  let resolveHoursSum = 0
+  let resolvedCount = 0
+  for (const t of tickets) {
+    if (t.status !== 'resolved' && t.status !== 'closed') continue
+    const resolvedAt = t.resolved_at
+    if (!resolvedAt) continue
+    const hours =
+      (new Date(resolvedAt).getTime() - new Date(t.created_at).getTime()) /
+      3_600_000
+    if (Number.isFinite(hours) && hours >= 0) {
+      resolveHoursSum += hours
+      resolvedCount += 1
+    }
+  }
+
   return {
     open: openTickets.length,
     breached,
@@ -107,5 +125,10 @@ export function computeDashboardKpis(
     topStores,
     techLoad,
     exceptions,
+    avgResolveHours:
+      resolvedCount > 0
+        ? Math.round((resolveHoursSum / resolvedCount) * 10) / 10
+        : null,
+    resolvedCount,
   }
 }

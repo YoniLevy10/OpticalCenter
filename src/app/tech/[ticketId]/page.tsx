@@ -8,6 +8,7 @@ import { PriorityText, SlaBlock, StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import { Timeline } from '@/components/ui/timeline'
 import { Button } from '@/components/ui/button'
+import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import {
   TICKET_CATEGORY_LABELS_HE,
   type TicketPriority,
@@ -77,6 +78,12 @@ export default async function TechTicketDetailPage({
       notFound()
     }
   }
+
+  const fullTicket = await getById(ticketId).catch(() => null)
+  const reporterPhone =
+    fullTicket && 'reporter_phone' in fullTicket
+      ? (fullTicket.reporter_phone as string | null)
+      : null
 
   const storeName = ticket.stores?.name ?? 'חנות'
   const displayNo =
@@ -151,7 +158,7 @@ export default async function TechTicketDetailPage({
                 ) : null}
               </div>
             </div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <Button asChild variant="secondary" size="touch" className="flex-1">
                 <a
                   href={`https://maps.google.com/?q=${encodeURIComponent(mapsQuery)}`}
@@ -162,6 +169,12 @@ export default async function TechTicketDetailPage({
                   ניווט
                 </a>
               </Button>
+              {reporterPhone ? (
+                <PhoneCallLink
+                  phone={reporterPhone}
+                  className="h-11 flex-1 justify-center md:h-9"
+                />
+              ) : null}
             </div>
           </Panel>
         ) : null}
