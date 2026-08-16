@@ -8,6 +8,8 @@ export const WA_COPY = {
   needDescription: 'נא לתאר את התקלה בטקסט (או לצרף תמונה עם תיאור קצר).',
   confirmed: (displayNumber: string, storeName: string) =>
     `הדיווח התקבל ✓\nמספר תקלה: ${displayNumber}\nחנות: ${storeName}\nהצוות קיבל את הדיווח.`,
+  mediaNotSaved:
+    'הדיווח נקלט, אך לא הצלחנו לשמור את התמונה. אפשר לשלוח אותה שוב בהודעה נפרדת.',
   countryMissing:
     'לא זוהתה מדינה עבור מספר הוואטסאפ. פנו לתמיכה או בדקו את הגדרות הסביבה.',
   genericError: 'אירעה תקלה זמנית בקליטת הדיווח. נסו שוב בעוד רגע.',

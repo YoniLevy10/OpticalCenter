@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
@@ -28,6 +28,9 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { getServerActor } from '@/lib/auth/server-actor'
+import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +50,13 @@ export default async function TicketDetailPage({
 }) {
   const { id } = await params
 
+  const actor = await getServerActor()
+  if (!actor && !shouldAllowDemoEntry()) {
+    redirect('/login')
+  }
+
+  // getById remains memory/system for this phase; scope with canReadTicket below.
+  // Future: createUserClient() when actor.authVia === 'supabase_session'.
   let ticket
   try {
     ticket = await getById(id)
@@ -54,6 +64,7 @@ export default async function TicketDetailPage({
     ticket = null
   }
   if (!ticket) notFound()
+  if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
   const [technicians, storedAttachments] = await Promise.all([
     listInternalTechnicians().catch(() => []),
@@ -80,7 +91,7 @@ export default async function TicketDetailPage({
 
   return (
     <AppShell>
-      <div className="space-y-4">
+      <div className="space-y-4 max-md:pb-actions-hq">
         {/* Breadcrumb — quiet, one line, never a heading. */}
         <nav className="flex items-center gap-1">
           <Link
@@ -91,7 +102,7 @@ export default async function TicketDetailPage({
           </Link>
           <ChevronRight
             aria-hidden
-            className="h-3 w-3 text-ink-3 rtl:rotate-180"
+            className="h-3 w-3 text-ink-3 rtl:rotate-180 ltr:rotate-0"
           />
           <span className="t-meta t-num text-ink-2">{display}</span>
         </nav>
@@ -171,7 +182,7 @@ export default async function TicketDetailPage({
               </Panel>
             ) : null}
 
-            <Panel flush>
+            <Panel flush data-visual="ticket-timeline">
               <PanelHeader title="כרונולוגיה" meta={`${activity.length} רשומות`} />
               <Timeline items={activity} />
             </Panel>
@@ -179,18 +190,26 @@ export default async function TicketDetailPage({
 
           {/* ---------- Side column ---------- */}
           <div className="space-y-4">
-            <Panel>
-              <h2 className="t-section mb-1 text-ink">פעולות</h2>
-              <p className="t-caption mb-4 text-ink-3">
-                המעברים המותרים נגזרים ממכונת המצבים
-              </p>
-              <TicketActions
-                ticketId={ticket.id}
-                status={ticket.status as TicketStatus}
-                assignedTo={ticket.assigned_to}
-                technicians={technicians}
-              />
-            </Panel>
+            {/*
+              Sticky above bottom nav on mobile (thumb zone); in-flow sidebar
+              panel on md+. Single TicketActions instance keeps state coherent.
+            */}
+            <div
+              className="fixed inset-x-0 z-20 max-h-[min(50dvh,420px)] overflow-y-auto border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-sm bottom-[calc(var(--bottomnav-h)+var(--safe-b))] md:static md:inset-auto md:bottom-auto md:z-auto md:max-h-none md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+            >
+              <Panel className="mb-3 md:mb-0">
+                <h2 className="t-section mb-1 text-ink">פעולות</h2>
+                <p className="t-caption mb-4 text-ink-3">
+                  המעברים המותרים נגזרים ממכונת המצבים
+                </p>
+                <TicketActions
+                  ticketId={ticket.id}
+                  status={ticket.status as TicketStatus}
+                  assignedTo={ticket.assigned_to}
+                  technicians={technicians}
+                />
+              </Panel>
+            </div>
 
             <Panel>
               <h2 className="t-section mb-1 text-ink">פרטים</h2>

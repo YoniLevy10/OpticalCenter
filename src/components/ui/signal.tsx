@@ -153,7 +153,7 @@ export function SlaValue({
 /** Detail-surface form: the value plus what deadline it refers to. */
 export function SlaBlock({ view }: { view: SlaView }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="live-sla flex flex-col gap-0.5" data-live="sla">
       <span className={cn('t-lead t-num', slaToneClass[view.tone])}>
         {view.short}
       </span>

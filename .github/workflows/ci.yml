@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, stabilize]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+        env:
+          MAINTAINOS_FORCE_MEMORY: '1'
+          MAINTAINOS_ALLOW_TEST_AUTH: '1'
+      - run: npx playwright test --project=chromium
+        env:
+          MAINTAINOS_FORCE_MEMORY: '1'
+          MAINTAINOS_ALLOW_TEST_AUTH: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

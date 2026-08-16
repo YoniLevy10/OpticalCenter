@@ -242,6 +242,19 @@ textarea:focus-visible,
   padding-bottom: calc(76px + var(--safe-b) + 16px);
 }
 
+/*
+ * HQ ticket detail: sticky actions sit above the bottom nav.
+ * AppShell already applies .pb-nav; this adds room for the action strip.
+ */
+.pb-actions-hq {
+  padding-bottom: calc(200px + 16px);
+}
+@media (min-width: 768px) {
+  .pb-actions-hq {
+    padding-bottom: 0;
+  }
+}
+
 .dvh-screen {
   min-height: 100vh;
   min-height: 100dvh;

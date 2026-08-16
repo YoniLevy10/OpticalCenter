@@ -72,7 +72,11 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   created: 'נוצרה',
   status_changed: 'שינוי סטטוס',
   assigned: 'שיוך טכנאי',
+  sla_breached: 'חריגת SLA',
+  tech_note: 'הערת טכנאי',
+  tech_photo: 'תמונת טכנאי',
 }
+
 
 /** WhatsApp deep-link text that identifies a store (numeric code per country). */
 export function storeWhatsAppPrefill(storeCode: string): string {

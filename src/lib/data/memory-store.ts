@@ -21,6 +21,7 @@ export type MemTicket = {
   assigned_to: string | null
   sla_respond_by: string | null
   sla_resolve_by: string | null
+  first_response_at: string | null
   resolved_at: string | null
   closed_at: string | null
   resolution_note: string | null
@@ -33,7 +34,12 @@ export type MemTicket = {
     city: string | null
     address: string | null
   } | null
-  assignee: { id: string; full_name: string | null; email: string | null } | null
+  assignee: {
+    id: string
+    full_name: string | null
+    email: string | null
+    phone?: string | null
+  } | null
   messages: {
     id: string
     ticket_id: string
@@ -60,11 +66,13 @@ const DEMO_TECHS = [
     id: DEMO_TECH_ID,
     full_name: 'יוסי כהן',
     email: 'yossi.cohen@optical-center.demo',
+    phone: '+972501000001',
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
     full_name: 'מיכל לוי',
     email: 'michal.levy@optical-center.demo',
+    phone: '+972501000002',
   },
 ] as const
 
@@ -78,6 +86,7 @@ export const MEM_KNOWN_EMPLOYEE_WA = '972501112233'
 export type MemStore = StoreRow & {
   organization_id: string
   country_id: string
+  is_active: boolean
 }
 
 const MEM_STORES: MemStore[] = [
@@ -85,6 +94,7 @@ const MEM_STORES: MemStore[] = [
     ...s,
     organization_id: MEM_ORG_ID,
     country_id: MEM_COUNTRY_ID,
+    is_active: s.is_active ?? true,
   })),
   {
     id: 'demo-fr-172',
@@ -95,6 +105,7 @@ const MEM_STORES: MemStore[] = [
     region_id: 'idf',
     organization_id: MEM_ORG_ID,
     country_id: MEM_COUNTRY_FR_ID,
+    is_active: true,
   },
 ]
 
@@ -216,6 +227,18 @@ function store(): GlobalMem {
   return mem
 }
 
+/** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
+export function memReset() {
+  const g = globalThis as typeof globalThis & { __maintainosMem?: GlobalMem }
+  g.__maintainosMem = {
+    tickets: new Map(),
+    sessions: new Map(),
+    processed: new Set(),
+    seq: 18000,
+  }
+  return g.__maintainosMem
+}
+
 export async function supabaseReady(): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -254,6 +277,75 @@ export function memCountryIdFromCode(code?: string | null): string | null {
 
 export function memFindStoreByCode(code: string): MemStore | undefined {
   return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
+}
+
+export function memListStores(opts?: {
+  countryId?: string
+  activeOnly?: boolean
+}): MemStore[] {
+  const countryId = opts?.countryId ?? MEM_COUNTRY_ID
+  const activeOnly = opts?.activeOnly !== false
+  return MEM_STORES.filter((s) => {
+    if (s.country_id !== countryId) return false
+    if (activeOnly && !s.is_active) return false
+    return true
+  }).sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true }))
+}
+
+export function memCreateStore(input: {
+  code: string
+  name: string
+  city?: string | null
+  address?: string | null
+  region_id?: string
+  country_id?: string
+  organization_id?: string
+}): MemStore {
+  const code = input.code.trim()
+  if (!/^\d{1,6}$/.test(code)) {
+    throw new Error('קוד חנות חייב להיות מספרי (עד 6 ספרות)')
+  }
+  const countryId = input.country_id ?? MEM_COUNTRY_ID
+  if (MEM_STORES.some((s) => s.country_id === countryId && s.code === code)) {
+    throw new Error(`חנות עם קוד ${code} כבר קיימת`)
+  }
+  const store: MemStore = {
+    id: `demo-${countryId.slice(0, 4)}-${code}-${crypto.randomUUID().slice(0, 8)}`,
+    code,
+    name: input.name.trim(),
+    city: input.city?.trim() || null,
+    address: input.address?.trim() || null,
+    region_id: input.region_id?.trim() || 'ta',
+    organization_id: input.organization_id ?? MEM_ORG_ID,
+    country_id: countryId,
+    is_active: true,
+  }
+  MEM_STORES.push(store)
+  return store
+}
+
+export function memUpdateStore(
+  id: string,
+  patch: {
+    name?: string
+    city?: string | null
+    address?: string | null
+    region_id?: string
+    is_active?: boolean
+  },
+): MemStore {
+  const store = MEM_STORES.find((s) => s.id === id)
+  if (!store) throw new Error('חנות לא נמצאה')
+  if (patch.name !== undefined) {
+    const name = patch.name.trim()
+    if (!name) throw new Error('שם חנות חובה')
+    store.name = name
+  }
+  if (patch.city !== undefined) store.city = patch.city?.trim() || null
+  if (patch.address !== undefined) store.address = patch.address?.trim() || null
+  if (patch.region_id !== undefined) store.region_id = patch.region_id.trim() || store.region_id
+  if (patch.is_active !== undefined) store.is_active = patch.is_active
+  return store
 }
 
 export function memListTickets(): MemTicket[] {
@@ -312,6 +404,7 @@ export function memCreate(input: {
     assigned_to: input.assigned_to ?? null,
     sla_respond_by: input.sla_respond_by ?? null,
     sla_resolve_by: input.sla_resolve_by ?? null,
+    first_response_at: null,
     resolved_at: null,
     closed_at: null,
     resolution_note: null,
@@ -341,8 +434,13 @@ export function memCreate(input: {
   if (ticket.assigned_to) {
     const tech = DEMO_TECHS.find((t) => t.id === ticket.assigned_to)
     ticket.assignee = tech
-      ? { id: tech.id, full_name: tech.full_name, email: tech.email }
-      : { id: ticket.assigned_to, full_name: null, email: null }
+      ? {
+          id: tech.id,
+          full_name: tech.full_name,
+          email: tech.email,
+          phone: tech.phone,
+        }
+      : { id: ticket.assigned_to, full_name: null, email: null, phone: null }
   }
 
   mem.tickets.set(id, ticket)
@@ -406,8 +504,13 @@ export function memAssign(
   ticket.updated_at = new Date().toISOString()
   const tech = DEMO_TECHS.find((t) => t.id === assignedTo)
   ticket.assignee = tech
-    ? { id: tech.id, full_name: tech.full_name, email: tech.email }
-    : { id: assignedTo, full_name: null, email: null }
+    ? {
+        id: tech.id,
+        full_name: tech.full_name,
+        email: tech.email,
+        phone: tech.phone,
+      }
+    : { id: assignedTo, full_name: null, email: null, phone: null }
 
   if (from === 'new' || from === 'triaged') {
     ticket.status = 'assigned'

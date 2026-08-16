@@ -4,9 +4,14 @@ import {
   processInboundMessage,
   verifyWhatsAppSignature,
 } from '@/modules/whatsapp'
+import { captureError } from '@/lib/monitoring'
+import { checkRateLimit, clientIpFromRequest } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+
+const WEBHOOK_RATE_LIMIT = 60
+const WEBHOOK_RATE_WINDOW_MS = 60_000
 
 /** Meta webhook verification (hub.challenge). */
 export async function GET(request: NextRequest) {
@@ -31,8 +36,23 @@ export async function GET(request: NextRequest) {
  * Inbound WhatsApp messages.
  * Always 200 so Meta does not retry storms; errors are logged.
  * Signature required in production-like mode; optional only in explicit dev/demo bypass.
+ * Rate limited to ~60 req/min per IP (in-memory).
  */
 export async function POST(request: NextRequest) {
+  const ip = clientIpFromRequest(request)
+  const rl = checkRateLimit(`wa:webhook:${ip}`, WEBHOOK_RATE_LIMIT, WEBHOOK_RATE_WINDOW_MS)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(rl.resetMs / 1000) || 1),
+        },
+      },
+    )
+  }
+
   try {
     const rawBody = await request.text()
     const signature = request.headers.get('x-hub-signature-256')
@@ -64,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, processed: results.length, results }, { status: 200 })
   } catch (e) {
-    console.error('[whatsapp:webhook] fatal', e)
+    captureError(e, { route: 'POST /api/whatsapp/webhook' })
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : 'error' },
       { status: 200 },

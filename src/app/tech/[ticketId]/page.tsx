@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation'
-import { MapPin, Phone } from 'lucide-react'
+import { notFound, redirect } from 'next/navigation'
+import { MapPin } from 'lucide-react'
 import { TechShell } from '@/components/layout/tech-shell'
 import { techHref } from '@/lib/tech-href'
 import { TechTicketActions } from '@/app/tech/[ticketId]/tech-ticket-actions'
@@ -13,9 +13,18 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from '@/modules/tickets/constants'
-import { fetchTechTicket, isUuid, resolveTechId } from '@/modules/tickets/tech'
+import { fetchTechTicket, isUuid } from '@/modules/tickets/tech'
+import { getById } from '@/modules/tickets/service'
 import { getSlaView } from '@/modules/tickets/sla-display'
 import { buildActivityDesc } from '@/modules/tickets/activity'
+import {
+  getServerActor,
+  resolveServerTechId,
+} from '@/lib/auth/server-actor'
+import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { actorFromProfileId } from '@/lib/auth/load-memberships'
+import { actorIsTech, testAuthAllowed } from '@/lib/auth/types'
+import { actorCanOpenTechTicket } from '@/lib/auth/ticket-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +37,13 @@ export default async function TechTicketDetailPage({
 }) {
   const { ticketId } = await params
   const sp = await searchParams
-  const techId = resolveTechId(sp.techId ?? null)
+
+  const actor = await getServerActor()
+  if (!actor && !shouldAllowDemoEntry()) {
+    redirect('/login')
+  }
+
+  const techId = resolveServerTechId(actor, sp.techId ?? null)
 
   if (!isUuid(ticketId)) notFound()
 
@@ -46,6 +61,21 @@ export default async function TechTicketDetailPage({
       )
     }
     notFound()
+  }
+
+  // Scope check: prefer session tech actor; in demo mid-switch load actor for resolved techId.
+  let scopeActor = actor && actorIsTech(actor) ? actor : null
+  if (!scopeActor && testAuthAllowed() && techId) {
+    scopeActor = await actorFromProfileId(techId, 'test_bearer')
+  } else if (!scopeActor && actor) {
+    scopeActor = actor
+  }
+
+  if (scopeActor) {
+    const full = (await getById(ticketId).catch(() => null)) ?? ticket
+    if (!actorCanOpenTechTicket(scopeActor, full)) {
+      notFound()
+    }
   }
 
   const storeName = ticket.stores?.name ?? 'חנות'
@@ -132,14 +162,6 @@ export default async function TechTicketDetailPage({
                   ניווט
                 </a>
               </Button>
-              {ticket.stores?.code ? (
-                <Button asChild variant="secondary" size="touch" className="flex-1">
-                  <a href={`tel:`} aria-disabled>
-                    <Phone className="h-4 w-4" aria-hidden />
-                    החנות
-                  </a>
-                </Button>
-              ) : null}
             </div>
           </Panel>
         ) : null}

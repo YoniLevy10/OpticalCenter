@@ -45,3 +45,6 @@ next-env.d.ts
 # local research clones
 research/
 .tmp/
+
+*storybook.log
+storybook-static

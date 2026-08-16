@@ -18,9 +18,11 @@ async function gotoStable(page: import('@playwright/test').Page, path: string) {
 test.describe('Navigation & layout', () => {
   test('desktop sidebar routes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
-    // /ops redirects to inbox
+    // /ops redirects to dashboard
     await gotoStable(page, '/ops')
-    await expect(page).toHaveURL(/\/ops\/tickets/)
+    await expect(page).toHaveURL(/\/ops\/dashboard/)
+    await expect(page.getByRole('heading', { name: 'לוח בקרה' })).toBeVisible()
+    await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
@@ -33,8 +35,9 @@ test.describe('Navigation & layout', () => {
 
   test('mobile bottom nav + More', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await gotoStable(page, '/ops/tickets')
+    await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
+    await expect(bottomNav.getByText('לוח בקרה')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
     await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
@@ -51,7 +54,7 @@ test.describe('Navigation & layout', () => {
   for (const vp of VIEWPORTS) {
     test(`no horizontal overflow @ ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      for (const path of ['/ops', '/ops/tickets', '/ops/stores', '/tech']) {
+      for (const path of ['/ops', '/ops/dashboard', '/ops/tickets', '/ops/stores', '/tech']) {
         await gotoStable(page, path)
         const overflow = await page.evaluate(() => {
           const doc = document.documentElement
@@ -78,36 +81,7 @@ test.describe('A11y smoke', () => {
   })
 })
 
-test.describe('Visual snapshots (soft)', () => {
-  test('canonical screenshots', async ({ page, request }) => {
-    test.skip(
-      test.info().project.name !== 'chromium',
-      'screenshots on chromium only',
-    )
-    const { ticketId } = await createStore172Ticket(request)
-    await patchTicket(request, ticketId, { assignedTo: DEMO_TECH_ID })
-
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await gotoStable(page, '/ops/tickets?view=open')
-    await expect(page).toHaveScreenshot('desktop-issues.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-    await gotoStable(page, `/ops/tickets/${ticketId}`)
-    await expect(page).toHaveScreenshot('desktop-ticket-detail.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-
-    await page.setViewportSize({ width: 390, height: 844 })
-    await gotoStable(page, '/ops/tickets?view=open')
-    await expect(page).toHaveScreenshot('mobile-issues.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-    await gotoStable(page, `/tech?techId=${DEMO_TECH_ID}`)
-    await expect(page).toHaveScreenshot('tech-jobs.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-  })
-})
+// Visual regression: e2e/visual-pack.spec.ts
 
 test.describe('PWA manifests', () => {
   test('HQ and tech manifests + icons', async ({ request }) => {

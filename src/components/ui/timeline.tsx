@@ -52,7 +52,11 @@ export function Timeline({ items }: { items: ActivityItem[] }) {
         const Icon = iconFor(item.kind)
         const isInbound = item.kind === 'message_in'
         return (
-          <li key={item.id} className="relative flex gap-3 py-2.5 ps-0">
+          <li
+            key={item.id}
+            className="relative flex gap-3 py-2.5 ps-0"
+            data-activity-kind={item.kind}
+          >
             <span
               className={cn(
                 'relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border',

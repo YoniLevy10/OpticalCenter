@@ -13,6 +13,7 @@ import { classifyFaultText } from '@/modules/tickets/classify'
 import { parseStoreCodeFromText } from '@/modules/tickets/constants'
 import { createTicket } from '@/modules/tickets/service'
 import { WA_COPY } from './copy'
+import { resolveInboundMediaUrl } from './media'
 import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
 import type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'
@@ -331,17 +332,23 @@ async function createTicketFromIntake(params: {
   country: CountryRow
   description: string
   mediaUrl: string | null
+  mediaKind?: InboundMessage['mediaKind']
   waId: string
   messageId: string
   source: TicketSource
   inboundText: string | null
   useMemory: boolean
-}): Promise<{ ticketId: string; displayNumber: string }> {
+}): Promise<{
+  ticketId: string
+  displayNumber: string
+  mediaFailed: boolean
+}> {
   const {
     store,
     country,
     description,
     mediaUrl,
+    mediaKind,
     waId,
     messageId,
     source,
@@ -373,31 +380,50 @@ async function createTicketFromIntake(params: {
     ticket.display_number ||
     (ticket.number != null ? `OC-${ticket.number}` : `OC-${store.code}`)
 
+  const supabase = useMemory ? null : admin()
+  const accessToken =
+    country.whatsapp_access_token ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    null
+
+  const resolved = await resolveInboundMediaUrl({
+    mediaUrl,
+    mediaKind: mediaKind ?? null,
+    accessToken,
+    ticketId: ticket.id,
+    supabase,
+    useMemory,
+  })
+  const resolvedUrl = resolved.url
+  const mediaFailed =
+    Boolean(mediaUrl) &&
+    (resolved.source === 'failed' || resolved.source === 'stub')
+
   if (useMemory) {
     memAddMessage(ticket.id, {
       channel: 'whatsapp',
       direction: 'inbound',
       body: inboundText || description,
-      media_url: mediaUrl,
+      media_url: resolvedUrl,
       wa_message_id: messageId,
     })
   } else {
     try {
-      const supabase = admin()
-      await supabase.from('ticket_messages').insert({
+      const client = supabase ?? admin()
+      await client.from('ticket_messages').insert({
         ticket_id: ticket.id,
         channel: 'whatsapp',
         direction: 'inbound',
         body: inboundText || description,
         wa_message_id: messageId,
-        media_url: mediaUrl,
-        raw: { source },
+        media_url: resolvedUrl,
+        raw: { source, media_source: resolved.source, media_error: resolved.error ?? null },
       })
-      if (mediaUrl) {
-        await supabase.from('ticket_attachments').insert({
+      if (resolvedUrl && !resolvedUrl.startsWith('meta-media:')) {
+        await client.from('ticket_attachments').insert({
           ticket_id: ticket.id,
-          url: mediaUrl,
-          kind: 'image',
+          url: resolvedUrl,
+          kind: mediaKind === 'document' ? 'document' : 'image',
         })
       }
     } catch (e) {
@@ -405,9 +431,8 @@ async function createTicketFromIntake(params: {
     }
   }
 
-  return { ticketId: ticket.id, displayNumber }
+  return { ticketId: ticket.id, displayNumber, mediaFailed }
 }
-
 /**
  * Dumb intake: store (+ optional STORE_ prefill) → description (+ optional photo) → ticket.
  * Uses Supabase when ready; otherwise in-memory sessions + createTicket().
@@ -583,11 +608,12 @@ async function finalizeTicket(params: {
   const { supabase, session, store, description, message, source, country, options } =
     params
 
-  const { ticketId, displayNumber } = await createTicketFromIntake({
+  const { ticketId, displayNumber, mediaFailed } = await createTicketFromIntake({
     store,
     country,
     description,
     mediaUrl: message.mediaUrl,
+    mediaKind: message.mediaKind,
     waId: message.waId,
     messageId: message.messageId,
     source,
@@ -600,7 +626,10 @@ async function finalizeTicket(params: {
     pending_description: null,
   })
 
-  const reply = WA_COPY.confirmed(displayNumber, store.name)
+  let reply = WA_COPY.confirmed(displayNumber, store.name)
+  if (mediaFailed) {
+    reply = `${reply}\n\n${WA_COPY.mediaNotSaved}`
+  }
   await sendReply(supabase, message, country, reply, ticketId, options)
 
   return {
@@ -611,7 +640,6 @@ async function finalizeTicket(params: {
     state: 'done',
   }
 }
-
 async function sendReply(
   supabase: SupabaseClient | null,
   message: InboundMessage,

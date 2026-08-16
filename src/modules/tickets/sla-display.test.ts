@@ -130,7 +130,7 @@ describe('buildActivity', () => {
           id: 'e2',
           event_type: 'status_changed',
           created_at: '2026-08-16T11:00:00.000Z',
-          payload: { from_status: 'new', to_status: 'assigned' },
+          payload: { from: 'new', to: 'assigned' },
         },
       ],
     )
@@ -138,7 +138,24 @@ describe('buildActivity', () => {
     expect(items).toHaveLength(4)
     expect(items.map((i) => i.id)).toEqual(['m-m1', 'e-e1', 'm-m2', 'e-e2'])
     expect(items[0].kind).toBe('message_in')
+    expect(items[3].transition?.from).toBe('חדש')
     expect(items[3].transition?.to).toBe('משויך')
+  })
+
+  it('falls back to from_status/to_status payload shape', () => {
+    const items = buildActivity(
+      [],
+      [
+        {
+          id: 'e1',
+          event_type: 'status_changed',
+          created_at: '2026-08-16T11:00:00.000Z',
+          payload: { from_status: 'new', to_status: 'in_progress' },
+        },
+      ],
+    )
+    expect(items[0].transition?.from).toBe('חדש')
+    expect(items[0].transition?.to).toBe('בטיפול')
   })
 
   it('survives empty inputs', () => {

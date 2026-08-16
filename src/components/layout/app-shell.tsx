@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Ellipsis, Inbox, Store, Wrench } from 'lucide-react'
+import { Ellipsis, Inbox, LayoutDashboard, Store, Wrench } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/overlay'
+import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
 /**
@@ -12,20 +13,27 @@ import { cn } from '@/lib/utils'
  *
  * Desktop: a 216px canvas-coloured sidebar separated by a hairline. It should
  * read as absence, not as a panel — no dark chrome, no elevation.
- * Mobile: a 3-slot bottom navigation, the third being More (a sheet), so tools
- * and settings never consume premium navigation space.
+ * Mobile: primary destinations in the bottom nav; More (a sheet) keeps tools
+ * and settings off the premium strip.
  *
  * Only working destinations are exposed. Reports was removed; the simulator and
  * settings live behind More.
  */
 
 const PRIMARY = [
+  {
+    href: '/ops/dashboard',
+    label: 'לוח בקרה',
+    icon: LayoutDashboard,
+    match: '/ops/dashboard',
+  },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
 const TOOLS = [
   { href: '/ops/settings', label: 'הגדרות' },
+  { href: '/ops/users', label: 'משתמשים' },
   { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
   { href: '/tech', label: 'פורטל טכנאי' },
 ]
@@ -119,7 +127,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </li>
             ))}
           </ul>
-          <div className="mt-2 flex items-center gap-2 px-2.5 py-2">
+          <div className="mt-2 px-2.5">
+            <LogoutButton className="w-full justify-start px-0" />
+          </div>
+          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
             <span
               aria-hidden
               className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
@@ -207,6 +218,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </li>
           ))}
         </ul>
+        <div className="mt-4">
+          <LogoutButton size="touch" variant="secondary" className="w-full" />
+        </div>
         <p className="t-caption mt-4 text-ink-3">
           Optical Center · פיילוט ישראל
         </p>

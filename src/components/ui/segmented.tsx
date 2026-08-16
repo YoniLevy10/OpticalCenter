@@ -15,7 +15,7 @@ type Segment = {
 
 function segmentClass(active: boolean) {
   return cn(
-    't-control inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-3 transition-colors duration-[var(--dur-1)]',
+    't-control inline-flex h-11 min-h-[var(--tap)] min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-3 transition-colors duration-[var(--dur-1)] md:h-9 md:min-h-0',
     active
       ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
       : 'text-ink-2 hover:text-ink',

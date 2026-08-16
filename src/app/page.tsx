@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-/** The queue is the home. There is no landing link-farm. */
+/** HQ home is the operational dashboard. */
 export default function HomePage() {
-  redirect('/ops/tickets')
+  redirect('/ops/dashboard')
 }

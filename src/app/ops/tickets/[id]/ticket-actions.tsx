@@ -88,10 +88,12 @@ export function TicketActions({
 
   return (
     <div className="space-y-5">
-      <Field label="טכנאי מטפל">
+      <Field label="טכנאי מטפל" htmlFor="ticket-assignee">
         {hasTechnicians ? (
           <div className="flex gap-2">
             <Select
+              id="ticket-assignee"
+              aria-label="טכנאי מטפל"
               value={profileId}
               disabled={disabled}
               onChange={(e) => {

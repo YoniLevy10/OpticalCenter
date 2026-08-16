@@ -28,11 +28,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         role="status"
         aria-live="polite"
-        /* Sits above the bottom nav on mobile, bottom-left on desktop. */
-        className="pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:items-start md:start-4"
-        style={{
-          bottom: 'calc(var(--bottomnav-h) + var(--safe-b) + 12px)',
-        }}
+        /* Above bottom nav on mobile only; desktop sits at the corner with no nav offset. */
+        className="pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2 bottom-[calc(var(--bottomnav-h)+var(--safe-b)+12px)] md:inset-x-auto md:bottom-4 md:items-start md:start-4"
       >
         {items.map((t) => (
           <div

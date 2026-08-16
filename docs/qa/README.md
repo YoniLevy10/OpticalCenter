@@ -18,6 +18,13 @@
 
 ## Artifacts
 
+- **Action plan (phases 0–8):** `docs/qa/ACTION_PLAN.md`
+- **Development board / UI stability assessment:** `docs/qa/DEVELOPMENT_BOARD_AND_UI_STABILITY_ASSESSMENT.md`
 - Report: `docs/qa/PILOT_QA_REPORT.md`
+- P0 fix: `docs/qa/P0_FIX_REPORT.md`
 - Load: `docs/qa/LOAD_REPORT.json`
 - Screenshots: `e2e/*-snapshots/`
+
+## Work branch
+
+Feature freeze / stabilize work happens on branch `stabilize` until phases 1–3 are green.
