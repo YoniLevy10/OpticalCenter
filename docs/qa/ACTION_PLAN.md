@@ -109,18 +109,18 @@
 
 ## פאזה 3 — Storybook Mini (2–3 ימים)
 
-- [ ] התקנת Storybook מינימלי
-- [ ] Stories לפרימיטיבים קריטיים:
+- [x] התקנת Storybook מינימלי (`storybook` + `build-storybook`, RTL ב־preview, `globals.css`)
+- [x] Stories לפרימיטיבים קריטיים:
   - Button (כל variants + sizes)
   - Input / Search
   - OperationalRow (empty / loading / error / critical / RTL)
   - Table
-  - Toast
+  - Toast (עם `ToastProvider`; בלי provider = no-op)
   - Signal / SLA / Status / Priority labels
-  - BottomSheet
-  - AppShell / TechShell chrome
-- [ ] כל story: states ריק / loading / error / critical + RTL
-- [ ] **כלל ברזל:** אי אפשר לשנות screen בלי Storybook story ירוק קודם
+  - BottomSheet / Modal
+  - PageHeader / EmptyState / ErrorState (+ loading skeletons)
+- [x] כל story: states ריק / loading / error / critical + RTL (ברירת מחדל ב־preview)
+- [x] **כלל ברזל:** No screen PR without Storybook story for changed primitives.
 
 **קריטריון סיום:** 8–12 stories, כל פרימיטיב מבודד ויציב, הבסיס לכל שינוי UI עתידי.
 

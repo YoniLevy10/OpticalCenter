@@ -14,7 +14,9 @@
     "test:e2e:all": "npm run build && MAINTAINOS_FORCE_MEMORY=1 playwright test",
     "test:qa": "npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build",
     "test:qa:load": "node scripts/qa-load.mjs",
-    "db:migrate": "node scripts/apply-migrations.mjs"
+    "db:migrate": "node scripts/apply-migrations.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
@@ -35,14 +37,20 @@
     "@axe-core/playwright": "^4.11.1",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.58.2",
+    "@storybook/addon-a11y": "^10.5.8",
+    "@storybook/addon-docs": "^10.5.8",
+    "@storybook/nextjs-vite": "^10.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.23",
+    "eslint-plugin-storybook": "^10.5.8",
+    "storybook": "^10.5.8",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10"
   },
   "optionalDependencies": {

@@ -1,3 +1,6 @@
+// For more info, see https://storybookjs.org/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
@@ -17,9 +20,11 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "storybook-static/**",
       "next-env.d.ts",
     ],
   },
+  ...storybook.configs["flat/recommended"],
 ];
 
 export default eslintConfig;

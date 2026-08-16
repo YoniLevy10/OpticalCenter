@@ -192,6 +192,8 @@ Technicians get **no HQ navigation at all**.
 
 One system, in `src/components/ui/`. Consumed everywhere.
 
+**No screen PR without Storybook story for changed primitives.** Stories live under `src/stories/ui/`; run `npm run storybook` / `npm run build-storybook`.
+
 `Button` · `Input` · `Textarea` · `Select` · `SearchField` · `Field` ·
 `SegmentedLinks` · `SegmentedButtons` · `Table` · `OperationalRow` ·
 `Modal` · `BottomSheet` · `Toast` · `EmptyState` · `ErrorState` · `Skeleton` ·
