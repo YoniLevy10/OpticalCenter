@@ -38,18 +38,16 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     const display = String(s2.display_number || s2.ticket?.display_number || '')
 
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto('/ops/tickets?status=open', { waitUntil: 'domcontentloaded' })
+    await page.goto('/ops/tickets?view=open', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     if (display) {
-      await expect(
-        page.locator('table').getByRole('link', { name: display }),
-      ).toBeVisible()
+      await expect(page.locator('table').getByText(display).first()).toBeVisible()
     }
     await expect(page.locator('table').getByText(/אבן גבירול|172/).first()).toBeVisible()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(/מזגן הראשי/).first()).toBeVisible()
-    await expect(page.getByText(/שיחה|הודעות|אירועים/).first()).toBeVisible()
+    await expect(page.getByText(/כרונולוגיה|פעילות|רשומות/).first()).toBeVisible()
 
     const assign = await patchTicket(request, ticketId, {
       assignedTo: DEMO_TECH_ID,

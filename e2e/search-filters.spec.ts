@@ -12,7 +12,7 @@ test.describe('Search & filters', () => {
     const display = String(step2.display_number || step2.ticket?.display_number || '')
 
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto('/ops/tickets?status=open', { waitUntil: 'domcontentloaded' })
+    await page.goto('/ops/tickets?view=open', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     if (display) {
       await expect(page.locator('table').getByText(display).first()).toBeVisible()
@@ -20,13 +20,15 @@ test.describe('Search & filters', () => {
       await expect(page.locator('table').getByText(/מזגן|אבן גבירול/).first()).toBeVisible()
     }
 
-    await page.goto('/ops/tickets?status=critical', { waitUntil: 'domcontentloaded' })
+    await page.goto('/ops/tickets?view=open&priority=critical', {
+      waitUntil: 'domcontentloaded',
+    })
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
 
-    await page.goto('/ops/tickets?q=172', { waitUntil: 'domcontentloaded' })
+    await page.goto('/ops/tickets?view=all&q=172', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('table').getByText(/172|אבן גבירול/).first()).toBeVisible()
 
-    await page.goto('/ops/tickets?q=' + encodeURIComponent('מזגן'), {
+    await page.goto('/ops/tickets?view=all&q=' + encodeURIComponent('מזגן'), {
       waitUntil: 'domcontentloaded',
     })
     await expect(page.locator('table').getByText(/מזגן/).first()).toBeVisible()
@@ -44,7 +46,7 @@ test.describe('Search & filters', () => {
 
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto(
-      '/ops/tickets?q=' + encodeURIComponent('QAUNIQUE_SEARCH_TOKEN_9911'),
+      '/ops/tickets?view=all&q=' + encodeURIComponent('QAUNIQUE_SEARCH_TOKEN_9911'),
       { waitUntil: 'domcontentloaded' },
     )
     await expect(

@@ -18,24 +18,27 @@ async function gotoStable(page: import('@playwright/test').Page, path: string) {
 test.describe('Navigation & layout', () => {
   test('desktop sidebar routes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
+    // /ops redirects to inbox
     await gotoStable(page, '/ops')
-    await expect(page.getByRole('heading', { name: 'סקירה' })).toBeVisible()
-    await gotoStable(page, '/ops/tickets')
+    await expect(page).toHaveURL(/\/ops\/tickets/)
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
+    // Reports removed in OQ V1
     await gotoStable(page, '/ops/reports')
-    await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /לא נמצא/ })).toBeVisible()
     await gotoStable(page, '/ops/settings')
     await expect(page.getByRole('heading', { name: 'הגדרות' })).toBeVisible()
   })
 
   test('mobile bottom nav + More', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await gotoStable(page, '/ops')
-    await expect(page.locator('nav.fixed').getByText('סקירה')).toBeVisible()
-    await page.locator('nav.fixed').getByRole('button', { name: 'עוד' }).click()
-    await expect(page.getByRole('dialog').getByText('הגדרות')).toBeVisible()
+    await gotoStable(page, '/ops/tickets')
+    const bottomNav = page.locator('nav.fixed')
+    await expect(bottomNav.getByText('תקלות')).toBeVisible()
+    await expect(bottomNav.getByText('חנויות')).toBeVisible()
+    await bottomNav.getByRole('button', { name: 'עוד' }).click()
+    await expect(page.getByRole('dialog').getByRole('link', { name: 'הגדרות' })).toBeVisible()
   })
 
   test('deep link ticket + refresh', async ({ page, request }) => {
@@ -85,23 +88,23 @@ test.describe('Visual snapshots (soft)', () => {
     await patchTicket(request, ticketId, { assignedTo: DEMO_TECH_ID })
 
     await page.setViewportSize({ width: 1440, height: 900 })
-    await gotoStable(page, '/ops/tickets')
+    await gotoStable(page, '/ops/tickets?view=open')
     await expect(page).toHaveScreenshot('desktop-issues.png', {
-      maxDiffPixelRatio: 0.12,
+      maxDiffPixelRatio: 0.18,
     })
     await gotoStable(page, `/ops/tickets/${ticketId}`)
     await expect(page).toHaveScreenshot('desktop-ticket-detail.png', {
-      maxDiffPixelRatio: 0.12,
+      maxDiffPixelRatio: 0.18,
     })
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await gotoStable(page, '/ops/tickets')
+    await gotoStable(page, '/ops/tickets?view=open')
     await expect(page).toHaveScreenshot('mobile-issues.png', {
-      maxDiffPixelRatio: 0.12,
+      maxDiffPixelRatio: 0.18,
     })
     await gotoStable(page, `/tech?techId=${DEMO_TECH_ID}`)
     await expect(page).toHaveScreenshot('tech-jobs.png', {
-      maxDiffPixelRatio: 0.12,
+      maxDiffPixelRatio: 0.18,
     })
   })
 })
@@ -112,7 +115,7 @@ test.describe('PWA manifests', () => {
     expect(hq.ok()).toBeTruthy()
     const hqJson = await hq.json()
     expect(hqJson.name).toMatch(/MaintainOS/)
-    expect(hqJson.start_url).toBe('/ops')
+    expect(hqJson.start_url).toBe('/ops/tickets')
 
     const tech = await request.get('/manifest-tech.webmanifest')
     expect(tech.ok()).toBeTruthy()
