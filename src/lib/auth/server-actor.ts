@@ -7,7 +7,13 @@ import {
 } from '@/lib/auth/types'
 import { TEST_ACTOR_COOKIE } from '@/lib/auth/demo-session'
 import { actorFromProfileId } from '@/lib/auth/load-memberships'
-import { isUuid, resolveTechId } from '@/modules/tickets/tech'
+import { resolveTechId } from '@/modules/tickets/tech'
+
+function isProfileUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  )
+}
 
 /**
  * Resolve the signed-in actor for Server Components / pages.
@@ -25,7 +31,7 @@ export async function getServerActor(): Promise<Actor | null> {
 
   if (testAuthAllowed()) {
     const testId = cookieStore.get(TEST_ACTOR_COOKIE)?.value?.trim()
-    if (testId && isUuid(testId)) {
+    if (testId && isProfileUuid(testId)) {
       return actorFromProfileId(testId, 'test_bearer')
     }
   }
