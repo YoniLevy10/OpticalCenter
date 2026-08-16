@@ -204,7 +204,7 @@ export function QueueToolbar({
               key={c.label}
               type="button"
               onClick={() => setFilter(c.clear)}
-              className="t-meta inline-flex h-7 items-center gap-1 rounded-full border border-border bg-surface px-2.5 text-ink-2 transition-colors hover:text-ink"
+              className="t-meta inline-flex min-h-[var(--tap)] items-center gap-1 rounded-full border border-border bg-surface px-3 text-ink-2 transition-colors hover:text-ink md:h-7 md:min-h-0"
             >
               {c.label}
               <X className="h-3 w-3" aria-hidden />

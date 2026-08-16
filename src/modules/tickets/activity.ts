@@ -61,8 +61,9 @@ export function buildActivity(
   const fromEvents: ActivityItem[] = events.map((e) => {
     const payload = e.payload ?? {}
     const note = typeof payload.note === 'string' ? payload.note : null
-    const to = statusLabel(payload.to_status)
-    const from = statusLabel(payload.from_status)
+    // Writers emit {from,to}; older/alt payloads use from_status/to_status.
+    const to = statusLabel(payload.to ?? payload.to_status)
+    const from = statusLabel(payload.from ?? payload.from_status)
 
     return {
       id: `e-${e.id}`,

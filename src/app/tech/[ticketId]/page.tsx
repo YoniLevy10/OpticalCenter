@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { MapPin, Phone } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { TechShell } from '@/components/layout/tech-shell'
 import { techHref } from '@/lib/tech-href'
 import { TechTicketActions } from '@/app/tech/[ticketId]/tech-ticket-actions'
@@ -132,14 +132,6 @@ export default async function TechTicketDetailPage({
                   ניווט
                 </a>
               </Button>
-              {ticket.stores?.code ? (
-                <Button asChild variant="secondary" size="touch" className="flex-1">
-                  <a href={`tel:`} aria-disabled>
-                    <Phone className="h-4 w-4" aria-hidden />
-                    החנות
-                  </a>
-                </Button>
-              ) : null}
             </div>
           </Panel>
         ) : null}

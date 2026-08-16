@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader, Panel, KeyValue } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
@@ -37,9 +37,9 @@ export default function SettingsPage() {
                     </span>
                     <span className="t-meta block text-ink-2">{item.desc}</span>
                   </span>
-                  <ChevronLeft
+                  <ChevronRight
                     aria-hidden
-                    className="h-4 w-4 shrink-0 text-ink-3 ltr:rotate-180"
+                    className="h-4 w-4 shrink-0 text-ink-3 rtl:rotate-180 ltr:rotate-0"
                   />
                 </Link>
               </li>

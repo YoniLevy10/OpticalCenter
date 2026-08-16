@@ -192,10 +192,11 @@ Technicians get **no HQ navigation at all**.
 
 One system, in `src/components/ui/`. Consumed everywhere.
 
-`Button` · `Input` · `Textarea` · `Select` · `SearchField` · `SegmentedControl` ·
-`Table` · `OperationalRow` · `Modal` · `Drawer` · `BottomSheet` · `Toast` ·
-`EmptyState` · `ErrorState` · `Skeleton` · `PageHeader` · `Panel` ·
-`PriorityEdge` · `StatusLabel` · `SlaCell` · `Age` · `EvidenceGrid`
+`Button` · `Input` · `Textarea` · `Select` · `SearchField` · `Field` ·
+`SegmentedLinks` · `SegmentedButtons` · `Table` · `OperationalRow` ·
+`Modal` · `BottomSheet` · `Toast` · `EmptyState` · `ErrorState` · `Skeleton` ·
+`PageHeader` · `Panel` · `PriorityText` · `StatusLabel` · `SlaBlock` ·
+`SlaValue` · `LiveAge` · `LiveSla` · `EvidenceGrid` · `Timeline` · `Notice`
 
 Rules:
 
@@ -224,3 +225,7 @@ code. The priority edge uses `inline-start`, so it mirrors for LTR at zero cost.
 
 Latin store names, ticket IDs, phone numbers and URLs are wrapped in `dir="ltr"`
 inline spans so they render correctly inside Hebrew paragraphs.
+
+Directional chevrons use **ChevronRight** with an explicit pair:
+- Toward start (back): `rtl:rotate-0 ltr:rotate-180`
+- Toward end (forward / breadcrumb): `rtl:rotate-180 ltr:rotate-0`
