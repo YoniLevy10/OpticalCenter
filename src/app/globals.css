@@ -1,27 +1,25 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MaintainOS — Operational Quiet
-   Layer 1 SUBSTRATE · Layer 2 SIGNAL · Layer 3 TENANT
-   See docs/DESIGN_SYSTEM.md
+   MaintainOS — Design System v2
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (never tenant-themable) ---------- */
-  --canvas: #f5f5f3;
+  /* ---------- SUBSTRATE ---------- */
+  --canvas: #eef0f4;
   --surface: #ffffff;
-  --surface-sunken: #f0f0ee;
+  --surface-sunken: #e4e6ec;
   --surface-raised: #ffffff;
-  --border: #e6e6e2;
-  --border-strong: #d0d0ca;
-  --ink: #18181a;
-  --ink-2: #686872;
-  --ink-3: #a0a0aa;
+  --border: #d8dae0;
+  --border-strong: #c2c5cd;
+  --ink: #1a1b1e;
+  --ink-2: #5f636e;
+  --ink-3: #9aa0ac;
 
-  /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
-  --signal-critical: #b3261e;
-  --signal-critical-soft: #fdf0ef;
-  --signal-critical-line: #f0d3d0;
+  /* ---------- SIGNAL ---------- */
+  --signal-critical: #c01e1e;
+  --signal-critical-soft: #fef0f0;
+  --signal-critical-line: #f3d0d0;
   --signal-warning: #b07a1a;
   --signal-warning-soft: #fbf3e3;
   --signal-warning-line: #eddfc2;
@@ -29,11 +27,10 @@
   --signal-progress-soft: #eef1f5;
   --signal-resolved: #2f6b4f;
   --signal-resolved-soft: #eaf4ee;
-  --signal-idle: #9a9a94;
-  --signal-idle-soft: #f2f2ef;
+  --signal-idle: #9aa0ac;
+  --signal-idle-soft: #e4e6ec;
 
-  /* ---------- Layer 3 — TENANT (logo · primary action · active nav only) ----------
-     Replace this block alone to rebrand for another retail chain. */
+  /* ---------- TENANT ---------- */
   --tenant: #8b1e2d;
   --tenant-hover: #731828;
   --tenant-soft: #f6eef0;
@@ -46,16 +43,16 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  /* ---------- Elevation ---------- */
-  --shadow-1: 0 1px 2px rgba(24, 24, 26, 0.04), 0 0 0 0.5px rgba(24, 24, 26, 0.03);
-  --shadow-2: 0 2px 4px rgba(24, 24, 26, 0.05), 0 1px 2px rgba(24, 24, 26, 0.03);
-  --shadow-pop: 0 8px 24px rgba(24, 24, 26, 0.08), 0 2px 6px rgba(24, 24, 26, 0.04);
-  --shadow-hover: 0 4px 12px rgba(24, 24, 26, 0.06), 0 1px 3px rgba(24, 24, 26, 0.04);
+  /* ---------- Elevation — VISIBLE shadows ---------- */
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-2: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-pop: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
 
   /* ---------- Motion ---------- */
   --dur-1: 150ms;
   --dur-2: 280ms;
-  --dur-3: 400ms;
+  --dur-3: 450ms;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -76,19 +73,14 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-sunken: var(--surface-sunken);
-  --color-surface-sunken: var(--surface-sunken);
-  --color-surface-raised: var(--surface-raised);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
-  /* legacy aliases so nothing breaks mid-migration */
   --color-foreground: var(--ink);
   --color-muted: var(--ink-2);
   --color-faint: var(--ink-3);
-
   --color-critical: var(--signal-critical);
   --color-critical-soft: var(--signal-critical-soft);
   --color-critical-line: var(--signal-critical-line);
@@ -101,21 +93,16 @@
   --color-resolved-soft: var(--signal-resolved-soft);
   --color-idle: var(--signal-idle);
   --color-idle-soft: var(--signal-idle-soft);
-
   --color-tenant: var(--tenant);
   --color-tenant-hover: var(--tenant-hover);
   --color-tenant-soft: var(--tenant-soft);
   --color-tenant-line: var(--tenant-line);
-
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
 }
 
-*,
-::before,
-::after {
+*, ::before, ::after {
   border-color: var(--border);
 }
 
@@ -137,7 +124,7 @@ body {
 }
 
 /* ============================================================
-   Typography roles — the ONLY sanctioned text sizes
+   Typography
    ============================================================ */
 
 .t-display {
@@ -200,19 +187,18 @@ body {
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Form controls: 16px on mobile prevents iOS focus-zoom, 13px from md up. */
 .field-text {
   font-size: 16px;
   line-height: 1.4;
 }
 @media (min-width: 768px) {
   .field-text {
-    font-size: 13px;
+    font-size: 13.5px;
   }
 }
 
 /* ============================================================
-   Focus — one ring, everywhere
+   Focus — visible halo
    ============================================================ */
 
 button:focus-visible,
@@ -228,42 +214,28 @@ textarea:focus-visible,
 }
 
 /* ============================================================
-   Application shell helpers
+   Shell helpers
    ============================================================ */
 
-.safe-pt {
-  padding-top: var(--safe-t);
-}
-.safe-pb {
-  padding-bottom: var(--safe-b);
-}
+.safe-pt { padding-top: var(--safe-t); }
+.safe-pb { padding-bottom: var(--safe-b); }
 
-/* Scroll region accounting for mobile bottom nav + home indicator. */
 .pb-nav {
   padding-bottom: calc(var(--bottomnav-h) + var(--safe-b) + 16px);
 }
 @media (min-width: 768px) {
-  .pb-nav {
-    padding-bottom: 32px;
-  }
+  .pb-nav { padding-bottom: 32px; }
 }
 
-/* Sticky action zone on technician job detail. */
 .pb-actions {
   padding-bottom: calc(76px + var(--safe-b) + 16px);
 }
 
-/*
- * HQ ticket detail: sticky actions sit above the bottom nav.
- * AppShell already applies .pb-nav; this adds room for the action strip.
- */
 .pb-actions-hq {
   padding-bottom: calc(200px + 16px);
 }
 @media (min-width: 768px) {
-  .pb-actions-hq {
-    padding-bottom: 0;
-  }
+  .pb-actions-hq { padding-bottom: 0; }
 }
 
 .dvh-screen {
@@ -272,12 +244,10 @@ textarea:focus-visible,
 }
 
 /* ============================================================
-   Priority leading edge — position-encoded, mirrors for LTR
+   Priority edge
    ============================================================ */
 
-.edge {
-  position: relative;
-}
+.edge { position: relative; }
 .edge::before {
   content: "";
   position: absolute;
@@ -286,181 +256,83 @@ textarea:focus-visible,
   width: 3px;
   background: transparent;
 }
-.edge-critical::before {
-  background: var(--signal-critical);
-}
-.edge-high::before {
-  background: color-mix(in srgb, var(--signal-critical) 45%, transparent);
-}
-.edge-medium::before {
-  background: var(--border-strong);
-}
+.edge-critical::before { background: var(--signal-critical); }
+.edge-high::before { background: color-mix(in srgb, var(--signal-critical) 45%, transparent); }
+.edge-medium::before { background: var(--border-strong); }
 
 /* ============================================================
-   Motion
+   Animations — VISIBLE motion
    ============================================================ */
 
 @keyframes mo-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes mo-sheet-in {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-@keyframes mo-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes mo-slide-up {
-  from {
-    transform: translateY(8px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 @keyframes mo-scale-in {
-  from {
-    transform: scale(0.96);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
-@keyframes mo-slide-in-start {
-  from {
-    transform: translateX(12px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+@keyframes mo-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes mo-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 @keyframes mo-skeleton {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-.animate-fade {
-  animation: mo-fade-in var(--dur-2) var(--ease);
-}
-.animate-sheet {
-  animation: mo-sheet-in var(--dur-2) var(--ease);
-}
-.animate-shimmer {
-  animation: mo-pulse 1.6s var(--ease) infinite;
-}
-.animate-slide-up {
-  animation: mo-slide-up var(--dur-2) var(--ease);
-}
-.animate-scale-in {
-  animation: mo-scale-in var(--dur-2) var(--ease);
-}
-.animate-slide-in {
-  animation: mo-slide-in-start var(--dur-2) var(--ease);
-}
+.animate-fade { animation: mo-fade-in var(--dur-2) var(--ease); }
+.animate-sheet { animation: mo-sheet-in var(--dur-3) var(--ease); }
+.animate-slide-up { animation: mo-slide-up var(--dur-2) var(--ease); }
+.animate-scale-in { animation: mo-scale-in var(--dur-2) var(--ease); }
+.animate-shimmer { animation: mo-pulse 1.6s var(--ease) infinite; }
 
-/* List stagger — children appear one after another */
-.stagger > * {
-  animation: mo-slide-up var(--dur-2) var(--ease) both;
-}
-.stagger > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.stagger > *:nth-child(2) {
-  animation-delay: 40ms;
-}
-.stagger > *:nth-child(3) {
-  animation-delay: 80ms;
-}
-.stagger > *:nth-child(4) {
-  animation-delay: 120ms;
-}
-.stagger > *:nth-child(5) {
-  animation-delay: 160ms;
-}
-.stagger > *:nth-child(6) {
-  animation-delay: 200ms;
-}
-.stagger > *:nth-child(n + 7) {
-  animation-delay: 240ms;
-}
-
-/* Page transition — subtle fade on route change */
-main {
-  animation: mo-fade-in var(--dur-2) var(--ease);
-}
-
-/* Card hover lift for interactive panels */
-.card-hover {
-  transition: all var(--dur-1) var(--ease);
-}
-.card-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-1);
-}
-
-/* Better skeleton */
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--surface-sunken) 0%,
-    var(--border) 50%,
-    var(--surface-sunken) 100%
-  );
+  background: linear-gradient(90deg, var(--surface-sunken) 0%, var(--border) 50%, var(--surface-sunken) 100%);
   background-size: 200% 100%;
   animation: mo-skeleton 1.6s var(--ease) infinite;
 }
 
-/* Subtle scrollbar — feels native */
+/* List stagger — children appear sequentially */
+.stagger > * {
+  animation: mo-slide-up var(--dur-2) var(--ease) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 50ms; }
+.stagger > *:nth-child(3) { animation-delay: 100ms; }
+.stagger > *:nth-child(4) { animation-delay: 150ms; }
+.stagger > *:nth-child(5) { animation-delay: 200ms; }
+.stagger > *:nth-child(6) { animation-delay: 250ms; }
+.stagger > *:nth-child(n+7) { animation-delay: 300ms; }
+
+/* Page fade-in */
+main {
+  animation: mo-fade-in var(--dur-2) var(--ease);
+}
+
+/* Scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 3px;
 }
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-3);
-}
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
+  *, ::before, ::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }

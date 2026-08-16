@@ -131,28 +131,20 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
     }
   }
 
-  function onSubmit(e: FormEvent) {
-    if (mode === 'otp') return void verifyOtp(e)
-    if (mode === 'password') return void signInPassword(e)
-    return void requestLink(e)
-  }
-
   return (
     <div className="dvh-screen safe-pt safe-pb flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
         {/* Brand block */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] shadow-[var(--shadow-pop)]">
-            <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>
-              OC
-            </span>
+            <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>OC</span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
           <p className="t-body mt-1.5 text-ink-3">Optical Center · ניהול תחזוקה</p>
         </div>
 
         {/* Mode tabs */}
-        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 p-1">
+        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1">
           {(
             [
               { key: 'link', label: 'קישור במייל' },
@@ -176,43 +168,82 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           ))}
         </div>
 
-        {/* Form — dispatches to existing handlers by mode */}
-        <form onSubmit={onSubmit} className="space-y-4">
-          <Field label="כתובת מייל" htmlFor="login-email">
-            <Input
-              id="login-email"
-              type="email"
-              dir="ltr"
-              required
-              autoComplete="email"
-              inputMode="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@optical-center.co.il"
-            />
-          </Field>
-
-          {mode === 'otp' ? (
-            <Field
-              label="קוד חד-פעמי"
-              htmlFor="login-otp"
-              hint="קוד שנשלח למייל (6–8 ספרות)"
-            >
+        {/* Forms */}
+        {mode === 'link' ? (
+          <form onSubmit={requestLink} className="space-y-4">
+            <Field label="כתובת מייל" htmlFor="login-email">
               <Input
-                id="login-otp"
+                id="login-email"
+                type="email"
                 dir="ltr"
-                inputMode="numeric"
-                autoComplete="one-time-code"
                 required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="12345678"
-                className="t-num text-center tracking-[0.3em]"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@optical-center.co.il"
               />
             </Field>
-          ) : null}
+            <Button
+              type="submit"
+              variant="primary"
+              size="block"
+              disabled={busy || !email.trim()}
+            >
+              {busy ? 'שולח…' : 'שליחת קישור / קוד'}
+            </Button>
+          </form>
+        ) : null}
 
-          {mode === 'password' ? (
+        {mode === 'otp' ? (
+          <form onSubmit={verifyOtp} className="space-y-4">
+            <Field label="כתובת מייל" htmlFor="otp-email">
+              <Input
+                id="otp-email"
+                type="email"
+                dir="ltr"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </Field>
+            <Field label="קוד מהמייל" htmlFor="login-otp">
+              <Input
+                id="login-otp"
+                type="text"
+                dir="ltr"
+                required
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="12345678"
+                className="t-num tracking-[0.2em] text-center"
+              />
+            </Field>
+            <Button
+              type="submit"
+              variant="primary"
+              size="block"
+              disabled={busy || !otp.trim()}
+            >
+              {busy ? 'מאמת…' : 'אימות קוד וכניסה'}
+            </Button>
+          </form>
+        ) : null}
+
+        {mode === 'password' ? (
+          <form onSubmit={signInPassword} className="space-y-4">
+            <Field label="כתובת מייל" htmlFor="pw-email">
+              <Input
+                id="pw-email"
+                type="email"
+                dir="ltr"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </Field>
             <Field label="סיסמה" htmlFor="login-password">
               <Input
                 id="login-password"
@@ -222,42 +253,26 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
               />
             </Field>
-          ) : null}
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="block"
-            disabled={
-              busy ||
-              !email.trim() ||
-              (mode === 'otp' && !otp.trim()) ||
-              (mode === 'password' && !password)
-            }
-          >
-            {busy
-              ? mode === 'link'
-                ? 'שולח…'
-                : 'מאמת…'
-              : mode === 'link'
-                ? 'שליחת קישור'
-                : 'התחברות'}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              variant="primary"
+              size="block"
+              disabled={busy || !password}
+            >
+              {busy ? 'מתחבר…' : 'כניסה עם סיסמה'}
+            </Button>
+          </form>
+        ) : null}
 
         {/* Feedback */}
         {sent ? (
           <div className="mt-4">
             <Notice tone="progress">
               <div className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className="h-2 w-2 rounded-full bg-[var(--signal-progress)] animate-pulse"
-                />
-                הקישור נשלח ל-{email}. בדקו את תיבת הדואר.
+                <span aria-hidden className="h-2 w-2 rounded-full bg-[var(--signal-progress)] animate-pulse" />
+                {hint || 'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
               </div>
             </Notice>
           </div>
@@ -269,13 +284,9 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
         ) : null}
 
-        {hint ? (
-          <p className="t-caption mt-4 text-center text-ink-3">{hint}</p>
-        ) : null}
-
-        {/* Demo entry — keep working demo-session path */}
+        {/* Demo entry */}
         {demoEntry ? (
-          <div className="mt-8 space-y-3 border-t border-border pt-4 text-center">
+          <div className="mt-8 space-y-3 border-t border-border pt-6">
             <Button
               type="button"
               variant="secondary"
@@ -283,23 +294,22 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               disabled={demoBusy || busy}
               onClick={() => void enterAsDemo()}
             >
-              {demoBusy ? 'נכנסים…' : `כניסה כדמו · ${PILOT_DEMO_EMAIL}`}
+              {demoBusy
+                ? 'נכנסים…'
+                : `כניסה כדמו · ${PILOT_DEMO_EMAIL}`}
             </Button>
-            <p className="t-caption text-ink-3">
-              מצב דמו —{' '}
+            <p className="t-caption text-center text-ink-3">
+              או ישירות אל{' '}
               <Link
-                href="/ops/tickets"
-                className="text-ink-2 underline underline-offset-2 hover:text-ink"
+                href="/ops/dashboard"
+                className="text-ink-2 underline underline-offset-2"
               >
-                כניסה ישירה לתיבת התקלות
+                לוח הבקרה
               </Link>
+              .
             </p>
           </div>
         ) : null}
-
-        <p className="t-caption mt-6 text-center text-ink-3">
-          אם קישור המייל נפתח ב־localhost — השתמשו בקוד או בסיסמה.
-        </p>
       </div>
     </div>
   )

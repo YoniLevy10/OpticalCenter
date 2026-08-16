@@ -1,15 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import {
-  AlertTriangle,
-  Inbox,
-  PackageOpen,
-  UserMinus,
-  Wrench,
-} from 'lucide-react'
+import { AlertTriangle, Inbox, UserMinus, PackageOpen, Wrench } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader, Panel, PanelHeader, EmptyState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -17,7 +12,6 @@ import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { queueHref } from '@/modules/tickets/queue'
-import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,45 +28,48 @@ function KpiCard({
   tone?: 'default' | 'warn' | 'critical'
   icon?: typeof Inbox
 }) {
-  const isActive =
-    (tone === 'critical' && value > 0) || (tone === 'warn' && value > 0)
+  const isAlert = (tone === 'critical' || tone === 'warn') && value > 0
   const toneColor =
     tone === 'critical' && value > 0
       ? 'text-[var(--signal-critical)]'
       : tone === 'warn' && value > 0
         ? 'text-[var(--signal-warning)]'
         : 'text-ink'
+  const borderColor = isAlert
+    ? tone === 'critical'
+      ? 'border-[var(--signal-critical-line)]'
+      : 'border-[var(--signal-warning-line)]'
+    : 'border-border'
 
   return (
     <Link
       href={href}
       className={cn(
-        'group relative overflow-hidden rounded-[var(--radius-lg)] border bg-surface p-5 shadow-[var(--shadow-1)] transition-all duration-[var(--dur-1)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] active:scale-[0.98]',
-        isActive && tone === 'critical'
-          ? 'border-[var(--signal-critical-line)]'
-          : isActive && tone === 'warn'
-            ? 'border-[var(--signal-warning-line)]'
-            : 'border-border',
+        'group relative overflow-hidden rounded-[var(--radius-lg)] border bg-surface p-5 shadow-[var(--shadow-1)] transition-all duration-[var(--dur-1)] hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5 active:scale-[0.98]',
+        borderColor,
       )}
     >
+      {isAlert ? (
+        <span
+          aria-hidden
+          className={cn(
+            'absolute inset-x-0 top-0 h-[3px]',
+            tone === 'critical' ? 'bg-[var(--signal-critical)]' : 'bg-[var(--signal-warning)]',
+          )}
+        />
+      ) : null}
       <div className="flex items-center justify-between">
         <p className="t-caption text-ink-3">{label}</p>
         {Icon ? (
-          <Icon
-            className={cn(
-              'h-4 w-4 text-ink-3 transition-colors group-hover:text-ink-2',
-              toneColor,
-            )}
-            aria-hidden
-          />
+          <Icon className={cn('h-4 w-4 text-ink-3 transition-colors group-hover:text-ink-2', toneColor)} aria-hidden />
         ) : null}
       </div>
-
-      <p className={cn('t-display t-num mt-4', toneColor)}>{value}</p>
-
+      <p className={cn('t-display t-num mt-4', toneColor)}>
+        {value}
+      </p>
       <span
         aria-hidden
-        className="absolute bottom-4 end-4 text-ink-3 opacity-0 transition-all duration-[var(--dur-1)] group-hover:translate-x-[-4px] group-hover:opacity-100 rtl:group-hover:translate-x-[4px]"
+        className="absolute bottom-4 end-4 text-ink-3 opacity-0 transition-all duration-[var(--dur-1)] group-hover:opacity-100 group-hover:translate-x-[-4px] rtl:group-hover:translate-x-[4px]"
       >
         ←
       </span>
@@ -87,7 +84,7 @@ function BarList({
 }) {
   const max = Math.max(1, ...items.map((i) => i.count))
   return (
-    <ul className="stagger space-y-4 px-5 py-4">
+    <ul className="space-y-4 px-5 py-4">
       {items.map((item) => (
         <li key={item.label}>
           <div className="mb-2 flex items-baseline justify-between gap-2">
@@ -96,7 +93,7 @@ function BarList({
               {item.count}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
             <div
               className="h-full rounded-full bg-[var(--tenant)] transition-all duration-700 ease-[var(--ease)]"
               style={{ width: `${Math.round((item.count / max) * 100)}%` }}
@@ -140,7 +137,7 @@ export default async function OpsDashboardPage() {
           }
         />
 
-        {/* Operational status banner */}
+        {/* Status banner */}
         <div
           className={cn(
             'flex items-center gap-3 rounded-[var(--radius-lg)] border px-5 py-4',
@@ -154,24 +151,21 @@ export default async function OpsDashboardPage() {
             className={cn(
               'h-2.5 w-2.5 rounded-full',
               kpis.breached > 0
-                ? 'animate-pulse bg-[var(--signal-critical)]'
+                ? 'bg-[var(--signal-critical)] animate-pulse'
                 : 'bg-[var(--signal-resolved)]',
             )}
           />
-          <p
-            className={cn(
-              't-body-strong',
-              kpis.breached > 0
-                ? 'text-[var(--signal-critical)]'
-                : 'text-ink-2',
-            )}
-          >
+          <p className={cn(
+            't-body-strong',
+            kpis.breached > 0 ? 'text-[var(--signal-critical)]' : 'text-ink-2',
+          )}>
             {kpis.breached > 0
               ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
               : 'המערכת תקינה — אין חריגות SLA'}
           </p>
         </div>
 
+        {/* KPI cards */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <KpiCard
             label="פתוחות"
@@ -195,7 +189,8 @@ export default async function OpsDashboardPage() {
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+        {/* Three panels */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel flush className="overflow-hidden">
             <PanelHeader title="לפי קטגוריה" meta={`${kpis.byCategory.length}`} />
             {kpis.byCategory.length === 0 ? (
@@ -218,7 +213,7 @@ export default async function OpsDashboardPage() {
                         { view: 'open', sort: 'urgency' },
                         { store: s.code === '—' ? undefined : s.code },
                       )}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
+                      className="flex min-h-[var(--tap)] items-center gap-3 px-5 py-3 transition-all duration-[var(--dur-1)] hover:bg-[var(--surface-sunken)]/50 active:scale-[0.99]"
                     >
                       <span className="t-body-strong t-num w-10 shrink-0 text-ink">
                         {s.code}
@@ -226,7 +221,7 @@ export default async function OpsDashboardPage() {
                       <span className="t-body min-w-0 flex-1 truncate text-ink-2">
                         {s.name}
                       </span>
-                      <span className="t-meta t-num shrink-0 text-ink-3">
+                      <span className="t-body-strong t-num shrink-0 text-ink-2">
                         {s.count}
                       </span>
                     </Link>
@@ -241,12 +236,7 @@ export default async function OpsDashboardPage() {
             {kpis.techLoad.length === 0 ? (
               <EmptyState title="אין שיוכים פתוחים" icon={Wrench} />
             ) : (
-              <BarList
-                items={kpis.techLoad.map((t) => ({
-                  label: t.name,
-                  count: t.count,
-                }))}
-              />
+              <BarList items={kpis.techLoad.map((t) => ({ label: t.name, count: t.count }))} />
             )}
           </Panel>
         </div>

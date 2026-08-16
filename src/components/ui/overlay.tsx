@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const overlayClass =
-  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,20,0.32)] backdrop-blur-[2px]'
+  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,22,0.35)] backdrop-blur-[2px]'
 
 function CloseButton() {
   return (

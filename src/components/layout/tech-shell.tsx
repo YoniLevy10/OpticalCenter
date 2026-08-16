@@ -37,7 +37,7 @@ export function TechShell({
             <Link
               href={backHref}
               aria-label="חזרה"
-              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-all duration-[var(--dur-1)] active:scale-90 hover:bg-surface-sunken/60"
+              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-all duration-[var(--dur-1)] active:scale-90 hover:bg-[var(--surface-sunken)]/60"
             >
               {/* Chevron points toward the start edge; mirrors under RTL. */}
               <ChevronRight className="h-5 w-5 rtl:rotate-0 ltr:rotate-180" />

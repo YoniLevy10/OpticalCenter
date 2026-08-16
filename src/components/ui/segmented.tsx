@@ -18,7 +18,7 @@ function segmentClass(active: boolean) {
     't-control inline-flex h-11 min-h-[var(--tap)] min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-3.5 transition-all duration-[var(--dur-1)] md:h-9 md:min-h-0',
     active
       ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-      : 'text-ink-2 hover:bg-surface-sunken/40 hover:text-ink',
+      : 'text-ink-2 hover:bg-[var(--surface-sunken)]/40 hover:text-ink',
   )
 }
 
@@ -51,7 +51,7 @@ export function SegmentedLinks({
   return (
     <div
       className={cn(
-        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/60 p-1',
+        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
         scrollable && 'max-w-full overflow-x-auto [scrollbar-width:none]',
         className,
       )}
@@ -94,7 +94,7 @@ export function SegmentedButtons({
     <div
       role="tablist"
       className={cn(
-        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/60 p-1',
+        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
         fill && 'flex w-full',
         className,
       )}

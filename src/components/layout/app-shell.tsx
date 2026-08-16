@@ -8,17 +8,6 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
-/**
- * Operational Quiet shell.
- *
- * Desktop: a 216px surface sidebar separated by a hairline from the canvas
- * content. Mobile: primary destinations in the bottom nav; More (a sheet)
- * keeps tools and settings off the premium strip.
- *
- * Only working destinations are exposed. Reports was removed; the simulator and
- * settings live behind More.
- */
-
 const PRIMARY = [
   {
     href: '/ops/dashboard',
@@ -55,7 +44,7 @@ function TenantMark() {
   return (
     <span
       aria-hidden
-      className="t-body-strong inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
+      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
     >
       OC
     </span>
@@ -74,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="flex items-center gap-2 px-4"
+          className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
@@ -83,8 +72,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-2 py-2">
-          <ul className="space-y-0.5">
+        <nav className="flex-1 px-2.5 py-2">
+          <ul className="space-y-1">
             {PRIMARY.map((item) => {
               const active = isActive(pathname, item.match)
               const Icon = item.icon
@@ -94,22 +83,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-all duration-[var(--dur-1)]',
+                      't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-all duration-[var(--dur-1)]',
                       active
-                        ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                        : 'text-ink-2 hover:bg-surface-sunken/60 hover:text-ink',
+                        ? 'bg-[var(--surface-sunken)] text-ink shadow-[var(--shadow-1)]'
+                        : 'text-ink-2 hover:bg-[var(--surface-sunken)]/60 hover:text-ink',
                       'hover:translate-x-0.5',
                     )}
                   >
-                    {/* Active indicator — one of the three sanctioned tenant uses. */}
-                    <span
-                      aria-hidden
+                    <Icon
                       className={cn(
-                        'absolute inset-block-2 w-[2px] rounded-full start-0',
-                        active ? 'bg-[var(--tenant)]' : 'bg-transparent',
+                        'h-[18px] w-[18px] transition-transform duration-[var(--dur-1)]',
+                        active && 'scale-110',
                       )}
+                      aria-hidden
                     />
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
                     {item.label}
                   </Link>
                 </li>
@@ -118,29 +105,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
 
-        <div className="border-t border-border p-2">
-          <p className="t-caption px-2.5 pb-1.5 text-ink-3">כלים</p>
-          <ul className="space-y-0.5">
-            {TOOLS.map((t) => (
-              <li key={t.href}>
-                <Link
-                  href={t.href}
-                  className={cn(
-                    't-meta flex h-8 items-center rounded-[var(--radius-md)] px-2.5 transition-colors',
-                    isActive(pathname, t.href)
-                      ? 'text-ink'
-                      : 'text-ink-3 hover:text-ink-2',
-                  )}
-                >
-                  {t.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-2 px-2.5">
+        <div className="border-t border-border px-2.5 py-2">
+          <div className="mb-1 flex items-center gap-2.5 px-2.5 py-1.5">
             <LogoutButton className="w-full justify-start px-0" />
           </div>
-          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
+          <div className="flex items-center gap-2 px-2.5 py-2">
             <span
               aria-hidden
               className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
@@ -159,10 +128,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
-          <div className="min-w-0 flex-1">
-            <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
-          </div>
-          <span className="t-caption text-ink-3">Optical Center · ישראל</span>
+          <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
+          <span className="t-caption ms-auto text-ink-3">ישראל</span>
         </div>
       </header>
 

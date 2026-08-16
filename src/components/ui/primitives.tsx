@@ -1,10 +1,5 @@
-import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-/**
- * Containers are the last resort. Prefer type and space, then a divider, then
- * a hairline, and only then a Panel.
- */
+import { Inbox } from 'lucide-react'
 
 export function Panel({
   children,
@@ -14,7 +9,6 @@ export function Panel({
 }: {
   children: React.ReactNode
   className?: string
-  /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
@@ -41,7 +35,7 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4">
+    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-5">
       <div className="flex items-baseline gap-2">
         <h2 className="t-section text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
@@ -65,7 +59,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-1',
         className,
       )}
     >
@@ -100,7 +94,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-sunken)] text-ink-3 ring-1 ring-border">
         <Icon className="h-6 w-6" aria-hidden strokeWidth={1.5} />
       </div>
       <p className="t-body-strong text-ink">{title}</p>
@@ -142,7 +136,7 @@ export function Notice({
   return (
     <div
       className={cn(
-        't-body rounded-[var(--radius-md)] border px-3 py-2',
+        't-body rounded-[var(--radius-md)] border px-4 py-2.5',
         tone === 'neutral' && 'border-border bg-surface text-ink-2',
         tone === 'warning' &&
           'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
@@ -164,7 +158,6 @@ export function Skeleton({ className }: { className?: string }) {
   )
 }
 
-/** Skeleton that mirrors the real queue geometry rather than a spinner. */
 export function RowSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <div className="divide-y divide-border">
