@@ -182,7 +182,7 @@ export default async function TicketDetailPage({
               </Panel>
             ) : null}
 
-            <Panel flush>
+            <Panel flush data-visual="ticket-timeline">
               <PanelHeader title="כרונולוגיה" meta={`${activity.length} רשומות`} />
               <Timeline items={activity} />
             </Panel>
