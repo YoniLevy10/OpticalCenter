@@ -6,7 +6,7 @@ import {
   patchTicket,
 } from './helpers/api'
 
-const MAX_DIFF = 0.05
+const MAX_DIFF = 0.03
 
 const VIEWPORTS = [
   { name: 'w390', width: 390, height: 844 },
@@ -38,13 +38,8 @@ function dynamicMasks(page: Page): Locator[] {
 }
 
 async function shot(page: Page, name: string) {
-  // Detail + tech list drift with shared memory / WA body length.
-  const loose =
-    name.startsWith('ops-ticket-detail') ||
-    name.startsWith('tech-jobs') ||
-    name.startsWith('ops-tickets-open')
   await expect(page).toHaveScreenshot(name, {
-    maxDiffPixelRatio: loose ? 0.12 : MAX_DIFF,
+    maxDiffPixelRatio: MAX_DIFF,
     // Viewport only — fullPage height drifts as the memory store accumulates tickets.
     mask: dynamicMasks(page),
   })

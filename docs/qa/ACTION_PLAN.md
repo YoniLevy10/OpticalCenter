@@ -42,7 +42,7 @@
 | 7 Operational | ✅ |
 | 8 Scale & polish | ⏳ לפי צורך |
 
-**עודכן:** 2026-08-16 — יישום מלא של פאזות 0–7 על `stabilize`.
+**עודכן:** 2026-08-16 — יישום מלא של פאזות 0–7 על `stabilize` + `main`; visual gate הוקשח ל־`maxDiffPixelRatio: 0.03`; checkboxes מסונכרנים.
 
 ---
 
@@ -50,22 +50,23 @@
 
 | תחום | סטטוס | הערה |
 |------|--------|------|
-| WhatsApp intake (טקסט) | 🟡 עובד בדמו | מדיה חסרה ב־production |
+| WhatsApp intake (טקסט) | ✅ | memory + supabase |
+| WhatsApp inbound media | ✅ | Graph → Storage helper + fallback |
 | יצירת תקלה | ✅ | memory + supabase |
-| Ops inbox / queue | 🟡 | SLA fields חסרים ב־Supabase query |
-| Ticket detail | 🟡 | timeline broken, actions לא sticky |
-| Tech portal | 🟡 | עובד בדמו, `?techId=` ל־SSR |
-| Auth | 🟡 | Magic link חלקי, אין callback/logout/page gate |
-| RLS | ✅ migration | אבל SSR עדיין service-role |
-| PWA | 🟡 | manifests חיים, PwaLifecycle מת |
-| התראות לחנות | ⚪ | sendWhatsAppText קיים אבל לא מחובר ל־lifecycle |
-| התראות לטכנאי | ⚪ | realtime רק כשהפורטל פתוח |
-| ניהול משתמשים | ⚪ | seed data בלבד |
+| Ops inbox / queue | ✅ | SLA fields ב־`listTickets` + breach UI |
+| Ticket detail | ✅ | timeline `from`/`to` + sticky HQ actions |
+| Tech portal | ✅ | session SoT; `?techId=` רק בדמו |
+| Auth | ✅ | Magic Link + callback + logout + page gate |
+| RLS | ✅ | migration + app-level scope filter (pilot) |
+| PWA | ✅ | manifests; `PwaLifecycle` הוסר |
+| התראות לחנות | ✅ | lifecycle WhatsApp templates |
+| התראות לטכנאי | ✅ | WA עם לינק בעת assign |
+| ניהול משתמשים | ✅ | `/ops/users` ל־global_admin |
 | Dashboard / KPIs | ✅ | `/ops/dashboard` |
-| SLA escalation | ⚪ | timestamps מחושבים, אין action |
-| QR/NFC generation | 🟡 | QR SVG/PNG per store; PDF batch later |
-| CI/CD | ⚪ | tests קיימים, אין GitHub Actions |
-| Error monitoring | 🟡 | `captureError` + optional SENTRY_DSN |
+| SLA escalation | ✅ | Vercel cron `/api/cron/sla-escalation` |
+| QR/NFC generation | 🟡 | QR SVG/PNG per store; PDF batch → פאזה 8 |
+| CI/CD | ✅ | `.github/workflows/ci.yml` + PR template |
+| Error monitoring | ✅ | `captureError` + optional SENTRY_DSN |
 
 **מקרא:** ✅ Done · 🟡 Partial · ⚪ Missing
 
@@ -76,7 +77,7 @@
 - [x] **הקפאת פיצ'רים** — אין redesign, אין מסכים חדשים עד פאזה 3
 - [x] יצירת branch `stabilize` מ־`main`
 - [x] תיעוד התוכנית במסמך זה (`docs/qa/ACTION_PLAN.md`)
-- [ ] תיעוד הסכמה ב־PR: כל PR חייב עבור visual regression לפני merge (נאכף החל מפאזה 2)
+- [x] תיעוד הסכמה ב־PR: כל PR חייב עבור visual regression לפני merge (נאכף החל מפאזה 2) — `.github/PULL_REQUEST_TEMPLATE.md` + CI
 
 ---
 
@@ -84,22 +85,22 @@
 
 ### 1.1 תיקוני P0 — שבור וגלוי
 
-- [ ] **Timeline לא מציג status transitions** — writers מ־emit `{from, to}`, readers מצפים `from_status`/`to_status`. תיקון payload alignment בין `src/modules/tickets/activity.ts` ל־`timeline.tsx` (תמיכה בשני הפורמטים)
-- [ ] **Tech "החנות" → empty `tel:`** — כפתור נראה אמיתי אבל לא מחייג. או למלא מ־DB או להסתיר כשאין מספר (`src/app/tech/[ticketId]/page.tsx`)
-- [ ] **`PwaLifecycle` מת** — משתמש בטוקנים שלא קיימים. **ברירת מחדל בפאזה 1: מחיקה** אם לא מחובר; שחזור מאוחר יותר רק עם טוקני OQ
+- [x] **Timeline לא מציג status transitions** — writers מ־emit `{from, to}`, readers מצפים `from_status`/`to_status`. תיקון payload alignment בין `src/modules/tickets/activity.ts` ל־`timeline.tsx` (תמיכה בשני הפורמטים)
+- [x] **Tech "החנות" → empty `tel:`** — כפתור נראה אמיתי אבל לא מחייג. או למלא מ־DB או להסתיר כשאין מספר (`src/app/tech/[ticketId]/page.tsx`)
+- [x] **`PwaLifecycle` מת** — משתמש בטוקנים שלא קיימים. **ברירת מחדל בפאזה 1: מחיקה** אם לא מחובר; שחזור מאוחר יותר רק עם טוקני OQ
 
 ### 1.2 ניקוי Orphans
 
-- [ ] מחיקת `IssuesMobileList`, `IssuesFilterBar`, `StoresMobileList` — הוחלפו ב־OQ primitives
-- [ ] סנכרון `DESIGN_SYSTEM.md` עם exports אמיתיים (למחוק רפרנסים ל־Drawer, PriorityEdge וכו' שלא קיימים)
-- [ ] מחיקת חבילות Radix לא משומשות מ־`package.json` (tabs, dropdown-menu, tooltip)
-- [ ] איחוד אסטרטגיית RTL chevron (3 אסטרטגיות שונות כרגע)
+- [x] מחיקת `IssuesMobileList`, `IssuesFilterBar`, `StoresMobileList` — הוחלפו ב־OQ primitives
+- [x] סנכרון `DESIGN_SYSTEM.md` עם exports אמיתיים (למחוק רפרנסים ל־Drawer, PriorityEdge וכו' שלא קיימים)
+- [x] מחיקת חבילות Radix לא משומשות מ־`package.json` (tabs, dropdown-menu, tooltip)
+- [x] איחוד אסטרטגיית RTL chevron (3 אסטרטגיות שונות כרגע)
 
 ### 1.3 תיקוני P1 — UX גרוע
 
-- [ ] HQ ticket actions **sticky ב־mobile** — כרגע מתחת ל־chronology
-- [ ] תיקון tap targets מתחת 44px ב־filter chips / segmented controls
-- [ ] Toast offset — לא מתחשב ב־desktop (מתקזז תמיד ל־bottom nav)
+- [x] HQ ticket actions **sticky ב־mobile** — כרגע מתחת ל־chronology
+- [x] תיקון tap targets מתחת 44px ב־filter chips / segmented controls
+- [x] Toast offset — לא מתחשב ב־desktop (מתקזז תמיד ל־bottom nav)
 
 **קריטריון סיום:** P0 כל הנקודות תוקנו, אין orphan components, `npm test` ירוק.
 
@@ -109,18 +110,18 @@
 
 ### 2.1 Hardening Playwright
 
-- [ ] הורדת `maxDiffPixelRatio` מ־0.18 → **0.03**
-- [ ] הוספת 5 viewports: 390 / 430 / 768 / 1024 / 1440
-- [ ] 5 critical routes: `/ops/tickets`, `/ops/tickets/[id]`, `/tech`, `/tech/[id]`, `/login`
-- [ ] Mask של clocks / live SLA ב־screenshots (אזורים דינמיים)
-- [ ] הרחבת `@axe-core/playwright` ל־ticket detail + tech
+- [x] הורדת `maxDiffPixelRatio` מ־0.18 → **0.03**
+- [x] הוספת 5 viewports: 390 / 430 / 768 / 1024 / 1440
+- [x] 5 critical routes: `/ops/tickets`, `/ops/tickets/[id]`, `/tech`, `/tech/[id]`, `/login`
+- [x] Mask של clocks / live SLA ב־screenshots (אזורים דינמיים)
+- [x] הרחבת `@axe-core/playwright` ל־ticket detail + tech
 
 ### 2.2 CI GitHub Actions
 
-- [ ] Workflow: `on: push to main + PR` → `npm ci` → lint → typecheck → `npm test` (vitest) → `npx playwright test`
-- [ ] Upload playwright report as artifact
-- [ ] **Block merge אם tests נכשלים**
-- [ ] Vercel deploy אוטומטי כבר קיים — לוודא ש־production deploy תלוי ב־green CI
+- [x] Workflow: `on: push to main + PR` → `npm ci` → lint → typecheck → `npm test` (vitest) → `npx playwright test`
+- [x] Upload playwright report as artifact
+- [x] **Block merge אם tests נכשלים**
+- [x] Vercel deploy אוטומטי כבר קיים — לוודא ש־production deploy תלוי ב־green CI
 
 **קריטריון סיום:** CI רץ על כל PR, screenshots נבדקים ב־5 viewports, אי אפשר למזג עם UI שבור.
 
@@ -151,12 +152,12 @@
 
 ### 4.1 Magic Link completion (חובה)
 
-- [ ] **`/auth/callback` route** — `exchangeCodeForSession` + redirect ל־role home
-- [ ] **Page gate** — `/ops/*` ו־`/tech/*` מפנים ל־`/login` אם אין session (ב־layout או middleware)
-- [ ] **Logout** — כפתור `signOut` + ניקוי cookie + redirect ל־`/login`
-- [ ] **Session refresh middleware** — חידוש SSR session cookies
-- [ ] **Role redirect post-login** — HQ → `/ops/tickets`, Tech → `/tech`
-- [ ] הסרת "pilot direct entry" link מ־`/login` ב־production (רק כש־`FORCE_MEMORY=1` / `ALLOW_TEST_AUTH=1`)
+- [x] **`/auth/callback` route** — `exchangeCodeForSession` + redirect ל־role home
+- [x] **Page gate** — `/ops/*` ו־`/tech/*` מפנים ל־`/login` אם אין session (ב־layout או middleware)
+- [x] **Logout** — כפתור `signOut` + ניקוי cookie + redirect ל־`/login`
+- [x] **Session refresh middleware** — חידוש SSR session cookies
+- [x] **Role redirect post-login** — HQ → `/ops/tickets`, Tech → `/tech`
+- [x] הסרת "pilot direct entry" link מ־`/login` ב־production (רק כש־`FORCE_MEMORY=1` / `ALLOW_TEST_AUTH=1`)
 
 ### 4.2 Google OAuth
 
@@ -164,10 +165,10 @@
 
 ### 4.3 ניהול משתמשים — בסיס (חובה ל־pilot אמיתי)
 
-- [ ] **Admin UI להוספת טכנאים** — טופס: שם, אימייל, תפקיד, הרשאות (country/region/store)
-- [ ] יצירת profile + membership דרך UI (לא רק seed)
-- [ ] רשימת משתמשים עם הרשאות ואפשרות עריכה
-- [ ] הגבלת גישה ל־`global_admin` / `global_maintenance` בלבד
+- [x] **Admin UI להוספת טכנאים** — טופס: שם, אימייל, תפקיד, הרשאות (country/region/store)
+- [x] יצירת profile + membership דרך UI (לא רק seed)
+- [x] רשימת משתמשים עם הרשאות ואפשרות עריכה
+- [x] הגבלת גישה ל־`global_admin` / `global_maintenance` בלבד
 
 **קריטריון סיום:** login אמיתי עובד, אי אפשר להגיע ל־`/ops` בלי session, logout עובד, ניתן להוסיף טכנאי דרך UI.
 
@@ -179,50 +180,50 @@
 
 ### 5.1 WhatsApp Inbound Media (1.5–2 ימים)
 
-- [ ] Webhook: זיהוי `image` / `document` / `audio` ב־inbound message
-- [ ] קריאת Graph API: `GET /{media_id}` → download binary
-- [ ] העלאה ל־Supabase Storage → public URL
-- [ ] שמירה ב־`ticket_messages.media_url` ו/או `ticket_attachments`
-- [ ] תצוגה ב־Ticket Detail evidence gallery (כבר קיים `mergeEvidence` — צריך נתונים אמיתיים)
-- [ ] Fallback: אם הורדה נכשלת, שמירת רפרנס + log + הודעה לחנות שהתמונה לא התקבלה
-- [ ] E2E test: שליחת תמונה דרך simulator → תקלה עם evidence
+- [x] Webhook: זיהוי `image` / `document` / `audio` ב־inbound message
+- [x] קריאת Graph API: `GET /{media_id}` → download binary
+- [x] העלאה ל־Supabase Storage → public URL
+- [x] שמירה ב־`ticket_messages.media_url` ו/או `ticket_attachments`
+- [x] תצוגה ב־Ticket Detail evidence gallery (כבר קיים `mergeEvidence` — צריך נתונים אמיתיים)
+- [x] Fallback: אם הורדה נכשלת, שמירת רפרנס + log + הודעה לחנות שהתמונה לא התקבלה
+- [x] E2E test: שליחת תמונה דרך simulator → תקלה עם evidence
 
 ### 5.2 התראות לחנות — Lifecycle Notifications (1–1.5 ימים)
 
-- [ ] Hook ל־`updateStatus` / `assign`: שליחת WhatsApp חזרה ל־reporter
-- [ ] Templates (Hebrew):
+- [x] Hook ל־`updateStatus` / `assign`: שליחת WhatsApp חזרה ל־reporter
+- [x] Templates (Hebrew):
   - `assigned`: "טכנאי הוקצה לתקלה בחנות {store}. שם הטכנאי: {name}"
   - `in_progress`: "הטכנאי התחיל טיפול בתקלה"
   - `waiting_parts`: "ממתינים לחלקים — עדכון יישלח"
   - `resolved`: "התקלה טופלה. תודה!"
   - `closed`: "התקלה נסגרה"
-- [ ] כיבוד cost-policy (לא שולחים ספאם)
-- [ ] Persist ב־`ticket_messages` (direction: outbound)
-- [ ] Memory backend: הודעות נשמרות גם ב־memory לדמו
+- [x] כיבוד cost-policy (לא שולחים ספאם)
+- [x] Persist ב־`ticket_messages` (direction: outbound)
+- [x] Memory backend: הודעות נשמרות גם ב־memory לדמו
 
 ### 5.3 התראות לטכנאי (1 יום)
 
 > **בחירת פיילוט: WhatsApp עם לינק לטיקט** (לא Web Push בשלב זה).
 
-- [ ] בעת `assign`: WhatsApp לטכנאי עם לינק ל־`/tech/{ticketId}`
-- [ ] Persist outbound + cost-policy
-- [ ] Fallback טקסט אם אין מספר לטכנאי
+- [x] בעת `assign`: WhatsApp לטכנאי עם לינק ל־`/tech/{ticketId}`
+- [x] Persist outbound + cost-policy
+- [x] Fallback טקסט אם אין מספר לטכנאי
 - [ ] (נדחה) Web Push / VAPID — לפאזה 8 אם יידרש
 
 ### 5.4 SLA Escalation (1 יום)
 
-- [ ] **Cron job** (Supabase scheduled function או Vercel cron): כל 5 דקות
+- [x] **Cron job** (Supabase scheduled function או Vercel cron): כל 5 דקות
   - מחפש tickets שעברו `sla_respond_by` ועדיין ב־`new`/`triaged`
   - מחפש tickets שעברו `sla_resolve_by` ועדיין לא `resolved`
   - פעולות: bump priority + notify manager + סימון ויזואלי
-- [ ] **Visual alert** ב־inbox: tickets ב־breach עם אינדיקציה ברורה (רקע אדום, פעמון)
-- [ ] Dashboard widget: "X tickets ב־breach" (או strip ב־inbox עד שיש dashboard)
-- [ ] Memory backend: mock escalation לדמו
+- [x] **Visual alert** ב־inbox: tickets ב־breach עם אינדיקציה ברורה (רקע אדום, פעמון)
+- [x] Dashboard widget: "X tickets ב־breach" (או strip ב־inbox עד שיש dashboard)
+- [x] Memory backend: mock escalation לדמו
 
 ### 5.5 תיקון SLA ב־Supabase query (0.5 יום)
 
-- [ ] `listTickets` — הוספת `sla_respond_by`, `sla_resolve_by`, `first_response_at`, `resolved_at` ל־select
-- [ ] בדיקה ש־queue view מציג SLA נכון ב־Supabase (כרגע רק memory)
+- [x] `listTickets` — הוספת `sla_respond_by`, `sla_resolve_by`, `first_response_at`, `resolved_at` ל־select
+- [x] בדיקה ש־queue view מציג SLA נכון ב־Supabase (כרגע רק memory)
 
 **קריטריון סיום:** חנות שולחת תמונה → תקלה עם evidence → טכנאי מקבל התראה → פותר → חנות מקבלת עדכון. SLA breach מטפל עצמאית.
 
