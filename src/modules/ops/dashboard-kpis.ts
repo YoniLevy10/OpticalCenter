@@ -9,6 +9,13 @@ function isOpen(status: string): boolean {
   return OPEN_TICKET_STATUSES.includes(status as TicketStatus)
 }
 
+const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+}
+
 export type CategoryBar = { key: string; label: string; count: number }
 export type StoreRank = { code: string; name: string; count: number }
 export type TechLoad = { id: string; name: string; count: number }
@@ -20,6 +27,8 @@ export type DashboardKpis = {
   byCategory: CategoryBar[]
   topStores: StoreRank[]
   techLoad: TechLoad[]
+  /** Open tickets that need action now — breached first, then unassigned. */
+  exceptions: QueueTicket[]
 }
 
 /**
@@ -37,10 +46,13 @@ export function computeDashboardKpis(
   const categoryMap = new Map<string, number>()
   const storeMap = new Map<string, { code: string; name: string; count: number }>()
   const techMap = new Map<string, number>()
+  const exceptionCandidates: QueueTicket[] = []
 
   for (const t of openTickets) {
-    if (isBreached(t, now)) breached += 1
+    const breachedNow = isBreached(t, now)
+    if (breachedNow) breached += 1
     if (!t.assigned_to) unassigned += 1
+    if (breachedNow || !t.assigned_to) exceptionCandidates.push(t)
 
     const cat = t.category?.trim() || 'other'
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + 1)
@@ -75,6 +87,18 @@ export function computeDashboardKpis(
     .map(([id, count]) => ({ id, name: techName(id), count }))
     .sort((a, b) => b.count - a.count)
 
+  const exceptions = [...exceptionCandidates]
+    .sort((a, b) => {
+      const aBreach = isBreached(a, now) ? 0 : 1
+      const bBreach = isBreached(b, now) ? 0 : 1
+      if (aBreach !== bBreach) return aBreach - bBreach
+      const aPri = PRIORITY_RANK[a.priority ?? ''] ?? 9
+      const bPri = PRIORITY_RANK[b.priority ?? ''] ?? 9
+      if (aPri !== bPri) return aPri - bPri
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    })
+    .slice(0, 8)
+
   return {
     open: openTickets.length,
     breached,
@@ -82,5 +106,6 @@ export function computeDashboardKpis(
     byCategory,
     topStores,
     techLoad,
+    exceptions,
   }
 }

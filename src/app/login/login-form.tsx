@@ -319,11 +319,16 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
         ) : null}
 
-        <p className="t-caption mt-6 text-ink-3">
-          אם Supabase Site URL עדיין מוגדר ל־localhost, קישור המייל יישבר —
-          השתמשו בסיסמה או בקוד. אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
-          יעבוד.
-        </p>
+        <details className="mt-6 group">
+          <summary className="t-caption cursor-pointer list-none text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
+            עזרה בהתחברות
+          </summary>
+          <p className="t-caption mt-2 text-ink-3">
+            אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
+            «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
+            יעבוד.
+          </p>
+        </details>
       </div>
     </div>
   )

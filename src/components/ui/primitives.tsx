@@ -20,7 +20,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-1)]',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
         !flush && 'p-5',
         className,
       )}
@@ -41,7 +41,7 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-5">
+    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-4">
       <div className="flex items-baseline gap-2">
         <h2 className="t-section text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
@@ -65,7 +65,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-1',
         className,
       )}
     >
@@ -96,18 +96,18 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-16 text-center',
+        'flex flex-col items-center justify-center px-6 py-10 text-center',
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
-        <Icon className="h-6 w-6" aria-hidden strokeWidth={1.5} />
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
+        <Icon className="h-5 w-5" aria-hidden strokeWidth={1.5} />
       </div>
       <p className="t-body-strong text-ink">{title}</p>
       {description ? (
-        <p className="t-body mt-2 max-w-xs text-ink-2">{description}</p>
+        <p className="t-body mt-1.5 max-w-xs text-ink-2">{description}</p>
       ) : null}
-      {action ? <div className="mt-6">{action}</div> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   )
 }

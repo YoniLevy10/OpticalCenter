@@ -22,7 +22,7 @@ export function Table({
 export function THead({ children }: { children: React.ReactNode }) {
   return (
     <thead>
-      <tr className="border-b border-border bg-sunken/50">{children}</tr>
+      <tr className="sticky top-0 z-10 border-b border-border bg-sunken/50 backdrop-blur-sm">{children}</tr>
     </thead>
   )
 }

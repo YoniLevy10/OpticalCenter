@@ -64,6 +64,7 @@ export default async function StoresPage({
     <AppShell>
       <div className="space-y-4">
         <PageHeader
+          className="hidden md:flex"
           title="חנויות"
           meta={fromDb ? `${activeCount} פעילות` : 'מצב דמו'}
         />
@@ -91,6 +92,9 @@ export default async function StoresPage({
                     <TH className="w-[88px]">קוד</TH>
                     <TH>שם</TH>
                     <TH className="w-[140px]">עיר</TH>
+                    <TH className="w-[88px]" align="end">
+                      פתוחות
+                    </TH>
                     <TH className="w-[160px]">טקסט זיהוי</TH>
                     <TH className="w-[100px]" align="end">
                       QR
@@ -100,7 +104,9 @@ export default async function StoresPage({
                     </TH>
                   </THead>
                   <TBody>
-                    {filtered.map((s) => (
+                    {filtered.map((s) => {
+                      const openCount = openCountByStore.get(s.id) ?? 0
+                      return (
                       <TR key={s.id}>
                         <TD>
                           <span className="t-body-strong t-num text-ink">
@@ -122,6 +128,18 @@ export default async function StoresPage({
                           <span className="t-body text-ink-2">
                             {s.city ?? '—'}
                           </span>
+                        </TD>
+                        <TD align="end">
+                          {openCount > 0 ? (
+                            <Link
+                              href={`/ops/tickets?store=${encodeURIComponent(s.code)}`}
+                              className="t-body-strong t-num text-[var(--signal-critical)] underline-offset-2 hover:underline"
+                            >
+                              {openCount}
+                            </Link>
+                          ) : (
+                            <span className="t-caption t-num text-ink-3">0</span>
+                          )}
                         </TD>
                         <TD>
                           <span
@@ -150,7 +168,8 @@ export default async function StoresPage({
                           </a>
                         </TD>
                       </TR>
-                    ))}
+                      )
+                    })}
                   </TBody>
                 </Table>
               </div>
@@ -192,10 +211,7 @@ export default async function StoresPage({
         </Panel>
 
         <p className="t-caption text-ink-3">
-          קוד החנות זהה בקישור ה־QR, ה־NFC ובהודעת הטקסט. מספר עסקי מוגדר ב־
-          <span dir="ltr" className="t-num">
-            NEXT_PUBLIC_WA_BUSINESS_PHONE
-          </span>
+          קוד החנות זהה בקישור ה־QR, ה־NFC ובהודעת הטקסט ל־WhatsApp.
         </p>
       </div>
     </AppShell>
