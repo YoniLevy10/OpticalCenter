@@ -9,9 +9,9 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
 /**
- * Operational Quiet shell — v2 (restrained)
- * Desktop: surface sidebar, hairline only — no chrome elevation.
- * Mobile: blur top bar + page title; bottom nav signals active by color only.
+ * Operational Quiet shell — Bamakor Pulse
+ * Desktop: surface sidebar with soft edge lift; active nav uses tenant soft fill.
+ * Mobile: blur top bar + page title; bottom nav 64px (Bamakor) with tenant active.
  */
 
 const PRIMARY = [
@@ -50,7 +50,7 @@ function TenantMark() {
   return (
     <span
       aria-hidden
-      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)]"
+      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
     >
       OC
     </span>
@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="dvh-screen bg-canvas text-ink">
       {/* ---------- Desktop sidebar ---------- */}
       <aside
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface shadow-[var(--shadow-1)] start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
@@ -92,8 +92,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     className={cn(
                       't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
                       active
-                        ? 'bg-surface-sunken text-ink'
-                        : 'text-ink-2 hover:bg-surface-sunken/60 hover:text-ink',
+                        ? 'bg-[var(--tenant-soft)] text-[var(--tenant)]'
+                        : 'text-ink-2 hover:bg-surface-sunken/70 hover:text-ink',
                     )}
                   >
                     <span
@@ -103,7 +103,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         active ? 'bg-[var(--tenant)]' : 'bg-transparent',
                       )}
                     />
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                    <Icon
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        active ? 'text-[var(--tenant)]' : undefined,
+                      )}
+                      aria-hidden
+                    />
                     {item.label}
                   </Link>
                 </li>

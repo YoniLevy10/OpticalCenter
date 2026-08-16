@@ -132,17 +132,25 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   }
 
   return (
-    <div className="dvh-screen safe-pt safe-pb flex items-center justify-center bg-canvas px-4">
-      <div className="w-full max-w-sm">
+    <div className="dvh-screen safe-pt safe-pb relative flex items-center justify-center overflow-hidden bg-canvas px-4">
+      {/* Bamakor-style soft glow — tenant tint, not product blue */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[18%] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[var(--tenant-soft)] opacity-70 blur-[64px]"
+      />
+      <div className="relative w-full max-w-sm">
         {/* Brand block — centered, premium */}
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] shadow-[var(--shadow-pop)]">
-            <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-surface shadow-[var(--shadow-pop)] ring-1 ring-border">
+            <span
+              className="t-display flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--tenant)] text-[var(--tenant-contrast)]"
+              aria-hidden
+            >
               OC
             </span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
-          <p className="t-body mt-1.5 text-ink-3">Optical Center · ניהול תחזוקה</p>
+          <p className="t-body mt-1.5 text-ink-2">Optical Center · ניהול תחזוקה</p>
         </div>
 
         {/* Mode tabs — refined */}
