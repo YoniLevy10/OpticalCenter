@@ -157,7 +157,7 @@ export default async function StoresPage({
 
               {/* Mobile */}
               <div className="md:hidden">
-                <RowList>
+                <RowList className="stagger">
                   {filtered.map((s) => (
                     <Link
                       key={s.id}

@@ -14,18 +14,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[var(--tenant)] text-[var(--tenant-contrast)] hover:bg-[var(--tenant-hover)]',
+          'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)] hover:bg-[var(--tenant-hover)] hover:shadow-[var(--shadow-2)]',
         secondary:
-          'border border-border bg-surface text-ink hover:border-border-strong hover:bg-canvas',
-        ghost: 'text-ink-2 hover:bg-canvas hover:text-ink',
+          'border border-border bg-surface text-ink shadow-[var(--shadow-1)] hover:border-border-strong hover:bg-surface-sunken/50',
+        ghost: 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
         critical:
           'border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)] hover:bg-[color-mix(in_srgb,var(--signal-critical)_10%,white)]',
         resolve:
-          'bg-[var(--signal-resolved)] text-white hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
+          'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)] hover:shadow-[var(--shadow-2)]',
       },
       size: {
         sm: 'h-8 px-2.5',
-        md: 'h-9 px-3',
+        md: 'h-9 px-3.5',
         /** Touch target floor for mobile and technician surfaces. */
         touch: 'h-11 px-4 t-control-lg',
         block: 'h-12 w-full px-4 t-control-lg',

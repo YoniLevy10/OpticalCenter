@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const overlayClass =
-  'fixed inset-0 z-40 animate-fade bg-[rgba(24,24,20,0.28)] backdrop-blur-[1px]'
+  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,20,0.32)] backdrop-blur-[2px]'
 
 function CloseButton() {
   return (
@@ -39,7 +39,7 @@ export function Modal({
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
           className={cn(
-            'fixed start-1/2 top-1/2 z-50 w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 animate-sheet rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-pop)] rtl:translate-x-1/2',
+            'fixed start-1/2 top-1/2 z-50 w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 animate-scale-in rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-pop)] rtl:translate-x-1/2',
             className,
           )}
         >
@@ -83,11 +83,11 @@ export function BottomSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-sheet flex-col rounded-t-[16px] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-slide-up flex-col rounded-t-[var(--radius-xl)] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
           style={{ paddingBottom: 'var(--safe-b)' }}
         >
           <div className="flex justify-center pt-2" aria-hidden>
-            <span className="h-1 w-9 rounded-full bg-border-strong" />
+            <span className="h-1 w-10 rounded-full bg-border-strong" />
           </div>
           <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-2">
             <div>

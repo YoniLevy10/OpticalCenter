@@ -20,8 +20,8 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface',
-        !flush && 'p-4',
+        'rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-1)]',
+        !flush && 'p-5',
         className,
       )}
       {...rest}
@@ -65,7 +65,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2',
         className,
       )}
     >
@@ -96,18 +96,18 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-14 text-center',
+        'flex flex-col items-center justify-center px-6 py-16 text-center',
         className,
       )}
     >
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-sunken text-ink-3">
-        <Icon className="h-5 w-5" aria-hidden />
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-sunken text-ink-3 ring-1 ring-border">
+        <Icon className="h-6 w-6" aria-hidden strokeWidth={1.5} />
       </div>
       <p className="t-body-strong text-ink">{title}</p>
       {description ? (
-        <p className="t-body mt-1.5 max-w-xs text-ink-2">{description}</p>
+        <p className="t-body mt-2 max-w-xs text-ink-2">{description}</p>
       ) : null}
-      {action ? <div className="mt-5">{action}</div> : null}
+      {action ? <div className="mt-6">{action}</div> : null}
     </div>
   )
 }

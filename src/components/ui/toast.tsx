@@ -34,14 +34,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         role="status"
         aria-live="polite"
         /* Above bottom nav on mobile only; desktop sits at the corner with no nav offset. */
-        className="pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2 bottom-[calc(var(--bottomnav-h)+var(--safe-b)+12px)] md:inset-x-auto md:bottom-4 md:items-start md:start-4"
+        className="pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2.5 bottom-[calc(var(--bottomnav-h)+var(--safe-b)+16px)] md:inset-x-auto md:bottom-6 md:items-start md:start-6"
       >
         {items.map((t) => (
           <div
             key={t.id}
             className={cn(
-              't-body animate-sheet pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-[var(--radius-md)] border bg-surface px-3 py-2.5 shadow-[var(--shadow-pop)] md:w-auto',
-              t.tone === 'success' && 'border-[var(--signal-resolved)]/25',
+              't-body animate-slide-up pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-[var(--radius-lg)] border bg-surface px-4 py-3 shadow-[var(--shadow-pop)] md:w-auto',
+              t.tone === 'success' && 'border-[var(--signal-resolved)]/30',
               t.tone === 'critical' && 'border-[var(--signal-critical-line)]',
               (!t.tone || t.tone === 'neutral') && 'border-border',
             )}

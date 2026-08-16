@@ -34,6 +34,8 @@ function KpiCard({
   tone?: 'default' | 'warn' | 'critical'
   icon?: typeof Inbox
 }) {
+  const isActive =
+    (tone === 'critical' && value > 0) || (tone === 'warn' && value > 0)
   const toneColor =
     tone === 'critical' && value > 0
       ? 'text-[var(--signal-critical)]'
@@ -41,32 +43,18 @@ function KpiCard({
         ? 'text-[var(--signal-warning)]'
         : 'text-ink'
 
-  const toneBg =
-    tone === 'critical' && value > 0
-      ? 'bg-[var(--signal-critical-soft)]'
-      : tone === 'warn' && value > 0
-        ? 'bg-[var(--signal-warning-soft)]'
-        : 'bg-surface'
-
   return (
     <Link
       href={href}
       className={cn(
-        'group relative overflow-hidden rounded-[var(--radius-lg)] border border-border p-5 transition-all duration-[var(--dur-1)] hover:shadow-[var(--shadow-1)] active:scale-[0.98]',
-        toneBg,
+        'group relative overflow-hidden rounded-[var(--radius-lg)] border bg-surface p-5 shadow-[var(--shadow-1)] transition-all duration-[var(--dur-1)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] active:scale-[0.98]',
+        isActive && tone === 'critical'
+          ? 'border-[var(--signal-critical-line)]'
+          : isActive && tone === 'warn'
+            ? 'border-[var(--signal-warning-line)]'
+            : 'border-border',
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-x-0 top-0 h-[3px]',
-          tone === 'critical' && value > 0
-            ? 'bg-[var(--signal-critical)]'
-            : tone === 'warn' && value > 0
-              ? 'bg-[var(--signal-warning)]'
-              : 'bg-transparent',
-        )}
-      />
       <div className="flex items-center justify-between">
         <p className="t-caption text-ink-3">{label}</p>
         {Icon ? (
@@ -79,10 +67,12 @@ function KpiCard({
           />
         ) : null}
       </div>
-      <p className={cn('t-display t-num mt-3', toneColor)}>{value}</p>
+
+      <p className={cn('t-display t-num mt-4', toneColor)}>{value}</p>
+
       <span
         aria-hidden
-        className="absolute bottom-4 end-4 text-ink-3 opacity-0 transition-all duration-[var(--dur-1)] group-hover:opacity-100 group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px]"
+        className="absolute bottom-4 end-4 text-ink-3 opacity-0 transition-all duration-[var(--dur-1)] group-hover:translate-x-[-4px] group-hover:opacity-100 rtl:group-hover:translate-x-[4px]"
       >
         ←
       </span>
@@ -97,18 +87,18 @@ function BarList({
 }) {
   const max = Math.max(1, ...items.map((i) => i.count))
   return (
-    <ul className="space-y-3.5 px-4 py-4">
+    <ul className="stagger space-y-4 px-5 py-4">
       {items.map((item) => (
         <li key={item.label}>
-          <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <div className="mb-2 flex items-baseline justify-between gap-2">
             <span className="t-body truncate text-ink">{item.label}</span>
             <span className="t-body-strong t-num shrink-0 text-ink-2">
               {item.count}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-sunken">
+          <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
             <div
-              className="h-full rounded-full bg-[var(--tenant)] transition-all duration-500 ease-[var(--ease)]"
+              className="h-full rounded-full bg-[var(--tenant)] transition-all duration-700 ease-[var(--ease)]"
               style={{ width: `${Math.round((item.count / max) * 100)}%` }}
             />
           </div>
@@ -139,7 +129,7 @@ export default async function OpsDashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-4">
+      <div className="space-y-5">
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
@@ -151,17 +141,31 @@ export default async function OpsDashboardPage() {
         />
 
         {/* Operational status banner */}
-        <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3">
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-[var(--radius-lg)] border px-5 py-4',
+            kpis.breached > 0
+              ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
+              : 'border-border bg-surface shadow-[var(--shadow-1)]',
+          )}
+        >
           <span
             aria-hidden
             className={cn(
-              'h-2 w-2 rounded-full',
+              'h-2.5 w-2.5 rounded-full',
               kpis.breached > 0
-                ? 'bg-[var(--signal-critical)] animate-pulse'
+                ? 'animate-pulse bg-[var(--signal-critical)]'
                 : 'bg-[var(--signal-resolved)]',
             )}
           />
-          <p className="t-body text-ink-2">
+          <p
+            className={cn(
+              't-body-strong',
+              kpis.breached > 0
+                ? 'text-[var(--signal-critical)]'
+                : 'text-ink-2',
+            )}
+          >
             {kpis.breached > 0
               ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
               : 'המערכת תקינה — אין חריגות SLA'}
@@ -191,7 +195,7 @@ export default async function OpsDashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
           <Panel flush className="overflow-hidden">
             <PanelHeader title="לפי קטגוריה" meta={`${kpis.byCategory.length}`} />
             {kpis.byCategory.length === 0 ? (
@@ -206,7 +210,7 @@ export default async function OpsDashboardPage() {
             {kpis.topStores.length === 0 ? (
               <EmptyState title="אין נתונים" icon={Inbox} />
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="stagger divide-y divide-border">
                 {kpis.topStores.map((s) => (
                   <li key={s.code}>
                     <Link
@@ -214,7 +218,7 @@ export default async function OpsDashboardPage() {
                         { view: 'open', sort: 'urgency' },
                         { store: s.code === '—' ? undefined : s.code },
                       )}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas"
+                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
                     >
                       <span className="t-body-strong t-num w-10 shrink-0 text-ink">
                         {s.code}

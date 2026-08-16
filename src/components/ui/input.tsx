@@ -5,7 +5,7 @@ import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const fieldBase =
-  'field-text w-full rounded-[var(--radius-md)] border border-border bg-surface text-ink placeholder:text-ink-3 transition-colors duration-[var(--dur-1)] hover:border-border-strong focus:border-border-strong disabled:opacity-50'
+  'field-text w-full rounded-[var(--radius-md)] border border-border bg-surface text-ink placeholder:text-ink-3 transition-all duration-[var(--dur-1)] hover:border-border-strong focus:border-[color-mix(in_srgb,var(--tenant)_40%,var(--border-strong))] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tenant)_12%,transparent)] disabled:opacity-50'
 
 export const Input = React.forwardRef<
   HTMLInputElement,
@@ -109,7 +109,7 @@ export function SearchField({
     <div className={cn('relative', className)}>
       <Search
         aria-hidden
-        className="pointer-events-none absolute inset-block-0 my-auto h-4 w-4 text-ink-3 start-3 top-0 bottom-0"
+        className="pointer-events-none absolute inset-block-0 my-auto h-4 w-4 text-ink-3/70 start-3 top-0 bottom-0"
       />
       <input
         ref={ref}

@@ -11,10 +11,9 @@ import { cn } from '@/lib/utils'
 /**
  * Operational Quiet shell.
  *
- * Desktop: a 216px canvas-coloured sidebar separated by a hairline. It should
- * read as absence, not as a panel — no dark chrome, no elevation.
- * Mobile: primary destinations in the bottom nav; More (a sheet) keeps tools
- * and settings off the premium strip.
+ * Desktop: a 216px surface sidebar separated by a hairline from the canvas
+ * content. Mobile: primary destinations in the bottom nav; More (a sheet)
+ * keeps tools and settings off the premium strip.
  *
  * Only working destinations are exposed. Reports was removed; the simulator and
  * settings live behind More.
@@ -56,7 +55,7 @@ function TenantMark() {
   return (
     <span
       aria-hidden
-      className="t-caption inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--tenant)] font-semibold text-[var(--tenant-contrast)]"
+      className="t-body-strong inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
     >
       OC
     </span>
@@ -71,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="dvh-screen bg-canvas text-ink">
       {/* ---------- Desktop sidebar ---------- */}
       <aside
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-canvas start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
@@ -95,10 +94,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-all duration-[var(--dur-1)] hover:translate-x-0.5',
+                      't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-all duration-[var(--dur-1)]',
                       active
                         ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                        : 'text-ink-2 hover:bg-surface/70 hover:text-ink',
+                        : 'text-ink-2 hover:bg-surface-sunken/60 hover:text-ink',
+                      'hover:translate-x-0.5',
                     )}
                   >
                     {/* Active indicator — one of the three sanctioned tenant uses. */}
@@ -153,27 +153,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/92 backdrop-blur-sm md:hidden">
+      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur-md md:hidden">
         <div
-          className="flex items-center gap-2 px-4"
+          className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
-          <p className="t-body-strong text-ink">{pageTitle(pathname)}</p>
-          <span className="t-caption ms-auto text-ink-3">Optical Center · ישראל</span>
+          <div className="min-w-0 flex-1">
+            <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
+          </div>
+          <span className="t-caption text-ink-3">Optical Center · ישראל</span>
         </div>
       </header>
 
       {/* ---------- Content ---------- */}
       <div className="md:ps-[var(--nav-w)]">
-        <main className="pb-nav mx-auto w-full max-w-[1400px] px-4 pt-4 md:px-6 md:pt-6">
+        <main className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7">
           {children}
         </main>
       </div>
 
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur-sm md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/90 backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'var(--safe-b)' }}
       >
         <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
@@ -186,11 +188,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-full flex-col items-center justify-center gap-1 transition-all duration-100 active:scale-90',
+                    'flex h-full flex-col items-center justify-center gap-1 transition-all duration-[var(--dur-1)] active:scale-90',
                     active ? 'text-[var(--tenant)]' : 'text-ink-3',
                   )}
                 >
-                  <Icon className="h-5 w-5" aria-hidden />
+                  <Icon
+                    className={cn(
+                      'transition-transform duration-[var(--dur-1)]',
+                      active ? 'h-[22px] w-[22px]' : 'h-5 w-5',
+                    )}
+                    aria-hidden
+                  />
                   <span className="t-caption">{item.label}</span>
                 </Link>
               </li>
@@ -200,7 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setMoreOpen(true)}
-              className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-colors"
+              className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-all duration-[var(--dur-1)] active:scale-90"
             >
               <Ellipsis className="h-5 w-5" aria-hidden />
               <span className="t-caption">עוד</span>

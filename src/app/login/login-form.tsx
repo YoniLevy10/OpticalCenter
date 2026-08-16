@@ -141,18 +141,18 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
     <div className="dvh-screen safe-pt safe-pb flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
         {/* Brand block */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--tenant)] shadow-[var(--shadow-pop)]">
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] shadow-[var(--shadow-pop)]">
             <span className="t-display text-[var(--tenant-contrast)]" aria-hidden>
               OC
             </span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
-          <p className="t-body mt-1 text-ink-3">Optical Center · ניהול תחזוקה</p>
+          <p className="t-body mt-1.5 text-ink-3">Optical Center · ניהול תחזוקה</p>
         </div>
 
         {/* Mode tabs */}
-        <div className="mb-5 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface p-0.5">
+        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 p-1">
           {(
             [
               { key: 'link', label: 'קישור במייל' },
@@ -167,7 +167,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               className={cn(
                 't-control flex-1 rounded-[var(--radius-sm)] px-2 py-2 transition-all duration-[var(--dur-1)]',
                 mode === m.key
-                  ? 'bg-canvas text-ink shadow-[var(--shadow-1)]'
+                  ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
                   : 'text-ink-3 hover:text-ink-2',
               )}
             >

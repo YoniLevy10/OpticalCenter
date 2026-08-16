@@ -31,13 +31,13 @@ export function TechShell({
 }) {
   return (
     <div className="dvh-screen bg-canvas text-ink">
-      <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-xl items-start gap-2 px-4 py-3">
+      <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">
           {backHref ? (
             <Link
               href={backHref}
               aria-label="חזרה"
-              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors active:bg-canvas"
+              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-all duration-[var(--dur-1)] active:scale-90 hover:bg-surface-sunken/60"
             >
               {/* Chevron points toward the start edge; mirrors under RTL. */}
               <ChevronRight className="h-5 w-5 rtl:rotate-0 ltr:rotate-180" />
@@ -65,10 +65,10 @@ export function TechShell({
 
       {actions ? (
         <div
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur-sm"
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-md px-4 pt-3"
           style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
         >
-          <div className="mx-auto w-full max-w-xl px-4 pt-3">{actions}</div>
+          <div className="mx-auto max-w-xl">{actions}</div>
         </div>
       ) : null}
     </div>

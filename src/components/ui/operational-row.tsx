@@ -37,7 +37,7 @@ export function OperationalRow({
     <Link
       href={href}
       className={cn(
-        'flex min-h-[76px] flex-col justify-center gap-1 px-4 py-3 ps-5 transition-all duration-[var(--dur-1)] active:bg-canvas active:scale-[0.99] md:hover:bg-canvas',
+        'flex min-h-[80px] flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-all duration-[var(--dur-1)] active:scale-[0.99] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
         priorityEdgeClass(priority),
         priorityRowClass(priority),
         className,
