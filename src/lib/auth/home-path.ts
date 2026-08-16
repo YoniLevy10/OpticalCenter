@@ -1,21 +1,31 @@
-import {
-  hqRoles,
-  techRoles,
-  type Actor,
-  type Membership,
-} from '@/lib/auth/types'
+import type { Actor, MemberRole, Membership } from '@/lib/auth/types'
+
+const HQ_ROLES: MemberRole[] = [
+  'global_admin',
+  'global_maintenance',
+  'country_manager',
+  'regional_manager',
+  'store_manager',
+]
+
+const TECH_ROLES: MemberRole[] = [
+  'internal_technician',
+  'external_provider',
+]
 
 function hasHq(memberships: Membership[]) {
-  return memberships.some((m) => hqRoles().includes(m.role))
+  return memberships.some((m) => HQ_ROLES.includes(m.role))
 }
 
 function hasTech(memberships: Membership[]) {
-  return memberships.some((m) => techRoles().includes(m.role))
+  return memberships.some((m) => TECH_ROLES.includes(m.role))
 }
 
 /**
  * Post-login home: tech-only → /tech, otherwise HQ queue.
  * Users with both HQ and tech memberships land in ops.
+ *
+ * Edge-safe: type-only import from auth/types (no node:crypto).
  */
 export function resolveHomePath(
   actor: Pick<Actor, 'memberships'>,
