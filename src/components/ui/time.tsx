@@ -63,7 +63,7 @@ export function LiveSla({
   const now = useTick()
   const view = getSlaView({ ...ticket, now: now ?? undefined })
   return (
-    <span suppressHydrationWarning>
+    <span suppressHydrationWarning data-live="sla" className="live-sla">
       <SlaValue view={view} className={className} />
     </span>
   )
@@ -80,7 +80,8 @@ export function LiveAge({
   return (
     <span
       suppressHydrationWarning
-      className={cn('t-meta t-num text-ink-3', className)}
+      data-live="age"
+      className={cn('live-age t-meta t-num text-ink-3', className)}
     >
       {formatAgeHe(createdAt, now ?? undefined)}
     </span>

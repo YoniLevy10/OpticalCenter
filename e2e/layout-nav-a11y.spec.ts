@@ -78,36 +78,7 @@ test.describe('A11y smoke', () => {
   })
 })
 
-test.describe('Visual snapshots (soft)', () => {
-  test('canonical screenshots', async ({ page, request }) => {
-    test.skip(
-      test.info().project.name !== 'chromium',
-      'screenshots on chromium only',
-    )
-    const { ticketId } = await createStore172Ticket(request)
-    await patchTicket(request, ticketId, { assignedTo: DEMO_TECH_ID })
-
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await gotoStable(page, '/ops/tickets?view=open')
-    await expect(page).toHaveScreenshot('desktop-issues.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-    await gotoStable(page, `/ops/tickets/${ticketId}`)
-    await expect(page).toHaveScreenshot('desktop-ticket-detail.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-
-    await page.setViewportSize({ width: 390, height: 844 })
-    await gotoStable(page, '/ops/tickets?view=open')
-    await expect(page).toHaveScreenshot('mobile-issues.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-    await gotoStable(page, `/tech?techId=${DEMO_TECH_ID}`)
-    await expect(page).toHaveScreenshot('tech-jobs.png', {
-      maxDiffPixelRatio: 0.18,
-    })
-  })
-})
+// Visual regression: e2e/visual-pack.spec.ts
 
 test.describe('PWA manifests', () => {
   test('HQ and tech manifests + icons', async ({ request }) => {
