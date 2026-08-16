@@ -42,6 +42,16 @@ function isActive(pathname: string, match: string) {
   return pathname === match || pathname.startsWith(`${match}/`)
 }
 
+function pageTitle(pathname: string): string {
+  if (pathname.startsWith('/ops/dashboard')) return 'לוח בקרה'
+  if (pathname.startsWith('/ops/tickets')) return 'תקלות'
+  if (pathname.startsWith('/ops/stores')) return 'חנויות'
+  if (pathname.startsWith('/ops/users')) return 'משתמשים'
+  if (pathname.startsWith('/ops/settings')) return 'הגדרות'
+  if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
+  return 'MaintainOS'
+}
+
 function TenantMark() {
   return (
     <span
@@ -85,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-colors duration-[var(--dur-1)]',
+                      't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-all duration-[var(--dur-1)] hover:translate-x-0.5',
                       active
                         ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
                         : 'text-ink-2 hover:bg-surface/70 hover:text-ink',
@@ -149,8 +159,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
-          <p className="t-body-strong text-ink">MaintainOS</p>
-          <span className="t-caption ms-auto text-ink-3">ישראל</span>
+          <p className="t-body-strong text-ink">{pageTitle(pathname)}</p>
+          <span className="t-caption ms-auto text-ink-3">Optical Center · ישראל</span>
         </div>
       </header>
 
@@ -176,7 +186,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-full flex-col items-center justify-center gap-1 transition-colors',
+                    'flex h-full flex-col items-center justify-center gap-1 transition-all duration-100 active:scale-90',
                     active ? 'text-[var(--tenant)]' : 'text-ink-3',
                   )}
                 >

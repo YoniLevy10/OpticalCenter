@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 
@@ -36,7 +37,7 @@ export function OperationalRow({
     <Link
       href={href}
       className={cn(
-        'flex min-h-[76px] flex-col justify-center gap-1 px-4 py-3 ps-5 transition-colors duration-[var(--dur-1)] active:bg-canvas md:hover:bg-canvas',
+        'flex min-h-[76px] flex-col justify-center gap-1 px-4 py-3 ps-5 transition-all duration-[var(--dur-1)] active:bg-canvas active:scale-[0.99] md:hover:bg-canvas',
         priorityEdgeClass(priority),
         priorityRowClass(priority),
         className,
@@ -46,6 +47,13 @@ export function OperationalRow({
         <span className="t-caption t-num text-ink-3">{leading}</span>
         {trailing}
       </div>
+
+      {priority === 'critical' ? (
+        <span className="flex items-center gap-1 text-[var(--signal-critical)]">
+          <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />
+          <span className="t-caption font-medium">קריטי</span>
+        </span>
+      ) : null}
 
       <span className="t-lead line-clamp-2 text-ink">{title}</span>
 

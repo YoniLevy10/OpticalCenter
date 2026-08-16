@@ -32,7 +32,7 @@ export function priorityEdgeClass(priority: string | null | undefined): string {
 /** Critical rows get a faint tint so a breach-heavy queue reads at a glance. */
 export function priorityRowClass(priority: string | null | undefined): string {
   return priority === 'critical'
-    ? 'bg-[var(--signal-critical-soft)]/45'
+    ? 'bg-[var(--signal-critical-soft)]/40'
     : ''
 }
 

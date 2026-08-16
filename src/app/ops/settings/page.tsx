@@ -6,20 +6,31 @@ import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 
 export const dynamic = 'force-dynamic'
 
-const LINKS = [
+const SECTIONS = [
   {
-    href: '/ops/users',
-    title: 'משתמשים',
-    desc: 'הוספת טכנאים והרשאות',
+    title: 'ניהול',
+    items: [
+      { href: '/ops/users', title: 'משתמשים', desc: 'הוספת טכנאים והרשאות' },
+    ],
   },
   {
-    href: '/ops/simulator',
-    title: 'סימולטור WhatsApp',
-    desc: 'הרצת intake בלי Meta',
+    title: 'כלים',
+    items: [
+      {
+        href: '/ops/simulator',
+        title: 'סימולטור WhatsApp',
+        desc: 'הרצת intake בלי Meta',
+      },
+      { href: '/tech', title: 'פורטל טכנאי', desc: 'PWA שטח נפרד' },
+    ],
   },
-  { href: '/tech', title: 'פורטל טכנאי', desc: 'PWA שטח נפרד' },
-  { href: '/login', title: 'התחברות', desc: 'קישור קסם (Supabase Auth)' },
-  { href: '/api/health', title: 'בדיקת שירות', desc: 'סטטוס API' },
+  {
+    title: 'מערכת',
+    items: [
+      { href: '/login', title: 'התחברות', desc: 'קישור קסם (Supabase Auth)' },
+      { href: '/api/health', title: 'בדיקת שירות', desc: 'סטטוס API' },
+    ],
+  },
 ]
 
 export default function SettingsPage() {
@@ -28,29 +39,36 @@ export default function SettingsPage() {
       <div className="max-w-2xl space-y-4">
         <PageHeader title="הגדרות" meta="פיילוט ישראל" />
 
-        <Panel flush className="overflow-hidden">
-          <ul className="divide-y divide-border">
-            {LINKS.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="t-body-strong block text-ink">
-                      {item.title}
-                    </span>
-                    <span className="t-meta block text-ink-2">{item.desc}</span>
-                  </span>
-                  <ChevronRight
-                    aria-hidden
-                    className="h-4 w-4 shrink-0 text-ink-3 rtl:rotate-180 ltr:rotate-0"
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        {SECTIONS.map((section) => (
+          <div key={section.title} className="space-y-2">
+            <h2 className="t-section px-1 text-ink-2">{section.title}</h2>
+            <Panel flush className="overflow-hidden">
+              <ul className="divide-y divide-border">
+                {section.items.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-all duration-[var(--dur-1)] hover:bg-canvas active:scale-[0.99]"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="t-body-strong block text-ink">
+                          {item.title}
+                        </span>
+                        <span className="t-meta block text-ink-2">
+                          {item.desc}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        aria-hidden
+                        className="h-4 w-4 shrink-0 text-ink-3 rtl:rotate-180 ltr:rotate-0"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+        ))}
 
         <Panel>
           <h2 className="t-section mb-3 text-ink">פריסה</h2>

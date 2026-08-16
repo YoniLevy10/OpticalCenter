@@ -211,9 +211,10 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--tenant) 45%, transparent);
-  outline-offset: 1px;
+  outline: 2px solid color-mix(in srgb, var(--tenant) 55%, transparent);
+  outline-offset: 2px;
   border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tenant) 12%, transparent);
 }
 
 /* ============================================================
@@ -325,6 +326,41 @@ textarea:focus-visible,
 }
 .animate-shimmer {
   animation: mo-pulse 1.6s var(--ease) infinite;
+}
+
+/* Page transition — subtle fade on route change */
+main {
+  animation: mo-fade-in var(--dur-2) var(--ease);
+}
+
+/* Card hover lift for interactive panels */
+.card-hover {
+  transition: all var(--dur-1) var(--ease);
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+/* Skeleton — gradient shimmer instead of pulse */
+@keyframes mo-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--border) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: mo-skeleton 1.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

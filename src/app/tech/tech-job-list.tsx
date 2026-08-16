@@ -1,6 +1,12 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import {
+  CheckCircle2,
+  ClipboardList,
+  PlayCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { SegmentedButtons } from '@/components/ui/segmented'
 import { EmptyState } from '@/components/ui/primitives'
@@ -16,18 +22,24 @@ import {
 
 const TABS: TechTab[] = ['new_assigned', 'in_progress', 'done']
 
-const EMPTY_COPY: Record<TechTab, { title: string; description: string }> = {
+const EMPTY_COPY: Record<
+  TechTab,
+  { title: string; description: string; icon: LucideIcon }
+> = {
   new_assigned: {
     title: 'אין עבודות חדשות',
     description: 'כשמשייכים לך תקלה היא תופיע כאן.',
+    icon: ClipboardList,
   },
   in_progress: {
     title: 'אין עבודות בטיפול',
     description: 'התחילו עבודה מהרשימה כדי שתופיע כאן.',
+    icon: PlayCircle,
   },
   done: {
     title: 'אין עבודות שהושלמו',
     description: 'עבודות שתסיימו יופיעו כאן.',
+    icon: CheckCircle2,
   },
 }
 
@@ -64,7 +76,11 @@ export function TechJobList({
 
       {filtered.length === 0 ? (
         <div className="rounded-[var(--radius-lg)] border border-border bg-surface">
-          <EmptyState {...EMPTY_COPY[tab]} />
+          <EmptyState
+            title={EMPTY_COPY[tab].title}
+            description={EMPTY_COPY[tab].description}
+            icon={EMPTY_COPY[tab].icon}
+          />
         </div>
       ) : (
         /* Full-bleed rows, edge-to-edge on the phone — cards would waste ~32px

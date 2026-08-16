@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
  * `critical` is a SIGNAL colour and never a tenant colour.
  */
 const buttonVariants = cva(
-  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity] duration-[var(--dur-1)] ease-[var(--ease)] disabled:pointer-events-none disabled:opacity-40',
+  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-all duration-[var(--dur-1)] ease-[var(--ease)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 disabled:active:scale-100',
   {
     variants: {
       variant: {

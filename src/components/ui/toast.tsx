@@ -5,11 +5,16 @@ import { Check, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tone = 'neutral' | 'success' | 'critical'
-type ToastItem = { id: string; title: string; tone?: Tone }
+type ToastItem = {
+  id: string
+  title: string
+  tone?: Tone
+  action?: { label: string; onClick: () => void }
+}
 
-const ToastCtx = createContext<{ push: (t: Omit<ToastItem, 'id'>) => void } | null>(
-  null,
-)
+const ToastCtx = createContext<{
+  push: (t: Omit<ToastItem, 'id'>) => void
+} | null>(null)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
@@ -17,7 +22,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const push = useCallback((t: Omit<ToastItem, 'id'>) => {
     const id = Math.random().toString(36).slice(2)
     setItems((prev) => [...prev, { ...t, id }])
-    setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== id)), 3000)
+    setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== id)), 4500)
   }, [])
 
   const value = useMemo(() => ({ push }), [push])
@@ -35,7 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={cn(
-              't-body animate-sheet flex w-full max-w-sm items-center gap-2 rounded-[var(--radius-md)] border bg-surface px-3 py-2.5 shadow-[var(--shadow-pop)] md:w-auto',
+              't-body animate-sheet pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-[var(--radius-md)] border bg-surface px-3 py-2.5 shadow-[var(--shadow-pop)] md:w-auto',
               t.tone === 'success' && 'border-[var(--signal-resolved)]/25',
               t.tone === 'critical' && 'border-[var(--signal-critical-line)]',
               (!t.tone || t.tone === 'neutral') && 'border-border',
@@ -53,7 +58,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 className="h-4 w-4 shrink-0 text-[var(--signal-critical)]"
               />
             ) : null}
-            <span className="text-ink">{t.title}</span>
+            <span className="min-w-0 flex-1 text-ink">{t.title}</span>
+            {t.action ? (
+              <button
+                type="button"
+                onClick={() => {
+                  t.action!.onClick()
+                  setItems((prev) => prev.filter((x) => x.id !== t.id))
+                }}
+                className="t-caption shrink-0 text-[var(--tenant)] hover:underline"
+              >
+                {t.action.label}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>

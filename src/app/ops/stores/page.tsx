@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Store } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
@@ -7,6 +8,7 @@ import { RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { fetchStores } from '@/modules/stores/data'
+import { listTickets } from '@/modules/tickets/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -27,6 +29,23 @@ export default async function StoresPage({
   const sp = await searchParams
   const q = (sp.q ?? '').trim().toLowerCase()
   const { stores, fromDb } = await fetchStores({ includeInactive: true })
+
+  const { tickets } = await listTickets(500).catch(() => ({
+    tickets: [],
+    backend: 'memory' as const,
+  }))
+
+  const openCountByStore = new Map<string, number>()
+  for (const t of tickets) {
+    if (
+      t.status === 'closed' ||
+      t.status === 'cancelled' ||
+      t.status === 'resolved'
+    ) {
+      continue
+    }
+    openCountByStore.set(t.store_id, (openCountByStore.get(t.store_id) ?? 0) + 1)
+  }
 
   const filtered = q
     ? stores.filter((s) =>
@@ -61,6 +80,7 @@ export default async function StoresPage({
             <EmptyState
               title="לא נמצאו חנויות"
               description="נסו קוד חנות, שם או עיר."
+              icon={Store}
             />
           ) : (
             <>
@@ -156,7 +176,13 @@ export default async function StoresPage({
                           {s.is_active === false ? ' · מושבת' : ''}
                         </span>
                       </span>
-                      <span className="t-caption shrink-0 text-ink-3">QR</span>
+                      {(openCountByStore.get(s.id) ?? 0) > 0 ? (
+                        <span className="t-caption t-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--signal-critical-soft)] px-1.5 text-[var(--signal-critical)]">
+                          {openCountByStore.get(s.id)}
+                        </span>
+                      ) : (
+                        <span className="t-caption shrink-0 text-ink-3">QR</span>
+                      )}
                     </Link>
                   ))}
                 </RowList>

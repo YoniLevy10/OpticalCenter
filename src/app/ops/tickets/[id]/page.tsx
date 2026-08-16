@@ -108,54 +108,54 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="t-display text-ink">
-                {ticket.title || ticket.description}
-              </h1>
-              <p className="t-body mt-1.5 text-ink-2">
-                {ticket.stores ? (
-                  <>
-                    {ticket.stores.name}
-                    <span className="t-num text-ink-3">
-                      {' '}
-                      · #{ticket.stores.code}
-                    </span>
-                    {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
-                  </>
-                ) : (
-                  'חנות לא ידועה'
-                )}
-              </p>
+        <header className="space-y-4">
+          {/* Title + store — the "what" and "where" */}
+          <div>
+            <h1 className="t-display text-ink">
+              {ticket.title || ticket.description}
+            </h1>
+            <p className="t-body mt-2 text-ink-2">
+              {ticket.stores ? (
+                <>
+                  {ticket.stores.name}
+                  <span className="t-num text-ink-3"> · #{ticket.stores.code}</span>
+                  {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
+                </>
+              ) : (
+                'חנות לא ידועה'
+              )}
+            </p>
+          </div>
+
+          {/* Metadata strip — the "how urgent / who / SLA" */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="t-caption text-ink-3">עדיפות</span>
+              <PriorityText priority={ticket.priority as TicketPriority} />
             </div>
 
-            <dl className="flex shrink-0 flex-wrap items-start gap-x-8 gap-y-3">
-              <div>
-                <dt className="t-caption text-ink-3">עדיפות</dt>
-                <dd className="mt-1">
-                  <PriorityText priority={ticket.priority as TicketPriority} />
-                </dd>
-              </div>
-              <div>
-                <dt className="t-caption text-ink-3">סטטוס</dt>
-                <dd className="mt-1">
-                  <StatusLabel status={ticket.status as TicketStatus} />
-                </dd>
-              </div>
-              <div>
-                <dt className="t-caption text-ink-3">אחראי</dt>
-                <dd className="t-body mt-1 text-ink">
-                  {assignee?.full_name || assignee?.email || 'לא משויך'}
-                </dd>
-              </div>
-              <div>
-                <dt className="t-caption text-ink-3">SLA</dt>
-                <dd className="mt-1">
-                  <SlaBlock view={slaView} />
-                </dd>
-              </div>
-            </dl>
+            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+
+            <div className="flex items-center gap-2">
+              <span className="t-caption text-ink-3">סטטוס</span>
+              <StatusLabel status={ticket.status as TicketStatus} />
+            </div>
+
+            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+
+            <div className="flex items-center gap-2">
+              <span className="t-caption text-ink-3">אחראי</span>
+              <span className="t-body-strong text-ink">
+                {assignee?.full_name || assignee?.email || 'לא משויך'}
+              </span>
+            </div>
+
+            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+
+            <div className="flex items-center gap-2">
+              <span className="t-caption text-ink-3">SLA</span>
+              <SlaBlock view={slaView} />
+            </div>
           </div>
         </header>
 

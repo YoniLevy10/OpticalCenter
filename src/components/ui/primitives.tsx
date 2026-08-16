@@ -1,3 +1,4 @@
+import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -83,25 +84,30 @@ export function EmptyState({
   title,
   description,
   action,
+  icon: Icon = Inbox,
   className,
 }: {
   title: string
   description?: string
   action?: React.ReactNode
+  icon?: typeof Inbox
   className?: string
 }) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-16 text-center',
+        'flex flex-col items-center justify-center px-6 py-14 text-center',
         className,
       )}
     >
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-sunken text-ink-3">
+        <Icon className="h-5 w-5" aria-hidden />
+      </div>
       <p className="t-body-strong text-ink">{title}</p>
       {description ? (
-        <p className="t-body mt-1 max-w-xs text-ink-2">{description}</p>
+        <p className="t-body mt-1.5 max-w-xs text-ink-2">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   )
 }
@@ -153,10 +159,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn(
-        'animate-shimmer rounded-[var(--radius-sm)] bg-sunken',
-        className,
-      )}
+      className={cn('skeleton-shimmer rounded-[var(--radius-sm)]', className)}
     />
   )
 }
