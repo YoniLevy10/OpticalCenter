@@ -226,7 +226,7 @@ export default async function TicketsPage({
 
               {/* ---------- Mobile: operational list ---------- */}
               <div className="md:hidden">
-                <RowList className="stagger">
+                <RowList>
                   {rows.map((t) => (
                     <OperationalRow
                       key={t.id}

@@ -226,7 +226,7 @@ export default async function OpsDashboardPage() {
                         { view: 'open', sort: 'urgency' },
                         { store: s.code === '—' ? undefined : s.code },
                       )}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-5 py-3 transition-all duration-[var(--dur-1)] hover:bg-surface-sunken/40 active:scale-[0.99]"
+                      className="flex min-h-[var(--tap)] items-center gap-3 px-5 py-3 transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken/40"
                     >
                       <span className="t-body-strong t-num w-10 shrink-0 text-ink">
                         {s.code}

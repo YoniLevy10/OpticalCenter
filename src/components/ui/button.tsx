@@ -9,19 +9,19 @@ import { cn } from '@/lib/utils'
  * `critical` is a SIGNAL colour and never a tenant colour.
  */
 const buttonVariants = cva(
-  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-all duration-[var(--dur-1)] ease-[var(--ease)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 disabled:active:scale-100',
+  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity,box-shadow] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
   {
     variants: {
       variant: {
         primary:
-          'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)] hover:bg-[var(--tenant-hover)] hover:shadow-[var(--shadow-2)]',
+          'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)] hover:bg-[var(--tenant-hover)]',
         secondary:
-          'border border-border bg-surface text-ink shadow-[var(--shadow-1)] hover:border-border-strong hover:bg-surface-sunken/50',
+          'border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken/50',
         ghost: 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
         critical:
           'border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)] hover:bg-[color-mix(in_srgb,var(--signal-critical)_10%,white)]',
         resolve:
-          'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)] hover:shadow-[var(--shadow-2)]',
+          'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
       },
       size: {
         sm: 'h-8 px-2.5',

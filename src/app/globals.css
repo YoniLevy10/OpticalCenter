@@ -389,7 +389,7 @@ textarea:focus-visible,
   animation: mo-skeleton 1.6s var(--ease) infinite;
 }
 
-/* List stagger — children appear one after another */
+/* List stagger — first-impression only (dashboard). Never on daily queues. */
 .stagger > * {
   animation: mo-slide-up var(--dur-2) var(--ease) both;
 }

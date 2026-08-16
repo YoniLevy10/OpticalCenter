@@ -86,7 +86,7 @@ export function TechJobList({
         /* Full-bleed rows, edge-to-edge on the phone — cards would waste ~32px
            of horizontal space per job and cut visible work by a third. */
         <div className="-mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border">
-          <RowList className="stagger">
+          <RowList>
             {filtered.map((t) => (
               <OperationalRow
                 key={t.id}

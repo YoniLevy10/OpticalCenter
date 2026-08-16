@@ -9,9 +9,9 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
 
 /**
- * Operational Quiet shell — v2
- * Desktop: surface-coloured sidebar with visible shadow separation.
- * Mobile: backdrop-blur top bar with dynamic page title, scaled nav.
+ * Operational Quiet shell — v2 (restrained)
+ * Desktop: surface sidebar, hairline only — no chrome elevation.
+ * Mobile: blur top bar + page title; bottom nav signals active by color only.
  */
 
 const PRIMARY = [
@@ -50,7 +50,7 @@ function TenantMark() {
   return (
     <span
       aria-hidden
-      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
+      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)]"
     >
       OC
     </span>
@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="dvh-screen bg-canvas text-ink">
       {/* ---------- Desktop sidebar ---------- */}
       <aside
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e shadow-[var(--shadow-1)] md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
@@ -90,11 +90,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-all duration-[var(--dur-1)]',
+                      't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
                       active
-                        ? 'bg-surface-sunken text-ink shadow-[var(--shadow-1)]'
+                        ? 'bg-surface-sunken text-ink'
                         : 'text-ink-2 hover:bg-surface-sunken/60 hover:text-ink',
-                      'hover:translate-x-0.5',
                     )}
                   >
                     <span
@@ -104,13 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         active ? 'bg-[var(--tenant)]' : 'bg-transparent',
                       )}
                     />
-                    <Icon
-                      className={cn(
-                        'shrink-0 transition-transform duration-[var(--dur-1)]',
-                        active ? 'h-[18px] w-[18px]' : 'h-4 w-4',
-                      )}
-                      aria-hidden
-                    />
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
                     {item.label}
                   </Link>
                 </li>
@@ -189,17 +182,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-full flex-col items-center justify-center gap-1 transition-all duration-[var(--dur-1)] active:scale-90',
+                    'flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
                     active ? 'text-[var(--tenant)]' : 'text-ink-3',
                   )}
                 >
-                  <Icon
-                    className={cn(
-                      'transition-transform duration-[var(--dur-1)]',
-                      active ? 'h-[22px] w-[22px]' : 'h-5 w-5',
-                    )}
-                    aria-hidden
-                  />
+                  <Icon className="h-5 w-5" aria-hidden />
                   <span className="t-caption">{item.label}</span>
                 </Link>
               </li>
@@ -209,7 +196,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setMoreOpen(true)}
-              className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-all duration-[var(--dur-1)] active:scale-90"
+              className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-colors duration-[var(--dur-1)]"
             >
               <Ellipsis className="h-5 w-5" aria-hidden />
               <span className="t-caption">עוד</span>

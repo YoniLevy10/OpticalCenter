@@ -11,7 +11,7 @@ function CloseButton() {
   return (
     <Dialog.Close
       aria-label="סגירה"
-      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-ink-3 transition-all duration-[var(--dur-1)] hover:bg-surface-sunken hover:text-ink active:scale-90"
+      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-ink-3 transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken hover:text-ink"
     >
       <X className="h-4 w-4" />
     </Dialog.Close>
