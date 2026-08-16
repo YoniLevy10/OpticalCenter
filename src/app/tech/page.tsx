@@ -1,7 +1,9 @@
 import { TechShell } from '@/components/layout/tech-shell'
 import { TechJobList } from '@/app/tech/tech-job-list'
 import { TechRealtimeHint } from '@/app/tech/tech-realtime-hint'
+import { ErrorState, Notice } from '@/components/ui/primitives'
 import { fetchTechTickets, resolveTechId } from '@/modules/tickets/tech'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,26 +14,44 @@ export default async function TechPortalPage({
 }) {
   const params = await searchParams
   const techId = resolveTechId(params.techId ?? null)
-  const { tickets, fromDb, error } = await fetchTechTickets(techId)
+  const { tickets, error } = await fetchTechTickets(techId)
+
+  const openCount = tickets.filter((t) =>
+    OPEN_TICKET_STATUSES.includes(t.status as never),
+  ).length
 
   return (
     <TechShell
       title="העבודות שלי"
+      eyebrow="MaintainOS · טכנאי"
       subtitle={
-        techId
-          ? `צוות תחזוקה פנימי · ${techId.slice(0, 8)}…`
-          : 'MVP · העבירו techId בשורת הכתובת'
+        openCount > 0 ? (
+          <span className="t-num">{openCount} עבודות פתוחות</span>
+        ) : (
+          'אין עבודות פתוחות'
+        )
       }
-      techId={techId}
     >
       <TechRealtimeHint />
+
       {error ? (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
+        <div className="mb-3">
+          <ErrorState
+            title="לא ניתן לטעון עבודות"
+            description="נסו לרענן. אם הבעיה נמשכת פנו למוקד."
+          />
         </div>
       ) : null}
-      <TechJobList tickets={tickets} techId={techId} fromDb={fromDb} />
+
+      {!techId ? (
+        <div className="mb-3">
+          <Notice tone="warning">
+            לא זוהה טכנאי. פתחו את הקישור האישי שקיבלתם.
+          </Notice>
+        </div>
+      ) : null}
+
+      <TechJobList tickets={tickets} techId={techId} />
     </TechShell>
   )
 }
-

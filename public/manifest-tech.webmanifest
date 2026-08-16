@@ -6,10 +6,15 @@
   "dir": "rtl",
   "start_url": "/tech",
   "scope": "/tech",
+  "id": "/tech",
   "display": "standalone",
-  "display_override": ["standalone", "browser"],
+  "display_override": [
+    "standalone",
+    "browser"
+  ],
+  "orientation": "portrait-primary",
   "background_color": "#f7f7f5",
-  "theme_color": "#8b1e2d",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/icons/icon-192.svg",

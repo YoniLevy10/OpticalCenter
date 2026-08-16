@@ -1,77 +1,76 @@
 import Link from 'next/link'
+import { techHref } from '@/lib/tech-href'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+/**
+ * The technician is a field worker on a phone, often one-handed, often with bad
+ * signal. This shell is deliberately NOT the HQ shell:
+ *
+ *  - no HQ navigation of any kind
+ *  - no bottom tab bar (there is only one destination — the job list)
+ *  - the primary action is sticky at the thumb, not buried in a sidebar
+ */
 
 export function TechShell({
   children,
   title,
   subtitle,
-  techId,
   backHref,
+  eyebrow,
+  actions,
 }: {
   children: React.ReactNode
   title: string
-  subtitle?: string
-  techId?: string | null
+  subtitle?: React.ReactNode
   backHref?: string
+  eyebrow?: string
+  /** Sticky bottom action zone — the next thing the technician must do. */
+  actions?: React.ReactNode
 }) {
-  const listHref = techId
-    ? `/tech?techId=${encodeURIComponent(techId)}`
-    : '/tech'
-
   return (
-    <div className="min-h-screen bg-canvas text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
+    <div className="dvh-screen bg-canvas text-ink">
+      <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-xl items-start gap-2 px-4 py-3">
           {backHref ? (
             <Link
               href={backHref}
-              className="rounded-[var(--radius-md)] px-2 py-1 text-[13px] text-accent hover:bg-accent-soft"
+              aria-label="חזרה"
+              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors active:bg-canvas"
             >
-              חזרה
+              {/* Chevron points toward the start edge; mirrors under RTL. */}
+              <ChevronRight className="h-5 w-5 rtl:rotate-0 ltr:rotate-180" />
             </Link>
-          ) : (
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] bg-accent text-[10px] font-semibold text-white">
-              OC
-            </span>
-          )}
+          ) : null}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] text-faint">MaintainOS · טכנאי</p>
-            <h1 className="truncate text-[18px] font-semibold tracking-tight">
-              {title}
-            </h1>
+            <p className="t-caption text-ink-3">{eyebrow ?? 'MaintainOS · טכנאי'}</p>
+            <h1 className="t-title mt-0.5 truncate text-ink">{title}</h1>
             {subtitle ? (
-              <p className="mt-0.5 truncate text-[12px] text-muted">{subtitle}</p>
+              <div className="t-meta mt-0.5 truncate text-ink-2">{subtitle}</div>
             ) : null}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg px-4 pb-24 pt-4">{children}</main>
+      <main
+        className={cn(
+          'mx-auto w-full max-w-xl px-4 pt-4',
+          actions ? 'pb-actions' : 'pb-8',
+        )}
+      >
+        {children}
+      </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface">
-        <div className="mx-auto flex max-w-lg">
-          <Link
-            href={listHref}
-            className={cn(
-              'flex-1 py-3.5 text-center text-[13px] font-medium text-accent',
-            )}
-          >
-            העבודות
-          </Link>
-          <Link
-            href="/ops/tickets"
-            className="flex-1 py-3.5 text-center text-[13px] text-muted"
-          >
-            HQ
-          </Link>
+      {actions ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur-sm"
+          style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
+        >
+          <div className="mx-auto w-full max-w-xl px-4 pt-3">{actions}</div>
         </div>
-      </nav>
+      ) : null}
     </div>
   )
 }
 
-export function techHref(path: string, techId?: string | null) {
-  if (!techId) return path
-  const sep = path.includes('?') ? '&' : '?'
-  return `${path}${sep}techId=${encodeURIComponent(techId)}`
-}
+export { techHref }

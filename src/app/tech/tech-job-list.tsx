@@ -1,31 +1,45 @@
 'use client'
 
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { PriorityDot, StatusBadge } from '@/components/ui/badges'
-import { techHref } from '@/components/layout/tech-shell'
+import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
+import { SegmentedButtons } from '@/components/ui/segmented'
 import { EmptyState } from '@/components/ui/primitives'
+import { StatusLabel } from '@/components/ui/signal'
+import { LiveSla } from '@/components/ui/time'
+import { techHref } from '@/lib/tech-href'
 import {
   TECH_TAB_LABELS_HE,
   filterTicketsByTab,
-  snippet,
   type TechTab,
   type TechTicketRow,
 } from '@/modules/tickets/tech'
-import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 
 const TABS: TechTab[] = ['new_assigned', 'in_progress', 'done']
+
+const EMPTY_COPY: Record<TechTab, { title: string; description: string }> = {
+  new_assigned: {
+    title: 'אין עבודות חדשות',
+    description: 'כשמשייכים לך תקלה היא תופיע כאן.',
+  },
+  in_progress: {
+    title: 'אין עבודות בטיפול',
+    description: 'התחילו עבודה מהרשימה כדי שתופיע כאן.',
+  },
+  done: {
+    title: 'אין עבודות שהושלמו',
+    description: 'עבודות שתסיימו יופיעו כאן.',
+  },
+}
 
 export function TechJobList({
   tickets,
   techId,
-  fromDb,
 }: {
   tickets: TechTicketRow[]
   techId: string | null
-  fromDb: boolean
 }) {
   const [tab, setTab] = useState<TechTab>('new_assigned')
+
   const filtered = useMemo(() => filterTicketsByTab(tickets, tab), [tickets, tab])
   const counts = useMemo(
     () =>
@@ -36,67 +50,53 @@ export function TechJobList({
   )
 
   return (
-    <div className="space-y-4">
-      {!techId ? (
-        <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning-soft px-3 py-2 text-[13px] text-warning">
-          חסר techId — הוסיפו בשורת הכתובת או DEMO_TECH_ID
-        </div>
-      ) : null}
-
-      {!fromDb ? (
-        <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-[13px] text-muted">
-          מצב דמו (זיכרון)
-        </div>
-      ) : null}
-
-      <div className="flex gap-1 rounded-[var(--radius-md)] border border-border bg-canvas p-1">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={
-              tab === t
-                ? 'flex-1 rounded-[var(--radius-sm)] bg-surface px-2 py-2 text-[13px] font-medium text-foreground shadow-sm'
-                : 'flex-1 rounded-[var(--radius-sm)] px-2 py-2 text-[13px] text-muted'
-            }
-          >
-            {TECH_TAB_LABELS_HE[t]}
-            <span className="ms-1 text-[11px] text-faint">({counts[t]})</span>
-          </button>
-        ))}
-      </div>
+    <div className="space-y-3">
+      <SegmentedButtons
+        fill
+        activeKey={tab}
+        onChange={(k) => setTab(k as TechTab)}
+        segments={TABS.map((t) => ({
+          key: t,
+          label: TECH_TAB_LABELS_HE[t],
+          count: counts[t],
+        }))}
+      />
 
       {filtered.length === 0 ? (
-        <EmptyState title="אין עבודות בטאב זה" />
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface">
+          <EmptyState {...EMPTY_COPY[tab]} />
+        </div>
       ) : (
-        <ul className="space-y-2">
-          {filtered.map((t) => (
-            <li key={t.id}>
-              <Link
+        /* Full-bleed rows, edge-to-edge on the phone — cards would waste ~32px
+           of horizontal space per job and cut visible work by a third. */
+        <div className="-mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border">
+          <RowList>
+            {filtered.map((t) => (
+              <OperationalRow
+                key={t.id}
                 href={techHref(`/tech/${t.id}`, techId)}
-                className="block rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition-colors hover:bg-canvas"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium tabular-nums">
-                    {t.display_number ?? `OC-${t.number}`}
-                  </span>
-                  <StatusBadge status={t.status as TicketStatus} />
-                </div>
-                <p className="mt-1 text-[13px] text-muted">
-                  {t.stores?.name ?? '—'}
-                  {t.stores?.code ? ` · #${t.stores.code}` : ''}
-                </p>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <PriorityDot priority={t.priority as TicketPriority} />
-                  <span className="truncate text-[12px] text-faint">
-                    {snippet(t.description || t.title || '')}
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                priority={t.priority}
+                leading={t.display_number ?? `OC-${t.number}`}
+                trailing={<LiveSla ticket={t} />}
+                title={t.stores?.name ?? 'חנות'}
+                subtitle={t.description || t.title || ''}
+                footer={
+                  <>
+                    <StatusLabel status={t.status} />
+                    {t.stores?.city ? (
+                      <>
+                        <Dot />
+                        <span className="t-meta truncate text-ink-2">
+                          {t.stores.city}
+                        </span>
+                      </>
+                    ) : null}
+                  </>
+                }
+              />
+            ))}
+          </RowList>
+        </div>
       )}
     </div>
   )

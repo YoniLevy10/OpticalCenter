@@ -4,12 +4,31 @@
   "description": "תחזוקה תפעולית — Optical Center",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/ops",
-  "scope": "/",
+  "start_url": "/ops/tickets",
+  "scope": "/ops",
+  "id": "/ops",
   "display": "standalone",
-  "display_override": ["standalone", "browser"],
+  "display_override": [
+    "standalone",
+    "browser"
+  ],
+  "orientation": "portrait-primary",
   "background_color": "#f7f7f5",
-  "theme_color": "#f7f7f5",
+  "theme_color": "#ffffff",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "דורש תשומת לב",
+      "url": "/ops/tickets"
+    },
+    {
+      "name": "חנויות",
+      "url": "/ops/stores"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.svg",

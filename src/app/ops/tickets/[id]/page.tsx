@@ -1,18 +1,32 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
-import { OpsShell } from '@/components/layout/ops-shell'
-import { PriorityDot, StatusBadge, SlaChip } from '@/components/ui/badges'
-import { Card } from '@/components/ui/primitives'
+import { ChevronRight } from 'lucide-react'
+import { AppShell } from '@/components/layout/app-shell'
 import {
-  TICKET_EVENT_LABELS_HE,
+  Panel,
+  PanelHeader,
+  KeyValue,
+  EmptyState,
+} from '@/components/ui/primitives'
+import { PriorityText, SlaBlock, StatusLabel } from '@/components/ui/signal'
+import { Timeline } from '@/components/ui/timeline'
+import { EvidenceGrid } from '@/components/ui/evidence'
+import { LiveAge } from '@/components/ui/time'
+import {
+  TICKET_CATEGORY_LABELS_HE,
   TICKET_SOURCE_LABELS_HE,
   type TicketPriority,
   type TicketSourceLabel,
   type TicketStatus,
 } from '@/modules/tickets/constants'
 import { getById, listInternalTechnicians } from '@/modules/tickets/service'
-import { formatSlaLabelHe, isSlaBreached } from '@/modules/tickets/sla'
+import { getSlaView } from '@/modules/tickets/sla-display'
+import { buildActivity } from '@/modules/tickets/activity'
+import {
+  fetchTicketAttachments,
+  mergeEvidence,
+} from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +36,7 @@ function fmt(iso: string | null | undefined) {
   try {
     return format(new Date(iso), 'dd/MM/yyyy HH:mm')
   } catch {
-    return iso
+    return '—'
   }
 }
 
@@ -32,6 +46,7 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+
   let ticket
   try {
     ticket = await getById(id)
@@ -40,175 +55,187 @@ export default async function TicketDetailPage({
   }
   if (!ticket) notFound()
 
-  const technicians = await listInternalTechnicians().catch(() => [])
+  const [technicians, storedAttachments] = await Promise.all([
+    listInternalTechnicians().catch(() => []),
+    fetchTicketAttachments(ticket.id),
+  ])
   const display =
     ticket.display_number ??
     (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
-  const breached = isSlaBreached({
+
+  const slaView = getSlaView({
     priority: ticket.priority,
+    status: ticket.status,
     sla_respond_by: ticket.sla_respond_by,
     sla_resolve_by: ticket.sla_resolve_by,
-    status: ticket.status,
     resolved_at: ticket.resolved_at,
+    created_at: ticket.created_at,
   })
 
+  const activity = buildActivity(ticket.messages ?? [], ticket.events ?? [])
+  // WhatsApp photos live on message.media_url; field photos on ticket_attachments.
+  const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
+
+  const assignee = technicians.find((t) => t.id === ticket.assigned_to)
+
   return (
-    <OpsShell
-      pathname="/ops/tickets"
-      title={display}
-      subtitle={ticket.title ?? ticket.category}
-    >
-      <Link
-        href="/ops/tickets"
-        className="mb-4 inline-block text-[12px] text-muted hover:text-foreground"
-      >
-        ← חזרה לתקלות
-      </Link>
+    <AppShell>
+      <div className="space-y-4">
+        {/* Breadcrumb — quiet, one line, never a heading. */}
+        <nav className="flex items-center gap-1">
+          <Link
+            href="/ops/tickets"
+            className="t-meta text-ink-3 transition-colors hover:text-ink"
+          >
+            תקלות
+          </Link>
+          <ChevronRight
+            aria-hidden
+            className="h-3 w-3 text-ink-3 rtl:rotate-180"
+          />
+          <span className="t-meta t-num text-ink-2">{display}</span>
+        </nav>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        <div className="space-y-4">
-          <Card className="p-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusBadge status={ticket.status as TicketStatus} />
-              <PriorityDot priority={ticket.priority as TicketPriority} />
-              <span className="text-[12px] text-muted">
-                {TICKET_SOURCE_LABELS_HE[ticket.source as TicketSourceLabel] ??
-                  ticket.source}
-              </span>
-              <SlaChip
-                breached={breached}
-                label={formatSlaLabelHe({
-                  priority: ticket.priority,
-                  sla_respond_by: ticket.sla_respond_by,
-                  sla_resolve_by: ticket.sla_resolve_by,
-                  status: ticket.status,
-                  resolved_at: ticket.resolved_at,
-                })}
-              />
+        {/* ---------- Answer block: what / where / how urgent / who ---------- */}
+        <header className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="t-display text-ink">
+                {ticket.title || ticket.description}
+              </h1>
+              <p className="t-body mt-1.5 text-ink-2">
+                {ticket.stores ? (
+                  <>
+                    {ticket.stores.name}
+                    <span className="t-num text-ink-3">
+                      {' '}
+                      · #{ticket.stores.code}
+                    </span>
+                    {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
+                  </>
+                ) : (
+                  'חנות לא ידועה'
+                )}
+              </p>
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-[14px] leading-relaxed">
-              {ticket.description}
-            </p>
-          </Card>
 
-          <Card>
-            <div className="border-b border-border px-4 py-3 text-[14px] font-medium">
-              שיחה / הודעות
-            </div>
-            <ul className="divide-y divide-border">
-              {(ticket.messages ?? []).length === 0 ? (
-                <li className="px-4 py-8 text-center text-[13px] text-muted">
-                  אין הודעות עדיין
-                </li>
-              ) : (
-                (ticket.messages ?? []).map(
-                  (m: {
-                    id: string
-                    direction: string
-                    body: string | null
-                    created_at: string
-                  }) => (
-                    <li key={m.id} className="px-4 py-3">
-                      <div className="flex items-center justify-between gap-2 text-[11px] text-faint">
-                        <span>
-                          {m.direction === 'inbound' ? 'נכנס' : 'יוצא'}
-                        </span>
-                        <span>{fmt(m.created_at)}</span>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap text-[13px]">
-                        {m.body}
-                      </p>
-                    </li>
-                  ),
-                )
-              )}
-            </ul>
-          </Card>
-
-          <Card>
-            <div className="border-b border-border px-4 py-3 text-[14px] font-medium">
-              אירועים
-            </div>
-            <ul className="divide-y divide-border">
-              {(ticket.events ?? []).length === 0 ? (
-                <li className="px-4 py-8 text-center text-[13px] text-muted">
-                  אין אירועים
-                </li>
-              ) : (
-                (ticket.events ?? []).map(
-                  (e: {
-                    id: string
-                    event_type: string
-                    created_at: string
-                    payload?: Record<string, unknown>
-                  }) => (
-                    <li
-                      key={e.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]"
-                    >
-                      <span>
-                        {TICKET_EVENT_LABELS_HE[e.event_type] ?? e.event_type}
-                      </span>
-                      <span className="text-[11px] text-faint">
-                        {fmt(e.created_at)}
-                      </span>
-                    </li>
-                  ),
-                )
-              )}
-            </ul>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-4">
-            <h2 className="text-[14px] font-medium">פרטים</h2>
-            <dl className="mt-3 space-y-2 text-[13px]">
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted">חנות</dt>
-                <dd className="text-end font-medium">
-                  {ticket.stores
-                    ? `${ticket.stores.name} (#${ticket.stores.code})`
-                    : '—'}
+            <dl className="flex shrink-0 flex-wrap items-start gap-x-8 gap-y-3">
+              <div>
+                <dt className="t-caption text-ink-3">עדיפות</dt>
+                <dd className="mt-1">
+                  <PriorityText priority={ticket.priority as TicketPriority} />
                 </dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted">עיר</dt>
-                <dd>{ticket.stores?.city ?? '—'}</dd>
+              <div>
+                <dt className="t-caption text-ink-3">סטטוס</dt>
+                <dd className="mt-1">
+                  <StatusLabel status={ticket.status as TicketStatus} />
+                </dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted">קטגוריה</dt>
-                <dd>{ticket.category}</dd>
+              <div>
+                <dt className="t-caption text-ink-3">אחראי</dt>
+                <dd className="t-body mt-1 text-ink">
+                  {assignee?.full_name || assignee?.email || 'לא משויך'}
+                </dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted">נוצר</dt>
-                <dd>{fmt(ticket.created_at)}</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted">מדווח</dt>
-                <dd className="text-end">
-                  {ticket.reporter_name ?? '—'}
-                  {ticket.reporter_phone ? (
-                    <div className="text-[11px] text-faint">
-                      {ticket.reporter_phone}
-                    </div>
-                  ) : null}
+              <div>
+                <dt className="t-caption text-ink-3">SLA</dt>
+                <dd className="mt-1">
+                  <SlaBlock view={slaView} />
                 </dd>
               </div>
             </dl>
-          </Card>
+          </div>
+        </header>
 
-          <Card className="p-4">
-            <h2 className="mb-3 text-[14px] font-medium">פעולות</h2>
-            <TicketActions
-              ticketId={ticket.id}
-              status={ticket.status as TicketStatus}
-              assignedTo={ticket.assigned_to}
-              technicians={technicians}
-            />
-          </Card>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          {/* ---------- Main column ---------- */}
+          <div className="space-y-4">
+            {ticket.title && ticket.description !== ticket.title ? (
+              <Panel>
+                <p className="t-body whitespace-pre-wrap leading-relaxed text-ink">
+                  {ticket.description}
+                </p>
+              </Panel>
+            ) : null}
+
+            {attachments.length > 0 ? (
+              <Panel flush>
+                <PanelHeader
+                  title="תיעוד מהשטח"
+                  meta={`${attachments.length} פריטים`}
+                />
+                <div className="p-4">
+                  <EvidenceGrid attachments={attachments} />
+                </div>
+              </Panel>
+            ) : null}
+
+            <Panel flush>
+              <PanelHeader title="כרונולוגיה" meta={`${activity.length} רשומות`} />
+              <Timeline items={activity} />
+            </Panel>
+          </div>
+
+          {/* ---------- Side column ---------- */}
+          <div className="space-y-4">
+            <Panel>
+              <h2 className="t-section mb-1 text-ink">פעולות</h2>
+              <p className="t-caption mb-4 text-ink-3">
+                המעברים המותרים נגזרים ממכונת המצבים
+              </p>
+              <TicketActions
+                ticketId={ticket.id}
+                status={ticket.status as TicketStatus}
+                assignedTo={ticket.assigned_to}
+                technicians={technicians}
+              />
+            </Panel>
+
+            <Panel>
+              <h2 className="t-section mb-1 text-ink">פרטים</h2>
+              <dl className="divide-y divide-border">
+                <KeyValue label="קטגוריה">
+                  {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
+                </KeyValue>
+                <KeyValue label="מקור">
+                  {TICKET_SOURCE_LABELS_HE[
+                    ticket.source as TicketSourceLabel
+                  ] ?? ticket.source}
+                </KeyValue>
+                <KeyValue label="נפתחה">{fmt(ticket.created_at)}</KeyValue>
+                <KeyValue label="גיל">
+                  <LiveAge createdAt={ticket.created_at} />
+                </KeyValue>
+                <KeyValue label="מדווח">
+                  {ticket.reporter_name ?? 'לא ידוע'}
+                </KeyValue>
+                {ticket.reporter_phone ? (
+                  <KeyValue label="טלפון" ltr>
+                    {ticket.reporter_phone}
+                  </KeyValue>
+                ) : null}
+                {ticket.stores?.address ? (
+                  <KeyValue label="כתובת">{ticket.stores.address}</KeyValue>
+                ) : null}
+                {ticket.resolved_at ? (
+                  <KeyValue label="נפתרה">{fmt(ticket.resolved_at)}</KeyValue>
+                ) : null}
+              </dl>
+            </Panel>
+
+            {attachments.length === 0 ? (
+              <Panel flush>
+                <EmptyState
+                  title="אין תיעוד מצורף"
+                  description="תמונות שנשלחו ב־WhatsApp או צולמו בשטח יופיעו כאן."
+                  className="py-10"
+                />
+              </Panel>
+            ) : null}
+          </div>
         </div>
       </div>
-    </OpsShell>
+    </AppShell>
   )
 }
