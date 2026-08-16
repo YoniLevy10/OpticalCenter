@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  /* Matches the surface behind the status bar, not the canvas. */
+  /* Status-bar chrome; splash/canvas uses Pulse #f5f6fa via manifests. */
   themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
