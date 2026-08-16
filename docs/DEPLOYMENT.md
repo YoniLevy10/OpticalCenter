@@ -5,10 +5,27 @@
 - Apply SQL: `SUPABASE_DB_PASSWORD=… npm run db:migrate`
 - Pooler host (IPv4): `aws-1-eu-west-1.pooler.supabase.com`
 
+### Auth URL Configuration (חובה לפרודקשן)
+
+Magic Link נשבר אם **Site URL** נשאר `http://localhost:3000`.
+
+1. פתחו [URL Configuration](https://supabase.com/dashboard/project/pfsxuylbnpbcgjehuaqo/auth/url-configuration)
+2. **Site URL** = `https://optical-center-rose.vercel.app` (או הדומיין הסופי)
+3. **Redirect URLs** הוסיפו:
+   - `https://optical-center-rose.vercel.app/**`
+   - `https://optical-center-rose.vercel.app/auth/callback`
+   - `http://localhost:3000/**` (לפיתוח מקומי)
+4. אופציונלי עם Personal Access Token:
+   `SUPABASE_ACCESS_TOKEN=sbp_… node --env-file=.env.local scripts/fix-supabase-auth-urls.mjs`
+
+עד שה־Site URL מתוקן: התחברו עם **סיסמה** או **קוד OTP** במסך `/login`.
+
 Required env:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_APP_URL` = production URL (לא localhost)
+- אופציונלי: `PILOT_LOGIN_PASSWORD`, `RESEND_API_KEY` (מייל Magic Link עם קישור לפרודקשן)
 
 ## Vercel
 1. Project linked to `YoniLevy10/OpticalCenter`

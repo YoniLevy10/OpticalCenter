@@ -96,6 +96,15 @@ async function main() {
   )
   if (profileError) throw profileError
 
+  const pilotPassword = process.env.PILOT_LOGIN_PASSWORD?.trim()
+  if (pilotPassword) {
+    const { error: pwError } = await supabase.auth.admin.updateUserById(userId, {
+      password: pilotPassword,
+      email_confirm: true,
+    })
+    if (pwError) throw pwError
+  }
+
   const { data: org } = await supabase
     .from('organizations')
     .select('id')

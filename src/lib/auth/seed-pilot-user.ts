@@ -116,6 +116,11 @@ export async function seedPilotUser(
     })
   }
 
+  const pilotPassword = process.env.PILOT_LOGIN_PASSWORD?.trim()
+  if (pilotPassword) {
+    await supabase.auth.admin.updateUserById(userId, { password: pilotPassword })
+  }
+
   const { error: profileError } = await supabase.from('profiles').upsert(
     {
       id: userId,

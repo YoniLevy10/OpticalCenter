@@ -22,23 +22,61 @@ async function loadMemberships(profileId: string): Promise<Actor['memberships']>
   return (data ?? []) as Actor['memberships']
 }
 
+type EmailOtpType =
+  | 'magiclink'
+  | 'email'
+  | 'signup'
+  | 'invite'
+  | 'recovery'
+  | 'email_change'
+
+function asOtpType(value: string | null): EmailOtpType {
+  if (
+    value === 'magiclink' ||
+    value === 'email' ||
+    value === 'signup' ||
+    value === 'invite' ||
+    value === 'recovery' ||
+    value === 'email_change'
+  ) {
+    return value
+  }
+  return 'magiclink'
+}
+
 /**
- * Magic Link / OAuth code exchange. Redirects by role home.
+ * Magic Link / OTP exchange.
+ * Supports:
+ * - ?code=… (PKCE)
+ * - ?token_hash=…&type=magiclink (bypasses broken Site URL redirects)
  */
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
+  const tokenHash = url.searchParams.get('token_hash')
+  const type = asOtpType(url.searchParams.get('type'))
   const origin = url.origin
 
-  if (!code) {
+  if (!code && !tokenHash) {
     return NextResponse.redirect(`${origin}/login?error=auth`)
   }
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (error) {
-      return NextResponse.redirect(`${origin}/login?error=auth`)
+
+    if (tokenHash) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type,
+      })
+      if (error) {
+        return NextResponse.redirect(`${origin}/login?error=auth`)
+      }
+    } else if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      if (error) {
+        return NextResponse.redirect(`${origin}/login?error=auth`)
+      }
     }
 
     const {
@@ -48,7 +86,6 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/login?error=auth`)
     }
 
-    // Known pilot emails get profile + global_admin if missing
     await ensurePilotAccessForAuthUser({
       userId: user.id,
       email: user.email,
