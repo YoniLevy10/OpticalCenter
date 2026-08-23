@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur-md md:hidden">
+      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden">
         <div
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
@@ -189,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/90 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'var(--safe-b)' }}
       >
         <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
@@ -203,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
-                    active ? 'text-[var(--tenant)]' : 'text-ink-3',
+                    active ? 'nav-pill-active' : 'text-ink-3',
                   )}
                 >
                   <Icon className="h-5 w-5" aria-hidden />

@@ -65,7 +65,7 @@ function StatStrip({
           <Link
             key={item.label}
             href={item.href}
-            className="group px-4 py-3.5 transition-colors hover:bg-surface-sunken/40 sm:px-5"
+            className="group px-4 py-3.5 transition-[background-color,box-shadow] duration-[var(--dur-1)] hover:bg-surface-sunken/40 sm:px-5 hover:shadow-[var(--shadow-hover)]"
           >
             <p className="t-caption text-ink-3">{item.label}</p>
             <p
@@ -193,7 +193,7 @@ export default async function OpsDashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-4">
+      <div className="space-y-4 stagger">
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}

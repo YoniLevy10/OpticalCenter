@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
-import { cn } from '@/lib/utils'
+import { SegmentedButtons } from '@/components/ui/segmented'
 
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
 
@@ -153,30 +153,20 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <p className="t-body mt-1.5 text-ink-2">Optical Center · ניהול תחזוקה</p>
         </div>
 
-        {/* Mode tabs — refined */}
-        <div className="mb-6 inline-flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 p-1">
-          {(
-            [
+        <div
+          className="animate-scale-in rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
+        >
+          <SegmentedButtons
+            fill
+            className="mb-6 w-full"
+            activeKey={mode}
+            onChange={(key) => setMode(key as Mode)}
+            segments={[
               { key: 'link', label: 'קישור במייל' },
-              { key: 'otp', label: 'קוד חד-פעמי' },
+              { key: 'otp', label: 'קוד' },
               { key: 'password', label: 'סיסמה' },
-            ] as const
-          ).map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMode(m.key)}
-              className={cn(
-                't-control flex-1 rounded-[var(--radius-sm)] px-2 py-2 transition-all duration-[var(--dur-1)]',
-                mode === m.key
-                  ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                  : 'text-ink-3 hover:text-ink-2',
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+            ]}
+          />
 
         {mode === 'link' ? (
           <form onSubmit={requestLink} className="space-y-4">
@@ -326,6 +316,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             </p>
           </div>
         ) : null}
+
+        </div>
 
         <details className="mt-6 group">
           <summary className="t-caption cursor-pointer list-none text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
