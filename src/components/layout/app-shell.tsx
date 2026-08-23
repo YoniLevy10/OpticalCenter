@@ -25,19 +25,34 @@ const PRIMARY = [
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
-const TOOLS = [
-  { href: '/ops/inbox', label: 'תיבת WhatsApp' },
-  { href: '/ops/assets', label: 'נכסים' },
-  { href: '/ops/vendors', label: 'ספקים' },
-  { href: '/ops/activity', label: 'יומן פעילות' },
-  { href: '/ops/reports', label: 'דוחות' },
-  { href: '/ops/status', label: 'סטטוס מערכת' },
-  { href: '/ops/settings', label: 'הגדרות' },
-  { href: '/ops/users', label: 'משתמשים' },
-  { href: '/ops/stores/print-qr', label: 'הדפסת QR' },
-  { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
-  { href: '/tech', label: 'פורטל טכנאי' },
+const TOOL_GROUPS: {
+  label: string
+  items: { href: string; label: string }[]
+}[] = [
+  {
+    label: 'תפעול',
+    items: [
+      { href: '/ops/inbox', label: 'תיבת WhatsApp' },
+      { href: '/ops/assets', label: 'נכסים' },
+      { href: '/ops/vendors', label: 'ספקים' },
+      { href: '/ops/activity', label: 'יומן פעילות' },
+      { href: '/ops/reports', label: 'דוחות' },
+    ],
+  },
+  {
+    label: 'מערכת',
+    items: [
+      { href: '/ops/status', label: 'סטטוס מערכת' },
+      { href: '/ops/settings', label: 'הגדרות' },
+      { href: '/ops/users', label: 'משתמשים' },
+      { href: '/ops/stores/print-qr', label: 'הדפסת QR' },
+      { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
+      { href: '/tech', label: 'פורטל טכנאי' },
+    ],
+  },
 ]
+
+const ALL_TOOLS = TOOL_GROUPS.flatMap((g) => g.items)
 
 function isActive(pathname: string, match: string) {
   return pathname === match || pathname.startsWith(`${match}/`)
@@ -83,17 +98,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="flex items-center gap-2.5 px-4"
+          className="border-b border-border bg-gradient-to-b from-[var(--tenant-soft)]/80 to-surface px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
-          <TenantMark />
-          <div className="min-w-0">
-            <p className="t-body-strong truncate text-ink">MaintainOS</p>
-            <p className="t-caption truncate text-ink-3">Optical Center</p>
+          <div className="flex h-full items-center gap-2.5">
+            <TenantMark />
+            <div className="min-w-0">
+              <p className="t-body-strong truncate text-ink">MaintainOS</p>
+              <p className="t-caption truncate text-ink-3">Optical Center</p>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <p className="t-caption mb-2 px-2.5 text-ink-3">ניווט עיקרי</p>
           <ul className="space-y-1">
             {PRIMARY.map((item) => {
               const active = isActive(pathname, item.match)
@@ -133,24 +151,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-border p-3">
-          <p className="t-caption px-2.5 pb-2 text-ink-3">כלים</p>
-          <ul className="space-y-0.5">
-            {TOOLS.map((t) => (
-              <li key={t.href}>
-                <Link
-                  href={t.href}
-                  className={cn(
-                    't-meta flex h-8 items-center rounded-[var(--radius-md)] px-2.5 transition-colors',
-                    isActive(pathname, t.href)
-                      ? 'text-ink'
-                      : 'text-ink-3 hover:text-ink-2',
-                  )}
-                >
-                  {t.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {TOOL_GROUPS.map((group) => (
+            <div key={group.label} className="mb-3 last:mb-0">
+              <p className="t-caption px-2.5 pb-1.5 text-ink-3">{group.label}</p>
+              <ul className="space-y-0.5">
+                {group.items.map((t) => (
+                  <li key={t.href}>
+                    <Link
+                      href={t.href}
+                      className={cn(
+                        't-meta flex h-8 items-center rounded-[var(--radius-md)] px-2.5 transition-colors',
+                        isActive(pathname, t.href)
+                          ? 'bg-surface-sunken/80 text-ink'
+                          : 'text-ink-3 hover:text-ink-2',
+                      )}
+                    >
+                      {t.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
           <div className="mt-2 px-2.5">
             <LogoutButton className="w-full justify-start px-0" />
           </div>
@@ -231,7 +253,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         title="כלים והגדרות"
       >
         <ul className="divide-y divide-border">
-          {TOOLS.map((t) => (
+          {ALL_TOOLS.map((t) => (
             <li key={t.href}>
               <Link
                 href={t.href}

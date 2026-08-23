@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
@@ -11,6 +12,24 @@ import { SegmentedButtons } from '@/components/ui/segmented'
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
 
 type Mode = 'link' | 'otp' | 'password'
+
+const VALUE_PROPS = [
+  {
+    icon: MessageCircle,
+    title: 'דיווח מהשטח',
+    desc: 'תקלות נכנסות מ-WhatsApp — בלי אפליקציה נוספת לחנויות.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'SLA בזמן אמת',
+    desc: 'חריגות, שיוכים ועומס טכנאים — במקום אחד.',
+  },
+  {
+    icon: Wrench,
+    title: 'טכנאים במובייל',
+    desc: 'פורטל שדה מותאם לעבודה בחנות, לא למשרד.',
+  },
+] as const
 
 export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const router = useRouter()
@@ -132,203 +151,261 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   }
 
   return (
-    <div className="dvh-screen safe-pt safe-pb relative flex items-center justify-center overflow-hidden bg-canvas px-4">
-      {/* Bamakor-style soft glow — tenant tint, not product blue */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[18%] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[var(--tenant-soft)] opacity-70 blur-[64px]"
-      />
-      <div className="relative w-full max-w-sm">
-        {/* Brand block — centered, premium */}
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-xl)] bg-surface shadow-[var(--shadow-pop)] ring-1 ring-border">
+    <div className="login-shell dvh-screen safe-pt safe-pb grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      {/* Brand story — desktop hero */}
+      <aside
+        className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
+        aria-label="MaintainOS"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -end-24 top-1/4 h-80 w-80 rounded-full bg-[var(--tenant)] opacity-[0.12] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-white opacity-30 blur-3xl"
+        />
+
+        <div className="relative">
+          <div className="flex items-center gap-3">
             <span
-              className="t-display flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--tenant)] text-[var(--tenant-contrast)]"
+              className="t-display flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]"
               aria-hidden
             >
               OC
             </span>
+            <div>
+              <p className="t-title text-ink">MaintainOS</p>
+              <p className="t-caption text-ink-2">Optical Center</p>
+            </div>
+          </div>
+          <h1 className="t-display mt-10 max-w-md text-ink">
+            תחזוקה חכמה לרשתות קמעונאיות
+          </h1>
+          <p className="t-lead mt-3 max-w-md text-ink-2">
+            מרכז פיקוד שקט — דיווחים מהשטח, SLA חי, וטכנאים שמסיימים עבודה מהנייד.
+          </p>
+        </div>
+
+        <ul className="relative mt-10 space-y-4">
+          {VALUE_PROPS.map((item) => {
+            const Icon = item.icon
+            return (
+              <li key={item.title} className="flex gap-3">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-white/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
+                  aria-hidden
+                >
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="t-body-strong text-ink">{item.title}</p>
+                  <p className="t-meta mt-0.5 text-ink-2">{item.desc}</p>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+
+        <p className="relative t-caption text-ink-3">
+          Optical Center · פיילוט ישראל
+        </p>
+      </aside>
+
+      {/* Form column */}
+      <div className="flex min-h-0 flex-col items-center justify-center px-4 py-8 md:px-10 lg:px-14">
+        <div className="mb-8 text-center md:hidden">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]">
+            <span className="t-display" aria-hidden>OC</span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
-          <p className="t-body mt-1.5 text-ink-2">Optical Center · ניהול תחזוקה</p>
+          <p className="t-body mt-1 text-ink-2">Optical Center · ניהול תחזוקה</p>
         </div>
 
-        <div
-          className="animate-scale-in rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
-        >
-          <SegmentedButtons
-            fill
-            className="mb-6 w-full"
-            activeKey={mode}
-            onChange={(key) => setMode(key as Mode)}
-            segments={[
-              { key: 'link', label: 'קישור במייל' },
-              { key: 'otp', label: 'קוד' },
-              { key: 'password', label: 'סיסמה' },
-            ]}
-          />
-
-        {mode === 'link' ? (
-          <form onSubmit={requestLink} className="space-y-4">
-            <Field label="כתובת מייל" htmlFor="login-email">
-              <Input
-                id="login-email"
-                type="email"
-                dir="ltr"
-                required
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@optical-center.co.il"
-              />
-            </Field>
-            <Button
-              type="submit"
-              variant="primary"
-              size="block"
-              disabled={busy || !email.trim()}
-            >
-              {busy ? 'שולח…' : 'שליחת קישור / קוד'}
-            </Button>
-          </form>
-        ) : null}
-
-        {mode === 'otp' ? (
-          <form onSubmit={verifyOtp} className="space-y-4">
-            <Field label="כתובת מייל" htmlFor="otp-email">
-              <Input
-                id="otp-email"
-                type="email"
-                dir="ltr"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
-            <Field
-              label="קוד מהמייל"
-              htmlFor="login-otp"
-              hint="6–8 ספרות שנשלחו למייל"
-            >
-              <Input
-                id="login-otp"
-                type="text"
-                dir="ltr"
-                required
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="12345678"
-                className="t-num text-center tracking-[0.2em]"
-              />
-            </Field>
-            <Button
-              type="submit"
-              variant="primary"
-              size="block"
-              disabled={busy || !otp.trim()}
-            >
-              {busy ? 'מאמת…' : 'אימות קוד וכניסה'}
-            </Button>
-          </form>
-        ) : null}
-
-        {mode === 'password' ? (
-          <form onSubmit={signInPassword} className="space-y-4">
-            <Field label="כתובת מייל" htmlFor="pw-email">
-              <Input
-                id="pw-email"
-                type="email"
-                dir="ltr"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
-            <Field label="סיסמה" htmlFor="login-password">
-              <Input
-                id="login-password"
-                type="password"
-                dir="ltr"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </Field>
-            <Button
-              type="submit"
-              variant="primary"
-              size="block"
-              disabled={busy || !password}
-            >
-              {busy ? 'מתחבר…' : 'כניסה עם סיסמה'}
-            </Button>
-          </form>
-        ) : null}
-
-        {sent ? (
-          <div className="mt-4">
-            <Notice tone="progress">
-              <div className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className="h-2 w-2 animate-pulse rounded-full bg-[var(--signal-progress)]"
-                />
-                {hint ||
-                  'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
-              </div>
-            </Notice>
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="mt-4">
-            <ErrorState title="ההתחברות נכשלה" description={error} />
-          </div>
-        ) : null}
-
-        {demoEntry ? (
-          <div className="mt-8 space-y-3 border-t border-border pt-[21px]">
-            <Button
-              type="button"
-              variant="secondary"
-              size="block"
-              disabled={demoBusy || busy}
-              onClick={() => void enterAsDemo()}
-            >
-              {demoBusy
-                ? 'נכנסים…'
-                : `כניסה כדמו · ${PILOT_DEMO_EMAIL}`}
-            </Button>
-            <p className="t-caption text-center text-ink-3">
-              או ישירות אל{' '}
-              <Link
-                href="/ops/dashboard"
-                className="text-ink-2 underline underline-offset-2"
-              >
-                לוח הבקרה
-              </Link>
-              .
+        <div className="w-full max-w-[400px] animate-scale-in">
+          <div className="mb-6 hidden md:block">
+            <h2 className="t-title text-ink">כניסה למערכת</h2>
+            <p className="t-body mt-1 text-ink-2">
+              בחרו שיטת התחברות — קישור, קוד או סיסמה.
             </p>
           </div>
-        ) : null}
 
+          <div
+            className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
+          >
+            <SegmentedButtons
+              fill
+              className="mb-6 w-full"
+              activeKey={mode}
+              onChange={(key) => setMode(key as Mode)}
+              segments={[
+                { key: 'link', label: 'קישור במייל' },
+                { key: 'otp', label: 'קוד' },
+                { key: 'password', label: 'סיסמה' },
+              ]}
+            />
+
+            {mode === 'link' ? (
+              <form onSubmit={requestLink} className="space-y-4">
+                <Field label="כתובת מייל" htmlFor="login-email">
+                  <Input
+                    id="login-email"
+                    type="email"
+                    dir="ltr"
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@optical-center.co.il"
+                  />
+                </Field>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="block"
+                  disabled={busy || !email.trim()}
+                >
+                  {busy ? 'שולח…' : 'שליחת קישור / קוד'}
+                </Button>
+              </form>
+            ) : null}
+
+            {mode === 'otp' ? (
+              <form onSubmit={verifyOtp} className="space-y-4">
+                <Field label="כתובת מייל" htmlFor="otp-email">
+                  <Input
+                    id="otp-email"
+                    type="email"
+                    dir="ltr"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label="קוד מהמייל"
+                  htmlFor="login-otp"
+                  hint="6–8 ספרות שנשלחו למייל"
+                >
+                  <Input
+                    id="login-otp"
+                    type="text"
+                    dir="ltr"
+                    required
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="12345678"
+                    className="t-num text-center tracking-[0.2em]"
+                  />
+                </Field>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="block"
+                  disabled={busy || !otp.trim()}
+                >
+                  {busy ? 'מאמת…' : 'אימות קוד וכניסה'}
+                </Button>
+              </form>
+            ) : null}
+
+            {mode === 'password' ? (
+              <form onSubmit={signInPassword} className="space-y-4">
+                <Field label="כתובת מייל" htmlFor="pw-email">
+                  <Input
+                    id="pw-email"
+                    type="email"
+                    dir="ltr"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Field>
+                <Field label="סיסמה" htmlFor="login-password">
+                  <Input
+                    id="login-password"
+                    type="password"
+                    dir="ltr"
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </Field>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="block"
+                  disabled={busy || !password}
+                >
+                  {busy ? 'מתחבר…' : 'כניסה עם סיסמה'}
+                </Button>
+              </form>
+            ) : null}
+
+            {sent ? (
+              <div className="mt-4">
+                <Notice tone="progress">
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 animate-pulse rounded-full bg-[var(--signal-progress)]"
+                    />
+                    {hint ||
+                      'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
+                  </div>
+                </Notice>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="mt-4">
+                <ErrorState title="ההתחברות נכשלה" description={error} />
+              </div>
+            ) : null}
+
+            {demoEntry ? (
+              <div className="mt-8 space-y-3 border-t border-border pt-[21px]">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="block"
+                  disabled={demoBusy || busy}
+                  onClick={() => void enterAsDemo()}
+                >
+                  {demoBusy
+                    ? 'נכנסים…'
+                    : `כניסה כדמו · ${PILOT_DEMO_EMAIL}`}
+                </Button>
+                <p className="t-caption text-center text-ink-3">
+                  או ישירות אל{' '}
+                  <Link
+                    href="/ops/dashboard"
+                    className="text-ink-2 underline underline-offset-2"
+                  >
+                    לוח הבקרה
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          <details className="mt-6 group">
+            <summary className="t-caption cursor-pointer list-none text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
+              עזרה בהתחברות
+            </summary>
+            <p className="t-caption mt-2 text-ink-3">
+              אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
+              «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
+              יעבוד.
+            </p>
+          </details>
         </div>
-
-        <details className="mt-6 group">
-          <summary className="t-caption cursor-pointer list-none text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
-            עזרה בהתחברות
-          </summary>
-          <p className="t-caption mt-2 text-ink-3">
-            אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
-            «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
-            יעבוד.
-          </p>
-        </details>
       </div>
     </div>
   )

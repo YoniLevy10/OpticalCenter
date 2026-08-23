@@ -304,6 +304,26 @@ textarea:focus-visible,
   z-index: -1;
 }
 
+/* Login split — brand hero panel (design-system wow moment) */
+.login-shell {
+  background: var(--canvas);
+}
+.login-brand-panel {
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 100% 0%,
+      color-mix(in srgb, var(--tenant-soft) 85%, white),
+      transparent 58%
+    ),
+  linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--tenant-soft) 55%, var(--surface)) 0%,
+    var(--surface) 48%,
+    var(--canvas) 100%
+  );
+  border-inline-end: 1px solid var(--border);
+}
+
 /* ============================================================
    Priority leading edge
    ============================================================ */
