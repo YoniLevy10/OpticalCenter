@@ -292,7 +292,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         ) : null}
 
         {demoEntry ? (
-          <div className="mt-8 space-y-3 border-t border-border pt-5">
+          <div className="mt-8 space-y-3 border-t border-border pt-[21px]">
             <Button
               type="button"
               variant="secondary"

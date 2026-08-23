@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-3">
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
           <ul className="space-y-1">
             {PRIMARY.map((item) => {
               const active = isActive(pathname, item.match)
