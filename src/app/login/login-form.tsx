@@ -10,6 +10,8 @@ import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
 import { LiveRegion } from '@/components/ui/a11y'
 import { SegmentedButtons } from '@/components/ui/segmented'
+import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
+import { createClient } from '@/lib/supabase/client'
 
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
 
@@ -58,7 +60,32 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       : null,
   )
   const [busy, setBusy] = useState(false)
+  const [googleBusy, setGoogleBusy] = useState(false)
   const [demoBusy, setDemoBusy] = useState(false)
+  const [showEmailBackup, setShowEmailBackup] = useState(false)
+
+  const googleEnabled =
+    process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === '1' ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  async function signInGoogle() {
+    setGoogleBusy(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const next = searchParams.get('next') || '/ops/dashboard'
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      })
+      if (oauthError) throw oauthError
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google OAuth נכשל')
+      setGoogleBusy(false)
+    }
+  }
 
   async function requestLink(e?: FormEvent) {
     e?.preventDefault()
@@ -238,13 +265,34 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <div className="mb-6 hidden md:block">
             <h2 className="t-title text-ink">כניסה למערכת</h2>
             <p className="t-body mt-1 text-ink-2">
-              בחרו שיטת התחברות — קישור, קוד או סיסמה.
+              התחברות עם Google — מומלץ ל-HQ, חנויות וטכנאים.
             </p>
           </div>
 
           <div
             className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
           >
+            <Button
+              type="button"
+              variant="primary"
+              size="block"
+              disabled={googleBusy || !googleEnabled}
+              onClick={() => void signInGoogle()}
+              className="mb-4"
+            >
+              {googleBusy ? 'מעביר…' : 'המשך עם Google'}
+            </Button>
+
+            <button
+              type="button"
+              className="t-caption mb-4 w-full text-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline"
+              onClick={() => setShowEmailBackup((v) => !v)}
+            >
+              {showEmailBackup ? 'הסתר גיבוי מייל/סיסמה' : 'גיבוי: מייל / קוד / סיסמה'}
+            </button>
+
+            {showEmailBackup ? (
+              <>
             <SegmentedButtons
               fill
               className="mb-6 w-full"
@@ -408,11 +456,20 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 </Notice>
               </div>
             ) : null}
+              </>
+            ) : null}
 
             {error ? (
               <LiveRegion politeness="assertive" className="mt-4">
                 <ErrorState title="ההתחברות נכשלה" description={error} />
               </LiveRegion>
+            ) : null}
+
+            {googleEnabled ? (
+              <p className="t-caption mt-3 flex flex-wrap items-center justify-center gap-2 text-ink-3">
+                <ComingSoonBadge />
+                <span>MFA · הגבלת דומיין Google (hd=)</span>
+              </p>
             ) : null}
 
             {demoEntry ? (

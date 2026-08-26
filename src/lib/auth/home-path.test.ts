@@ -37,6 +37,10 @@ describe('resolveHomePath', () => {
     ).toBe('/ops/dashboard')
   })
 
+  it('sends store-only employees to /store', () => {
+    expect(resolveHomePath(actor(['store_employee']))).toBe('/store')
+  })
+
   it('defaults empty memberships to ops', () => {
     expect(resolveHomePath(actor([]))).toBe('/ops/dashboard')
   })

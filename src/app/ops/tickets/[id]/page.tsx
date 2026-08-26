@@ -29,6 +29,7 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { TicketShareBar } from '@/components/ops/ticket-share-bar'
 import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -226,6 +227,15 @@ export default async function TicketDetailPage({
                   assignedTo={ticket.assigned_to}
                   technicians={technicians}
                 />
+                <div className="mt-3 border-t border-border pt-3">
+                  <TicketShareBar
+                    display={display}
+                    storeCode={ticket.stores?.code}
+                    storeName={ticket.stores?.name}
+                    description={ticket.description}
+                    techName={assignee?.full_name || assignee?.email}
+                  />
+                </div>
               </Panel>
             </div>
 

@@ -424,7 +424,12 @@ async function createTicketFromIntake(params: {
         await client.from('ticket_attachments').insert({
           ticket_id: ticket.id,
           url: resolvedUrl,
-          kind: mediaKind === 'document' ? 'document' : 'image',
+          kind:
+            mediaKind === 'document'
+              ? 'document'
+              : mediaKind === 'video'
+                ? 'video'
+                : 'image',
         })
       }
     } catch (e) {

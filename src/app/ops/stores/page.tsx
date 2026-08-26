@@ -5,9 +5,9 @@ import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
-import { RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
+import { StoresMobileList } from './stores-mobile-list'
 import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
@@ -181,37 +181,16 @@ export default async function StoresPage({
               </div>
 
               {/* Mobile */}
-              <div className="md:hidden">
-                <RowList>
-                  {filtered.map((s) => (
-                    <Link
-                      key={s.id}
-                      href={`/ops/stores/${encodeURIComponent(s.code)}`}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 active:bg-canvas"
-                    >
-                      <span className="t-body-strong t-num w-10 shrink-0 text-ink">
-                        {s.code}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="t-body block truncate text-ink">
-                          {s.name}
-                        </span>
-                        <span className="t-meta block truncate text-ink-2">
-                          {s.city ?? '—'}
-                          {s.is_active === false ? ' · מושבת' : ''}
-                        </span>
-                      </span>
-                      {(openCountByStore.get(s.id) ?? 0) > 0 ? (
-                        <span className="t-caption t-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--signal-critical-soft)] px-1.5 text-[var(--signal-critical)]">
-                          {openCountByStore.get(s.id)}
-                        </span>
-                      ) : (
-                        <span className="t-caption shrink-0 text-ink-3">QR</span>
-                      )}
-                    </Link>
-                  ))}
-                </RowList>
-              </div>
+              <StoresMobileList
+                stores={filtered.map((s) => ({
+                  id: s.id,
+                  code: s.code,
+                  name: s.name,
+                  city: s.city,
+                  is_active: s.is_active,
+                  openCount: openCountByStore.get(s.id) ?? 0,
+                }))}
+              />
             </>
           )}
         </Panel>

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { demoRouteBlocked } from '@/lib/auth/demo-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assign, createTicket } from '@/modules/tickets/service'
 import { DEMO_TECH_ID } from '@/lib/data/memory-store'
@@ -13,6 +14,9 @@ export const dynamic = 'force-dynamic'
  * GET or POST /api/demo/seed-ticket?assign=1
  */
 async function seed(request: Request) {
+  const blocked = demoRouteBlocked()
+  if (blocked) return blocked
+
   const url = new URL(request.url)
   const assignFlag =
     url.searchParams.get('assign') === '1' ||

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { demoRouteBlocked } from '@/lib/auth/demo-guard'
 import { processDemoInbound, type TicketSource } from '@/modules/whatsapp'
 import { getById } from '@/modules/tickets/service'
 
@@ -19,6 +20,9 @@ const BodySchema = z.object({
 
 /** Simulate inbound WhatsApp without Meta — same intake service. */
 export async function POST(request: NextRequest) {
+  const blocked = demoRouteBlocked()
+  if (blocked) return blocked
+
   try {
     const json = await request.json()
     const parsed = BodySchema.safeParse(json)

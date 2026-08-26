@@ -132,32 +132,48 @@ export function TechTicketActions({
     }
   }
 
-  async function onPickPhoto(file: File | null) {
+  async function onPickMedia(file: File | null) {
     if (!file) return
     setPhotoBusy(true)
     setError(null)
     try {
+      const isVideo = file.type.startsWith('video/')
+      if (isVideo) {
+        const form = new FormData()
+        form.append('files', file)
+        const res = await fetch(`/api/tickets/${ticketId}/attachments`, {
+          method: 'POST',
+          body: form,
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'העלאת וידאו נכשלה')
+        const url = (json.urls as string[] | undefined)?.[0]
+        if (!url) throw new Error('העלאה נכשלה')
+        setPhotoUrl(url)
+        setPhotoPreview(url)
+        return
+      }
       const dataUrl = await fileToCompressedDataUrl(file)
       setPhotoUrl(dataUrl)
       setPhotoPreview(dataUrl)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'עיבוד תמונה נכשל')
+      setError(err instanceof Error ? err.message : 'עיבוד קובץ נכשל')
     } finally {
       setPhotoBusy(false)
     }
   }
 
-  function PhotoFields({ idPrefix }: { idPrefix: string }) {
+  function MediaFields({ idPrefix }: { idPrefix: string }) {
     const inputId = `${idPrefix}-file`
     return (
       <div className="space-y-3">
         <input
           type="file"
-          accept="image/*"
+          accept="image/*,video/mp4,video/webm"
           capture="environment"
           className="sr-only"
           id={inputId}
-          onChange={(e) => void onPickPhoto(e.target.files?.[0] ?? null)}
+          onChange={(e) => void onPickMedia(e.target.files?.[0] ?? null)}
         />
         <div className="flex flex-wrap gap-2">
           <Button
@@ -168,7 +184,7 @@ export function TechTicketActions({
             onClick={() => document.getElementById(inputId)?.click()}
           >
             <Camera className="h-4 w-4" aria-hidden />
-            {photoBusy ? 'מעבד…' : 'צילום / גלריה'}
+            {photoBusy ? 'מעבד…' : 'צילום / וידאו'}
           </Button>
           {photoPreview ? (
             <Button
@@ -186,12 +202,20 @@ export function TechTicketActions({
           ) : null}
         </div>
         {photoPreview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photoPreview}
-            alt="תצוגה מקדימה"
-            className="max-h-40 w-full rounded-[var(--radius-md)] border border-border object-cover"
-          />
+          photoPreview.startsWith('data:') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(photoPreview) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoPreview}
+              alt="תצוגה מקדימה"
+              className="max-h-40 w-full rounded-[var(--radius-md)] border border-border object-cover"
+            />
+          ) : (
+            <video
+              src={photoPreview}
+              controls
+              className="max-h-40 w-full rounded-[var(--radius-md)] border border-border"
+            />
+          )
         ) : null}
         <Field
           label="או קישור לתמונה"
@@ -308,7 +332,7 @@ export function TechTicketActions({
               placeholder="לדוגמה: הוחלף קבל במעבה, נבדקה קירור תקינה"
             />
           </Field>
-          <PhotoFields idPrefix="tech-resolve" />
+          <MediaFields idPrefix="tech-resolve" />
           <Button
             type="button"
             variant="resolve"
@@ -353,7 +377,7 @@ export function TechTicketActions({
               placeholder="מה נמצא בשטח…"
             />
           </Field>
-          <PhotoFields idPrefix="tech-evidence" />
+          <MediaFields idPrefix="tech-evidence" />
           <Button
             type="button"
             variant="primary"

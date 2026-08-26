@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { demoRouteBlocked } from '@/lib/auth/demo-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,9 @@ const DEMO_NAME = 'טכנאי דמו'
  * POST /api/demo/seed-tech → { techId } for DEMO_TECH_ID / ?techId=
  */
 export async function POST(request: Request) {
+  const blocked = demoRouteBlocked()
+  if (blocked) return blocked
+
   let email = DEMO_EMAIL
   let fullName = DEMO_NAME
   let password = `DemoTech-${crypto.randomUUID().slice(0, 8)}!`

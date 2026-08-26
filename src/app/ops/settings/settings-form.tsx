@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice, Panel, PanelHeader } from '@/components/ui/primitives'
+import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
 import type { MemSettings } from '@/lib/data/memory-store'
 
 export function SettingsForm({ initial }: { initial: MemSettings }) {
@@ -108,6 +109,19 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
         <Button type="submit" variant="primary" disabled={busy}>
           {busy ? 'שומר…' : 'שמירת הגדרות'}
         </Button>
+
+        <div className="rounded-[var(--radius-md)] border border-border bg-surface-sunken p-3">
+          <p className="t-section flex flex-wrap items-center gap-2 text-ink">
+            תכונות מתקדמות
+            <ComingSoonBadge />
+          </p>
+          <ul className="t-caption mt-2 space-y-1 text-ink-3">
+            <li>Web Push לטכנאים — WhatsApp מספיק בפיילוט</li>
+            <li>שליחת דוח חודשי אוטומטית ב-email</li>
+            <li>תמיכה בצרפת (i18n)</li>
+            <li>הגבלת Google OAuth לדומיין ארגוני (hd=)</li>
+          </ul>
+        </div>
       </form>
     </Panel>
   )

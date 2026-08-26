@@ -94,7 +94,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const testActor = request.cookies.get(TEST_ACTOR_COOKIE)?.value
+  // Test actor cookie is demo-only — never bypass session gate in production.
+  const testActor = demo ? request.cookies.get(TEST_ACTOR_COOKIE)?.value : undefined
   if (!user && !testActor) {
     const login = request.nextUrl.clone()
     login.pathname = '/login'
@@ -110,5 +111,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/ops/:path*', '/tech/:path*'],
+  matcher: ['/ops/:path*', '/tech/:path*', '/store/:path*'],
 }

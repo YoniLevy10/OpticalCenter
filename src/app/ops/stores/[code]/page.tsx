@@ -11,6 +11,7 @@ import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { QrDownloadButtons } from '../qr-download-buttons'
 import { StoreEditControls } from '../store-edit-controls'
+import { StoreAssetsPanel } from './store-assets-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,6 +116,8 @@ export default async function StoreDetailPage({
             </div>
           </Panel>
         ) : null}
+
+        <StoreAssetsPanel storeId={store.id} storeCode={store.code} />
       </div>
     </OpsAppShell>
   )
