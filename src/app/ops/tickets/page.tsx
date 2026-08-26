@@ -123,7 +123,7 @@ export default async function TicketsPage({
 
   return (
     <OpsAppShell>
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה ללוח בקרה"

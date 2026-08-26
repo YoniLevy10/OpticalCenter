@@ -132,6 +132,7 @@ body {
   font-feature-settings: "ss01" 1, "cv01" 1;
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
   line-height: 1.5;
 }
 

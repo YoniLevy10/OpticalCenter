@@ -112,7 +112,7 @@ function BarList({
 }) {
   const max = Math.max(1, ...items.map((i) => i.count))
   return (
-    <ul className="space-y-3.5 px-4 py-3.5">
+    <ul className="flex flex-col gap-3.5 px-4 py-3.5">
       {items.map((item) => (
         <li key={item.label}>
           <div className="mb-1.5 flex items-baseline justify-between gap-2">
@@ -213,7 +213,7 @@ export default async function OpsDashboardPage() {
 
   return (
     <OpsAppShell>
-      <div className="space-y-4 stagger">
+      <div className="flex flex-col gap-4 stagger">
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}

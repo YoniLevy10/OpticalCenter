@@ -214,7 +214,7 @@ export function AppShell({
   const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
 
   return (
-    <div className="dvh-screen bg-canvas text-ink">
+    <div className="dvh-screen min-w-0 overflow-x-hidden bg-canvas text-ink">
       <SkipLink />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
@@ -285,17 +285,17 @@ export function AppShell({
           <div className="min-w-0 flex-1">
             <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
           </div>
-          <span className="t-caption text-ink-3">Optical Center · ישראל</span>
+          <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
         </div>
       </header>
 
       {/* ---------- Content ---------- */}
-      <div className="md:ps-[var(--nav-w)]">
+      <div className="min-w-0 md:ps-[var(--nav-w)]">
         <PullToRefresh>
           <main
             id="main-content"
             tabIndex={-1}
-            className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
+            className="pb-nav mx-auto min-w-0 w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
           >
             {children}
           </main>
