@@ -7,13 +7,11 @@ import {
   BarChart3,
   Box,
   Ellipsis,
-  HardHat,
   Inbox,
   LayoutDashboard,
   MessageSquare,
   QrCode,
   ScrollText,
-  Server,
   Settings,
   Smartphone,
   Store,
@@ -86,12 +84,6 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'מערכת',
     items: [
       {
-        href: '/ops/status',
-        label: 'סטטוס מערכת',
-        icon: Server,
-        match: '/ops/status',
-      },
-      {
         href: '/ops/settings',
         label: 'הגדרות',
         icon: Settings,
@@ -109,12 +101,6 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         label: 'סימולטור WhatsApp',
         icon: Smartphone,
         match: '/ops/simulator',
-      },
-      {
-        href: '/tech',
-        label: 'פורטל טכנאי',
-        icon: HardHat,
-        match: '/tech',
       },
     ],
   },
@@ -180,7 +166,6 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/assets')) return 'נכסים'
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
   if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
-  if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
   if (pathname.startsWith('/ops/inbox')) return 'תיבת WhatsApp'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'

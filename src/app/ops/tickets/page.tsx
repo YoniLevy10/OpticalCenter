@@ -16,13 +16,11 @@ import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { QueueToolbar } from './queue-toolbar'
-import { QueueRefreshHint } from './queue-refresh-hint'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
 import {
   applyQueue,
   parseQueueParams,
-  queueCounts,
   queueHref,
   viewCounts,
   type QueueTicket,
@@ -113,7 +111,6 @@ export default async function TicketsPage({
         }
       : filters,
   )
-  const counts = queueCounts(allScoped)
   const views = viewCounts(allScoped)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -130,11 +127,6 @@ export default async function TicketsPage({
           title="תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
           className="hidden md:flex"
-          actions={
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/simulator">דיווח לבדיקה</Link>
-            </Button>
-          }
         />
 
         <QueueToolbar
@@ -143,10 +135,7 @@ export default async function TicketsPage({
           stores={storeResult.stores.map((s) => ({ code: s.code, name: s.name }))}
           technicians={technicians}
           resultCount={filtered.length}
-          attention={counts}
         />
-
-        <QueueRefreshHint />
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
           <ErrorState

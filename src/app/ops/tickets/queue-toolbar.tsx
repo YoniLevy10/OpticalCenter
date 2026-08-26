@@ -10,8 +10,6 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { SegmentedLinks } from '@/components/ui/segmented'
 import {
   QUEUE_SORTS,
-  QUEUE_VIEWS,
-  activeFilterCount,
   queueHref,
   type QueueFilters,
   type QueueView,
@@ -22,165 +20,16 @@ import {
   TICKET_STATUSES,
   TICKET_STATUS_LABELS_HE,
 } from '@/modules/tickets/constants'
-import { cn } from '@/lib/utils'
 
 type StoreOption = { code: string; name: string }
 type TechOption = { id: string; name: string }
 
-/**
- * Compact attention counts — filter links, not KPI cards.
- * Lives in the same chrome band as the queue toolbar.
- */
-export function AttentionStrip({
-  counts,
-  filters,
-}: {
-  counts: { open: number; breached: number; critical: number; unassigned: number }
-  filters: QueueFilters
-}) {
-  const items = [
-    {
-      label: 'חריגת SLA',
-      value: counts.breached,
-      href: queueHref(filters, { view: 'open', sort: 'sla' }),
-      tone: 'critical' as const,
-    },
-    {
-      label: 'קריטי',
-      value: counts.critical,
-      href: queueHref(filters, { view: 'open', priority: 'critical' }),
-      tone: 'critical' as const,
-    },
-    {
-      label: 'לא משויך',
-      value: counts.unassigned,
-      href: queueHref(filters, { view: 'unassigned' }),
-      tone: 'warning' as const,
-    },
-    {
-      label: 'פתוחות',
-      value: counts.open,
-      href: queueHref(filters, { view: 'open' }),
-      tone: 'idle' as const,
-    },
-  ]
-
-  return (
-    <div
-      className="flex flex-wrap items-center gap-x-4 gap-y-1"
-      data-visual="attention-strip"
-    >
-      {items.map((item) => {
-        const lit = item.value > 0 && item.tone !== 'idle'
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={cn(
-              'group inline-flex min-h-[var(--tap)] items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors md:min-h-0 md:items-baseline md:px-2 md:py-1',
-              lit &&
-                item.tone === 'critical' &&
-                'bg-[var(--signal-critical-soft)] ring-1 ring-[var(--signal-critical-line)]',
-              lit &&
-                item.tone === 'warning' &&
-                'bg-[var(--signal-warning-soft)] ring-1 ring-[var(--signal-warning-line)]',
-            )}
-          >
-            <span
-              className={cn(
-                't-body-strong t-num',
-                lit && item.tone === 'critical' && 'text-[var(--signal-critical)]',
-                lit && item.tone === 'warning' && 'text-[var(--signal-warning)]',
-                !lit && 'text-ink',
-              )}
-            >
-              {item.value}
-            </span>
-            <span className="t-caption text-ink-3 transition-colors group-hover:text-ink-2">
-              {item.label}
-            </span>
-          </Link>
-        )
-      })}
-    </div>
-  )
-}
-
-function FilterSelects({
-  filters,
-  stores,
-  technicians,
-  setFilter,
-  className,
-}: {
-  filters: QueueFilters
-  stores: StoreOption[]
-  technicians: TechOption[]
-  setFilter: (patch: Partial<QueueFilters>) => void
-  className?: string
-}) {
-  return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <Select
-        aria-label="עדיפות"
-        value={filters.priority ?? ''}
-        onChange={(e) => setFilter({ priority: e.target.value || undefined })}
-        className="h-9 w-auto min-w-[7.5rem]"
-      >
-        <option value="">עדיפות · הכל</option>
-        {TICKET_PRIORITIES.map((p) => (
-          <option key={p} value={p}>
-            {TICKET_PRIORITY_LABELS_HE[p]}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        aria-label="חנות"
-        value={filters.store ?? ''}
-        onChange={(e) => setFilter({ store: e.target.value || undefined })}
-        className="h-9 w-auto min-w-[8rem]"
-      >
-        <option value="">חנות · הכל</option>
-        {stores.map((s) => (
-          <option key={s.code} value={s.code}>
-            {s.code} · {s.name}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        aria-label="טכנאי"
-        value={filters.tech ?? ''}
-        onChange={(e) => setFilter({ tech: e.target.value || undefined })}
-        className="h-9 w-auto min-w-[8rem]"
-      >
-        <option value="">טכנאי · הכל</option>
-        <option value="none">ללא טכנאי</option>
-        {technicians.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        aria-label="מיון"
-        value={filters.sort}
-        onChange={(e) =>
-          setFilter({ sort: e.target.value as QueueFilters['sort'] })
-        }
-        className="h-9 w-auto min-w-[7rem]"
-      >
-        {QUEUE_SORTS.map((s) => (
-          <option key={s.key} value={s.key}>
-            {s.label}
-          </option>
-        ))}
-      </Select>
-    </div>
-  )
-}
+/** Primary queue tabs — fewer choices, less chrome. */
+const PRIMARY_VIEWS: { key: QueueView; label: string }[] = [
+  { key: 'attention', label: 'דורש טיפול' },
+  { key: 'open', label: 'פתוחות' },
+  { key: 'all', label: 'הכל' },
+]
 
 export function QueueToolbar({
   filters,
@@ -188,19 +37,12 @@ export function QueueToolbar({
   stores,
   technicians,
   resultCount,
-  attention,
 }: {
   filters: QueueFilters
   viewCounts: Record<QueueView, number>
   stores: StoreOption[]
   technicians: TechOption[]
   resultCount: number
-  attention: {
-    open: number
-    breached: number
-    critical: number
-    unassigned: number
-  }
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
@@ -221,7 +63,13 @@ export function QueueToolbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q])
 
-  const extraFilters = activeFilterCount(filters)
+  const extraFilters = [
+    filters.status,
+    filters.priority,
+    filters.store,
+    filters.tech,
+    filters.sort !== 'urgency' ? filters.sort : null,
+  ].filter(Boolean).length
 
   function setFilter(patch: Partial<QueueFilters>) {
     router.replace(queueHref(filters, patch), { scroll: false })
@@ -248,17 +96,19 @@ export function QueueToolbar({
           : (technicians.find((t) => t.id === filters.tech)?.name ?? 'טכנאי'),
       clear: { tech: undefined },
     },
+    filters.sort !== 'urgency' && {
+      label: QUEUE_SORTS.find((s) => s.key === filters.sort)?.label ?? filters.sort,
+      clear: { sort: 'urgency' as const },
+    },
   ].filter(Boolean) as { label: string; clear: Partial<QueueFilters> }[]
 
   return (
-    <div className="space-y-2.5">
-      <AttentionStrip counts={attention} filters={filters} />
-
+    <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedLinks
           scrollable
           activeKey={filters.view}
-          segments={QUEUE_VIEWS.map((v) => ({
+          segments={PRIMARY_VIEWS.map((v) => ({
             key: v.key,
             label: v.label,
             count: viewCounts[v.key],
@@ -266,22 +116,22 @@ export function QueueToolbar({
           }))}
         />
 
-        <div className="ms-auto flex w-full items-center gap-2 md:w-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:min-w-[14rem]">
           <SearchField
             value={q}
             onValueChange={setQ}
-            placeholder="חיפוש מס׳ · חנות · תיאור"
+            placeholder="חיפוש…"
             autoFocusKey="/"
-            className="w-full md:w-64"
+            className="min-w-0 flex-1"
           />
           <Button
             type="button"
             variant="secondary"
             onClick={() => setFiltersOpen(true)}
-            className="shrink-0 md:hidden"
+            className="shrink-0"
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
-            <span>מסננים</span>
+            <span className="hidden sm:inline">מסננים</span>
             {extraFilters > 0 ? (
               <span className="t-caption t-num rounded-full bg-[var(--tenant-soft)] px-1.5 text-[var(--tenant)]">
                 {extraFilters}
@@ -290,14 +140,6 @@ export function QueueToolbar({
           </Button>
         </div>
       </div>
-
-      <FilterSelects
-        filters={filters}
-        stores={stores}
-        technicians={technicians}
-        setFilter={setFilter}
-        className="hidden md:flex"
-      />
 
       {chips.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -313,11 +155,7 @@ export function QueueToolbar({
             </button>
           ))}
           <Link
-            href={queueHref({
-              view: filters.view,
-              sort: filters.sort,
-              q: filters.q,
-            })}
+            href={queueHref({ view: filters.view, sort: 'urgency', q: filters.q })}
             className="t-meta px-1 text-ink-3 hover:text-ink"
           >
             ניקוי
@@ -330,8 +168,7 @@ export function QueueToolbar({
       <BottomSheet
         open={filtersOpen}
         onOpenChange={setFiltersOpen}
-        title="מסננים"
-        description="מימדים עצמאיים — אפשר לשלב"
+        title="מסננים ומיון"
       >
         <div className="space-y-4">
           <Field label="סטטוס">
