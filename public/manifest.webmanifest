@@ -21,11 +21,23 @@
   ],
   "shortcuts": [
     {
-      "name": "דורש תשומת לב",
+      "name": "לוח בקרה",
+      "short_name": "לוח",
+      "url": "/ops/dashboard"
+    },
+    {
+      "name": "תקלות",
+      "short_name": "תקלות",
       "url": "/ops/tickets"
     },
     {
+      "name": "דורש תשומת לב",
+      "short_name": "חריגים",
+      "url": "/ops/tickets?view=attention"
+    },
+    {
       "name": "חנויות",
+      "short_name": "חנויות",
       "url": "/ops/stores"
     }
   ],

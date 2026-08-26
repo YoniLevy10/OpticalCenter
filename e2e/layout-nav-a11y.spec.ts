@@ -26,7 +26,6 @@ test.describe('Navigation & layout', () => {
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
-    // Reports page
     await gotoStable(page, '/ops/reports')
     await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'ייצוא CSV' })).toBeVisible()

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Inbox, PackageOpen, Wrench } from 'lucide-react'
+import { AlertTriangle, Inbox, PackageOpen, UserRound, Wrench } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   PageHeader,
@@ -41,43 +41,63 @@ function StatStrip({
       value: open,
       href: queueHref({ view: 'open', sort: 'urgency' }),
       tone: 'default' as const,
+      icon: Inbox,
+      iconClass: 'bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
     },
     {
       label: 'חריגות SLA',
       value: breached,
       href: queueHref({ view: 'attention', sort: 'sla' }),
       tone: 'critical' as const,
+      icon: AlertTriangle,
+      iconClass:
+        'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
     },
     {
       label: 'לא משויכות',
       value: unassigned,
       href: queueHref({ view: 'unassigned', sort: 'urgency' }),
       tone: 'warn' as const,
+      icon: UserRound,
+      iconClass:
+        'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
     },
   ]
 
   return (
-    <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow-1)] rtl:divide-x-reverse">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {items.map((item) => {
         const hot =
           (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
+        const Icon = item.icon
         return (
           <Link
             key={item.label}
             href={item.href}
-            className="group px-4 py-3.5 transition-colors hover:bg-surface-sunken/40 sm:px-5"
+            className="group flex items-start gap-3.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-[background-color,box-shadow,transform] duration-[var(--dur-1)] hover:-translate-y-px hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)]"
           >
-            <p className="t-caption text-ink-3">{item.label}</p>
-            <p
+            <span
+              aria-hidden
               className={cn(
-                't-display t-num mt-1.5',
-                hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
-                hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
-                !hot && 'text-ink',
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] ring-1 ring-inset ring-black/[0.04]',
+                item.iconClass,
               )}
             >
-              {item.value}
-            </p>
+              <Icon className="h-5 w-5" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0">
+              <p className="t-caption text-ink-3">{item.label}</p>
+              <p
+                className={cn(
+                  't-display t-num mt-1',
+                  hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
+                  hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
+                  !hot && 'text-ink',
+                )}
+              >
+                {item.value}
+              </p>
+            </div>
           </Link>
         )
       })}
@@ -193,7 +213,7 @@ export default async function OpsDashboardPage() {
 
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="space-y-4 stagger">
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
@@ -207,7 +227,7 @@ export default async function OpsDashboardPage() {
 
         <div
           className={cn(
-            'flex items-center gap-2.5 rounded-[var(--radius-md)] border px-3.5 py-2.5',
+            'flex items-center gap-3 rounded-[var(--radius-lg)] border px-4 py-3',
             kpis.breached > 0
               ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
               : 'border-border bg-surface shadow-[var(--shadow-1)]',
@@ -216,18 +236,24 @@ export default async function OpsDashboardPage() {
           <span
             aria-hidden
             className={cn(
-              'h-2 w-2 shrink-0 rounded-full',
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
               kpis.breached > 0
-                ? 'animate-pulse bg-[var(--signal-critical)]'
-                : 'bg-[var(--signal-resolved)]',
+                ? 'bg-white/60 text-[var(--signal-critical)]'
+                : 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
             )}
-          />
+          >
+            {kpis.breached > 0 ? (
+              <AlertTriangle className="h-5 w-5" strokeWidth={1.75} />
+            ) : (
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--signal-resolved)]" />
+            )}
+          </span>
           <p
             className={cn(
-              't-body',
+              't-body-strong',
               kpis.breached > 0
                 ? 'text-[var(--signal-critical)]'
-                : 'text-ink-2',
+                : 'text-ink',
             )}
           >
             {kpis.breached > 0
