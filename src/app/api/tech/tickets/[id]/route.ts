@@ -15,6 +15,8 @@ import {
   canTechActOnTicket,
   canReadTicket,
 } from '@/lib/auth/types'
+import { isLifecycleEvent } from '@/modules/notifications/lifecycle'
+import { notifyReporter } from '@/modules/notifications/lifecycle-notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -123,6 +125,16 @@ export async function PATCH(
       claim,
       photoUrl,
     })
+
+    if (status && isLifecycleEvent(status)) {
+      try {
+        const after = await getById(ticketId)
+        if (after) await notifyReporter(after, status)
+      } catch (e) {
+        console.error('[tech] lifecycle notify failed', e)
+      }
+    }
+
     return NextResponse.json({ ok: true, ticket })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)

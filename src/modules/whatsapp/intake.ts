@@ -13,6 +13,7 @@ import { classifyFaultText } from '@/modules/tickets/classify'
 import { parseStoreCodeFromText } from '@/modules/tickets/constants'
 import { createTicket } from '@/modules/tickets/service'
 import { WA_COPY } from './copy'
+import { enhanceWhatsAppMessage, type WhatsAppAiSituation } from './ai'
 import { resolveInboundMediaUrl } from './media'
 import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
@@ -449,7 +450,11 @@ export async function processInboundMessage(
       message.phoneNumberId,
     )
     if (!country) {
-      return { ok: false, reply: WA_COPY.countryMissing, error: 'country_missing' }
+      const reply = await craftIntakeReply(
+        WA_COPY.countryMissing,
+        'intake_country_missing',
+      )
+      return { ok: false, reply, error: 'country_missing' }
     }
 
     const isNew = await markProcessed(supabase, message.messageId, country.id)
@@ -482,7 +487,10 @@ export async function processInboundMessage(
           state: 'awaiting_description',
         }
         if (!text && !message.mediaUrl) {
-          const reply = WA_COPY.askDescription(byPhone.name, byPhone.code)
+          const reply = await craftIntakeReply(
+            WA_COPY.askDescription(byPhone.name, byPhone.code),
+            'intake_ask_description',
+          )
           await sendReply(supabase, message, country, reply, null, options)
           return { ok: true, reply, state: 'awaiting_description' }
         }
@@ -496,7 +504,10 @@ export async function processInboundMessage(
         storeCodeFromText,
       )
       if (!store) {
-        const reply = WA_COPY.storeNotFound(storeCodeFromText)
+        const reply = await craftIntakeReply(
+          WA_COPY.storeNotFound(storeCodeFromText),
+          'intake_store_not_found',
+        )
         await sendReply(supabase, message, country, reply, null, options)
         return { ok: true, reply, state: session.state }
       }
@@ -514,7 +525,10 @@ export async function processInboundMessage(
       }
 
       if (isIdentityOnly(text, store.code) && !message.mediaUrl) {
-        const reply = WA_COPY.askDescription(store.name, store.code)
+        const reply = await craftIntakeReply(
+          WA_COPY.askDescription(store.name, store.code),
+          'intake_ask_description',
+        )
         await sendReply(supabase, message, country, reply, null, options)
         return { ok: true, reply, state: 'awaiting_description' }
       }
@@ -538,7 +552,7 @@ export async function processInboundMessage(
     }
 
     if (session.state === 'awaiting_store' || !session.store_id) {
-      const reply = WA_COPY.askStore
+      const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
       await sendReply(supabase, message, country, reply, null, options)
       return { ok: true, reply, state: 'awaiting_store' }
     }
@@ -554,13 +568,16 @@ export async function processInboundMessage(
         store_code: null,
         state: 'awaiting_store',
       })
-      const reply = WA_COPY.askStore
+      const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
       await sendReply(supabase, message, country, reply, null, options)
       return { ok: true, reply, state: 'awaiting_store' }
     }
 
     if (!text && !message.mediaUrl) {
-      const reply = WA_COPY.needDescription
+      const reply = await craftIntakeReply(
+        WA_COPY.needDescription,
+        'intake_need_description',
+      )
       await sendReply(supabase, message, country, reply, null, options)
       return { ok: true, reply, state: 'awaiting_description' }
     }
@@ -587,9 +604,13 @@ export async function processInboundMessage(
     })
   } catch (e) {
     console.error('[whatsapp] intake error', e)
+    const reply = await craftIntakeReply(
+      WA_COPY.genericError,
+      'intake_generic_error',
+    )
     return {
       ok: false,
-      reply: WA_COPY.genericError,
+      reply,
       error: e instanceof Error ? e.message : 'intake_error',
     }
   }
@@ -626,9 +647,12 @@ async function finalizeTicket(params: {
     pending_description: null,
   })
 
-  let reply = WA_COPY.confirmed(displayNumber, store.name)
+  let reply = await craftIntakeReply(
+    WA_COPY.confirmed(displayNumber, store.name),
+    'intake_confirmed',
+  )
   if (mediaFailed) {
-    reply = `${reply}\n\n${WA_COPY.mediaNotSaved}`
+    reply = `${reply}\n\n${await craftIntakeReply(WA_COPY.mediaNotSaved, 'intake_media_not_saved')}`
   }
   await sendReply(supabase, message, country, reply, ticketId, options)
 
@@ -640,6 +664,13 @@ async function finalizeTicket(params: {
     state: 'done',
   }
 }
+async function craftIntakeReply(
+  baseText: string,
+  situation: WhatsAppAiSituation,
+): Promise<string> {
+  return enhanceWhatsAppMessage(baseText, { situation })
+}
+
 async function sendReply(
   supabase: SupabaseClient | null,
   message: InboundMessage,

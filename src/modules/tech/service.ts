@@ -141,18 +141,6 @@ export async function patchTechTicket(opts: {
         })
       }
     }
-
-    try {
-      const { isLifecycleEvent, notifyReporter } = await import(
-        '@/modules/notifications/lifecycle'
-      )
-      if (isLifecycleEvent(opts.status)) {
-        const after = await getById(opts.ticketId)
-        if (after) await notifyReporter(after, opts.status)
-      }
-    } catch (e) {
-      console.error('[tech] lifecycle notify failed', e)
-    }
   } else if (note) {
     const { appendEvent } = await import('@/modules/tickets/service')
     await appendEvent(opts.ticketId, 'tech_note', opts.techId, { note })
