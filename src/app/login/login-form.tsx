@@ -19,7 +19,12 @@ type Mode = 'link' | 'otp' | 'password'
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
-  if (!raw.startsWith('/ops') && !raw.startsWith('/tech') && !raw.startsWith('/report')) {
+  if (
+    !raw.startsWith('/ops') &&
+    !raw.startsWith('/tech') &&
+    !raw.startsWith('/store') &&
+    !raw.startsWith('/report')
+  ) {
     return null
   }
   return raw
@@ -48,7 +53,9 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const searchParams = useSearchParams()
   const authError = searchParams.get('error') === 'auth'
   const nextPath = safeNextPath(searchParams.get('next'))
-  const [mode, setMode] = useState<Mode>('link')
+  const googleOAuthReady =
+    process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === '1'
+  const [mode, setMode] = useState<Mode>('password')
   const [email, setEmail] = useState(PILOT_DEMO_EMAIL)
   const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
@@ -62,11 +69,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const [busy, setBusy] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
   const [demoBusy, setDemoBusy] = useState(false)
-  const [showEmailBackup, setShowEmailBackup] = useState(false)
-
-  const googleEnabled =
-    process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === '1' ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL
+  const [showEmailBackup, setShowEmailBackup] = useState(!googleOAuthReady)
 
   async function signInGoogle() {
     setGoogleBusy(true)
@@ -259,39 +262,63 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
           <p className="t-body mt-1 text-ink-2">Optical Center · ניהול תחזוקה</p>
+          {!googleOAuthReady ? (
+            <p className="t-caption mt-2 text-ink-3">מייל + סיסמה · {PILOT_DEMO_EMAIL}</p>
+          ) : null}
         </div>
 
         <div className="w-full max-w-[400px] animate-scale-in">
           <div className="mb-6 hidden md:block">
             <h2 className="t-title text-ink">כניסה למערכת</h2>
             <p className="t-body mt-1 text-ink-2">
-              התחברות עם Google — מומלץ ל-HQ, חנויות וטכנאים.
+              {googleOAuthReady
+                ? 'התחברות עם Google — מומלץ ל-HQ, חנויות וטכנאים.'
+                : 'התחברות עם מייל וסיסמת הפיילוט.'}
             </p>
           </div>
 
           <div
             className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
           >
-            <Button
-              type="button"
-              variant="primary"
-              size="block"
-              disabled={googleBusy || !googleEnabled}
-              onClick={() => void signInGoogle()}
-              className="mb-4"
-            >
-              {googleBusy ? 'מעביר…' : 'המשך עם Google'}
-            </Button>
+            {googleOAuthReady ? (
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="block"
+                  disabled={googleBusy}
+                  onClick={() => void signInGoogle()}
+                  className="mb-4"
+                >
+                  {googleBusy ? 'מעביר…' : 'המשך עם Google'}
+                </Button>
 
-            <button
-              type="button"
-              className="t-caption mb-4 w-full text-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline"
-              onClick={() => setShowEmailBackup((v) => !v)}
-            >
-              {showEmailBackup ? 'הסתר גיבוי מייל/סיסמה' : 'גיבוי: מייל / קוד / סיסמה'}
-            </button>
+                <button
+                  type="button"
+                  className="t-caption mb-4 w-full text-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline"
+                  onClick={() => setShowEmailBackup((v) => !v)}
+                >
+                  {showEmailBackup
+                    ? 'הסתר גיבוי מייל/סיסמה'
+                    : 'גיבוי: מייל / קוד / סיסמה'}
+                </button>
+              </>
+            ) : (
+              <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="block"
+                  disabled
+                  className="flex-1"
+                >
+                  המשך עם Google
+                </Button>
+                <ComingSoonBadge />
+              </div>
+            )}
 
-            {showEmailBackup ? (
+            {showEmailBackup || !googleOAuthReady ? (
               <>
             <SegmentedButtons
               fill
@@ -303,11 +330,19 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 setMode(key as Mode)
                 setError(null)
               }}
-              segments={[
-                { key: 'link', label: 'קישור במייל' },
-                { key: 'otp', label: 'קוד' },
-                { key: 'password', label: 'סיסמה' },
-              ]}
+              segments={
+                googleOAuthReady
+                  ? [
+                      { key: 'link', label: 'קישור במייל' },
+                      { key: 'otp', label: 'קוד' },
+                      { key: 'password', label: 'סיסמה' },
+                    ]
+                  : [
+                      { key: 'password', label: 'סיסמה' },
+                      { key: 'otp', label: 'קוד' },
+                      { key: 'link', label: 'קישור במייל' },
+                    ]
+              }
             />
 
             {mode === 'link' ? (
@@ -459,13 +494,19 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               </>
             ) : null}
 
+            {!googleOAuthReady ? (
+              <p className="t-caption mt-3 text-center text-ink-3">
+                חשבון פיילוט: {PILOT_DEMO_EMAIL} · הסיסמה מוגדרת ב־PILOT_LOGIN_PASSWORD
+              </p>
+            ) : null}
+
             {error ? (
               <LiveRegion politeness="assertive" className="mt-4">
                 <ErrorState title="ההתחברות נכשלה" description={error} />
               </LiveRegion>
             ) : null}
 
-            {googleEnabled ? (
+            {googleOAuthReady ? (
               <p className="t-caption mt-3 flex flex-wrap items-center justify-center gap-2 text-ink-3">
                 <ComingSoonBadge />
                 <span>MFA · הגבלת דומיין Google (hd=)</span>

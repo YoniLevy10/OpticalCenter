@@ -65,6 +65,7 @@
   --nav-w: 216px;
   --topbar-h: 52px;
   --bottomnav-h: 64px;
+  --hq-actions-dock-h: 220px;
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -284,11 +285,22 @@ textarea:focus-visible,
 }
 
 .pb-actions-hq {
-  padding-bottom: calc(200px + 16px);
+  padding-bottom: calc(
+    var(--hq-actions-dock-h) + var(--bottomnav-h) + var(--safe-b) + 16px
+  );
+}
+/* HQ ticket detail — fixed action dock sits above bottom nav (nav z-30, dock z-40) */
+.hq-ticket-dock {
+  bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  z-index: 40;
 }
 @media (min-width: 768px) {
   .pb-actions-hq {
     padding-bottom: 0;
+  }
+  .hq-ticket-dock {
+    bottom: auto;
+    z-index: auto;
   }
 }
 
