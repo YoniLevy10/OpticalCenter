@@ -15,6 +15,13 @@
   "orientation": "portrait-primary",
   "background_color": "#f5f6fa",
   "theme_color": "#ffffff",
+  "shortcuts": [
+    {
+      "name": "העבודות שלי",
+      "short_name": "עבודות",
+      "url": "/tech"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
