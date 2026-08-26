@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   Panel,
   PanelHeader,
@@ -92,7 +92,7 @@ export default async function TicketDetailPage({
   const assignee = technicians.find((t) => t.id === ticket.assigned_to)
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4 max-md:pb-actions-hq">
         {/* Breadcrumb — quiet, one line, never a heading. */}
         <nav className="flex items-center gap-1">
@@ -258,6 +258,6 @@ export default async function TicketDetailPage({
           </div>
         </div>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

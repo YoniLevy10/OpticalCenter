@@ -5,7 +5,7 @@ import {
   requireActor,
 } from '@/lib/auth/request-actor'
 import { AuthError } from '@/lib/auth/types'
-import { memGetSettings, memUpdateSettings } from '@/lib/data/memory-store'
+import { getSettings, updateSettings } from '@/modules/settings/service'
 import { captureError } from '@/lib/monitoring'
 
 const patchSchema = z.object({
@@ -22,7 +22,8 @@ const patchSchema = z.object({
 export async function GET(request: Request) {
   try {
     await requireActor(request)
-    return NextResponse.json({ settings: memGetSettings() })
+    const { settings, backend } = await getSettings()
+    return NextResponse.json({ settings, backend })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'GET /api/settings' })
@@ -37,7 +38,7 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
     }
-    const settings = memUpdateSettings(parsed.data)
+    const settings = await updateSettings(parsed.data)
     return NextResponse.json({ settings })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)

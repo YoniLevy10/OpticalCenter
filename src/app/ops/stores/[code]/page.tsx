@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, Panel, PanelHeader, KeyValue } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -34,7 +34,7 @@ export default async function StoreDetailPage({
   )
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="mx-auto max-w-2xl space-y-4">
         <PageHeader
           title={store.name}
@@ -102,6 +102,6 @@ export default async function StoreDetailPage({
           </Panel>
         ) : null}
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

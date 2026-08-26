@@ -1,9 +1,9 @@
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { Panel, Skeleton } from '@/components/ui/primitives'
 
 export default function TicketDetailLoading() {
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <Skeleton className="h-3 w-32" />
         <div className="space-y-3">
@@ -31,6 +31,6 @@ export default function TicketDetailLoading() {
           </Panel>
         </div>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

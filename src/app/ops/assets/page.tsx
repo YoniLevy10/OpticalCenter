@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader } from '@/components/ui/primitives'
 import { AssetsAdmin } from './assets-admin'
 import { fetchStores } from '@/modules/stores/data'
@@ -15,7 +15,7 @@ export default async function AssetsPage() {
   const { stores } = await fetchStores()
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <PageHeader
           className="hidden md:flex"
@@ -30,6 +30,6 @@ export default async function AssetsPage() {
           }))}
         />
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

@@ -11,6 +11,7 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 import type { MemberRole, Membership } from '@/lib/auth/types'
 
 type StoreOpt = { id: string; code: string; name: string }
@@ -246,7 +247,27 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             description="הוסיפו טכנאי או מנהל באמצעות הטופס למעלה."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <AdminRowList>
+              {users.map((u) => {
+                const m = u.memberships[0]
+                return (
+                  <AdminRow
+                    key={u.id}
+                    title={u.full_name || '—'}
+                    subtitle={u.email || '—'}
+                    footer={
+                      <span className="t-caption text-ink-3">
+                        {ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
+                          m?.role}{' '}
+                        · {scopeLabel(m)}
+                      </span>
+                    }
+                  />
+                )
+              })}
+            </AdminRowList>
+            <div className="hidden overflow-x-auto md:block">
             <Table>
               <THead>
                 <TH>שם</TH>
@@ -315,7 +336,8 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                 })}
               </TBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </Panel>
     </div>

@@ -25,19 +25,8 @@ const PRIMARY = [
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
-const TOOLS = [
-  { href: '/ops/inbox', label: 'תיבת WhatsApp' },
-  { href: '/ops/assets', label: 'נכסים' },
-  { href: '/ops/vendors', label: 'ספקים' },
-  { href: '/ops/activity', label: 'יומן פעילות' },
-  { href: '/ops/reports', label: 'דוחות' },
-  { href: '/ops/status', label: 'סטטוס מערכת' },
-  { href: '/ops/settings', label: 'הגדרות' },
-  { href: '/ops/users', label: 'משתמשים' },
-  { href: '/ops/stores/print-qr', label: 'הדפסת QR' },
-  { href: '/ops/simulator', label: 'סימולטור WhatsApp' },
-  { href: '/tech', label: 'פורטל טכנאי' },
-]
+import type { NavTool } from '@/lib/auth/nav-access'
+import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
 
 function isActive(pathname: string, match: string) {
   return pathname === match || pathname.startsWith(`${match}/`)
@@ -71,9 +60,16 @@ function TenantMark() {
   )
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  tools = ALL_NAV_TOOLS,
+}: {
+  children: React.ReactNode
+  tools?: NavTool[]
+}) {
   const pathname = usePathname() ?? ''
   const [moreOpen, setMoreOpen] = useState(false)
+  const navTools = tools.map((t) => ({ href: t.href, label: t.label }))
 
   return (
     <div className="dvh-screen bg-canvas text-ink">
@@ -135,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-t border-border p-3">
           <p className="t-caption px-2.5 pb-2 text-ink-3">כלים</p>
           <ul className="space-y-0.5">
-            {TOOLS.map((t) => (
+            {navTools.map((t) => (
               <li key={t.href}>
                 <Link
                   href={t.href}
@@ -182,7 +178,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ---------- Content ---------- */}
       <div className="md:ps-[var(--nav-w)]">
-        <main className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7">
+        <main id="main-content" className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7">
           {children}
         </main>
       </div>
@@ -231,7 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         title="כלים והגדרות"
       >
         <ul className="divide-y divide-border">
-          {TOOLS.map((t) => (
+          {navTools.map((t) => (
             <li key={t.href}>
               <Link
                 href={t.href}

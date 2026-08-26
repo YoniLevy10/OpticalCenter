@@ -1,15 +1,15 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { KeyValue, PageHeader, Panel } from '@/components/ui/primitives'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { getSettings } from '@/modules/settings/service'
+import { listVendors } from '@/modules/vendors/service'
 import {
-  memGetSettings,
   memListAssets,
   memListPushSubscriptions,
   memListTickets,
-  memListVendors,
   supabaseReady,
 } from '@/lib/data/memory-store'
 
@@ -20,14 +20,15 @@ export default async function OpsStatusPage() {
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
   const ready = await supabaseReady()
-  const settings = memGetSettings()
+  const { settings } = await getSettings()
+  const vendorResult = await listVendors()
   const tickets = memListTickets()
   const open = tickets.filter(
     (t) => !['resolved', 'closed', 'cancelled'].includes(t.status),
   ).length
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="max-w-2xl space-y-4">
         <PageHeader
           className="hidden md:flex"
@@ -60,7 +61,7 @@ export default async function OpsStatusPage() {
             <KeyValue label="תקלות פתוחות">{String(open)}</KeyValue>
             <KeyValue label="תקלות סה״כ">{String(tickets.length)}</KeyValue>
             <KeyValue label="נכסים">{String(memListAssets().length)}</KeyValue>
-            <KeyValue label="ספקים">{String(memListVendors().length)}</KeyValue>
+            <KeyValue label="ספקים">{String(vendorResult.vendors.length)}</KeyValue>
             <KeyValue label="מנויי Push">
               {String(memListPushSubscriptions().length)}
             </KeyValue>
@@ -101,6 +102,6 @@ export default async function OpsStatusPage() {
           </p>
         </Panel>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

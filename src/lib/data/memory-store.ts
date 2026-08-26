@@ -192,6 +192,15 @@ export function memResolveStoreByWaId(
   }
 }
 
+export type MemInboxMessage = {
+  id: string
+  wa_id: string
+  direction: 'inbound' | 'outbound'
+  body: string
+  ticket_id: string | null
+  created_at: string
+}
+
 export type MemSession = {
   wa_id: string
   country_id: string
@@ -267,6 +276,7 @@ type GlobalMem = {
   vendors: Map<string, MemVendor>
   dispatches: Map<string, MemPartnerDispatch>
   pushSubs: Map<string, MemPushSubscription>
+  inboxMessages: Map<string, MemInboxMessage[]>
   settings: MemSettings
   seq: number
 }
@@ -304,6 +314,7 @@ function store(): GlobalMem {
       vendors: new Map(),
       dispatches: new Map(),
       pushSubs: new Map(),
+      inboxMessages: new Map(),
       settings: { ...DEFAULT_SETTINGS },
       seq: 18000,
     }
@@ -324,6 +335,7 @@ function store(): GlobalMem {
   }
   if (!mem.dispatches) mem.dispatches = new Map()
   if (!mem.pushSubs) mem.pushSubs = new Map()
+  if (!mem.inboxMessages) mem.inboxMessages = new Map()
   if (!mem.settings) mem.settings = { ...DEFAULT_SETTINGS }
   return mem
 }
@@ -379,12 +391,14 @@ export function memReset() {
     vendors: new Map(),
     dispatches: new Map(),
     pushSubs: new Map(),
+    inboxMessages: new Map(),
     settings: { ...DEFAULT_SETTINGS },
     seq: 18000,
   }
-  seedDemoAssets(g.__maintainosMem)
-  seedDemoVendors(g.__maintainosMem)
-  return g.__maintainosMem
+  const mem = g.__maintainosMem
+  seedDemoAssets(mem)
+  seedDemoVendors(mem)
+  return mem
 }
 
 export async function supabaseReady(): Promise<boolean> {
@@ -782,6 +796,59 @@ export function memSetSessionTakeover(waId: string, human_takeover: boolean) {
   s.human_takeover = human_takeover
   s.updated_at = new Date().toISOString()
   return s
+}
+
+export function memListInboxMessages(waId: string): MemInboxMessage[] {
+  const mem = store()
+  const rows = [...(mem.inboxMessages.get(waId) ?? [])]
+  const session = mem.sessions.get(waId)
+  if (session?.last_inbound) {
+    const hasInbound = rows.some(
+      (m) => m.direction === 'inbound' && m.body === session.last_inbound,
+    )
+    if (!hasInbound) {
+      rows.unshift({
+        id: `${waId}-last-inbound`,
+        wa_id: waId,
+        direction: 'inbound',
+        body: session.last_inbound,
+        ticket_id: null,
+        created_at: session.updated_at,
+      })
+    }
+  }
+  return rows.sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  )
+}
+
+export function memAddInboxMessage(input: {
+  wa_id: string
+  direction: 'inbound' | 'outbound'
+  body: string
+  ticket_id?: string | null
+}): MemInboxMessage {
+  const mem = store()
+  if (!mem.inboxMessages) mem.inboxMessages = new Map()
+  const row: MemInboxMessage = {
+    id: `inbox-${crypto.randomUUID()}`,
+    wa_id: input.wa_id,
+    direction: input.direction,
+    body: input.body,
+    ticket_id: input.ticket_id ?? null,
+    created_at: new Date().toISOString(),
+  }
+  const list = mem.inboxMessages.get(input.wa_id) ?? []
+  list.push(row)
+  mem.inboxMessages.set(input.wa_id, list)
+  if (input.direction === 'inbound') {
+    const session = mem.sessions.get(input.wa_id)
+    if (session) {
+      session.last_inbound = input.body
+      session.updated_at = row.created_at
+    }
+  }
+  return row
 }
 
 export function memListAssets(storeId?: string): MemAsset[] {

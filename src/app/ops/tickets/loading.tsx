@@ -1,10 +1,10 @@
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { Panel, RowSkeleton, Skeleton } from '@/components/ui/primitives'
 
 /** Mirrors the real queue geometry. Never a spinner. */
 export default function TicketsLoading() {
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-6 w-24" />
@@ -24,6 +24,6 @@ export default function TicketsLoading() {
           <RowSkeleton rows={10} />
         </Panel>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

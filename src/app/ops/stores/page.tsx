@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Store } from 'lucide-react'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { RowList } from '@/components/ui/operational-row'
@@ -61,7 +61,7 @@ export default async function StoresPage({
   const activeCount = stores.filter((s) => s.is_active !== false).length
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <PageHeader
           className="hidden md:flex"
@@ -222,6 +222,6 @@ export default async function StoresPage({
           קוד החנות זהה בקישור ה־QR, ה־NFC ובהודעת הטקסט ל־WhatsApp.
         </p>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

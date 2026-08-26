@@ -11,6 +11,7 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 
 type VendorRow = {
   id: string
@@ -224,6 +225,33 @@ export function VendorsAdmin() {
         ) : vendors.length === 0 ? (
           <EmptyState title="אין ספקים" description="הוסיפו ספק חיצוני לשיגור." />
         ) : (
+          <>
+            <AdminRowList>
+              {vendors.map((v) => (
+                <AdminRow
+                  key={v.id}
+                  title={v.name}
+                  subtitle={v.specialties}
+                  footer={
+                    <span dir="ltr" className="t-caption text-ink-3">
+                      {v.contact_phone || '—'}
+                    </span>
+                  }
+                  trailing={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => void toggleActive(v)}
+                    >
+                      {v.active ? 'השבתה' : 'הפעלה'}
+                    </Button>
+                  }
+                />
+              ))}
+            </AdminRowList>
+            <div className="hidden md:block">
           <Table>
             <THead>
               <TH>שם</TH>
@@ -272,6 +300,8 @@ export function VendorsAdmin() {
               ))}
             </TBody>
           </Table>
+            </div>
+          </>
         )}
       </Panel>
     </div>
