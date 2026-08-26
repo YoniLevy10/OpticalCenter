@@ -207,14 +207,8 @@ export default async function TicketDetailPage({
 
           {/* ---------- Side column ---------- */}
           <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-            {/*
-              Sticky above bottom nav on mobile (thumb zone); desktop sticks the
-              whole side column under the shell header. Single TicketActions
-              instance keeps state coherent.
-            */}
-            <div
-              className="fixed inset-x-0 z-20 max-h-[min(50dvh,420px)] overflow-y-auto border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-sm bottom-[calc(var(--bottomnav-h)+var(--safe-b))] md:static md:inset-auto md:bottom-auto md:z-auto md:max-h-none md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
-            >
+            {/* Keep actions in document flow on mobile so they never cover ticket content. */}
+            <div className="md:sticky md:top-4 md:self-start">
               <Panel className="mb-3 md:mb-0">
                 <h2 className="t-section mb-1 text-ink">פעולות</h2>
                 <p className="t-caption mb-4 text-ink-3">
