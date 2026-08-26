@@ -51,6 +51,22 @@ test.describe('Navigation & layout', () => {
     await expect(page.getByText(/מזגן|תקלה|OC-/).first()).toBeVisible()
   })
 
+  test('skip link focuses main content', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await gotoStable(page, '/ops/dashboard')
+    await page.keyboard.press('Tab')
+    const skip = page.getByRole('link', { name: 'דלג לתוכן' })
+    await expect(skip).toBeFocused()
+    await skip.click()
+    await expect(page.locator('#main-content')).toBeFocused()
+  })
+
+  test('mobile shows page heading', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoStable(page, '/ops/tickets')
+    await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
+  })
+
   for (const vp of VIEWPORTS) {
     test(`no horizontal overflow @ ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })

@@ -1,6 +1,6 @@
-import Link from 'next/link'
-import { techHref } from '@/lib/tech-href'
-import { ChevronRight } from 'lucide-react'
+import { BackButton } from '@/components/layout/back-button'
+import { SkipLink } from '@/components/layout/skip-link'
+import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { cn } from '@/lib/utils'
 import { LogoutButton } from '@/components/auth/logout-button'
 
@@ -17,29 +17,41 @@ export function TechShell({
   title,
   subtitle,
   backHref,
+  backLabel = 'חזרה לעבודות',
   eyebrow,
   actions,
+  headerActions,
+  enablePullToRefresh,
 }: {
   children: React.ReactNode
   title: string
   subtitle?: React.ReactNode
   backHref?: string
+  backLabel?: string
   eyebrow?: string
   actions?: React.ReactNode
+  headerActions?: React.ReactNode
+  enablePullToRefresh?: boolean
 }) {
+  const body = (
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className={cn(
+        'mx-auto w-full max-w-xl px-4 pt-5 outline-none',
+        actions ? 'pb-actions scroll-pb-actions' : 'pb-8',
+      )}
+    >
+      {children}
+    </main>
+  )
+
   return (
     <div className="dvh-screen bg-canvas text-ink">
+      <SkipLink />
       <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">
-          {backHref ? (
-            <Link
-              href={backHref}
-              aria-label="חזרה"
-              className="-ms-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken/60"
-            >
-              <ChevronRight className="h-5 w-5 rtl:rotate-0 ltr:rotate-180" />
-            </Link>
-          ) : null}
+          {backHref ? <BackButton href={backHref} label={backLabel} /> : null}
           <div className="min-w-0 flex-1">
             <p className="t-caption text-ink-3">{eyebrow ?? 'MaintainOS · טכנאי'}</p>
             <h1 className="t-title mt-0.5 truncate text-ink">{title}</h1>
@@ -47,21 +59,18 @@ export function TechShell({
               <div className="t-meta mt-0.5 truncate text-ink-2">{subtitle}</div>
             ) : null}
           </div>
-          <LogoutButton className="shrink-0" />
+          <div className="flex shrink-0 items-center gap-1">
+            {headerActions}
+            <LogoutButton size="touch" className="shrink-0" />
+          </div>
         </div>
       </header>
 
-      <main
-        className={cn(
-          'mx-auto w-full max-w-xl px-4 pt-5',
-          actions ? 'pb-actions' : 'pb-8',
-        )}
-      >
-        {children}
-      </main>
+      {enablePullToRefresh ? <PullToRefresh>{body}</PullToRefresh> : body}
 
       {actions ? (
         <div
+          aria-label="פעולות עבודה"
           className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-md"
           style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
         >
@@ -72,4 +81,4 @@ export function TechShell({
   )
 }
 
-export { techHref }
+export { techHref } from '@/lib/tech-href'

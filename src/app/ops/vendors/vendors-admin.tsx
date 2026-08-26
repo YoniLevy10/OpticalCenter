@@ -235,13 +235,15 @@ export function VendorsAdmin() {
                   footer={
                     <span dir="ltr" className="t-caption text-ink-3">
                       {v.contact_phone || '—'}
+                      {v.contact_email ? ` · ${v.contact_email}` : ''}
                     </span>
                   }
                   trailing={
                     <Button
                       type="button"
-                      size="sm"
+                      size="touch"
                       variant="secondary"
+                      className="shrink-0"
                       disabled={busy}
                       onClick={() => void toggleActive(v)}
                     >
@@ -252,54 +254,54 @@ export function VendorsAdmin() {
               ))}
             </AdminRowList>
             <div className="hidden md:block">
-          <Table>
-            <THead>
-              <TH>שם</TH>
-              <TH>התמחות</TH>
-              <TH>יצירת קשר</TH>
-              <TH>HMAC</TH>
-              <TH className="w-[120px]">פעולות</TH>
-            </THead>
-            <TBody>
-              {vendors.map((v) => (
-                <TR key={v.id}>
-                  <TD>
-                    <span className="t-body-strong text-ink">{v.name}</span>
-                    {!v.active ? (
-                      <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
-                    ) : null}
-                  </TD>
-                  <TD>
-                    <span className="t-meta text-ink-2">{v.specialties}</span>
-                  </TD>
-                  <TD>
-                    <span className="t-meta block text-ink-2" dir="ltr">
-                      {v.contact_phone || '—'}
-                    </span>
-                    <span className="t-caption block text-ink-3" dir="ltr">
-                      {v.contact_email || ''}
-                    </span>
-                  </TD>
-                  <TD>
-                    <span className="t-caption text-ink-3">
-                      {v.has_hmac ? 'מוכן' : '—'}
-                    </span>
-                  </TD>
-                  <TD>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      disabled={busy}
-                      onClick={() => void toggleActive(v)}
-                    >
-                      {v.active ? 'השבתה' : 'הפעלה'}
-                    </Button>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+              <Table>
+                <THead>
+                  <TH>שם</TH>
+                  <TH>התמחות</TH>
+                  <TH>יצירת קשר</TH>
+                  <TH>HMAC</TH>
+                  <TH className="w-[120px]">פעולות</TH>
+                </THead>
+                <TBody>
+                  {vendors.map((v) => (
+                    <TR key={v.id}>
+                      <TD>
+                        <span className="t-body-strong text-ink">{v.name}</span>
+                        {!v.active ? (
+                          <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
+                        ) : null}
+                      </TD>
+                      <TD>
+                        <span className="t-meta text-ink-2">{v.specialties}</span>
+                      </TD>
+                      <TD>
+                        <span className="t-meta block text-ink-2" dir="ltr">
+                          {v.contact_phone || '—'}
+                        </span>
+                        <span className="t-caption block text-ink-3" dir="ltr">
+                          {v.contact_email || ''}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span className="t-caption text-ink-3">
+                          {v.has_hmac ? 'מוכן' : '—'}
+                        </span>
+                      </TD>
+                      <TD>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          onClick={() => void toggleActive(v)}
+                        >
+                          {v.active ? 'השבתה' : 'הפעלה'}
+                        </Button>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
             </div>
           </>
         )}

@@ -29,6 +29,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   /* Required for safe-area insets to resolve in standalone PWA mode. */
   viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 }
 
 export default function RootLayout({

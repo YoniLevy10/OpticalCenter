@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Textarea } from '@/components/ui/input'
+import { RefreshButton } from '@/components/layout/refresh-button'
+import { LiveRegion } from '@/components/ui/a11y'
 import {
   EmptyState,
   ErrorState,
@@ -37,6 +39,7 @@ export function InboxClient() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
   const [reply, setReply] = useState('')
 
@@ -47,11 +50,13 @@ export function InboxClient() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'טעינה נכשלה')
       setSessions(json.sessions ?? [])
-      if (!selected && json.sessions?.[0]) setSelected(json.sessions[0].wa_id)
+      setSelected((prev) => prev ?? json.sessions?.[0]?.wa_id ?? null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינה נכשלה')
+    } finally {
+      setLoading(false)
     }
-  }, [selected])
+  }, [])
 
   const loadThread = useCallback(async (waId: string) => {
     try {
@@ -64,6 +69,11 @@ export function InboxClient() {
       setError(err instanceof Error ? err.message : 'טעינת שיחה נכשלה')
     }
   }, [])
+
+  const refresh = useCallback(async () => {
+    await loadSessions()
+    if (selected) await loadThread(selected)
+  }, [loadSessions, loadThread, selected])
 
   useEffect(() => {
     void loadSessions()
@@ -128,40 +138,62 @@ export function InboxClient() {
 
   return (
     <div className="space-y-3">
-      {error ? <ErrorState title="שגיאה" description={error} /> : null}
-      {notice ? <Notice tone="progress">{notice}</Notice> : null}
+      <div className="flex justify-end md:hidden">
+        <RefreshButton onRefresh={refresh} />
+      </div>
+      {error ? (
+        <LiveRegion politeness="assertive">
+          <ErrorState title="שגיאה" description={error} />
+        </LiveRegion>
+      ) : null}
+      {notice ? (
+        <LiveRegion>
+          <Notice tone="progress">{notice}</Notice>
+        </LiveRegion>
+      ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <Panel flush elevated className="overflow-hidden">
+      <div className="grid gap-4 max-lg:grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <Panel flush elevated className="overflow-hidden max-lg:order-2">
           <PanelHeader title="שיחות" meta={`${sessions.length}`} />
-          {sessions.length === 0 ? (
+          {loading ? (
+            <p className="t-body px-4 py-6 text-ink-3">טוען…</p>
+          ) : sessions.length === 0 ? (
             <EmptyState title="אין שיחות פעילות" />
           ) : (
-            <ul className="divide-y divide-border">
-              {sessions.map((s) => (
-                <li key={s.wa_id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(s.wa_id)}
-                    className={`flex w-full flex-col gap-0.5 px-4 py-3 text-start transition-colors hover:bg-canvas ${
-                      selected === s.wa_id ? 'bg-[var(--tenant-soft)]' : ''
-                    }`}
-                  >
-                    <span dir="ltr" className="t-body-strong t-num text-ink">
-                      {s.wa_id}
-                    </span>
-                    <span className="t-caption text-ink-2">
-                      {s.store_code ? `#${s.store_code}` : 'ללא חנות'} · {s.state}
-                      {s.human_takeover ? ' · השתלטות' : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
+            <ul role="listbox" aria-label="רשימת שיחות" className="divide-y divide-border">
+              {sessions.map((s) => {
+                const isSelected = selected === s.wa_id
+                return (
+                  <li key={s.wa_id} role="presentation">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => setSelected(s.wa_id)}
+                      className={`flex min-h-[var(--tap)] w-full flex-col justify-center gap-0.5 px-4 py-3 text-start transition-colors hover:bg-canvas ${
+                        isSelected ? 'bg-[var(--tenant-soft)]' : ''
+                      }`}
+                    >
+                      <span dir="ltr" className="t-body-strong t-num text-ink">
+                        {s.wa_id}
+                      </span>
+                      <span className="t-caption text-ink-2">
+                        {s.store_code ? `#${s.store_code}` : 'ללא חנות'} · {s.state}
+                        {s.human_takeover ? ' · השתלטות' : ''}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </Panel>
 
-        <Panel elevated className="flex min-h-[420px] flex-col">
+        <Panel
+          elevated
+          aria-label="פרטי שיחה"
+          className="flex min-h-[420px] max-lg:order-1 flex-col"
+        >
           {!active ? (
             <EmptyState title="בחרו שיחה" description="מהרשימה" />
           ) : (
@@ -171,6 +203,27 @@ export function InboxClient() {
                 <p dir="ltr" className="t-body t-num mt-1 text-ink-2">
                   {active.wa_id}
                 </p>
+                <dl className="t-caption mt-2 space-y-1 text-ink-3">
+                  <div className="flex justify-between gap-3">
+                    <dt>חנות</dt>
+                    <dd className="t-num text-ink">
+                      {active.store_code ? (
+                        <Link
+                          href={`/ops/stores/${encodeURIComponent(active.store_code)}`}
+                          className="text-[var(--tenant)] hover:underline"
+                        >
+                          #{active.store_code}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt>מצב FSM</dt>
+                    <dd className="text-ink">{active.state}</dd>
+                  </div>
+                </dl>
                 {ticketIds.length > 0 ? (
                   <p className="t-caption mt-2 text-ink-3">
                     תקלות קשורות:{' '}

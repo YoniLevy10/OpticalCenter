@@ -1,9 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { Panel, PanelHeader, EmptyState } from '@/components/ui/primitives'
+import { LiveRegion } from '@/components/ui/a11y'
 import { cn } from '@/lib/utils'
 
 type SimResult = {
@@ -176,7 +178,8 @@ export function SimulatorForm() {
             description="שלחו דיווח לדוגמה כדי לראות את תגובת ה־intake."
           />
         ) : (
-          <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
+          <LiveRegion>
+          <ul aria-live="polite" className="max-h-[520px] divide-y divide-border overflow-y-auto">
             {log.map((item, i) => (
               <li
                 key={`${i}-${item.display_number ?? item.state ?? 'r'}`}
@@ -206,6 +209,14 @@ export function SimulatorForm() {
                   {item.display_number ? (
                     <span className="t-num">· {item.display_number}</span>
                   ) : null}
+                  {item.ticket_id ? (
+                    <Link
+                      href={`/ops/tickets/${item.ticket_id}`}
+                      className="text-[var(--tenant)] hover:underline"
+                    >
+                      · צפייה בתקלה
+                    </Link>
+                  ) : null}
                   {item.duplicate ? <span>· כפילות</span> : null}
                 </div>
                 <p className="t-body mt-1 whitespace-pre-wrap text-ink">
@@ -214,6 +225,7 @@ export function SimulatorForm() {
               </li>
             ))}
           </ul>
+          </LiveRegion>
         )}
       </Panel>
     </div>

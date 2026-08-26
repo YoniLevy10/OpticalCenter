@@ -1,9 +1,10 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
+import { LiveRegion } from '@/components/ui/a11y'
 
 export function PublicReportForm({
   initialStore,
@@ -20,6 +21,16 @@ export function PublicReportForm({
   const [error, setError] = useState<string | null>(null)
   const [ticketId, setTicketId] = useState<string | null>(null)
   const [display, setDisplay] = useState<string | null>(null)
+  const successRef = useRef<HTMLDivElement>(null)
+
+  function resetForm() {
+    setTicketId(null)
+    setDisplay(null)
+    setError(null)
+    setDescription('')
+    setName('')
+    setPhone('')
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -40,6 +51,7 @@ export function PublicReportForm({
       if (!res.ok) throw new Error(json.error || 'שליחה נכשלה')
       setTicketId(json.ticket?.id ?? null)
       setDisplay(json.ticket?.display_number ?? null)
+      requestAnimationFrame(() => successRef.current?.focus())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שליחה נכשלה')
     } finally {
@@ -47,48 +59,49 @@ export function PublicReportForm({
     }
   }
 
-  function resetForm() {
-    setTicketId(null)
-    setDisplay(null)
-    setDescription('')
-    setName('')
-    setPhone('')
-    setError(null)
-  }
-
   if (ticketId) {
     return (
-      <div className="space-y-4 text-center">
-        <Notice tone="progress">
-          הדיווח התקבל
-          {display ? ` · ${display}` : ''}
-        </Notice>
-        <p className="t-body text-ink-2">
-          צוות התחזוקה יטפל בתקלה.
-          {phone.trim()
-            ? ' תקבלו עדכון ב-WhatsApp כשהטיפול יתקדם.'
-            : ' אפשר לסגור את החלון.'}
-        </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button type="button" variant="primary" size="block" onClick={resetForm}>
-            דיווח נוסף
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="block"
-            onClick={() => window.close()}
-          >
-            סגירה
-          </Button>
+      <LiveRegion politeness="assertive">
+        <div
+          ref={successRef}
+          tabIndex={-1}
+          className="space-y-4 text-center outline-none"
+        >
+          <Notice tone="progress">
+            הדיווח התקבל
+            {display ? ` · ${display}` : ''}
+          </Notice>
+          <p className="t-body text-ink-2">
+            צוות התחזוקה יטפל בתקלה.
+            {phone.trim()
+              ? ' תקבלו עדכון ב-WhatsApp כשהטיפול יתקדם.'
+              : ' אפשר לסגור את החלון.'}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button type="button" variant="primary" size="block" onClick={resetForm}>
+              דיווח נוסף
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="block"
+              onClick={() => window.close()}
+            >
+              סגירה
+            </Button>
+          </div>
         </div>
-      </div>
+      </LiveRegion>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error ? <ErrorState title="שגיאה" description={error} /> : null}
+    <form onSubmit={onSubmit} className="space-y-4" aria-busy={busy}>
+      {error ? (
+        <LiveRegion politeness="assertive">
+          <ErrorState title="שגיאה" description={error} />
+        </LiveRegion>
+      ) : null}
       <Field label="חנות" htmlFor="report-store">
         <Select
           id="report-store"
@@ -115,6 +128,9 @@ export function PublicReportForm({
       <Field label="טלפון (אופציונלי)" htmlFor="report-phone">
         <Input
           id="report-phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
           dir="ltr"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}

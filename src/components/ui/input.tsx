@@ -117,6 +117,7 @@ export function SearchField({
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder ?? 'חיפוש'}
         className={cn(fieldBase, 'h-11 ps-9 pe-9 md:h-9')}
       />
       {value ? (

@@ -129,13 +129,20 @@ export default async function TicketsPage({
         <PageHeader
           title="תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          className="hidden md:flex"
           actions={
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/simulator">דיווח לבדיקה</Link>
-            </Button>
+            <>
+              <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex">
+                <Link href="/ops/simulator">דיווח לבדיקה</Link>
+              </Button>
+            </>
           }
         />
+
+        <div className="md:hidden">
+          <Button asChild variant="secondary" size="touch" className="w-full">
+            <Link href="/ops/simulator">דיווח לבדיקה</Link>
+          </Button>
+        </div>
 
         <QueueToolbar
           filters={filters}

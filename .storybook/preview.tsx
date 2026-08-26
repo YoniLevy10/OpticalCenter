@@ -11,7 +11,7 @@ const preview: Preview = {
     },
     layout: 'padded',
     a11y: {
-      test: 'todo',
+      test: 'error',
     },
   },
   decorators: [

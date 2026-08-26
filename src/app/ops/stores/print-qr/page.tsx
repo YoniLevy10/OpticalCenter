@@ -1,8 +1,7 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageHeader, Panel } from '@/components/ui/primitives'
-import { Button } from '@/components/ui/button'
+import { PageToolbar } from '@/components/layout/page-toolbar'
+import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
 import { PrintQrClient } from './print-qr-client'
 import { fetchStores } from '@/modules/stores/data'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -20,8 +19,14 @@ export default async function PrintQrBatchPage() {
   return (
     <OpsAppShell>
       <div className="space-y-4 print:p-0">
+        <PageToolbar
+          backHref="/ops/stores"
+          backLabel="חזרה לחנויות"
+          title="הדפסת QR"
+          meta={`${active.length} חנויות`}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <PageHeader title="הדפסת QR" meta={`${active.length} חנויות`} />
+          <PageHeader title="הדפסת QR" meta={`${active.length} חנויות`} className="hidden md:flex" />
           <PrintQrClient />
         </div>
 
@@ -30,33 +35,33 @@ export default async function PrintQrBatchPage() {
             כל כרטיס כולל QR ל־WhatsApp עם טקסט STORE_CODE. השתמשו בהדפסה מהדפדפן
             (PDF).
           </p>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2">
-            {active.map((s) => (
-              <div
-                key={s.id}
-                className="break-inside-avoid rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/stores/qr?code=${encodeURIComponent(s.code)}&format=svg`}
-                  alt={`QR ${s.code}`}
-                  className="mx-auto h-40 w-40"
-                />
-                <p className="t-body-strong mt-3 text-ink">{s.name}</p>
-                <p className="t-num t-meta text-ink-2">#{s.code}</p>
-                <p dir="ltr" className="t-caption t-num mt-1 text-ink-3">
-                  STORE_{s.code}
-                </p>
-              </div>
-            ))}
-          </div>
+          {active.length === 0 ? (
+            <EmptyState title="אין חנויות פעילות" description="הוסיפו חנות לפני הדפסת QR." />
+          ) : (
+            <ul
+              role="list"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2"
+            >
+              {active.map((s) => (
+                <li key={s.id}>
+                  <div className="break-inside-avoid rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/stores/qr?code=${encodeURIComponent(s.code)}&format=svg`}
+                      alt={`QR ${s.code}`}
+                      className="mx-auto h-40 w-40"
+                    />
+                    <p className="t-body-strong mt-3 text-ink">{s.name}</p>
+                    <p className="t-num t-meta text-ink-2">#{s.code}</p>
+                    <p dir="ltr" className="t-caption t-num mt-1 text-ink-3">
+                      STORE_{s.code}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
-
-        <div className="print:hidden">
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/ops/stores">חזרה לחנויות</Link>
-          </Button>
-        </div>
       </div>
     </OpsAppShell>
   )

@@ -46,6 +46,7 @@ export function EvidenceGrid({
               <li key={a.id}>
                 <button
                   type="button"
+                  aria-label="הגדלת תמונה"
                   onClick={() => !broken && setActive(a)}
                   className={cn(
                     'relative block aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-sunken transition-opacity duration-[var(--dur-1)]',

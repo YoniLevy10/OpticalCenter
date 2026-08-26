@@ -4,14 +4,24 @@ import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
+import { SkipLink } from '@/components/layout/skip-link'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
+import { LiveRegion } from '@/components/ui/a11y'
 import { SegmentedButtons } from '@/components/ui/segmented'
 
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
 
 type Mode = 'link' | 'otp' | 'password'
+
+function safeNextPath(raw: string | null): string | null {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
+  if (!raw.startsWith('/ops') && !raw.startsWith('/tech') && !raw.startsWith('/report')) {
+    return null
+  }
+  return raw
+}
 
 const VALUE_PROPS = [
   {
@@ -35,6 +45,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error') === 'auth'
+  const nextPath = safeNextPath(searchParams.get('next'))
   const [mode, setMode] = useState<Mode>('link')
   const [email, setEmail] = useState(PILOT_DEMO_EMAIL)
   const [otp, setOtp] = useState('')
@@ -49,11 +60,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const [busy, setBusy] = useState(false)
   const [demoBusy, setDemoBusy] = useState(false)
 
-  async function requestLink(e: FormEvent) {
-    e.preventDefault()
+  async function requestLink(e?: FormEvent) {
+    e?.preventDefault()
     setBusy(true)
     setError(null)
-    setSent(false)
+    if (e) setSent(false)
     setHint(null)
     try {
       const res = await fetch('/api/auth/request-login', {
@@ -92,7 +103,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         home?: string
       }
       if (!res.ok) throw new Error(data.error || 'קוד לא תקין')
-      router.replace(data.home || '/ops/dashboard')
+      router.replace(nextPath ?? data.home ?? '/ops/dashboard')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'אימות נכשל')
@@ -119,7 +130,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         home?: string
       }
       if (!res.ok) throw new Error(data.error || 'התחברות נכשלה')
-      router.replace(data.home || '/ops/dashboard')
+      router.replace(nextPath ?? data.home ?? '/ops/dashboard')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'התחברות נכשלה')
@@ -152,6 +163,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
 
   return (
     <div className="login-shell dvh-screen safe-pt safe-pb grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <SkipLink />
       {/* Brand story — desktop hero */}
       <aside
         className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
@@ -213,7 +225,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       </aside>
 
       {/* Form column */}
-      <div className="flex min-h-0 flex-col items-center justify-center px-4 py-8 md:px-10 lg:px-14">
+      <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
         <div className="mb-8 text-center md:hidden">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]">
             <span className="t-display" aria-hidden>OC</span>
@@ -236,8 +248,13 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             <SegmentedButtons
               fill
               className="mb-6 w-full"
+              mode="tabs"
+              panelIdPrefix="login-mode"
               activeKey={mode}
-              onChange={(key) => setMode(key as Mode)}
+              onChange={(key) => {
+                setMode(key as Mode)
+                setError(null)
+              }}
               segments={[
                 { key: 'link', label: 'קישור במייל' },
                 { key: 'otp', label: 'קוד' },
@@ -246,7 +263,14 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             />
 
             {mode === 'link' ? (
-              <form onSubmit={requestLink} className="space-y-4">
+              <form
+                id="login-mode-link"
+                role="tabpanel"
+                aria-labelledby="login-mode-tab-link"
+                onSubmit={requestLink}
+                className="space-y-4"
+                aria-busy={busy}
+              >
                 <Field label="כתובת מייל" htmlFor="login-email">
                   <Input
                     id="login-email"
@@ -272,7 +296,14 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             ) : null}
 
             {mode === 'otp' ? (
-              <form onSubmit={verifyOtp} className="space-y-4">
+              <form
+                id="login-mode-otp"
+                role="tabpanel"
+                aria-labelledby="login-mode-tab-otp"
+                onSubmit={verifyOtp}
+                className="space-y-4"
+                aria-busy={busy}
+              >
                 <Field label="כתובת מייל" htmlFor="otp-email">
                   <Input
                     id="otp-email"
@@ -309,11 +340,27 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 >
                   {busy ? 'מאמת…' : 'אימות קוד וכניסה'}
                 </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="block"
+                  disabled={busy || !email.trim()}
+                  onClick={() => void requestLink()}
+                >
+                  {busy ? 'שולח…' : 'שליחת קוד מחדש'}
+                </Button>
               </form>
             ) : null}
 
             {mode === 'password' ? (
-              <form onSubmit={signInPassword} className="space-y-4">
+              <form
+                id="login-mode-password"
+                role="tabpanel"
+                aria-labelledby="login-mode-tab-password"
+                onSubmit={signInPassword}
+                className="space-y-4"
+                aria-busy={busy}
+              >
                 <Field label="כתובת מייל" htmlFor="pw-email">
                   <Input
                     id="pw-email"
@@ -363,9 +410,9 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             ) : null}
 
             {error ? (
-              <div className="mt-4">
+              <LiveRegion politeness="assertive" className="mt-4">
                 <ErrorState title="ההתחברות נכשלה" description={error} />
-              </div>
+              </LiveRegion>
             ) : null}
 
             {demoEntry ? (
@@ -396,7 +443,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
 
           <details className="mt-6 group">
-            <summary className="t-caption cursor-pointer list-none text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
+            <summary className="t-caption flex min-h-[var(--tap)] cursor-pointer list-none items-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
               עזרה בהתחברות
             </summary>
             <p className="t-caption mt-2 text-ink-3">
@@ -406,7 +453,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             </p>
           </details>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

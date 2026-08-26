@@ -43,6 +43,13 @@ export function TH({
   return (
     <th
       scope="col"
+      aria-sort={
+        sort?.active
+          ? sort.direction === 'asc'
+            ? 'ascending'
+            : 'descending'
+          : undefined
+      }
       className={cn(
         't-caption h-9 px-3 font-medium text-ink-3',
         align === 'end' ? 'text-end' : 'text-start',

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader } from '@/components/ui/primitives'
 import { InboxClient } from './inbox-client'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -14,10 +15,17 @@ export default async function InboxPage() {
   return (
     <OpsAppShell>
       <div className="space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/dashboard"
+          backLabel="חזרה ללוח בקרה"
           title="תיבת WhatsApp"
           meta="השתלטות אנושית"
+          showRefresh
+        />
+        <PageHeader
+          title="תיבת WhatsApp"
+          meta="השתלטות אנושית"
+          className="hidden md:flex"
         />
         <InboxClient />
       </div>

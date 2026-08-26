@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { KeyValue, PageHeader, Panel } from '@/components/ui/primitives'
+import { StatusHealthButton } from './status-health-button'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { getSettings } from '@/modules/settings/service'
@@ -30,11 +32,14 @@ export default async function OpsStatusPage() {
   return (
     <OpsAppShell>
       <div className="max-w-2xl space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/settings"
+          backLabel="חזרה להגדרות"
           title="סטטוס מערכת"
           meta="בריאות תפעולית"
+          showRefresh
         />
+        <PageHeader title="סטטוס מערכת" meta="בריאות תפעולית" className="hidden md:flex" />
 
         <Panel>
           <h2 className="t-section mb-3 text-ink">Backend</h2>
@@ -47,8 +52,7 @@ export default async function OpsStatusPage() {
               {process.env.RESEND_API_KEY ? 'מוגדר' : 'חסר'}
             </KeyValue>
             <KeyValue label="VAPID ציבורי">
-              {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'מוגדר' : 'חסר (דמו)'}
-            </KeyValue>
+              {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? 'מוגדר' : 'חסר (דמו)'}</KeyValue>
             <KeyValue label="אימייל התראות SLA">
               {settings.notify_email || 'לא הוגדר בהגדרות'}
             </KeyValue>
@@ -94,8 +98,10 @@ export default async function OpsStatusPage() {
         </Panel>
 
         <Panel>
-          <p className="t-body text-ink-2">
-            בדיקת חיים:{' '}
+          <h2 className="t-section mb-3 text-ink">בדיקת חיים</h2>
+          <StatusHealthButton />
+          <p className="t-caption mt-3 text-ink-3">
+            נקודת קצה:{' '}
             <Link href="/api/health" className="text-[var(--tenant)] hover:underline" dir="ltr">
               /api/health
             </Link>

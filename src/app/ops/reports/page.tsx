@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   PageHeader,
   Panel,
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { ReportsFilters } from './reports-filters'
+import { ReportsExportButton } from './reports-export'
 import {
   computeDashboardKpis,
   computeSlaReport,
@@ -50,13 +52,35 @@ export default async function ReportsPage({
   const sla = computeSlaReport(all)
   const storeReport = computeStoreReport(all).slice(0, 10)
 
+  const exportRows = all.map((t) => ({
+    number: t.display_number ?? (t.number != null ? `OC-${t.number}` : t.id),
+    status: t.status,
+    priority: t.priority,
+    category: t.category,
+    store: t.stores?.code ?? '',
+    store_name: t.stores?.name ?? '',
+    created_at: t.created_at,
+    resolved_at: t.resolved_at ?? '',
+    assigned_to: t.assigned_to ?? '',
+  }))
+
   return (
     <OpsAppShell>
       <div className="space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/dashboard"
+          backLabel="חזרה ללוח בקרה"
           title="דוחות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          showRefresh
+        />
+        <PageHeader
+          title="דוחות"
+          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          className="hidden md:flex"
+          actions={
+            <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
+          }
         />
 
         <ReportsFilters from={from} to={to} />
@@ -162,9 +186,12 @@ export default async function ReportsPage({
                   key={s.code}
                   className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
                 >
-                  <span className="t-body text-ink">
+                  <Link
+                    href={`/ops/tickets?store=${encodeURIComponent(s.code)}`}
+                    className="t-body text-ink hover:text-[var(--tenant)] hover:underline"
+                  >
                     <span className="t-num">#{s.code}</span> · {s.name}
-                  </span>
+                  </Link>
                   <span className="t-caption t-num text-ink-2">
                     {s.total} סה״כ · {s.open} פתוחות · {s.breached} חריגות
                   </span>
@@ -178,6 +205,9 @@ export default async function ReportsPage({
           <Button asChild variant="secondary" size="sm">
             <Link href="/ops/dashboard">לוח בקרה</Link>
           </Button>
+          <div className="md:hidden">
+            <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
+          </div>
         </div>
       </div>
     </OpsAppShell>

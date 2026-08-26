@@ -80,7 +80,8 @@ export function TechPushSubscribe() {
       <Button
         type="button"
         variant="secondary"
-        size="sm"
+        size="touch"
+        className="md:h-9 md:min-h-0"
         disabled={busy}
         onClick={() => void subscribe()}
       >

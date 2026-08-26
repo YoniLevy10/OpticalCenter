@@ -1,4 +1,5 @@
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { SimulatorForm } from './simulator-form'
@@ -9,9 +10,16 @@ export default function SimulatorPage() {
   return (
     <OpsAppShell>
       <div className="space-y-4">
+        <PageToolbar
+          backHref="/ops/tickets"
+          backLabel="חזרה לתקלות"
+          title="סימולטור WhatsApp"
+          meta="כלי פיתוח"
+        />
         <PageHeader
           title="סימולטור WhatsApp"
           meta="כלי פיתוח"
+          className="hidden md:flex"
           actions={<SeedDemoTicketButton />}
         />
         <p className="t-body max-w-2xl text-ink-2">
