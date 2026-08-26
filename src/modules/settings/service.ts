@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import {
   memGetSettings,
   memUpdateSettings,
@@ -24,7 +25,12 @@ export async function getSettings(): Promise<{
     .eq('organization_id', MEM_ORG_ID)
     .maybeSingle()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return { settings: memGetSettings(), backend: 'memory' }
+    }
+    throw new Error(error.message)
+  }
   if (!data) {
     return { settings: memGetSettings(), backend: 'supabase' }
   }
@@ -67,6 +73,11 @@ export async function updateSettings(
     notify_email: next.notify_email,
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return memUpdateSettings(patch)
+    }
+    throw new Error(error.message)
+  }
   return next
 }

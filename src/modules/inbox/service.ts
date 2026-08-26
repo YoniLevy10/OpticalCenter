@@ -1,5 +1,10 @@
 import { createSystemClient } from '@/lib/supabase/system'
 import {
+  isMissingColumnError,
+  isMissingTableError,
+  isSupabaseSchemaError,
+} from '@/lib/supabase/schema-fallback'
+import {
   memListSessions,
   memSetSessionTakeover,
   memUpsertSession,
@@ -10,6 +15,50 @@ import {
   type MemSession,
 } from '@/lib/data/memory-store'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
+
+const SESSION_SELECT_FULL =
+  'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound'
+const SESSION_SELECT_LEGACY =
+  'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at'
+
+function mapSessionRow(
+  row: Record<string, unknown>,
+  opts?: { human_takeover?: boolean; last_inbound?: string | null },
+): InboxSession {
+  return {
+    wa_id: String(row.wa_id),
+    country_id: String(row.country_id),
+    store_id: (row.store_id as string | null) ?? null,
+    store_code: (row.store_code as string | null) ?? null,
+    state: row.state as InboxSession['state'],
+    pending_description: (row.pending_description as string | null) ?? null,
+    expires_at: String(row.expires_at ?? ''),
+    updated_at: String(row.updated_at ?? ''),
+    human_takeover: opts?.human_takeover ?? Boolean(row.human_takeover),
+    last_inbound:
+      opts?.last_inbound !== undefined
+        ? opts.last_inbound
+        : ((row.last_inbound as string | null | undefined) ?? null),
+  }
+}
+
+function seedDemoInboxIfEmpty() {
+  let sessions = memListSessions()
+  if (sessions.length === 0) {
+    memUpsertSession({
+      wa_id: '972501112233',
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'demo-172',
+      store_code: '172',
+      state: 'awaiting_description',
+      pending_description: null,
+      human_takeover: false,
+      last_inbound: 'המזגן לא מקרר באולם',
+    })
+    sessions = memListSessions()
+  }
+  return sessions
+}
 
 export type InboxSession = MemSession
 
@@ -26,46 +75,40 @@ export async function listInboxSessions(): Promise<{
   backend: 'memory' | 'supabase'
 }> {
   if (!(await supabaseReady())) {
-    let sessions = memListSessions()
-    if (sessions.length === 0) {
-      memUpsertSession({
-        wa_id: '972501112233',
-        country_id: MEM_COUNTRY_ID,
-        store_id: 'demo-172',
-        store_code: '172',
-        state: 'awaiting_description',
-        pending_description: null,
-        human_takeover: false,
-        last_inbound: 'המזגן לא מקרר באולם',
-      })
-      sessions = memListSessions()
-    }
-    return { sessions, backend: 'memory' }
+    return { sessions: seedDemoInboxIfEmpty(), backend: 'memory' }
   }
 
   const supabase = createSystemClient('inbox_sessions_list')
-  const { data, error } = await supabase
+  const full = await supabase
     .from('intake_sessions')
-    .select(
-      'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound',
-    )
+    .select(SESSION_SELECT_FULL)
     .order('updated_at', { ascending: false })
     .limit(100)
 
-  if (error) throw new Error(error.message)
+  let rows: Record<string, unknown>[] | null = (full.data ?? null) as Record<
+    string,
+    unknown
+  >[] | null
+  let error = full.error
 
-  const sessions: InboxSession[] = (data ?? []).map((row) => ({
-    wa_id: row.wa_id,
-    country_id: row.country_id,
-    store_id: row.store_id,
-    store_code: row.store_code,
-    state: row.state as InboxSession['state'],
-    pending_description: row.pending_description,
-    expires_at: row.expires_at,
-    updated_at: row.updated_at,
-    human_takeover: row.human_takeover ?? false,
-    last_inbound: row.last_inbound,
-  }))
+  if (error && isMissingColumnError(error, 'human_takeover')) {
+    const legacy = await supabase
+      .from('intake_sessions')
+      .select(SESSION_SELECT_LEGACY)
+      .order('updated_at', { ascending: false })
+      .limit(100)
+    rows = (legacy.data ?? null) as Record<string, unknown>[] | null
+    error = legacy.error
+  }
+
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return { sessions: seedDemoInboxIfEmpty(), backend: 'memory' }
+    }
+    throw new Error(error.message)
+  }
+
+  const sessions = (rows ?? []).map((row) => mapSessionRow(row))
 
   return { sessions, backend: 'supabase' }
 }
@@ -83,24 +126,32 @@ export async function setSessionTakeover(
     .from('intake_sessions')
     .update({ human_takeover: humanTakeover })
     .eq('wa_id', waId)
-    .select(
-      'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound',
-    )
+    .select(SESSION_SELECT_FULL)
     .single()
 
-  if (error) throw new Error(error.message)
-  return {
-    wa_id: data.wa_id,
-    country_id: data.country_id,
-    store_id: data.store_id,
-    store_code: data.store_code,
-    state: data.state as InboxSession['state'],
-    pending_description: data.pending_description,
-    expires_at: data.expires_at,
-    updated_at: data.updated_at,
-    human_takeover: data.human_takeover ?? false,
-    last_inbound: data.last_inbound,
+  if (error) {
+    if (isMissingColumnError(error, 'human_takeover')) {
+      const { data: legacy, error: legacyError } = await supabase
+        .from('intake_sessions')
+        .select(SESSION_SELECT_LEGACY)
+        .eq('wa_id', waId)
+        .single()
+      if (legacyError) {
+        if (isSupabaseSchemaError(legacyError)) {
+          return memSetSessionTakeover(waId, humanTakeover)
+        }
+        throw new Error(legacyError.message)
+      }
+      return mapSessionRow(legacy as Record<string, unknown>, {
+        human_takeover: humanTakeover,
+      })
+    }
+    if (isSupabaseSchemaError(error)) {
+      return memSetSessionTakeover(waId, humanTakeover)
+    }
+    throw new Error(error.message)
   }
+  return mapSessionRow(data as Record<string, unknown>)
 }
 
 export async function listSessionMessages(waId: string): Promise<{
@@ -121,7 +172,23 @@ export async function listSessionMessages(waId: string): Promise<{
     .eq('wa_id', waId)
     .order('created_at', { ascending: true })
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isMissingTableError(error, 'inbox_messages')) {
+      const messages = memListInboxMessages(waId)
+      const ticketIds = [
+        ...new Set(messages.map((m) => m.ticket_id).filter(Boolean)),
+      ] as string[]
+      return { messages, ticketIds, backend: 'memory' }
+    }
+    if (isSupabaseSchemaError(error)) {
+      const messages = memListInboxMessages(waId)
+      const ticketIds = [
+        ...new Set(messages.map((m) => m.ticket_id).filter(Boolean)),
+      ] as string[]
+      return { messages, ticketIds, backend: 'memory' }
+    }
+    throw new Error(error.message)
+  }
 
   const { data: tickets } = await supabase
     .from('tickets')
@@ -224,7 +291,18 @@ export async function replyToSession(input: {
     .select('id, direction, body, created_at, ticket_id')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isMissingTableError(error, 'inbox_messages') || isSupabaseSchemaError(error)) {
+      const message = memAddInboxMessage({
+        wa_id: input.waId,
+        direction: 'outbound',
+        body: text,
+        ticket_id: input.ticketId ?? null,
+      })
+      return { message, send }
+    }
+    throw new Error(error.message)
+  }
 
   return {
     message: {

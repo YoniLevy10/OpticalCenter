@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import {
   memCreateVendor,
   memGetVendor,
@@ -52,7 +53,15 @@ export async function listVendors(opts?: {
   if (opts?.activeOnly) query = query.eq('active', true)
 
   const { data, error } = await query
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return {
+        backend: 'memory',
+        vendors: memListVendors(opts?.activeOnly).map(toPublic),
+      }
+    }
+    throw new Error(error.message)
+  }
 
   return {
     backend: 'supabase',
@@ -87,7 +96,12 @@ export async function createVendor(input: {
     .select('*')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return toPublic(memCreateVendor(input))
+    }
+    throw new Error(error.message)
+  }
   return toPublic(rowToMem(data))
 }
 
@@ -125,7 +139,12 @@ export async function updateVendor(
     .select('*')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return toPublic(memUpdateVendor(id, patch))
+    }
+    throw new Error(error.message)
+  }
   return toPublic(rowToMem(data))
 }
 
@@ -141,6 +160,11 @@ export async function getVendorSecret(id: string): Promise<MemVendor | undefined
     .eq('id', id)
     .maybeSingle()
 
-  if (error || !data) return undefined
+  if (error || !data) {
+    if (error && isSupabaseSchemaError(error)) {
+      return memGetVendor(id)
+    }
+    return undefined
+  }
   return rowToMem(data)
 }

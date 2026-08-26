@@ -5,6 +5,10 @@
 - Apply SQL: `SUPABASE_DB_PASSWORD=… npm run db:migrate`
 - Pooler host (IPv4): `aws-1-eu-west-1.pooler.supabase.com`
 
+**After merging Phase 6 (vendors, inbox takeover, settings, push):** run migrations on production Supabase before deploy, or `/api/vendors` and `/api/inbox/sessions` will error until `20260826100000_phase6_ops_persistence.sql` is applied. The app degrades to in-memory fallback when tables/columns are missing, but persistence requires the migration.
+
+Manual SQL editor: [Supabase SQL](https://supabase.com/dashboard/project/pfsxuylbnpbcgjehuaqo/sql/new) → paste `supabase/migrations/20260826100000_phase6_ops_persistence.sql`.
+
 ### Auth URL Configuration (חובה לפרודקשן)
 
 Magic Link נשבר אם **Site URL** נשאר `http://localhost:3000`.

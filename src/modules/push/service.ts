@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import {
   memDeletePushSubscription,
   memListPushSubscriptions,
@@ -28,7 +29,19 @@ export async function listPushSubscriptions(profileId: string): Promise<{
     .select('id, endpoint, created_at')
     .eq('profile_id', profileId)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return {
+        backend: 'memory',
+        subscriptions: memListPushSubscriptions(profileId).map((s) => ({
+          id: s.id,
+          endpoint: s.endpoint,
+          created_at: s.created_at,
+        })),
+      }
+    }
+    throw new Error(error.message)
+  }
   return { backend: 'supabase', subscriptions: data ?? [] }
 }
 
@@ -57,7 +70,12 @@ export async function upsertPushSubscription(input: {
     .select('id, profile_id, endpoint, p256dh, auth, created_at')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return memUpsertPushSubscription(input)
+    }
+    throw new Error(error.message)
+  }
   return data as MemPushSubscription
 }
 
@@ -73,5 +91,11 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
     .delete()
     .eq('endpoint', endpoint)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      memDeletePushSubscription(endpoint)
+      return
+    }
+    throw new Error(error.message)
+  }
 }
