@@ -6,7 +6,10 @@ import { requestPasswordlessLogin } from '@/lib/auth/request-login'
 import { ensurePilotAccessForAuthUser } from '@/lib/auth/seed-pilot-user'
 import { resolveHomePath } from '@/lib/auth/home-path'
 import { loadMemberships } from '@/lib/auth/load-memberships'
-import { normalizeEmail } from '@/lib/auth/pilot-users'
+import { findPilotUserByEmail, normalizeEmail } from '@/lib/auth/pilot-users'
+import { TEST_ACTOR_COOKIE } from '@/lib/auth/demo-session'
+import { seedPilotUser } from '@/lib/auth/seed-pilot-user'
+import type { Membership } from '@/lib/auth/types'
 import {
   checkRateLimit,
   clientIpFromRequest,
@@ -125,19 +128,65 @@ async function handlePassword(json: unknown) {
   }
 
   const email = normalizeEmail(parsed.data.email)
-  const supabase = await createRouteSupabase()
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: parsed.data.password,
-  })
-  if (error || !data.user) {
-    return NextResponse.json(
-      { error: error?.message || 'אימייל או סיסמה שגויים' },
-      { status: 401 },
-    )
+  const password = parsed.data.password
+
+  if (
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    try {
+      const supabase = await createRouteSupabase()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (!error && data.user) {
+        return NextResponse.json(await finishLoginPayload(data.user))
+      }
+    } catch {
+      // Supabase unreachable — fall through to pilot password fallback below.
+    }
   }
 
-  return NextResponse.json(await finishLoginPayload(data.user))
+  const pilotLogin = await tryPilotPasswordLogin(email, password)
+  if (pilotLogin) return pilotLogin
+
+  return NextResponse.json(
+    { error: 'אימייל או סיסמה שגויים' },
+    { status: 401 },
+  )
+}
+
+/**
+ * Pilot owner login when Supabase Auth is down or user not yet seeded.
+ * Requires PILOT_LOGIN_PASSWORD in env — never hard-code passwords in code.
+ */
+async function tryPilotPasswordLogin(email: string, password: string) {
+  const pilot = findPilotUserByEmail(email)
+  const expected = process.env.PILOT_LOGIN_PASSWORD?.trim()
+  if (!pilot || !expected || password !== expected) return null
+
+  await seedPilotUser(pilot)
+  const membership: Membership = {
+    id: 'pilot-login',
+    profile_id: pilot.id,
+    organization_id: '11111111-1111-1111-1111-111111111111',
+    role: pilot.role,
+    country_id: null,
+    region_id: null,
+    store_id: null,
+  }
+  const home = resolveHomePath({ memberships: [membership] })
+
+  const res = NextResponse.json({ ok: true as const, home })
+  res.cookies.set(TEST_ACTOR_COOKIE, pilot.id, {
+    httpOnly: false,
+    sameSite: 'lax',
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 30,
+  })
+  return res
 }
 
 async function finishLoginPayload(user: {
