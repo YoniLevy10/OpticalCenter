@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   PageHeader,
   Panel,
@@ -8,8 +8,13 @@ import {
   EmptyState,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
-import { ReportsExportButton } from './reports-export'
-import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
+import { ReportsFilters } from './reports-filters'
+import {
+  computeDashboardKpis,
+  computeSlaReport,
+  computeStoreReport,
+  filterTicketsByDateRange,
+} from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -18,45 +23,43 @@ import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const sp = await searchParams
+  const from = sp.from
+  const to = sp.to
+
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
   const [ticketResult, techRows] = await Promise.all([
-    listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
+    listTickets(5000).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
   ])
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
-  const all = actor ? scopeTicketsForActor(actor, fetched) : fetched
+  const scoped = actor ? scopeTicketsForActor(actor, fetched) : fetched
+  const all = filterTicketsByDateRange(scoped, from, to)
   const technicians = techRows.map((t) => ({
     id: t.id,
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
   const kpis = computeDashboardKpis(all, technicians)
-
-  const exportRows = all.map((t) => ({
-    number: t.display_number ?? (t.number != null ? `OC-${t.number}` : t.id),
-    status: t.status,
-    priority: t.priority,
-    category: t.category,
-    store: t.stores?.code ?? '',
-    store_name: t.stores?.name ?? '',
-    created_at: t.created_at,
-    resolved_at: t.resolved_at ?? '',
-    assigned_to: t.assigned_to ?? '',
-  }))
+  const sla = computeSlaReport(all)
+  const storeReport = computeStoreReport(all).slice(0, 10)
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <PageHeader
           className="hidden md:flex"
           title="דוחות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          actions={
-            <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
-          }
         />
+
+        <ReportsFilters from={from} to={to} />
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
@@ -78,6 +81,36 @@ export default async function ReportsPage() {
           ))}
         </div>
 
+        <Panel flush elevated>
+          <PanelHeader title="דוח SLA" />
+          <ul className="divide-y divide-border">
+            {[
+              {
+                label: 'נפתרו בתוך SLA',
+                value: String(sla.resolvedWithinSla),
+              },
+              {
+                label: 'נפתרו בחריגה',
+                value: String(sla.resolvedBreached),
+              },
+              { label: 'פתוחות בחריגה', value: String(sla.openBreached) },
+              {
+                label: '% בתוך SLA',
+                value:
+                  sla.pctWithinSla != null ? `${sla.pctWithinSla}%` : '—',
+              },
+            ].map((row) => (
+              <li
+                key={row.label}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <span className="t-body text-ink">{row.label}</span>
+                <span className="t-body-strong t-num text-ink">{row.value}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+
         <div className="grid gap-4 lg:grid-cols-2">
           <Panel flush elevated>
             <PanelHeader title="לפי קטגוריה" />
@@ -97,21 +130,20 @@ export default async function ReportsPage() {
               </ul>
             )}
           </Panel>
+
           <Panel flush elevated>
-            <PanelHeader title="חנויות מובילות" />
-            {kpis.topStores.length === 0 ? (
+            <PanelHeader title="עומס טכנאים" />
+            {kpis.techLoad.length === 0 ? (
               <EmptyState title="אין נתונים" />
             ) : (
               <ul className="divide-y divide-border">
-                {kpis.topStores.map((s) => (
+                {kpis.techLoad.map((t) => (
                   <li
-                    key={s.code}
+                    key={t.id}
                     className="flex items-center justify-between px-4 py-3"
                   >
-                    <span className="t-body text-ink">
-                      <span className="t-num">#{s.code}</span> · {s.name}
-                    </span>
-                    <span className="t-body-strong t-num text-ink">{s.count}</span>
+                    <span className="t-body text-ink">{t.name}</span>
+                    <span className="t-body-strong t-num text-ink">{t.count}</span>
                   </li>
                 ))}
               </ul>
@@ -119,13 +151,35 @@ export default async function ReportsPage() {
           </Panel>
         </div>
 
-        <div className="flex flex-wrap gap-2 md:hidden">
-          <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
+        <Panel flush elevated>
+          <PanelHeader title="דוח לפי חנות" meta={`${storeReport.length} חנויות`} />
+          {storeReport.length === 0 ? (
+            <EmptyState title="אין נתונים" />
+          ) : (
+            <ul className="divide-y divide-border">
+              {storeReport.map((s) => (
+                <li
+                  key={s.code}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                >
+                  <span className="t-body text-ink">
+                    <span className="t-num">#{s.code}</span> · {s.name}
+                  </span>
+                  <span className="t-caption t-num text-ink-2">
+                    {s.total} סה״כ · {s.open} פתוחות · {s.breached} חריגות
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary" size="sm">
             <Link href="/ops/dashboard">לוח בקרה</Link>
           </Button>
         </div>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AlertTriangle, Inbox, PackageOpen, UserRound, Wrench } from 'lucide-react'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   PageHeader,
   Panel,
@@ -212,7 +212,7 @@ export default async function OpsDashboardPage() {
   const kpis = computeDashboardKpis(all, technicians)
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4 stagger">
         <PageHeader
           title="לוח בקרה"
@@ -309,6 +309,6 @@ export default async function OpsDashboardPage() {
           </Panel>
         </div>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

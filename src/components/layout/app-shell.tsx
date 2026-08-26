@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BarChart3,
   Box,
@@ -21,6 +21,8 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import type { NavTool } from '@/lib/auth/nav-access'
+import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
 import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { cn } from '@/lib/utils'
@@ -122,6 +124,14 @@ function isActive(pathname: string, match: string) {
   return pathname === match || pathname.startsWith(`${match}/`)
 }
 
+function filterToolGroups(tools: NavTool[]) {
+  const allowed = new Set(tools.map((t) => t.href))
+  return TOOL_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => allowed.has(item.href)),
+  })).filter((group) => group.items.length > 0)
+}
+
 function SidebarNavLink({
   item,
   pathname,
@@ -190,9 +200,16 @@ function TenantMark() {
   )
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  tools = ALL_NAV_TOOLS,
+}: {
+  children: React.ReactNode
+  tools?: NavTool[]
+}) {
   const pathname = usePathname() ?? ''
   const [moreOpen, setMoreOpen] = useState(false)
+  const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
 
   return (
     <div className="dvh-screen bg-canvas text-ink">
@@ -224,7 +241,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
 
-          {TOOL_GROUPS.map((group) => (
+          {toolGroups.map((group) => (
             <div key={group.label} className="mt-6">
               <p className="t-caption mb-2 px-2.5 text-ink-3">{group.label}</p>
               <ul className="space-y-1">
@@ -270,7 +287,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ---------- Content ---------- */}
       <div className="md:ps-[var(--nav-w)]">
-        <main className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7">
+        <main
+          id="main-content"
+          className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7"
+        >
           {children}
         </main>
       </div>
@@ -318,7 +338,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onOpenChange={setMoreOpen}
         title="כלים והגדרות"
       >
-        {TOOL_GROUPS.map((group) => (
+        {toolGroups.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
             <p className="t-caption mb-2 text-ink-3">{group.label}</p>
             <ul className="divide-y divide-border">

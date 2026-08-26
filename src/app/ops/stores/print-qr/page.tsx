@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, Panel } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { PrintQrClient } from './print-qr-client'
@@ -18,7 +18,7 @@ export default async function PrintQrBatchPage() {
   const active = stores.filter((s) => s.is_active !== false)
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4 print:p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <PageHeader title="הדפסת QR" meta={`${active.length} חנויות`} />
@@ -58,6 +58,6 @@ export default async function PrintQrBatchPage() {
           </Button>
         </div>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

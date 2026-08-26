@@ -34,6 +34,94 @@ export type DashboardKpis = {
   resolvedCount: number
 }
 
+export type SlaReport = {
+  resolvedWithinSla: number
+  resolvedBreached: number
+  openBreached: number
+  pctWithinSla: number | null
+}
+
+export type StoreSlaRow = {
+  code: string
+  name: string
+  open: number
+  breached: number
+  total: number
+}
+
+/** Filter tickets by created_at date range (inclusive). */
+export function filterTicketsByDateRange<T extends { created_at: string }>(
+  tickets: T[],
+  from?: string | null,
+  to?: string | null,
+): T[] {
+  const fromMs = from ? new Date(from).getTime() : null
+  const toMs = to ? new Date(`${to}T23:59:59.999`).getTime() : null
+  return tickets.filter((t) => {
+    const ms = new Date(t.created_at).getTime()
+    if (fromMs != null && ms < fromMs) return false
+    if (toMs != null && ms > toMs) return false
+    return true
+  })
+}
+
+function wasResolvedWithinSla(
+  t: QueueTicket,
+): boolean | null {
+  if (t.status !== 'resolved' && t.status !== 'closed') return null
+  if (!t.resolved_at || !t.sla_resolve_by) return null
+  return new Date(t.resolved_at).getTime() <= new Date(t.sla_resolve_by).getTime()
+}
+
+export function computeSlaReport(
+  tickets: QueueTicket[],
+  now = new Date(),
+): SlaReport {
+  let resolvedWithinSla = 0
+  let resolvedBreached = 0
+  let openBreached = 0
+
+  for (const t of tickets) {
+    if (isOpen(t.status) && isBreached(t, now)) {
+      openBreached += 1
+      continue
+    }
+    const within = wasResolvedWithinSla(t)
+    if (within === true) resolvedWithinSla += 1
+    if (within === false) resolvedBreached += 1
+  }
+
+  const resolvedTotal = resolvedWithinSla + resolvedBreached
+  return {
+    resolvedWithinSla,
+    resolvedBreached,
+    openBreached,
+    pctWithinSla:
+      resolvedTotal > 0
+        ? Math.round((resolvedWithinSla / resolvedTotal) * 1000) / 10
+        : null,
+  }
+}
+
+export function computeStoreReport(
+  tickets: QueueTicket[],
+  now = new Date(),
+): StoreSlaRow[] {
+  const map = new Map<string, StoreSlaRow>()
+
+  for (const t of tickets) {
+    const code = t.stores?.code ?? '—'
+    const name = t.stores?.name ?? 'ללא חנות'
+    const prev = map.get(code) ?? { code, name, open: 0, breached: 0, total: 0 }
+    prev.total += 1
+    if (isOpen(t.status)) prev.open += 1
+    if (isBreached(t, now)) prev.breached += 1
+    map.set(code, prev)
+  }
+
+  return [...map.values()].sort((a, b) => b.total - a.total)
+}
+
 /**
  * Aggregate open-ticket KPIs for the HQ dashboard.
  * Uses the same breach semantics as the inbox (`isBreached`).

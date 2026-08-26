@@ -12,6 +12,7 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 import { assetWhatsAppPrefill } from '@/modules/assets/service'
 
 type StoreOpt = { id: string; code: string; name: string }
@@ -199,7 +200,24 @@ export function AssetsAdmin({ stores }: { stores: StoreOpt[] }) {
             description="הוסיפו יחידת מיזוג או ציוד אופטי לפי חנות."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <AdminRowList>
+              {assets.map((a) => (
+                <AdminRow
+                  key={a.id}
+                  leading={`#${a.store_code ?? '—'}`}
+                  title={a.name}
+                  subtitle={a.code}
+                  footer={
+                    <span className="t-caption text-ink-3">
+                      {TYPES.find((t) => t.value === a.asset_type)?.label ??
+                        a.asset_type}
+                    </span>
+                  }
+                />
+              ))}
+            </AdminRowList>
+            <div className="hidden overflow-x-auto md:block">
             <Table>
               <THead>
                 <TH>חנות</TH>
@@ -261,7 +279,8 @@ export function AssetsAdmin({ stores }: { stores: StoreOpt[] }) {
                 ))}
               </TBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </Panel>
     </div>

@@ -28,6 +28,7 @@ test.describe('Navigation & layout', () => {
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
     await gotoStable(page, '/ops/reports')
     await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'ייצוא CSV' })).toBeVisible()
     await gotoStable(page, '/ops/settings')
     await expect(page.getByRole('heading', { name: 'הגדרות' })).toBeVisible()
   })
@@ -66,17 +67,45 @@ test.describe('Navigation & layout', () => {
 })
 
 test.describe('A11y smoke', () => {
-  test('ops tickets has no critical axe violations', async ({ page }) => {
+  const AXE_ROUTES = [
+    { path: '/ops/tickets', name: 'ops tickets' },
+    { path: '/login', name: 'login' },
+    { path: '/report', name: 'public report' },
+    { path: '/ops/reports', name: 'ops reports' },
+    { path: '/tech', name: 'tech queue' },
+  ] as const
+
+  for (const route of AXE_ROUTES) {
+    test(`${route.name} has no critical axe violations`, async ({ page }) => {
+      test.skip(
+        test.info().project.name !== 'chromium',
+        'axe smoke on chromium only',
+      )
+      await gotoStable(page, route.path)
+      const results = await new AxeBuilder({ page })
+        .disableRules(['color-contrast'])
+        .analyze()
+      const critical = results.violations.filter((v) => v.impact === 'critical')
+      expect(critical, route.path).toEqual([])
+    })
+  }
+
+  test('ops tickets main content has no serious color-contrast violations', async ({
+    page,
+  }) => {
     test.skip(
       test.info().project.name !== 'chromium',
       'axe smoke on chromium only',
     )
     await gotoStable(page, '/ops/tickets')
     const results = await new AxeBuilder({ page })
-      .disableRules(['color-contrast'])
+      .include('#main-content')
+      .withRules(['color-contrast'])
       .analyze()
-    const critical = results.violations.filter((v) => v.impact === 'critical')
-    expect(critical).toEqual([])
+    const serious = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    )
+    expect(serious).toEqual([])
   })
 })
 

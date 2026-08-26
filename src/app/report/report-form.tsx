@@ -1,7 +1,6 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select } from '@/components/ui/input'
 import { ErrorState, Notice } from '@/components/ui/primitives'
@@ -48,6 +47,15 @@ export function PublicReportForm({
     }
   }
 
+  function resetForm() {
+    setTicketId(null)
+    setDisplay(null)
+    setDescription('')
+    setName('')
+    setPhone('')
+    setError(null)
+  }
+
   if (ticketId) {
     return (
       <div className="space-y-4 text-center">
@@ -56,11 +64,24 @@ export function PublicReportForm({
           {display ? ` · ${display}` : ''}
         </Notice>
         <p className="t-body text-ink-2">
-          צוות התחזוקה יטפל בתקלה. אפשר לסגור את החלון.
+          צוות התחזוקה יטפל בתקלה.
+          {phone.trim()
+            ? ' תקבלו עדכון ב-WhatsApp כשהטיפול יתקדם.'
+            : ' אפשר לסגור את החלון.'}
         </p>
-        <Button asChild variant="secondary">
-          <Link href="/ops/tickets">מעבר לתור (HQ)</Link>
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button type="button" variant="primary" size="block" onClick={resetForm}>
+            דיווח נוסף
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="block"
+            onClick={() => window.close()}
+          >
+            סגירה
+          </Button>
+        </div>
       </div>
     )
   }

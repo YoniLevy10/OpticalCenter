@@ -1,9 +1,9 @@
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { Panel, RowSkeleton, Skeleton } from '@/components/ui/primitives'
 
 export default function StoresLoading() {
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <Skeleton className="h-6 w-24" />
         <Skeleton className="h-10 w-72" />
@@ -12,6 +12,6 @@ export default function StoresLoading() {
           <RowSkeleton rows={8} />
         </Panel>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

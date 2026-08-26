@@ -1,7 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Field, Textarea } from '@/components/ui/input'
 import {
   EmptyState,
   ErrorState,
@@ -17,16 +19,28 @@ type Session = {
   human_takeover?: boolean
   last_inbound?: string | null
   updated_at: string
+  country_id?: string
+}
+
+type ThreadMessage = {
+  id: string
+  direction: 'inbound' | 'outbound'
+  body: string
+  created_at: string
+  ticket_id?: string | null
 }
 
 export function InboxClient() {
   const [sessions, setSessions] = useState<Session[]>([])
+  const [messages, setMessages] = useState<ThreadMessage[]>([])
+  const [ticketIds, setTicketIds] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  const [reply, setReply] = useState('')
 
-  const load = useCallback(async () => {
+  const loadSessions = useCallback(async () => {
     setError(null)
     try {
       const res = await fetch('/api/inbox/sessions')
@@ -39,9 +53,25 @@ export function InboxClient() {
     }
   }, [selected])
 
+  const loadThread = useCallback(async (waId: string) => {
+    try {
+      const res = await fetch(`/api/inbox/sessions/${encodeURIComponent(waId)}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'טעינת שיחה נכשלה')
+      setMessages(json.messages ?? [])
+      setTicketIds(json.ticketIds ?? [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'טעינת שיחה נכשלה')
+    }
+  }, [])
+
   useEffect(() => {
-    void load()
-  }, [load])
+    void loadSessions()
+  }, [loadSessions])
+
+  useEffect(() => {
+    if (selected) void loadThread(selected)
+  }, [selected, loadThread])
 
   async function toggleTakeover(waId: string, next: boolean) {
     setBusy(true)
@@ -55,9 +85,40 @@ export function InboxClient() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'עדכון נכשל')
       setNotice(next ? 'השתלטות אנושית פעילה — הבוט מושהה' : 'הוחזר לבוט')
-      await load()
+      await loadSessions()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'עדכון נכשל')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function sendReply() {
+    if (!selected || !reply.trim()) return
+    setBusy(true)
+    setNotice(null)
+    setError(null)
+    try {
+      const active = sessions.find((s) => s.wa_id === selected)
+      const res = await fetch(
+        `/api/inbox/sessions/${encodeURIComponent(selected)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: reply.trim(),
+            ticketId: ticketIds[0] ?? null,
+            countryId: active?.country_id,
+          }),
+        },
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'שליחה נכשלה')
+      setReply('')
+      setNotice(json.send?.dryRun ? 'נשלח (מצב דמו)' : 'הודעה נשלחה')
+      await loadThread(selected)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שליחה נכשלה')
     } finally {
       setBusy(false)
     }
@@ -100,57 +161,89 @@ export function InboxClient() {
           )}
         </Panel>
 
-        <Panel elevated>
+        <Panel elevated className="flex min-h-[420px] flex-col">
           {!active ? (
-            <EmptyState title="בחרו שיחה" description="מהרשימה מימין" />
+            <EmptyState title="בחרו שיחה" description="מהרשימה" />
           ) : (
-            <div className="space-y-4">
-              <div>
-                <h2 className="t-section text-ink">פרטי שיחה</h2>
+            <>
+              <div className="border-b border-border px-4 py-3">
+                <h2 className="t-section text-ink">שיחה</h2>
                 <p dir="ltr" className="t-body t-num mt-1 text-ink-2">
                   {active.wa_id}
                 </p>
+                {ticketIds.length > 0 ? (
+                  <p className="t-caption mt-2 text-ink-3">
+                    תקלות קשורות:{' '}
+                    {ticketIds.map((id, i) => (
+                      <span key={id}>
+                        {i > 0 ? ', ' : ''}
+                        <Link
+                          href={`/ops/tickets/${id}`}
+                          className="text-[var(--tenant)] hover:underline"
+                        >
+                          {id.slice(0, 8)}…
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
               </div>
-              <dl className="t-body space-y-2 text-ink-2">
-                <div className="flex justify-between gap-3">
-                  <dt>חנות</dt>
-                  <dd className="t-num text-ink">{active.store_code ?? '—'}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt>מצב FSM</dt>
-                  <dd className="text-ink">{active.state}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt>עדכון אחרון</dt>
-                  <dd className="t-num text-ink">
-                    {new Date(active.updated_at).toLocaleString('he-IL')}
-                  </dd>
-                </div>
-              </dl>
-              {active.last_inbound ? (
-                <div className="rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 px-3 py-2">
-                  <p className="t-caption text-ink-3">הודעה אחרונה</p>
-                  <p className="t-body mt-1 text-ink">{active.last_inbound}</p>
-                </div>
-              ) : null}
-              <Button
-                type="button"
-                variant={active.human_takeover ? 'secondary' : 'primary'}
-                size="block"
-                disabled={busy}
-                onClick={() =>
-                  void toggleTakeover(active.wa_id, !active.human_takeover)
-                }
-              >
-                {active.human_takeover
-                  ? 'החזרה לבוט'
-                  : 'השתלטות אנושית'}
-              </Button>
-              <p className="t-caption text-ink-3">
-                במצב השתלטות הבוט לא ממשיך את ה־FSM עד להחזרה. שליחת הודעות
-                ידנית דרך Meta תתווסף בהמשך.
-              </p>
-            </div>
+
+              <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
+                {messages.length === 0 ? (
+                  <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
+                ) : (
+                  messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`max-w-[85%] rounded-[var(--radius-md)] px-3 py-2 ${
+                        m.direction === 'outbound'
+                          ? 'ms-auto bg-[var(--tenant-soft)] text-ink'
+                          : 'bg-surface-sunken/70 text-ink'
+                      }`}
+                    >
+                      <p className="t-body">{m.body}</p>
+                      <time className="t-caption t-num mt-1 block text-ink-3">
+                        {new Date(m.created_at).toLocaleString('he-IL')}
+                      </time>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="space-y-2 border-t border-border p-4">
+                <Button
+                  type="button"
+                  variant={active.human_takeover ? 'secondary' : 'primary'}
+                  size="sm"
+                  disabled={busy}
+                  onClick={() =>
+                    void toggleTakeover(active.wa_id, !active.human_takeover)
+                  }
+                >
+                  {active.human_takeover ? 'החזרה לבוט' : 'השתלטות אנושית'}
+                </Button>
+                <Field label="תשובה" htmlFor="inbox-reply">
+                  <Textarea
+                    id="inbox-reply"
+                    rows={2}
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="כתבו הודעה ללקוח…"
+                    disabled={busy}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="block"
+                  disabled={busy || !reply.trim()}
+                  onClick={() => void sendReply()}
+                >
+                  {busy ? 'שולח…' : 'שליחה'}
+                </Button>
+              </div>
+            </>
           )}
         </Panel>
       </div>

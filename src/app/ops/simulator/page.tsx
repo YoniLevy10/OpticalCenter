@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { SimulatorForm } from './simulator-form'
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default function SimulatorPage() {
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <PageHeader
           title="סימולטור WhatsApp"
@@ -23,6 +23,6 @@ export default function SimulatorPage() {
         </p>
         <SimulatorForm />
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +16,7 @@ import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { QueueToolbar } from './queue-toolbar'
+import { QueueRefreshHint } from './queue-refresh-hint'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
 import {
@@ -123,7 +124,7 @@ export default async function TicketsPage({
     queueHref(filters, { sort: key })
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-3">
         <PageHeader
           title="תקלות"
@@ -144,6 +145,8 @@ export default async function TicketsPage({
           resultCount={filtered.length}
           attention={counts}
         />
+
+        <QueueRefreshHint />
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
           <ErrorState
@@ -332,6 +335,6 @@ export default async function TicketsPage({
           </nav>
         ) : null}
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

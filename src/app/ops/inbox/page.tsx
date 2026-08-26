@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader } from '@/components/ui/primitives'
 import { InboxClient } from './inbox-client'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -12,7 +12,7 @@ export default async function InboxPage() {
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="space-y-4">
         <PageHeader
           className="hidden md:flex"
@@ -21,6 +21,6 @@ export default async function InboxPage() {
         />
         <InboxClient />
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

@@ -1,8 +1,8 @@
-import { AppShell } from '@/components/layout/app-shell'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageHeader, Panel, KeyValue } from '@/components/ui/primitives'
 import { SettingsForm } from './settings-form'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
-import { memGetSettings } from '@/lib/data/memory-store'
+import { getSettings } from '@/modules/settings/service'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 
@@ -22,11 +22,11 @@ const LINKS = [
   { href: '/api/health', title: 'בדיקת שירות', desc: 'סטטוס API' },
 ]
 
-export default function SettingsPage() {
-  const settings = memGetSettings()
+export default async function SettingsPage() {
+  const { settings } = await getSettings()
 
   return (
-    <AppShell>
+    <OpsAppShell>
       <div className="max-w-2xl space-y-4">
         <PageHeader title="הגדרות" meta="פיילוט ישראל" className="hidden md:flex" />
 
@@ -75,6 +75,6 @@ export default function SettingsPage() {
           <SeedDemoTicketButton />
         </Panel>
       </div>
-    </AppShell>
+    </OpsAppShell>
   )
 }

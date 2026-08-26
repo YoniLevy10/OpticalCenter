@@ -6,32 +6,16 @@ import {
 } from '@/lib/auth/request-actor'
 import { AuthError } from '@/lib/auth/types'
 import {
-  memListSessions,
-  memSetSessionTakeover,
-  memUpsertSession,
-  MEM_COUNTRY_ID,
-} from '@/lib/data/memory-store'
+  listInboxSessions,
+  setSessionTakeover,
+} from '@/modules/inbox/service'
 import { captureError } from '@/lib/monitoring'
 
 export async function GET(request: Request) {
   try {
     await requireActor(request)
-    // Seed a demo conversation when empty so the inbox isn't blank in pilot
-    let sessions = memListSessions()
-    if (sessions.length === 0) {
-      memUpsertSession({
-        wa_id: '972501112233',
-        country_id: MEM_COUNTRY_ID,
-        store_id: 'demo-172',
-        store_code: '172',
-        state: 'awaiting_description',
-        pending_description: null,
-        human_takeover: false,
-        last_inbound: 'המזגן לא מקרר באולם',
-      })
-      sessions = memListSessions()
-    }
-    return NextResponse.json({ sessions })
+    const { sessions, backend } = await listInboxSessions()
+    return NextResponse.json({ sessions, backend })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'GET /api/inbox/sessions' })
@@ -51,7 +35,7 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
     }
-    const session = memSetSessionTakeover(
+    const session = await setSessionTakeover(
       parsed.data.wa_id,
       parsed.data.human_takeover,
     )

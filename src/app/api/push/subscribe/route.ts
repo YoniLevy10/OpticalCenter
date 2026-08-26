@@ -6,10 +6,10 @@ import {
 } from '@/lib/auth/request-actor'
 import { AuthError } from '@/lib/auth/types'
 import {
-  memDeletePushSubscription,
-  memListPushSubscriptions,
-  memUpsertPushSubscription,
-} from '@/lib/data/memory-store'
+  deletePushSubscription,
+  listPushSubscriptions,
+  upsertPushSubscription,
+} from '@/modules/push/service'
 import { captureError } from '@/lib/monitoring'
 
 const subscribeSchema = z.object({
@@ -23,13 +23,10 @@ const subscribeSchema = z.object({
 export async function GET(request: Request) {
   try {
     const actor = await requireActor(request)
-    const subs = memListPushSubscriptions(actor.id)
+    const { subscriptions, backend } = await listPushSubscriptions(actor.id)
     return NextResponse.json({
-      subscriptions: subs.map((s) => ({
-        id: s.id,
-        endpoint: s.endpoint,
-        created_at: s.created_at,
-      })),
+      subscriptions,
+      backend,
       vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || null,
     })
   } catch (err) {
@@ -46,7 +43,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
     }
-    const row = memUpsertPushSubscription({
+    const row = await upsertPushSubscription({
       profile_id: actor.id,
       endpoint: parsed.data.endpoint,
       p256dh: parsed.data.keys.p256dh,
@@ -77,7 +74,7 @@ export async function DELETE(request: Request) {
     if (!endpoint) {
       return NextResponse.json({ error: 'endpoint חובה' }, { status: 400 })
     }
-    memDeletePushSubscription(endpoint)
+    await deletePushSubscription(endpoint)
     return NextResponse.json({ ok: true })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
