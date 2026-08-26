@@ -119,6 +119,9 @@ html {
 }
 
 body {
+  touch-action: manipulation;
+  scroll-padding-top: var(--topbar-h);
+  scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
   background: var(--canvas);
   background-image: radial-gradient(
     ellipse 120% 80% at 50% -20%,
@@ -274,6 +277,10 @@ textarea:focus-visible,
 
 .pb-actions {
   padding-bottom: calc(76px + var(--safe-b) + 16px);
+}
+
+.scroll-pb-actions {
+  scroll-padding-bottom: calc(76px + var(--safe-b) + 16px);
 }
 
 .pb-actions-hq {

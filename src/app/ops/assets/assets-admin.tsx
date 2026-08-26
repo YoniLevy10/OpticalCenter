@@ -4,6 +4,8 @@ import { FormEvent, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
+import { Modal } from '@/components/ui/overlay'
+import { RowList } from '@/components/ui/operational-row'
 import {
   EmptyState,
   ErrorState,
@@ -43,6 +45,7 @@ export function AssetsAdmin({ stores }: { stores: StoreOpt[] }) {
   const [name, setName] = useState('')
   const [assetType, setAssetType] = useState('hvac')
   const [filterStore, setFilterStore] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<AssetRow | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -94,12 +97,12 @@ export function AssetsAdmin({ stores }: { stores: StoreOpt[] }) {
   }
 
   async function onDelete(id: string) {
-    if (!confirm('למחוק נכס זה?')) return
     setBusy(true)
     try {
       const res = await fetch(`/api/assets/${id}`, { method: 'DELETE' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'מחיקה נכשלה')
+      setDeleteTarget(null)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'מחיקה נכשלה')
@@ -199,71 +202,144 @@ export function AssetsAdmin({ stores }: { stores: StoreOpt[] }) {
             description="הוסיפו יחידת מיזוג או ציוד אופטי לפי חנות."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TH>חנות</TH>
-                <TH>קוד</TH>
-                <TH>שם</TH>
-                <TH>סוג</TH>
-                <TH>טקסט QR</TH>
-                <TH align="end">פעולות</TH>
-              </THead>
-              <TBody>
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <THead>
+                  <TH>חנות</TH>
+                  <TH>קוד</TH>
+                  <TH>שם</TH>
+                  <TH>סוג</TH>
+                  <TH>טקסט QR</TH>
+                  <TH align="end">פעולות</TH>
+                </THead>
+                <TBody>
+                  {assets.map((a) => (
+                    <TR key={a.id}>
+                      <TD>
+                        <span className="t-body text-ink">
+                          {a.store_code ?? '—'} · {a.store_name ?? ''}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span className="t-body-strong t-num text-ink">{a.code}</span>
+                      </TD>
+                      <TD>
+                        <span className="t-body text-ink">{a.name}</span>
+                      </TD>
+                      <TD>
+                        <span className="t-caption text-ink-2">
+                          {TYPES.find((t) => t.value === a.asset_type)?.label ??
+                            a.asset_type}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span
+                          dir="ltr"
+                          className="t-caption t-num rounded-[var(--radius-sm)] bg-sunken px-1.5 py-0.5 text-ink-2"
+                        >
+                          {a.store_code
+                            ? assetWhatsAppPrefill(a.store_code, a.code)
+                            : '—'}
+                        </span>
+                      </TD>
+                      <TD align="end">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/ops/tickets?q=${encodeURIComponent(a.code)}`}
+                            className="t-caption text-ink-2 underline-offset-2 hover:underline"
+                          >
+                            תקלות
+                          </Link>
+                          <button
+                            type="button"
+                            className="t-caption min-h-[var(--tap)] text-[var(--signal-critical)]"
+                            disabled={busy}
+                            onClick={() => setDeleteTarget(a)}
+                          >
+                            מחיקה
+                          </button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="md:hidden">
+              <RowList>
                 {assets.map((a) => (
-                  <TR key={a.id}>
-                    <TD>
-                      <span className="t-body text-ink">
-                        {a.store_code ?? '—'} · {a.store_name ?? ''}
-                      </span>
-                    </TD>
-                    <TD>
-                      <span className="t-body-strong t-num text-ink">{a.code}</span>
-                    </TD>
-                    <TD>
-                      <span className="t-body text-ink">{a.name}</span>
-                    </TD>
-                    <TD>
-                      <span className="t-caption text-ink-2">
-                        {TYPES.find((t) => t.value === a.asset_type)?.label ??
-                          a.asset_type}
-                      </span>
-                    </TD>
-                    <TD>
-                      <span
-                        dir="ltr"
-                        className="t-caption t-num rounded-[var(--radius-sm)] bg-sunken px-1.5 py-0.5 text-ink-2"
-                      >
-                        {a.store_code
-                          ? assetWhatsAppPrefill(a.store_code, a.code)
-                          : '—'}
-                      </span>
-                    </TD>
-                    <TD align="end">
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          href={`/ops/tickets?q=${encodeURIComponent(a.code)}`}
-                          className="t-caption text-ink-2 underline-offset-2 hover:underline"
-                        >
-                          תקלות
-                        </Link>
-                        <button
-                          type="button"
-                          className="t-caption text-[var(--signal-critical)]"
-                          disabled={busy}
-                          onClick={() => void onDelete(a.id)}
-                        >
-                          מחיקה
-                        </button>
+                  <div
+                    key={a.id}
+                    className="flex min-h-[var(--tap)] flex-col gap-2 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="t-body-strong text-ink">
+                          {a.name}
+                          <span className="t-num ms-2 text-ink-3">{a.code}</span>
+                        </p>
+                        <p className="t-meta text-ink-2">
+                          {a.store_code ?? '—'} ·{' '}
+                          {TYPES.find((t) => t.value === a.asset_type)?.label ??
+                            a.asset_type}
+                        </p>
                       </div>
-                    </TD>
-                  </TR>
+                      <Link
+                        href={`/ops/tickets?q=${encodeURIComponent(a.code)}`}
+                        className="t-caption shrink-0 text-ink-2 underline-offset-2 hover:underline"
+                      >
+                        תקלות
+                      </Link>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="self-start text-[var(--signal-critical)]"
+                      disabled={busy}
+                      onClick={() => setDeleteTarget(a)}
+                    >
+                      מחיקה
+                    </Button>
+                  </div>
                 ))}
-              </TBody>
-            </Table>
-          </div>
+              </RowList>
+            </div>
+          </>
         )}
       </Panel>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="מחיקת נכס"
+        description={
+          deleteTarget
+            ? `למחוק את ${deleteTarget.name} (${deleteTarget.code})?`
+            : undefined
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy || !deleteTarget}
+            onClick={() => deleteTarget && void onDelete(deleteTarget.id)}
+          >
+            {busy ? 'מוחק…' : 'מחיקה'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy}
+            onClick={() => setDeleteTarget(null)}
+          >
+            ביטול
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader } from '@/components/ui/primitives'
 import { AssetsAdmin } from './assets-admin'
 import { fetchStores } from '@/modules/stores/data'
@@ -17,11 +18,14 @@ export default async function AssetsPage() {
   return (
     <AppShell>
       <div className="space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/settings"
+          backLabel="חזרה להגדרות"
           title="נכסים"
           meta="ציוד לפי חנות"
+          showRefresh
         />
+        <PageHeader title="נכסים" meta="ציוד לפי חנות" className="hidden md:flex" />
         <AssetsAdmin
           stores={stores.map((s) => ({
             id: s.id,

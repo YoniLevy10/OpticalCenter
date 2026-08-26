@@ -35,8 +35,14 @@ export function ReportsExportButton({
   }
 
   return (
-    <Button type="button" variant="secondary" size="sm" onClick={download}>
-      ייצוא CSV
+    <Button
+      type="button"
+      variant="secondary"
+      size="touch"
+      className="md:h-9 md:min-h-0"
+      onClick={download}
+    >
+      ייצוא CSV ({rows.length})
     </Button>
   )
 }

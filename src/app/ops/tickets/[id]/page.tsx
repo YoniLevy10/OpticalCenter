@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   Panel,
   PanelHeader,
@@ -94,8 +95,10 @@ export default async function TicketDetailPage({
   return (
     <AppShell>
       <div className="space-y-4 max-md:pb-actions-hq">
+        <PageToolbar backHref="/ops/tickets" backLabel="חזרה לתקלות" showRefresh />
+
         {/* Breadcrumb — quiet, one line, never a heading. */}
-        <nav className="flex items-center gap-1">
+        <nav aria-label="מיקום בעמוד" className="hidden items-center gap-1 md:flex">
           <Link
             href="/ops/tickets"
             className="t-meta text-ink-3 transition-colors hover:text-ink"
@@ -119,9 +122,21 @@ export default async function TicketDetailPage({
             <p className="t-body mt-2 text-ink-2">
               {ticket.stores ? (
                 <>
-                  {ticket.stores.name}
+                  <Link
+                    href={`/ops/stores/${encodeURIComponent(ticket.stores.code)}`}
+                    className="hover:text-[var(--tenant)] hover:underline"
+                  >
+                    {ticket.stores.name}
+                  </Link>
                   <span className="t-num text-ink-3"> · #{ticket.stores.code}</span>
                   {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
+                  {' · '}
+                  <Link
+                    href={`/ops/tickets?store=${encodeURIComponent(ticket.stores.code)}`}
+                    className="t-caption text-[var(--tenant)] hover:underline"
+                  >
+                    תקלות לחנות
+                  </Link>
                 </>
               ) : (
                 'חנות לא ידועה'

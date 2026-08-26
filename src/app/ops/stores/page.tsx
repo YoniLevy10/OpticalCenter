@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Store } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
 import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
+import { Button } from '@/components/ui/button'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
@@ -64,7 +65,7 @@ export default async function StoresPage({
     <AppShell>
       <div className="space-y-4">
         <PageHeader
-          className="hidden md:flex"
+         
           title="חנויות"
           meta={fromDb ? `${activeCount} פעילות` : 'מצב דמו'}
         />
@@ -74,12 +75,9 @@ export default async function StoresPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <StoreSearch initial={sp.q ?? ''} />
           <div className="flex items-center gap-3">
-            <Link
-              href="/ops/stores/print-qr"
-              className="t-body text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-            >
-              הדפסת QR
-            </Link>
+            <Button asChild variant="ghost" size="touch" className="min-h-[var(--tap)]">
+              <Link href="/ops/stores/print-qr">הדפסת QR</Link>
+            </Button>
             <p className="t-meta t-num text-ink-3">{filtered.length} תוצאות</p>
           </div>
         </div>

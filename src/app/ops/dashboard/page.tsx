@@ -74,7 +74,7 @@ function StatStrip({
           <Link
             key={item.label}
             href={item.href}
-            className="group flex items-start gap-3.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-[background-color,box-shadow,transform] duration-[var(--dur-1)] hover:-translate-y-px hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)]"
+            className="group flex items-start gap-3.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-[background-color,box-shadow,transform] duration-[var(--dur-1)] hover:-translate-y-px hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
           >
             <span
               aria-hidden
@@ -217,13 +217,18 @@ export default async function OpsDashboardPage() {
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          className="hidden md:flex"
           actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/tickets">לתור התקלות</Link>
             </Button>
           }
         />
+
+        <div className="md:hidden">
+          <Button asChild variant="secondary" size="touch" className="w-full">
+            <Link href="/ops/tickets">לתור התקלות</Link>
+          </Button>
+        </div>
 
         <div
           className={cn(

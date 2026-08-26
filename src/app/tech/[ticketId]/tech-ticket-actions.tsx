@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { useOnline } from '@/hooks/use-online'
 import { Camera, Check, Pause, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, Field } from '@/components/ui/input'
@@ -70,6 +71,7 @@ export function TechTicketActions({
 }) {
   const router = useRouter()
   const toast = useToast()
+  const online = useOnline()
   const [, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +91,10 @@ export function TechTicketActions({
   const secondary = actions.filter((a) => a.variant === 'secondary')
 
   async function submit(body: Record<string, unknown>, success: string) {
+    if (!online) {
+      setError('אין חיבור — נסו שוב כשהרשת חוזרת')
+      return
+    }
     if (!techId) {
       setError('לא זוהה טכנאי')
       return
@@ -230,6 +236,12 @@ export function TechTicketActions({
     <div className="space-y-2">
       {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}
 
+      {!online ? (
+        <p className="t-body rounded-[var(--radius-md)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2 text-[var(--signal-warning)]" role="alert">
+          אין חיבור לרשת — פעולות מושבתות עד לחזרת החיבור
+        </p>
+      ) : null}
+
       {!canAct ? (
         <p className="t-body rounded-[var(--radius-md)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2 text-[var(--signal-warning)]">
           העבודה משויכת לטכנאי אחר
@@ -241,7 +253,7 @@ export function TechTicketActions({
               type="button"
               variant={primary.variant === 'resolve' ? 'resolve' : 'primary'}
               size="block"
-              disabled={busy}
+              disabled={busy || !online}
               onClick={onPrimary}
             >
               <primary.icon className="h-4 w-4" aria-hidden />
@@ -255,7 +267,7 @@ export function TechTicketActions({
               variant="secondary"
               size="touch"
               className="flex-1"
-              disabled={busy}
+              disabled={busy || !online}
               onClick={() => setSheet('evidence')}
             >
               <Camera className="h-4 w-4" aria-hidden />
@@ -268,7 +280,7 @@ export function TechTicketActions({
                 variant="secondary"
                 size="touch"
                 className="flex-1"
-                disabled={busy}
+                disabled={busy || !online}
                 onClick={() => void submit({ status: a.status }, `${a.label} — נשמר`)}
               >
                 <a.icon className="h-4 w-4" aria-hidden />

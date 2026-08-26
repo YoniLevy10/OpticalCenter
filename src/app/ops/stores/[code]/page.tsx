@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader, Panel, PanelHeader, KeyValue } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -36,6 +37,11 @@ export default async function StoreDetailPage({
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl space-y-4">
+        <PageToolbar
+          backHref="/ops/stores"
+          backLabel="חזרה לחנויות"
+          showRefresh
+        />
         <PageHeader
           title={store.name}
           meta={
@@ -48,9 +54,16 @@ export default async function StoreDetailPage({
             </>
           }
           actions={
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/stores">לרשימה</Link>
-            </Button>
+            <>
+              <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex">
+                <Link href="/ops/stores">לרשימה</Link>
+              </Button>
+              <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex">
+                <Link href={`/ops/tickets?store=${encodeURIComponent(store.code)}`}>
+                  תקלות פתוחות
+                </Link>
+              </Button>
+            </>
           }
         />
 

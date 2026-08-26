@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader } from '@/components/ui/primitives'
 import { UsersAdmin } from './users-admin'
 import { fetchStores } from '@/modules/stores/data'
@@ -16,10 +17,17 @@ export default async function UsersPage() {
   return (
     <AppShell>
       <div className="max-w-5xl space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/settings"
+          backLabel="חזרה להגדרות"
           title="משתמשים"
           meta="ניהול פרופילים והרשאות"
+          showRefresh
+        />
+        <PageHeader
+          title="משתמשים"
+          meta="ניהול פרופילים והרשאות"
+          className="hidden md:flex"
         />
         <UsersAdmin
           stores={stores.map((s) => ({

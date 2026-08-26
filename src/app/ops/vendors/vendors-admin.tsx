@@ -11,6 +11,7 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { RowList } from '@/components/ui/operational-row'
 
 type VendorRow = {
   id: string
@@ -224,54 +225,96 @@ export function VendorsAdmin() {
         ) : vendors.length === 0 ? (
           <EmptyState title="אין ספקים" description="הוסיפו ספק חיצוני לשיגור." />
         ) : (
-          <Table>
-            <THead>
-              <TH>שם</TH>
-              <TH>התמחות</TH>
-              <TH>יצירת קשר</TH>
-              <TH>HMAC</TH>
-              <TH className="w-[120px]">פעולות</TH>
-            </THead>
-            <TBody>
-              {vendors.map((v) => (
-                <TR key={v.id}>
-                  <TD>
-                    <span className="t-body-strong text-ink">{v.name}</span>
-                    {!v.active ? (
-                      <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
-                    ) : null}
-                  </TD>
-                  <TD>
-                    <span className="t-meta text-ink-2">{v.specialties}</span>
-                  </TD>
-                  <TD>
-                    <span className="t-meta block text-ink-2" dir="ltr">
-                      {v.contact_phone || '—'}
-                    </span>
-                    <span className="t-caption block text-ink-3" dir="ltr">
-                      {v.contact_email || ''}
-                    </span>
-                  </TD>
-                  <TD>
-                    <span className="t-caption text-ink-3">
-                      {v.has_hmac ? 'מוכן' : '—'}
-                    </span>
-                  </TD>
-                  <TD>
+          <>
+            <div className="hidden md:block">
+              <Table>
+                <THead>
+                  <TH>שם</TH>
+                  <TH>התמחות</TH>
+                  <TH>יצירת קשר</TH>
+                  <TH>HMAC</TH>
+                  <TH className="w-[120px]">פעולות</TH>
+                </THead>
+                <TBody>
+                  {vendors.map((v) => (
+                    <TR key={v.id}>
+                      <TD>
+                        <span className="t-body-strong text-ink">{v.name}</span>
+                        {!v.active ? (
+                          <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
+                        ) : null}
+                      </TD>
+                      <TD>
+                        <span className="t-meta text-ink-2">{v.specialties}</span>
+                      </TD>
+                      <TD>
+                        <span className="t-meta block text-ink-2" dir="ltr">
+                          {v.contact_phone || '—'}
+                        </span>
+                        <span className="t-caption block text-ink-3" dir="ltr">
+                          {v.contact_email || ''}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span className="t-caption text-ink-3">
+                          {v.has_hmac ? 'מוכן' : '—'}
+                        </span>
+                      </TD>
+                      <TD>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          onClick={() => void toggleActive(v)}
+                        >
+                          {v.active ? 'השבתה' : 'הפעלה'}
+                        </Button>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="md:hidden">
+              <RowList>
+                {vendors.map((v) => (
+                  <div
+                    key={v.id}
+                    className="flex min-h-[var(--tap)] flex-col gap-2 px-4 py-3"
+                  >
+                    <div>
+                      <p className="t-body-strong text-ink">
+                        {v.name}
+                        {!v.active ? (
+                          <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
+                        ) : null}
+                      </p>
+                      <p className="t-meta text-ink-2">{v.specialties}</p>
+                      <p className="t-caption text-ink-3" dir="ltr">
+                        {v.contact_phone || '—'}
+                        {v.contact_email ? ` · ${v.contact_email}` : ''}
+                      </p>
+                      <p className="t-caption text-ink-3">
+                        HMAC: {v.has_hmac ? 'מוכן' : '—'}
+                      </p>
+                    </div>
                     <Button
                       type="button"
-                      size="sm"
+                      size="touch"
                       variant="secondary"
+                      className="self-start"
                       disabled={busy}
                       onClick={() => void toggleActive(v)}
                     >
                       {v.active ? 'השבתה' : 'הפעלה'}
                     </Button>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+                  </div>
+                ))}
+              </RowList>
+            </div>
+          </>
         )}
       </Panel>
     </div>

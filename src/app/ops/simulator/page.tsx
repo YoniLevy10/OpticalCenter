@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { SimulatorForm } from './simulator-form'
@@ -9,6 +10,12 @@ export default function SimulatorPage() {
   return (
     <AppShell>
       <div className="space-y-4">
+        <PageToolbar
+          backHref="/ops/tickets"
+          backLabel="חזרה לתקלות"
+          title="סימולטור WhatsApp"
+          meta="כלי פיתוח"
+        />
         <PageHeader
           title="סימולטור WhatsApp"
           meta="כלי פיתוח"

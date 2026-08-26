@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { MapPin } from 'lucide-react'
 import { TechShell } from '@/components/layout/tech-shell'
+import { RefreshButton } from '@/components/layout/refresh-button'
 import { techHref } from '@/lib/tech-href'
 import { TechTicketActions } from '@/app/tech/[ticketId]/tech-ticket-actions'
 import { Panel, PanelHeader, ErrorState } from '@/components/ui/primitives'
@@ -53,10 +54,16 @@ export default async function TechTicketDetailPage({
   if (!ticket) {
     if (error) {
       return (
-        <TechShell title="עבודה" backHref={techHref('/tech', techId)}>
+        <TechShell
+          title="עבודה"
+          backHref={techHref('/tech', techId)}
+          enablePullToRefresh
+          headerActions={<RefreshButton label="רענון עבודה" />}
+        >
           <ErrorState
             title="לא ניתן לטעון את העבודה"
             description="בדקו חיבור לרשת ונסו שוב."
+            action={<RefreshButton label="רענון" />}
           />
         </TechShell>
       )
@@ -107,6 +114,8 @@ export default async function TechTicketDetailPage({
       title={storeName}
       eyebrow={displayNo ?? 'עבודה'}
       backHref={techHref('/tech', techId)}
+      enablePullToRefresh
+      headerActions={<RefreshButton label="רענון עבודה" />}
       subtitle={
         <span className="flex items-center gap-1.5">
           {ticket.stores?.code ? (

@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Check, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +19,8 @@ const ToastCtx = createContext<{
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
+  const pathname = usePathname() ?? ''
+  const isTechRoute = pathname.startsWith('/tech')
 
   const push = useCallback((t: Omit<ToastItem, 'id'>) => {
     const id = Math.random().toString(36).slice(2)
@@ -33,8 +36,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         role="status"
         aria-live="polite"
-        /* Above bottom nav on mobile only; desktop sits at the corner with no nav offset. */
-        className="pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2.5 bottom-[calc(var(--bottomnav-h)+var(--safe-b)+16px)] md:inset-x-auto md:bottom-6 md:items-start md:start-6"
+        className={cn(
+          'pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2.5 md:inset-x-auto md:bottom-6 md:items-start md:start-6',
+          isTechRoute
+            ? 'bottom-[calc(var(--safe-b)+16px)]'
+            : 'bottom-[calc(var(--bottomnav-h)+var(--safe-b)+16px)] max-md:bottom-[calc(var(--bottomnav-h)+var(--safe-b)+16px)]',
+        )}
       >
         {items.map((t) => (
           <div

@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   PageHeader,
   Panel,
   PanelHeader,
   EmptyState,
 } from '@/components/ui/primitives'
-import { Button } from '@/components/ui/button'
 import { ReportsExportButton } from './reports-export'
 import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
@@ -49,10 +49,17 @@ export default async function ReportsPage() {
   return (
     <AppShell>
       <div className="space-y-4">
-        <PageHeader
-          className="hidden md:flex"
+        <PageToolbar
+          backHref="/ops/dashboard"
+          backLabel="חזרה ללוח בקרה"
           title="דוחות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          showRefresh
+        />
+        <PageHeader
+          title="דוחות"
+          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          className="hidden md:flex"
           actions={
             <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
           }
@@ -108,9 +115,12 @@ export default async function ReportsPage() {
                     key={s.code}
                     className="flex items-center justify-between px-4 py-3"
                   >
-                    <span className="t-body text-ink">
+                    <Link
+                      href={`/ops/tickets?store=${encodeURIComponent(s.code)}`}
+                      className="t-body text-ink hover:text-[var(--tenant)] hover:underline"
+                    >
                       <span className="t-num">#{s.code}</span> · {s.name}
-                    </span>
+                    </Link>
                     <span className="t-body-strong t-num text-ink">{s.count}</span>
                   </li>
                 ))}
@@ -121,9 +131,6 @@ export default async function ReportsPage() {
 
         <div className="flex flex-wrap gap-2 md:hidden">
           <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/ops/dashboard">לוח בקרה</Link>
-          </Button>
         </div>
       </div>
     </AppShell>

@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
+import { SkipLink } from '@/components/layout/skip-link'
+import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { cn } from '@/lib/utils'
 
 /**
@@ -196,8 +198,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="dvh-screen bg-canvas text-ink">
+      <SkipLink />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
+        aria-label="תפריט צד"
         className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface shadow-[var(--shadow-1)] start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
@@ -214,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
           <p className="t-caption mb-2 px-2.5 text-ink-3">ניווט עיקרי</p>
           <ul className="space-y-1">
             {PRIMARY.map((item) => (
@@ -270,13 +274,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ---------- Content ---------- */}
       <div className="md:ps-[var(--nav-w)]">
-        <main className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 md:px-8 md:pt-7">
-          {children}
-        </main>
+        <PullToRefresh>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="pb-nav mx-auto w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
+          >
+            {children}
+          </main>
+        </PullToRefresh>
       </div>
 
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
+        aria-label="ניווט תחתון"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'var(--safe-b)' }}
       >
@@ -303,6 +314,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <li className="flex-1">
             <button
               type="button"
+              aria-expanded={moreOpen}
+              aria-haspopup="dialog"
               onClick={() => setMoreOpen(true)}
               className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-colors duration-[var(--dur-1)]"
             >

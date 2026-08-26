@@ -11,6 +11,7 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { RowList } from '@/components/ui/operational-row'
 import type { MemberRole, Membership } from '@/lib/auth/types'
 
 type StoreOpt = { id: string; code: string; name: string }
@@ -246,76 +247,142 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             description="הוסיפו טכנאי או מנהל באמצעות הטופס למעלה."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TH>שם</TH>
-                <TH>אימייל</TH>
-                <TH>תפקיד</TH>
-                <TH>היקף</TH>
-                <TH>חנות</TH>
-              </THead>
-              <TBody>
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <THead>
+                  <TH>שם</TH>
+                  <TH>אימייל</TH>
+                  <TH>תפקיד</TH>
+                  <TH>היקף</TH>
+                  <TH>חנות</TH>
+                </THead>
+                <TBody>
+                  {users.map((u) => {
+                    const m = u.memberships[0]
+                    return (
+                      <TR key={u.id}>
+                        <TD>
+                          <span className="t-body-strong text-ink">
+                            {u.full_name || '—'}
+                          </span>
+                        </TD>
+                        <TD>
+                          <span dir="ltr" className="t-meta t-num text-ink-2">
+                            {u.email || '—'}
+                          </span>
+                        </TD>
+                        <TD>
+                          <select
+                            className="t-control h-8 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
+                            value={m?.role ?? 'internal_technician'}
+                            disabled={busy}
+                            aria-label={`תפקיד של ${u.full_name || u.email || u.id}`}
+                            onChange={(e) =>
+                              void onRoleChange(u, e.target.value as MemberRole)
+                            }
+                          >
+                            {ROLE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </TD>
+                        <TD>
+                          <span className="t-caption text-ink-2">{scopeLabel(m)}</span>
+                        </TD>
+                        <TD>
+                          <select
+                            className="t-control h-8 max-w-[10rem] rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
+                            value={m?.store_id ?? ''}
+                            disabled={busy}
+                            aria-label={`חנות של ${u.full_name || u.id}`}
+                            onChange={(e) =>
+                              void onScopeChange(u, {
+                                store_id: e.target.value || null,
+                              })
+                            }
+                          >
+                            <option value="">—</option>
+                            {stores.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.code}
+                              </option>
+                            ))}
+                          </select>
+                        </TD>
+                      </TR>
+                    )
+                  })}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="md:hidden">
+              <RowList>
                 {users.map((u) => {
                   const m = u.memberships[0]
+                  const roleLabel =
+                    ROLE_OPTIONS.find((opt) => opt.value === m?.role)?.label ??
+                    m?.role ??
+                    '—'
                   return (
-                    <TR key={u.id}>
-                      <TD>
-                        <span className="t-body-strong text-ink">
+                    <div key={u.id} className="space-y-2 px-4 py-3">
+                      <div>
+                        <p className="t-body-strong text-ink">
                           {u.full_name || '—'}
-                        </span>
-                      </TD>
-                      <TD>
-                        <span dir="ltr" className="t-meta t-num text-ink-2">
+                        </p>
+                        <p dir="ltr" className="t-meta t-num text-ink-2">
                           {u.email || '—'}
-                        </span>
-                      </TD>
-                      <TD>
-                        <select
-                          className="t-control h-8 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
-                          value={m?.role ?? 'internal_technician'}
-                          disabled={busy}
-                          aria-label={`תפקיד של ${u.full_name || u.email || u.id}`}
-                          onChange={(e) =>
-                            void onRoleChange(u, e.target.value as MemberRole)
-                          }
-                        >
-                          {ROLE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </TD>
-                      <TD>
-                        <span className="t-caption text-ink-2">{scopeLabel(m)}</span>
-                      </TD>
-                      <TD>
-                        <select
-                          className="t-control h-8 max-w-[10rem] rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
-                          value={m?.store_id ?? ''}
-                          disabled={busy}
-                          aria-label={`חנות של ${u.full_name || u.id}`}
-                          onChange={(e) =>
-                            void onScopeChange(u, {
-                              store_id: e.target.value || null,
-                            })
-                          }
-                        >
-                          <option value="">—</option>
-                          {stores.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.code}
-                            </option>
-                          ))}
-                        </select>
-                      </TD>
-                    </TR>
+                        </p>
+                        <p className="t-caption text-ink-3">
+                          {roleLabel} · {scopeLabel(m)}
+                        </p>
+                      </div>
+                      <div className="grid gap-2">
+                        <Field label="תפקיד" htmlFor={`user-role-${u.id}`}>
+                          <Select
+                            id={`user-role-${u.id}`}
+                            value={m?.role ?? 'internal_technician'}
+                            disabled={busy}
+                            onChange={(e) =>
+                              void onRoleChange(u, e.target.value as MemberRole)
+                            }
+                          >
+                            {ROLE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                        <Field label="חנות" htmlFor={`user-store-${u.id}`}>
+                          <Select
+                            id={`user-store-${u.id}`}
+                            value={m?.store_id ?? ''}
+                            disabled={busy}
+                            onChange={(e) =>
+                              void onScopeChange(u, {
+                                store_id: e.target.value || null,
+                              })
+                            }
+                          >
+                            <option value="">—</option>
+                            {stores.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.code} · {s.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
+                    </div>
                   )
                 })}
-              </TBody>
-            </Table>
-          </div>
+              </RowList>
+            </div>
+          </>
         )}
       </Panel>
     </div>

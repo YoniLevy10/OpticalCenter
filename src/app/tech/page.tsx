@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { TechShell } from '@/components/layout/tech-shell'
+import { RefreshButton } from '@/components/layout/refresh-button'
 import { TechJobList } from '@/app/tech/tech-job-list'
 import { TechRealtimeHint } from '@/app/tech/tech-realtime-hint'
 import { TechPushSubscribe } from '@/app/tech/tech-push-subscribe'
@@ -26,11 +27,9 @@ export default async function TechPortalPage({
     redirect('/login')
   }
 
-  // Session tech id first; query techId only for demo when no tech actor yet.
   const techId = resolveServerTechId(actor, params.techId ?? null)
   const { tickets: fetched, error } = await fetchTechTickets(techId)
 
-  // Defense in depth: SSR list is assigned-to-actor only (query techId is not SoT).
   const tickets = techId
     ? fetched.filter((t) => t.assigned_to === techId)
     : []
@@ -46,6 +45,8 @@ export default async function TechPortalPage({
     <TechShell
       title="העבודות שלי"
       eyebrow="MaintainOS · טכנאי"
+      enablePullToRefresh
+      headerActions={<RefreshButton label="רענון עבודות" />}
       subtitle={
         openCount > 0 ? (
           <span className="t-num">{openCount} עבודות פתוחות</span>
@@ -62,6 +63,7 @@ export default async function TechPortalPage({
           <ErrorState
             title="לא ניתן לטעון עבודות"
             description="נסו לרענן. אם הבעיה נמשכת פנו למוקד."
+            action={<RefreshButton label="רענון" />}
           />
         </div>
       ) : null}

@@ -82,6 +82,8 @@ export function SegmentedButtons({
   onChange,
   className,
   fill,
+  panelIdPrefix,
+  mode = 'toggle',
 }: {
   segments: Segment[]
   activeKey: string
@@ -89,10 +91,16 @@ export function SegmentedButtons({
   className?: string
   /** Stretch to full width — used on technician mobile. */
   fill?: boolean
+  panelIdPrefix?: string
+  /** Use WAI-ARIA tabs when tab panels exist in the DOM. */
+  mode?: 'tabs' | 'toggle'
 }) {
+  const isTabs = mode === 'tabs' && panelIdPrefix
+
   return (
     <div
-      role="tablist"
+      role={isTabs ? 'tablist' : 'group'}
+      aria-orientation={isTabs ? 'horizontal' : undefined}
       className={cn(
         'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
         fill && 'flex w-full',
@@ -101,12 +109,17 @@ export function SegmentedButtons({
     >
       {segments.map((s) => {
         const active = s.key === activeKey
+        const panelId = panelIdPrefix ? `${panelIdPrefix}-${s.key}` : undefined
         return (
           <button
             key={s.key}
             type="button"
-            role="tab"
-            aria-selected={active}
+            role={isTabs ? 'tab' : undefined}
+            id={isTabs ? `${panelIdPrefix}-tab-${s.key}` : undefined}
+            aria-selected={isTabs ? active : undefined}
+            aria-pressed={!isTabs ? active : undefined}
+            aria-controls={isTabs ? panelId : undefined}
+            tabIndex={isTabs ? (active ? 0 : -1) : undefined}
             onClick={() => onChange(s.key)}
             className={cn(segmentClass(active), fill && 'flex-1')}
           >
