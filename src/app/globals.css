@@ -120,6 +120,11 @@ html {
 
 body {
   background: var(--canvas);
+  background-image: radial-gradient(
+    ellipse 120% 80% at 50% -20%,
+    color-mix(in srgb, var(--tenant-soft) 35%, transparent),
+  transparent 55%
+  );
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;
@@ -283,6 +288,40 @@ textarea:focus-visible,
 .dvh-screen {
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+/* Mobile bottom-nav active pill — Bamakor-style tenant chrome */
+.nav-pill-active {
+  position: relative;
+  color: var(--tenant);
+}
+.nav-pill-active::before {
+  content: "";
+  position: absolute;
+  inset: 6px 4px;
+  border-radius: var(--radius-md);
+  background: var(--tenant-soft);
+  z-index: -1;
+}
+
+/* Login split — brand hero panel (design-system wow moment) */
+.login-shell {
+  background: var(--canvas);
+}
+.login-brand-panel {
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 100% 0%,
+      color-mix(in srgb, var(--tenant-soft) 85%, white),
+      transparent 58%
+    ),
+  linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--tenant-soft) 55%, var(--surface)) 0%,
+    var(--surface) 48%,
+    var(--canvas) 100%
+  );
+  border-inline-end: 1px solid var(--border);
 }
 
 /* ============================================================

@@ -76,7 +76,15 @@ export function AttentionStrip({
           <Link
             key={item.label}
             href={item.href}
-            className="group inline-flex items-baseline gap-1"
+            className={cn(
+              'group inline-flex min-h-[var(--tap)] items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors md:min-h-0 md:items-baseline md:px-2 md:py-1',
+              lit &&
+                item.tone === 'critical' &&
+                'bg-[var(--signal-critical-soft)] ring-1 ring-[var(--signal-critical-line)]',
+              lit &&
+                item.tone === 'warning' &&
+                'bg-[var(--signal-warning-soft)] ring-1 ring-[var(--signal-warning-line)]',
+            )}
           >
             <span
               className={cn(

@@ -26,9 +26,8 @@ test.describe('Navigation & layout', () => {
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
-    // Reports removed in OQ V1
     await gotoStable(page, '/ops/reports')
-    await expect(page.getByRole('heading', { name: /לא נמצא/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
     await gotoStable(page, '/ops/settings')
     await expect(page.getByRole('heading', { name: 'הגדרות' })).toBeVisible()
   })

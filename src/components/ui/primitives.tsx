@@ -45,7 +45,7 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-4">
+    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/35 px-4">
       <div className="flex items-baseline gap-2">
         <h2 className="t-section text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
