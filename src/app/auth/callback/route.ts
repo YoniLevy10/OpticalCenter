@@ -93,8 +93,11 @@ export async function GET(request: Request) {
     })
 
     const memberships = await loadMemberships(user.id)
-    const home = resolveHomePath({ memberships })
-    return NextResponse.redirect(`${origin}${home}`)
+  const home = resolveHomePath({ memberships })
+  const nextPath = url.searchParams.get('next')
+  const safeNext =
+    nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null
+  return NextResponse.redirect(`${origin}${safeNext ?? home}`)
   } catch {
     return NextResponse.redirect(`${origin}/login?error=auth`)
   }

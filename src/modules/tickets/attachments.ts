@@ -16,6 +16,13 @@ export type TicketEvidence = {
   kind?: string | null
 }
 
+function inferMediaKind(url: string): string {
+  const lower = url.toLowerCase()
+  if (/\.(mp4|webm)(\?|$)/.test(lower) || lower.includes('video/')) return 'video'
+  if (/\.(pdf|doc)(\?|$)/.test(lower)) return 'document'
+  return 'image'
+}
+
 type MessageLike = { id: string; media_url?: string | null }
 
 export async function fetchTicketAttachments(
@@ -52,7 +59,8 @@ export function mergeEvidence(
   for (const m of messages) {
     if (!m.media_url || seen.has(m.media_url)) continue
     seen.add(m.media_url)
-    fromMessages.push({ id: `msg-${m.id}`, url: m.media_url, kind: 'image' })
+    const kind = inferMediaKind(m.media_url)
+    fromMessages.push({ id: `msg-${m.id}`, url: m.media_url, kind })
   }
 
   return [...attachments, ...fromMessages]

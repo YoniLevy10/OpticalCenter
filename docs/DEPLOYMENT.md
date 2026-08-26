@@ -24,6 +24,26 @@ Magic Link נשבר אם **Site URL** נשאר `http://localhost:3000`.
 
 עד שה־Site URL מתוקן: התחברו עם **סיסמה** או **קוד OTP** במסך `/login`.
 
+### Google OAuth (מומלץ)
+
+1. [Google Cloud Console](https://console.cloud.google.com/) — OAuth client (Web)
+2. Supabase Dashboard → **Authentication → Providers → Google** — enable + paste Client ID/Secret
+3. Redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Env: `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=1`
+5. Login UI: primary «המשך עם Google»; email/OTP under «גיבוי»
+
+**בקרוב:** MFA, domain restrict (`hd=optical-center.co.il`).
+
+### Database migrations (P0 לפני go-live)
+
+```bash
+SUPABASE_DB_PASSWORD=… npm run db:migrate
+```
+
+Includes Phase 6 (settings/vendors/inbox/push) and `report_snapshots` for monthly history.
+
+Apply on Supabase production **before** pilot — without migrations, vendors/settings/inbox fall back to memory.
+
 Required env:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

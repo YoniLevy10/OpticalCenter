@@ -12,8 +12,13 @@ export type Attachment = {
 }
 
 function isImage(a: Attachment): boolean {
+  if (a.kind === 'video') return false
   if (a.kind && a.kind !== 'image') return false
   return true
+}
+
+function isVideo(a: Attachment): boolean {
+  return a.kind === 'video' || /\.(mp4|webm)(\?|$)/i.test(a.url)
 }
 
 /**
@@ -33,8 +38,9 @@ export function EvidenceGrid({
 
   if (attachments.length === 0) return null
 
-  const images = attachments.filter(isImage)
-  const files = attachments.filter((a) => !isImage(a))
+  const images = attachments.filter((a) => isImage(a) && !isVideo(a))
+  const videos = attachments.filter(isVideo)
+  const files = attachments.filter((a) => !isImage(a) && !isVideo(a))
 
   return (
     <div className={className}>
@@ -73,6 +79,20 @@ export function EvidenceGrid({
               </li>
             )
           })}
+        </ul>
+      ) : null}
+
+      {videos.length > 0 ? (
+        <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {videos.map((a) => (
+            <li key={a.id}>
+              <video
+                src={a.url}
+                controls
+                className="max-h-48 w-full rounded-[var(--radius-md)] border border-border bg-black"
+              />
+            </li>
+          ))}
         </ul>
       ) : null}
 

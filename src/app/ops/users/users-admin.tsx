@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
+import { TechFieldLinkCopy } from '@/components/ops/tech-link-copy'
 import type { MemberRole, Membership } from '@/lib/auth/types'
 
 type StoreOpt = { id: string; code: string; name: string }
@@ -26,6 +27,7 @@ type UserRow = {
 const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'internal_technician', label: 'טכנאי פנימי' },
   { value: 'external_provider', label: 'ספק חיצוני' },
+  { value: 'store_employee', label: 'עובד חנות' },
   { value: 'store_manager', label: 'מנהל חנות' },
   { value: 'regional_manager', label: 'מנהל אזור' },
   { value: 'country_manager', label: 'מנהל מדינה' },
@@ -73,6 +75,9 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     setNotice(null)
     setError(null)
     try {
+      if (role === 'store_employee' && !storeId) {
+        throw new Error('עובד חנות חייב להיות משויך לחנות')
+      }
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -275,6 +280,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                 <TH>תפקיד</TH>
                 <TH>היקף</TH>
                 <TH>חנות</TH>
+                <TH>קישור שטח</TH>
               </THead>
               <TBody>
                 {users.map((u) => {
@@ -330,6 +336,9 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                             </option>
                           ))}
                         </select>
+                      </TD>
+                      <TD>
+                        <TechFieldLinkCopy userId={u.id} role={m?.role ?? ''} />
                       </TD>
                     </TR>
                   )

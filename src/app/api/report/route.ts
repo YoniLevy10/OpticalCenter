@@ -13,6 +13,7 @@ const schema = z.object({
   reporterName: z.string().max(80).optional(),
   reporterPhone: z.string().max(32).optional(),
   category: z.string().max(32).optional(),
+  assetId: z.string().uuid().optional(),
   photos: z.array(z.string().max(320_000)).max(3).optional(),
 })
 
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
       category,
       priority: classified.priority,
       countryCode: 'IL',
+      assetId: parsed.data.assetId,
     })
 
     if (parsed.data.photos?.length) {

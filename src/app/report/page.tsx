@@ -35,7 +35,7 @@ export default async function PublicReportPage({
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]">
           <PublicReportForm
             initialStore={initial}
-            stores={stores.map((s) => ({ code: s.code, name: s.name }))}
+            stores={stores.map((s) => ({ code: s.code, name: s.name, id: s.id }))}
           />
         </div>
       </main>
