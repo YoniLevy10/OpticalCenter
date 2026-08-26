@@ -17,11 +17,11 @@ import {
   actorHasHqAccess,
   canMutateHqTicket,
 } from '@/lib/auth/types'
+import { isLifecycleEvent } from '@/modules/notifications/lifecycle'
 import {
-  isLifecycleEvent,
   notifyReporter,
   notifyTechnicianAssigned,
-} from '@/modules/notifications/lifecycle'
+} from '@/modules/notifications/lifecycle-notify'
 import { DEMO_TECH_ID, memDemoTechnicians } from '@/lib/data/memory-store'
 import { logEvent } from '@/lib/logging'
 

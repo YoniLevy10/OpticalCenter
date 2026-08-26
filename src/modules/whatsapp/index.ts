@@ -1,4 +1,10 @@
 export { WA_COPY } from './copy'
+export {
+  enhanceWhatsAppMessage,
+  interpolateWhatsAppTemplate,
+  isWhatsAppAiEnabled,
+  type WhatsAppAiSituation,
+} from './ai'
 export { parseWhatsAppWebhook, inferSourceFromText } from './parse'
 export { verifyWhatsAppSignature } from './signature'
 export { sendWhatsAppText } from './send'
