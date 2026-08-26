@@ -68,6 +68,27 @@ export const TICKET_CATEGORY_LABELS_HE: Record<string, string> = {
   other: 'אחר',
 }
 
+export const TICKET_CATEGORIES = [
+  'hvac',
+  'electrical',
+  'plumbing',
+  'security',
+  'it',
+  'cleaning',
+  'other',
+] as const
+
+export type TicketCategory = (typeof TICKET_CATEGORIES)[number]
+
+/** Map classifier output to persisted ticket categories. */
+export function normalizeTicketCategory(raw: string): TicketCategory {
+  if (raw === 'electrical_hazard') return 'electrical'
+  if ((TICKET_CATEGORIES as readonly string[]).includes(raw)) {
+    return raw as TicketCategory
+  }
+  return 'other'
+}
+
 export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   created: 'נוצרה',
   status_changed: 'שינוי סטטוס',

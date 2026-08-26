@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { classifyFaultText } from '@/modules/tickets/classify'
+import { normalizeTicketCategory } from '@/modules/tickets/constants'
+import { attachReportPhotos } from '@/modules/tickets/attachments'
 import { createTicket } from '@/modules/tickets/service'
 import { captureError } from '@/lib/monitoring'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -9,6 +12,8 @@ const schema = z.object({
   description: z.string().min(3).max(2000),
   reporterName: z.string().max(80).optional(),
   reporterPhone: z.string().max(32).optional(),
+  category: z.string().max(32).optional(),
+  photos: z.array(z.string().max(320_000)).max(3).optional(),
 })
 
 export async function POST(request: Request) {
@@ -24,16 +29,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
     }
 
+    const classified = classifyFaultText(parsed.data.description)
+    const category = parsed.data.category
+      ? normalizeTicketCategory(parsed.data.category)
+      : normalizeTicketCategory(classified.category)
+
     const ticket = await createTicket({
       storeCode: parsed.data.storeCode,
       description: parsed.data.description,
       reporterName: parsed.data.reporterName,
       reporterPhone: parsed.data.reporterPhone,
       source: 'web_fallback',
-      category: 'other',
-      priority: 'medium',
+      category,
+      priority: classified.priority,
       countryCode: 'IL',
     })
+
+    if (parsed.data.photos?.length) {
+      await attachReportPhotos(ticket.id, parsed.data.photos)
+    }
 
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (err) {

@@ -14,14 +14,8 @@ const HQ_ROLES: MemberRole[] = [
   'store_manager',
 ]
 
-const TECH_ROLES: MemberRole[] = ['internal_technician', 'external_provider']
-
 function hasHq(actor: Actor): boolean {
   return actor.memberships.some((m) => HQ_ROLES.includes(m.role))
-}
-
-function hasTech(actor: Actor): boolean {
-  return actor.memberships.some((m) => TECH_ROLES.includes(m.role))
 }
 
 function isProductionRuntime(): boolean {
@@ -38,12 +32,10 @@ export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
   { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
   { id: 'reports', href: '/ops/reports', label: 'דוחות' },
-  { id: 'status', href: '/ops/status', label: 'סטטוס מערכת' },
   { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
   { id: 'users', href: '/ops/users', label: 'משתמשים' },
   { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
   { id: 'simulator', href: '/ops/simulator', label: 'סימולטור WhatsApp' },
-  { id: 'tech', href: '/tech', label: 'פורטל טכנאי' },
 ]
 
 export function canAccessUsers(actor: Actor | null): boolean {
@@ -89,19 +81,9 @@ export function canAccessActivity(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
-export function canAccessStatus(actor: Actor | null): boolean {
-  if (!actor) return true
-  return hasHq(actor)
-}
-
 export function canAccessPrintQr(actor: Actor | null): boolean {
   if (!actor) return true
   return hasHq(actor)
-}
-
-export function canAccessTechPortal(actor: Actor | null): boolean {
-  if (!actor) return true
-  return hasTech(actor) || hasHq(actor)
 }
 
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
@@ -110,12 +92,10 @@ const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   vendors: canAccessVendors,
   activity: canAccessActivity,
   reports: canAccessReports,
-  status: canAccessStatus,
   settings: canAccessSettings,
   users: canAccessUsers,
   'print-qr': canAccessPrintQr,
   simulator: canAccessSimulator,
-  tech: canAccessTechPortal,
 }
 
 /** Filter secondary nav tools by actor role. Demo mode shows all non-prod tools. */

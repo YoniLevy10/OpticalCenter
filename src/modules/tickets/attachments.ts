@@ -57,3 +57,35 @@ export function mergeEvidence(
 
   return [...attachments, ...fromMessages]
 }
+
+/** Attach store-submitted photos from the public report form. */
+export async function attachReportPhotos(
+  ticketId: string,
+  urls: string[],
+): Promise<void> {
+  const cleaned = urls.map((u) => u.trim()).filter(Boolean)
+  if (!cleaned.length) return
+
+  const { memAddMessage, supabaseReady } = await import('@/lib/data/memory-store')
+
+  if (await supabaseReady()) {
+    const supabase = createAdminClient()
+    await supabase.from('ticket_attachments').insert(
+      cleaned.map((url) => ({
+        ticket_id: ticketId,
+        url,
+        kind: 'image',
+      })),
+    )
+    return
+  }
+
+  for (const url of cleaned) {
+    memAddMessage(ticketId, {
+      channel: 'web',
+      direction: 'inbound',
+      body: null,
+      media_url: url,
+    })
+  }
+}

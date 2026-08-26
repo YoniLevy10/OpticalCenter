@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageToolbar } from '@/components/layout/page-toolbar'
 import { PageHeader, EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,13 +17,11 @@ import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { QueueToolbar } from './queue-toolbar'
-import { QueueRefreshHint } from './queue-refresh-hint'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
 import {
   applyQueue,
   parseQueueParams,
-  queueCounts,
   queueHref,
   viewCounts,
   type QueueTicket,
@@ -113,7 +112,6 @@ export default async function TicketsPage({
         }
       : filters,
   )
-  const counts = queueCounts(allScoped)
   const views = viewCounts(allScoped)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -126,23 +124,18 @@ export default async function TicketsPage({
   return (
     <OpsAppShell>
       <div className="space-y-3">
+        <PageToolbar
+          backHref="/ops/dashboard"
+          backLabel="חזרה ללוח בקרה"
+          title="תקלות"
+          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          showRefresh
+        />
         <PageHeader
           title="תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          actions={
-            <>
-              <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex">
-                <Link href="/ops/simulator">דיווח לבדיקה</Link>
-              </Button>
-            </>
-          }
+          className="hidden md:flex"
         />
-
-        <div className="md:hidden">
-          <Button asChild variant="secondary" size="touch" className="w-full">
-            <Link href="/ops/simulator">דיווח לבדיקה</Link>
-          </Button>
-        </div>
 
         <QueueToolbar
           filters={filters}
@@ -150,10 +143,7 @@ export default async function TicketsPage({
           stores={storeResult.stores.map((s) => ({ code: s.code, name: s.name }))}
           technicians={technicians}
           resultCount={filtered.length}
-          attention={counts}
         />
-
-        <QueueRefreshHint />
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
           <ErrorState
