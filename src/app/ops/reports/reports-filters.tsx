@@ -25,16 +25,6 @@ export function ReportsFilters({
     router.replace(q ? `/ops/reports?${q}` : '/ops/reports')
   }
 
-  function exportCsv() {
-    const params = new URLSearchParams()
-    if (from) params.set('from', from)
-    if (to) params.set('to', to)
-    const q = params.toString()
-    window.location.href = q
-      ? `/api/reports/export?${q}`
-      : '/api/reports/export'
-  }
-
   return (
     <Panel elevated className="!p-4">
       <form
@@ -52,9 +42,6 @@ export function ReportsFilters({
         </Field>
         <Button type="submit" variant="secondary" size="sm">
           סינון
-        </Button>
-        <Button type="button" variant="primary" size="sm" onClick={exportCsv}>
-          ייצוא CSV
         </Button>
       </form>
     </Panel>
