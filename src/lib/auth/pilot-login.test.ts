@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, afterEach } from 'vitest'
 import { findPilotUserByEmail } from '@/lib/auth/pilot-users'
 
 describe('pilot password login prerequisites', () => {
@@ -16,8 +16,7 @@ describe('pilot password login prerequisites', () => {
 
   it('pilot password env gate', () => {
     delete process.env.PILOT_LOGIN_PASSWORD
-    const empty = process.env.PILOT_LOGIN_PASSWORD
-    expect(empty == null || empty.trim() === '').toBe(true)
+    expect(process.env.PILOT_LOGIN_PASSWORD).toBeUndefined()
     process.env.PILOT_LOGIN_PASSWORD = 'test-secret'
     expect(process.env.PILOT_LOGIN_PASSWORD?.trim()).toBe('test-secret')
   })
