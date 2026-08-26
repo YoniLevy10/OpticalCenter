@@ -123,11 +123,6 @@ body {
   scroll-padding-top: var(--topbar-h);
   scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
   background: var(--canvas);
-  background-image: radial-gradient(
-    ellipse 120% 80% at 50% -20%,
-    color-mix(in srgb, var(--tenant-soft) 35%, transparent),
-  transparent 55%
-  );
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;

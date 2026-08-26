@@ -30,9 +30,9 @@ import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { cn } from '@/lib/utils'
 
 /**
- * Operational Quiet shell — Bamakor Pulse
- * Desktop: surface sidebar with soft edge lift; active nav uses tenant soft fill.
- * Mobile: blur top bar + page title; bottom nav 64px (Bamakor) with tenant active.
+ * Optical Precision shell
+ * Optical Center is the tenant identity; MaintainOS remains the quiet platform layer.
+ * Desktop keeps navigation calm and persistent; mobile prioritizes the daily operating loop.
  */
 
 type NavItem = {
@@ -223,21 +223,21 @@ export function AppShell({
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="border-b border-border bg-gradient-to-b from-[var(--tenant-soft)]/80 to-surface px-4"
+          className="border-b border-border bg-surface px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
           <div className="flex h-full items-center gap-2.5">
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-ink">MaintainOS</p>
-              <p className="t-caption truncate text-ink-3">Optical Center</p>
+              <p className="t-body-strong truncate text-ink">Optical Center</p>
+              <p className="t-caption truncate text-ink-3">MaintainOS · תפעול ותחזוקה</p>
             </div>
           </div>
         </div>
 
         <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-ink-3">ניווט עיקרי</p>
-          <ul className="space-y-1">
+          <p className="t-caption mb-2 px-2.5 text-ink-3">מרכז שליטה</p>
+          <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
                 <SidebarNavLink item={item} pathname={pathname} />
@@ -248,7 +248,7 @@ export function AppShell({
           {toolGroups.map((group) => (
             <div key={group.label} className="mt-6">
               <p className="t-caption mb-2 px-2.5 text-ink-3">{group.label}</p>
-              <ul className="space-y-1">
+              <ul className="flex flex-col gap-1">
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <SidebarNavLink item={item} pathname={pathname} />
