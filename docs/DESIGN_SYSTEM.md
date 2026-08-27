@@ -72,26 +72,26 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 | `--border-strong` | `#d2d4dc` | emphasis |
 | `--ink` | `#1a1a2e` | primary text (Bamakor navy) |
 | `--ink-2` | `#5c6070` | secondary text |
-| `--ink-3` | `#8b90a0` | tertiary / metadata |
+| `--ink-3` | `#556870` | tertiary / metadata |
 
 ### Layer 2 — Signal (identical for every tenant)
 
 | Signal | Base | Soft | Meaning |
 |---|---|---|---|
 | `critical` | `#c01e1e` | `#fef0f0` | breach, critical priority, destructive |
-| `warning` | `#c08020` | `#fdf5e6` | approaching breach, blocked |
+| `warning` | `#8a5a12` | `#fdf5e6` | approaching breach, blocked |
 | `progress` | `#3b6cb8` | `#eaf1fa` | actively being worked |
-| `resolved` | `#1e8a5a` | `#e8f6ee` | done |
+| `resolved` | `#187348` | `#e8f6ee` | done |
 | `idle` | `#8b90a0` | `#f5f6fa` | no attention required |
 
 ### Layer 3 — Tenant
 
 | Token | Value |
 |---|---|
-| `--tenant` | `#8b1e2d` |
-| `--tenant-hover` | `#6e1825` |
-| `--tenant-soft` | `#f9eef0` |
-| `--tenant-line` | `#ecd8dc` |
+| `--tenant` | `#0d7a72` |
+| `--tenant-hover` | `#0a6660` |
+| `--tenant-soft` | `#e3f6f3` |
+| `--tenant-line` | `#b8e5df` |
 | `--tenant-contrast` | `#ffffff` |
 
 Permitted: logo mark · primary action fill · active nav (soft fill + indicator).

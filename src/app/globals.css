@@ -18,25 +18,25 @@
   --border-strong: #b6cbd0;
   --ink: #102b35;
   --ink-2: #4c6972;
-  --ink-3: #6d858c;
+  --ink-3: #556870;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
   --signal-critical: #c01e1e;
   --signal-critical-soft: #fef0f0;
   --signal-critical-line: #f4cfcf;
-  --signal-warning: #c08020;
+  --signal-warning: #8a5a12;
   --signal-warning-soft: #fdf5e6;
   --signal-warning-line: #f0e0c2;
   --signal-progress: #3b6cb8;
   --signal-progress-soft: #eaf1fa;
-  --signal-resolved: #1e8a5a;
+  --signal-resolved: #187348;
   --signal-resolved-soft: #e8f6ee;
   --signal-idle: #8b90a0;
   --signal-idle-soft: #f5f6fa;
 
   /* ---------- Layer 3 — TENANT (logo · primary · active chrome) ---------- */
-  --tenant: #13a89e;
-  --tenant-hover: #0b827b;
+  --tenant: #0d7a72;
+  --tenant-hover: #0a6660;
   --tenant-soft: #e3f6f3;
   --tenant-line: #b8e5df;
   --signal-accent: #f4b860;
