@@ -69,7 +69,7 @@ export default async function StoreDetailPage({
           }
         />
 
-        <Panel className="space-y-3">
+        <Panel className="flex flex-col gap-3">
           <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
           <KeyValue label="טקסט זיהוי" ltr>
             {storeWhatsAppPrefill(store.code)}

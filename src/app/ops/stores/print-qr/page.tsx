@@ -18,7 +18,7 @@ export default async function PrintQrBatchPage() {
 
   return (
     <OpsAppShell>
-      <div className="space-y-4 print:p-0">
+      <div className="flex flex-col gap-4 print:p-0">
         <PageToolbar
           backHref="/ops/stores"
           backLabel="חזרה לחנויות"

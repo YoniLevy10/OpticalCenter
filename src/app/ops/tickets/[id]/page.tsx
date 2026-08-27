@@ -93,9 +93,66 @@ export default async function TicketDetailPage({
 
   const assignee = technicians.find((t) => t.id === ticket.assigned_to)
 
+  const detailsPanel = (
+    <Panel>
+      <h2 className="t-section mb-1 text-ink">פרטים</h2>
+      <dl className="divide-y divide-border">
+        <KeyValue label="קטגוריה">
+          {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
+        </KeyValue>
+        <KeyValue label="מקור">
+          {TICKET_SOURCE_LABELS_HE[ticket.source as TicketSourceLabel] ??
+            ticket.source}
+        </KeyValue>
+        <KeyValue label="נפתחה">{fmt(ticket.created_at)}</KeyValue>
+        <KeyValue label="גיל">
+          <LiveAge createdAt={ticket.created_at} />
+        </KeyValue>
+        <KeyValue label="מדווח">
+          {ticket.reporter_name ?? 'לא ידוע'}
+        </KeyValue>
+        {ticket.reporter_phone ? (
+          <KeyValue label="טלפון מדווח">
+            <PhoneCallLink phone={ticket.reporter_phone} />
+          </KeyValue>
+        ) : null}
+        {ticket.stores?.address ? (
+          <KeyValue label="כתובת">{ticket.stores.address}</KeyValue>
+        ) : null}
+        {ticket.resolved_at ? (
+          <KeyValue label="נפתרה">{fmt(ticket.resolved_at)}</KeyValue>
+        ) : null}
+      </dl>
+    </Panel>
+  )
+
+  const actionsPanel = (
+    <Panel className="mb-3 md:mb-0">
+      <h2 className="t-section mb-1 text-ink">פעולות</h2>
+      <p className="t-caption mb-4 text-ink-3">
+        המעברים המותרים נגזרים ממכונת המצבים
+      </p>
+      <TicketActions
+        ticketId={ticket.id}
+        status={ticket.status as TicketStatus}
+        assignedTo={ticket.assigned_to}
+        technicians={technicians}
+      />
+      <div className="mt-3 border-t border-border pt-3">
+        <TicketShareBar
+          display={display}
+          storeCode={ticket.stores?.code}
+          storeName={ticket.stores?.name}
+          description={ticket.description}
+          techName={assignee?.full_name || assignee?.email}
+        />
+      </div>
+    </Panel>
+  )
+
   return (
     <OpsAppShell>
-      <div className="space-y-4 max-md:pb-actions-hq">
+      <div className="flex flex-col gap-4">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה לתקלות" showRefresh />
 
         {/* Breadcrumb — quiet, one line, never a heading. */}
@@ -114,22 +171,22 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="space-y-4">
-          {/* Title + store — the "what" and "where" */}
+        <header className="relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 start-0 w-1 bg-[var(--tenant)]" />
           <div>
-            <h1 className="t-display text-ink">
+            <h1 className="max-w-4xl text-balance text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
               {ticket.title || ticket.description}
             </h1>
-            <p className="t-body mt-2 text-ink-2">
+            <p className="t-body mt-2 text-white/70">
               {ticket.stores ? (
                 <>
                   <Link
                     href={`/ops/stores/${encodeURIComponent(ticket.stores.code)}`}
-                    className="hover:text-[var(--tenant)] hover:underline"
+                    className="text-white hover:text-[var(--tenant)] hover:underline"
                   >
                     {ticket.stores.name}
                   </Link>
-                  <span className="t-num text-ink-3"> · #{ticket.stores.code}</span>
+                  <span className="t-num text-white/50"> · #{ticket.stores.code}</span>
                   {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
                   {' · '}
                   <Link
@@ -145,33 +202,32 @@ export default async function TicketDetailPage({
             </p>
           </div>
 
-          {/* Metadata strip — the "how urgent / who / SLA" */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-white/15 pt-4">
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">עדיפות</span>
+              <span className="t-caption text-white/50">עדיפות</span>
               <PriorityText priority={ticket.priority as TicketPriority} />
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">סטטוס</span>
+              <span className="t-caption text-white/50">סטטוס</span>
               <StatusLabel status={ticket.status as TicketStatus} />
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">אחראי</span>
-              <span className="t-body-strong text-ink">
+              <span className="t-caption text-white/50">אחראי</span>
+              <span className="t-body-strong text-white">
                 {assignee?.full_name || assignee?.email || 'לא משויך'}
               </span>
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">SLA</span>
+              <span className="t-caption text-white/50">SLA</span>
               <SlaBlock view={slaView} />
             </div>
           </div>
@@ -179,7 +235,7 @@ export default async function TicketDetailPage({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* ---------- Main column ---------- */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {ticket.title && ticket.description !== ticket.title ? (
               <Panel>
                 <p className="t-body whitespace-pre-wrap leading-relaxed text-ink">
@@ -200,76 +256,21 @@ export default async function TicketDetailPage({
               </Panel>
             ) : null}
 
+            {/* Actions first on mobile (v0: document flow — no overlay on content) */}
+            <div className="md:hidden">{actionsPanel}</div>
+
+            <div className="md:hidden">{detailsPanel}</div>
+
             <Panel flush data-visual="ticket-timeline">
               <PanelHeader title="כרונולוגיה" meta={`${activity.length} רשומות`} />
               <Timeline items={activity} />
             </Panel>
           </div>
 
-          {/* ---------- Side column ---------- */}
-          <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-            {/*
-              Sticky above bottom nav on mobile (thumb zone); desktop sticks the
-              whole side column under the shell header. Single TicketActions
-              instance keeps state coherent.
-            */}
-            <div
-              className="fixed inset-x-0 z-20 max-h-[min(50dvh,420px)] overflow-y-auto border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-sm bottom-[calc(var(--bottomnav-h)+var(--safe-b))] md:static md:inset-auto md:bottom-auto md:z-auto md:max-h-none md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
-            >
-              <Panel className="mb-3 md:mb-0">
-                <h2 className="t-section mb-1 text-ink">פעולות</h2>
-                <p className="t-caption mb-4 text-ink-3">
-                  המעברים המותרים נגזרים ממכונת המצבים
-                </p>
-                <TicketActions
-                  ticketId={ticket.id}
-                  status={ticket.status as TicketStatus}
-                  assignedTo={ticket.assigned_to}
-                  technicians={technicians}
-                />
-                <div className="mt-3 border-t border-border pt-3">
-                  <TicketShareBar
-                    display={display}
-                    storeCode={ticket.stores?.code}
-                    storeName={ticket.stores?.name}
-                    description={ticket.description}
-                    techName={assignee?.full_name || assignee?.email}
-                  />
-                </div>
-              </Panel>
-            </div>
-
-            <Panel>
-              <h2 className="t-section mb-1 text-ink">פרטים</h2>
-              <dl className="divide-y divide-border">
-                <KeyValue label="קטגוריה">
-                  {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
-                </KeyValue>
-                <KeyValue label="מקור">
-                  {TICKET_SOURCE_LABELS_HE[
-                    ticket.source as TicketSourceLabel
-                  ] ?? ticket.source}
-                </KeyValue>
-                <KeyValue label="נפתחה">{fmt(ticket.created_at)}</KeyValue>
-                <KeyValue label="גיל">
-                  <LiveAge createdAt={ticket.created_at} />
-                </KeyValue>
-                <KeyValue label="מדווח">
-                  {ticket.reporter_name ?? 'לא ידוע'}
-                </KeyValue>
-                {ticket.reporter_phone ? (
-                  <KeyValue label="טלפון מדווח">
-                    <PhoneCallLink phone={ticket.reporter_phone} />
-                  </KeyValue>
-                ) : null}
-                {ticket.stores?.address ? (
-                  <KeyValue label="כתובת">{ticket.stores.address}</KeyValue>
-                ) : null}
-                {ticket.resolved_at ? (
-                  <KeyValue label="נפתרה">{fmt(ticket.resolved_at)}</KeyValue>
-                ) : null}
-              </dl>
-            </Panel>
+          {/* ---------- Side column (desktop) ---------- */}
+          <div className="hidden space-y-4 md:block lg:sticky lg:top-4 lg:self-start">
+            {actionsPanel}
+            {detailsPanel}
 
             {attachments.length === 0 ? (
               <Panel flush>

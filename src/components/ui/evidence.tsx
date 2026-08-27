@@ -121,7 +121,7 @@ export function EvidenceGrid({
         className="w-[min(94vw,720px)]"
       >
         {active ? (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={active.url}

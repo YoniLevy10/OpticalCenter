@@ -68,7 +68,7 @@ export function SimulatorForm() {
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel>
         <form
-          className="space-y-4"
+          className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
             send({

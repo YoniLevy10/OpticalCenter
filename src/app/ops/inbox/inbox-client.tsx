@@ -127,7 +127,7 @@ export function InboxClient() {
   const active = sessions.find((s) => s.wa_id === selected) ?? null
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {error ? <ErrorState title="שגיאה" description={error} /> : null}
       {notice ? <Notice tone="progress">{notice}</Notice> : null}
 

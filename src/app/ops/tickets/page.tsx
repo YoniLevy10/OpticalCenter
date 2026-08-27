@@ -123,7 +123,11 @@ export default async function TicketsPage({
 
   return (
     <OpsAppShell>
-      <div className="space-y-3">
+      <div className="flex flex-col gap-5">
+        <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
+          <p className="t-caption text-white/60">OPERATIONS OS V2 / QUEUE</p>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">מרכז התקלות</h1><p className="t-body mt-2 text-white/70">מיון, תיעדוף והעברה מהירה של כל מה שדורש תשומת לב.</p></div><div className="text-end"><p className="t-caption text-white/60">בתצוגה</p><p className="t-title t-num text-white">{filtered.length}</p></div></div>
+        </div>
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה ללוח בקרה"

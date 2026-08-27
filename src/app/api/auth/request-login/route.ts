@@ -10,6 +10,7 @@ import { findPilotUserByEmail, normalizeEmail } from '@/lib/auth/pilot-users'
 import { TEST_ACTOR_COOKIE } from '@/lib/auth/demo-session'
 import { seedPilotUser } from '@/lib/auth/seed-pilot-user'
 import type { Membership } from '@/lib/auth/types'
+import { testAuthAllowed } from '@/lib/auth/types'
 import {
   checkRateLimit,
   clientIpFromRequest,
@@ -167,6 +168,27 @@ async function tryPilotPasswordLogin(email: string, password: string) {
   if (!pilot || !expected || password !== expected) return null
 
   await seedPilotUser(pilot)
+
+  if (
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    try {
+      const supabase = await createRouteSupabase()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (!error && data.user) {
+        return NextResponse.json(await finishLoginPayload(data.user))
+      }
+    } catch {
+      // fall through to demo cookie when Supabase session cannot be established
+    }
+  }
+
+  if (!testAuthAllowed()) return null
+
   const membership: Membership = {
     id: 'pilot-login',
     profile_id: pilot.id,

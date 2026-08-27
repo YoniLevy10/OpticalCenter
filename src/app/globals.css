@@ -10,15 +10,15 @@
 
 :root {
   /* ---------- Layer 1 — SUBSTRATE (Bamakor luminosity, OC warmth) ---------- */
-  --canvas: #f5f6fa;
+  --canvas: #eef4f6;
   --surface: #ffffff;
-  --surface-sunken: #eef0f5;
+  --surface-sunken: #e4edef;
   --surface-raised: #ffffff;
-  --border: #e8e8ed;
-  --border-strong: #d2d4dc;
-  --ink: #1a1a2e;
-  --ink-2: #5c6070;
-  --ink-3: #656b78;
+  --border: #d7e3e6;
+  --border-strong: #b6cbd0;
+  --ink: #102b35;
+  --ink-2: #4c6972;
+  --ink-3: #6d858c;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
   --signal-critical: #c01e1e;
@@ -35,10 +35,11 @@
   --signal-idle-soft: #f5f6fa;
 
   /* ---------- Layer 3 — TENANT (logo · primary · active chrome) ---------- */
-  --tenant: #8b1e2d;
-  --tenant-hover: #6e1825;
-  --tenant-soft: #f9eef0;
-  --tenant-line: #ecd8dc;
+  --tenant: #13a89e;
+  --tenant-hover: #0b827b;
+  --tenant-soft: #e3f6f3;
+  --tenant-line: #b8e5df;
+  --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
 
   /* ---------- Radius ---------- */
@@ -65,6 +66,7 @@
   --nav-w: 216px;
   --topbar-h: 52px;
   --bottomnav-h: 64px;
+  --hq-actions-dock-h: 220px;
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -123,11 +125,6 @@ body {
   scroll-padding-top: var(--topbar-h);
   scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
   background: var(--canvas);
-  background-image: radial-gradient(
-    ellipse 120% 80% at 50% -20%,
-    color-mix(in srgb, var(--tenant-soft) 35%, transparent),
-  transparent 55%
-  );
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;
@@ -137,6 +134,7 @@ body {
   font-feature-settings: "ss01" 1, "cv01" 1;
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
   line-height: 1.5;
 }
 
@@ -284,11 +282,22 @@ textarea:focus-visible,
 }
 
 .pb-actions-hq {
-  padding-bottom: calc(200px + 16px);
+  padding-bottom: calc(
+    var(--hq-actions-dock-h) + var(--bottomnav-h) + var(--safe-b) + 16px
+  );
+}
+/* HQ ticket detail — fixed action dock sits above bottom nav (nav z-30, dock z-40) */
+.hq-ticket-dock {
+  bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  z-index: 40;
 }
 @media (min-width: 768px) {
   .pb-actions-hq {
     padding-bottom: 0;
+  }
+  .hq-ticket-dock {
+    bottom: auto;
+    z-index: auto;
   }
 }
 

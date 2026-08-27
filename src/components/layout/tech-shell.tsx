@@ -71,7 +71,7 @@ export function TechShell({
       {actions ? (
         <div
           aria-label="פעולות עבודה"
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-md"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/90 backdrop-blur-md"
           style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
         >
           <div className="mx-auto w-full max-w-xl px-4 pt-3">{actions}</div>
