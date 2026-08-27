@@ -87,7 +87,6 @@ export default async function StoresPage({
       <div className="flex flex-col gap-4">
         <PageHeader
           title="סניפים"
-          description="חיפוש, סינון ופתיחת כרטיס סניף — תקלות, נכסים ו-QR."
           meta={fromDb ? `${activeCount} פעילים` : 'מצב דמו'}
           actions={
             <div className="flex flex-wrap items-center gap-2">

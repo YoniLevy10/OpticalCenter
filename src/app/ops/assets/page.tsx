@@ -46,7 +46,6 @@ export default async function AssetsPage() {
         />
         <PageHeader
           title="נכסים"
-          description="חיפוש לפי שם או סידורי, סינון סטטוס, ו-QR נגיש לכל נכס."
           meta="ציוד לפי סניף"
           className="hidden md:flex"
         />
