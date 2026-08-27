@@ -103,7 +103,7 @@ export function QueueToolbar({
   ].filter(Boolean) as { label: string; clear: Partial<QueueFilters> }[]
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedLinks
           scrollable
@@ -170,7 +170,7 @@ export function QueueToolbar({
         onOpenChange={setFiltersOpen}
         title="מסננים ומיון"
       >
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <Field label="סטטוס">
             <Select
               value={filters.status ?? ''}

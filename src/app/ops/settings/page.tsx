@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 
   return (
     <OpsAppShell>
-      <div className="max-w-2xl space-y-4">
+      <div className="mx-auto flex max-w-2xl flex-col gap-4">
         <PageHeader title="הגדרות" meta="פיילוט ישראל" />
 
         <SettingsForm initial={settings} />
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
           </dl>
         </Panel>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <h2 className="t-section px-1 text-ink-2">קישורים</h2>
           <nav aria-label="קישורי הגדרות">
           <Panel flush className="overflow-hidden">

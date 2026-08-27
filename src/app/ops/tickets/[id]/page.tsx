@@ -94,7 +94,7 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="space-y-4 max-md:pb-actions-hq">
+      <div className="flex flex-col gap-4 max-md:pb-actions-hq">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה לתקלות" showRefresh />
 
         {/* Breadcrumb — quiet, one line, never a heading. */}
@@ -113,7 +113,7 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="space-y-4">
+        <header className="flex flex-col gap-4">
           {/* Title + store — the "what" and "where" */}
           <div>
             <h1 className="t-display text-ink">
@@ -178,7 +178,7 @@ export default async function TicketDetailPage({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* ---------- Main column ---------- */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {ticket.title && ticket.description !== ticket.title ? (
               <Panel>
                 <p className="t-body whitespace-pre-wrap leading-relaxed text-ink">

@@ -66,7 +66,7 @@ export default async function ReportsPage({
 
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה ללוח בקרה"

@@ -16,7 +16,7 @@ export default async function UsersPage() {
 
   return (
     <OpsAppShell>
-      <div className="max-w-5xl space-y-4">
+      <div className="flex max-w-5xl flex-col gap-4">
         <PageToolbar
           backHref="/ops/settings"
           backLabel="חזרה להגדרות"

@@ -120,7 +120,7 @@ export function TicketActions({
       {allowed.length === 0 ? (
         <p className="t-body text-ink-2">התקלה הגיעה למצב סופי.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {primary.map((s) => (
             <Button
               key={s}
