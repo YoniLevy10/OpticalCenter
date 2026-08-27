@@ -213,7 +213,15 @@ export default async function OpsDashboardPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4 stagger">
+      <div className="flex flex-col gap-5 stagger">
+        <div className="flex items-end justify-between gap-4 rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
+          <div className="min-w-0">
+            <p className="t-caption text-white/60">OPTICAL CENTER · OPERATIONS OS V2</p>
+            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">מרכז השליטה שלך</h1>
+            <p className="t-body mt-2 max-w-xl text-white/70">תמונה חיה של עומס התפעול, חריגות ה־SLA והעבודה שממתינה לצוות.</p>
+          </div>
+          <div className="hidden shrink-0 text-end md:block"><p className="t-caption text-white/60">מצב מערכת</p><p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-white"><span className="size-2 rounded-full bg-[#55d6c2]" />פעילות תקינה</p></div>
+        </div>
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}

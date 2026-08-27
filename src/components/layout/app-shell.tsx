@@ -219,11 +219,11 @@ export function AppShell({
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label="תפריט צד"
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-surface shadow-[var(--shadow-1)] start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-[var(--ink)] text-white shadow-[var(--shadow-pop)] start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="border-b border-border bg-surface px-4"
+          className="border-b border-white/10 bg-[var(--ink)] px-5"
           style={{ height: 'var(--topbar-h)' }}
         >
           <div className="flex h-full items-center gap-2.5">

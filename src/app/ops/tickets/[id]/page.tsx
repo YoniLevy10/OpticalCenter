@@ -113,10 +113,10 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="flex flex-col gap-4">
+        <header className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
           {/* Title + store — the "what" and "where" */}
           <div>
-            <h1 className="t-display text-ink">
+            <h1 className="max-w-4xl text-balance text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
               {ticket.title || ticket.description}
             </h1>
             <p className="t-body mt-2 text-ink-2">

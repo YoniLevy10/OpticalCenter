@@ -10,15 +10,15 @@
 
 :root {
   /* ---------- Layer 1 — SUBSTRATE (Bamakor luminosity, OC warmth) ---------- */
-  --canvas: #f5f6fa;
+  --canvas: #eef4f6;
   --surface: #ffffff;
-  --surface-sunken: #eef0f5;
+  --surface-sunken: #e4edef;
   --surface-raised: #ffffff;
-  --border: #e8e8ed;
-  --border-strong: #d2d4dc;
-  --ink: #1a1a2e;
-  --ink-2: #5c6070;
-  --ink-3: #656b78;
+  --border: #d7e3e6;
+  --border-strong: #b6cbd0;
+  --ink: #102b35;
+  --ink-2: #4c6972;
+  --ink-3: #6d858c;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
   --signal-critical: #c01e1e;
@@ -35,10 +35,11 @@
   --signal-idle-soft: #f5f6fa;
 
   /* ---------- Layer 3 — TENANT (logo · primary · active chrome) ---------- */
-  --tenant: #8b1e2d;
-  --tenant-hover: #6e1825;
-  --tenant-soft: #f9eef0;
-  --tenant-line: #ecd8dc;
+  --tenant: #13a89e;
+  --tenant-hover: #0b827b;
+  --tenant-soft: #e3f6f3;
+  --tenant-line: #b8e5df;
+  --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
 
   /* ---------- Radius ---------- */
