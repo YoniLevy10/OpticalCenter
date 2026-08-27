@@ -154,7 +154,7 @@ export default async function StoreDetailPage({
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
         <PageToolbar
           backHref="/ops/stores"
-          backLabel="חזרה לסניפים"
+          backLabel="חזרה לחנויות"
           showRefresh
         />
 

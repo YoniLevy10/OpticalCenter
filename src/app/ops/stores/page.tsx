@@ -86,7 +86,7 @@ export default async function StoresPage({
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageHeader
-          title="סניפים"
+          title="חנויות"
           meta={fromDb ? `${activeCount} פעילים` : 'מצב דמו'}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -115,7 +115,7 @@ export default async function StoresPage({
         <Panel flush elevated className="overflow-hidden">
           {filtered.length === 0 ? (
             <EmptyState
-              title="לא נמצאו סניפים"
+              title="לא נמצאו חנויות"
               description="נסו קוד, שם, עיר או שנו את הסינון."
               icon={Store}
             />
