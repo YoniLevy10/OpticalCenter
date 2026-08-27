@@ -814,10 +814,15 @@ export function memListSessions(): MemSession[] {
   )
 }
 
-export function memSetSessionTakeover(waId: string, human_takeover: boolean) {
+export function memSetSessionTakeover(
+  waId: string,
+  human_takeover: boolean,
+  opts?: { state?: MemSession['state'] },
+) {
   const s = store().sessions.get(waId)
   if (!s) throw new Error('שיחה לא נמצאה')
   s.human_takeover = human_takeover
+  if (opts?.state) s.state = opts.state
   s.updated_at = new Date().toISOString()
   return s
 }

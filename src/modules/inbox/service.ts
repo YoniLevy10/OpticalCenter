@@ -10,16 +10,27 @@ import {
   memUpsertSession,
   memAddInboxMessage,
   memListInboxMessages,
+  memListTickets,
+  memListStores,
   MEM_COUNTRY_ID,
   supabaseReady,
   type MemSession,
 } from '@/lib/data/memory-store'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
+import { DEMO_STORES } from '@/modules/stores/data'
 
 const SESSION_SELECT_FULL =
   'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound'
 const SESSION_SELECT_LEGACY =
   'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at'
+
+const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+}
 
 function mapSessionRow(
   row: Record<string, unknown>,
@@ -55,12 +66,123 @@ function seedDemoInboxIfEmpty() {
       human_takeover: false,
       last_inbound: 'המזגן לא מקרר באולם',
     })
+    memUpsertSession({
+      wa_id: '972509998877',
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'demo-101',
+      store_code: '101',
+      state: 'awaiting_description',
+      pending_description: null,
+      human_takeover: true,
+      last_inbound: 'דלת הכניסה לא ננעלת',
+    })
+    memUpsertSession({
+      wa_id: '972503334455',
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'demo-109',
+      store_code: '109',
+      state: 'done',
+      pending_description: null,
+      human_takeover: false,
+      last_inbound: 'תודה, תוקן',
+    })
     sessions = memListSessions()
   }
   return sessions
 }
 
+function resolveStoreName(
+  storeId: string | null,
+  storeCode: string | null,
+  storeMap?: Map<string, { name: string; code: string }>,
+): string | null {
+  if (storeMap) {
+    if (storeId && storeMap.has(storeId)) return storeMap.get(storeId)!.name
+    if (storeCode) {
+      for (const s of storeMap.values()) {
+        if (s.code === storeCode) return s.name
+      }
+    }
+  }
+  const fromMem = memListStores().find(
+    (s) =>
+      (storeId && s.id === storeId) || (storeCode && s.code === storeCode),
+  )
+  if (fromMem) return fromMem.name
+  const demo = DEMO_STORES.find(
+    (s) =>
+      (storeId && s.id === storeId) || (storeCode && s.code === storeCode),
+  )
+  return demo?.name ?? null
+}
+
+function formatWaDisplay(waId: string): string {
+  const digits = waId.replace(/\D/g, '')
+  if (digits.startsWith('972') && digits.length >= 11) {
+    return `0${digits.slice(3, 5)}-${digits.slice(5, 8)}-${digits.slice(8)}`
+  }
+  return waId
+}
+
+function pickHighestPriority(priorities: string[]): string | null {
+  if (priorities.length === 0) return null
+  return [...priorities].sort(
+    (a, b) => (PRIORITY_RANK[a] ?? 9) - (PRIORITY_RANK[b] ?? 9),
+  )[0]
+}
+
+function enrichSession(
+  session: InboxSession,
+  ctx: {
+    storeName: string | null
+    lastMessage: string | null
+    lastDirection: 'inbound' | 'outbound' | null
+    openPriorities: string[]
+    customerName: string | null
+  },
+): InboxSessionView {
+  const storeLabel = ctx.storeName
+    ? session.store_code
+      ? `${ctx.storeName} (#${session.store_code})`
+      : ctx.storeName
+    : session.store_code
+      ? `סניף #${session.store_code}`
+      : null
+
+  const display_name =
+    ctx.customerName?.trim() ||
+    storeLabel ||
+    formatWaDisplay(session.wa_id)
+
+  const unread =
+    Boolean(session.human_takeover) ||
+    session.state === 'awaiting_description' ||
+    ctx.lastDirection === 'inbound'
+
+  return {
+    ...session,
+    store_name: ctx.storeName,
+    customer_name: ctx.customerName,
+    display_name,
+    last_message: ctx.lastMessage ?? session.last_inbound ?? null,
+    unread,
+    priority: pickHighestPriority(ctx.openPriorities),
+    inbox_status: session.human_takeover ? 'waiting' : 'handled',
+  }
+}
+
 export type InboxSession = MemSession
+
+export type InboxSessionView = InboxSession & {
+  store_name: string | null
+  customer_name: string | null
+  display_name: string
+  last_message: string | null
+  unread: boolean
+  priority: string | null
+  /** Derived: waiting = human takeover, handled = bot/closed. */
+  inbox_status: 'waiting' | 'handled'
+}
 
 export type InboxMessage = {
   id: string
@@ -70,12 +192,72 @@ export type InboxMessage = {
   ticket_id?: string | null
 }
 
+export type InboxOpenTicket = {
+  id: string
+  display_number: string | null
+  title: string | null
+  status: string
+  priority: string
+  description: string
+  store_code: string | null
+  store_name: string | null
+}
+
+export type InboxSessionContext = {
+  store_name: string | null
+  store_code: string | null
+  customer_name: string | null
+  wa_display: string
+  openTickets: InboxOpenTicket[]
+}
+
+function ticketsForWa(waId: string): InboxOpenTicket[] {
+  return memListTickets()
+    .filter((t) => t.reporter_phone === waId)
+    .filter((t) =>
+      OPEN_TICKET_STATUSES.includes(
+        t.status as (typeof OPEN_TICKET_STATUSES)[number],
+      ),
+    )
+    .map((t) => ({
+      id: t.id,
+      display_number: t.display_number,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      description: t.description,
+      store_code: t.stores?.code ?? null,
+      store_name: t.stores?.name ?? null,
+    }))
+}
+
+function enrichMemorySessions(sessions: InboxSession[]): InboxSessionView[] {
+  return sessions.map((session) => {
+    const messages = memListInboxMessages(session.wa_id)
+    const last = messages[messages.length - 1]
+    const open = ticketsForWa(session.wa_id)
+    const customer =
+      memListTickets().find((t) => t.reporter_phone === session.wa_id)
+        ?.reporter_name ?? null
+    return enrichSession(session, {
+      storeName: resolveStoreName(session.store_id, session.store_code),
+      lastMessage: last?.body ?? session.last_inbound ?? null,
+      lastDirection: last?.direction ?? (session.last_inbound ? 'inbound' : null),
+      openPriorities: open.map((t) => t.priority),
+      customerName: customer,
+    })
+  })
+}
+
 export async function listInboxSessions(): Promise<{
-  sessions: InboxSession[]
+  sessions: InboxSessionView[]
   backend: 'memory' | 'supabase'
 }> {
   if (!(await supabaseReady())) {
-    return { sessions: seedDemoInboxIfEmpty(), backend: 'memory' }
+    return {
+      sessions: enrichMemorySessions(seedDemoInboxIfEmpty()),
+      backend: 'memory',
+    }
   }
 
   const supabase = createSystemClient('inbox_sessions_list')
@@ -103,28 +285,122 @@ export async function listInboxSessions(): Promise<{
 
   if (error) {
     if (isSupabaseSchemaError(error)) {
-      return { sessions: seedDemoInboxIfEmpty(), backend: 'memory' }
+      return {
+        sessions: enrichMemorySessions(seedDemoInboxIfEmpty()),
+        backend: 'memory',
+      }
     }
     throw new Error(error.message)
   }
 
   const sessions = (rows ?? []).map((row) => mapSessionRow(row))
+  if (sessions.length === 0) {
+    return {
+      sessions: enrichMemorySessions(seedDemoInboxIfEmpty()),
+      backend: 'memory',
+    }
+  }
 
-  return { sessions, backend: 'supabase' }
+  const waIds = sessions.map((s) => s.wa_id)
+  const storeIds = [
+    ...new Set(sessions.map((s) => s.store_id).filter(Boolean)),
+  ] as string[]
+
+  const storeMap = new Map<string, { name: string; code: string }>()
+  if (storeIds.length > 0) {
+    const { data: stores } = await supabase
+      .from('stores')
+      .select('id, code, name')
+      .in('id', storeIds)
+    for (const s of stores ?? []) {
+      storeMap.set(s.id, { name: s.name, code: s.code })
+    }
+  }
+
+  const ticketByPhone = new Map<
+    string,
+    { priorities: string[]; customerName: string | null }
+  >()
+  if (waIds.length > 0) {
+    const { data: tickets } = await supabase
+      .from('tickets')
+      .select('id, reporter_phone, reporter_name, priority, status')
+      .in('reporter_phone', waIds)
+      .in('status', [...OPEN_TICKET_STATUSES])
+      .limit(200)
+
+    for (const t of tickets ?? []) {
+      const phone = t.reporter_phone as string | null
+      if (!phone) continue
+      const cur = ticketByPhone.get(phone) ?? {
+        priorities: [],
+        customerName: null,
+      }
+      if (t.priority) cur.priorities.push(t.priority)
+      if (!cur.customerName && t.reporter_name) {
+        cur.customerName = t.reporter_name as string
+      }
+      ticketByPhone.set(phone, cur)
+    }
+  }
+
+  const lastMsgByWa = new Map<
+    string,
+    { body: string; direction: 'inbound' | 'outbound' }
+  >()
+  if (waIds.length > 0) {
+    const { data: recent } = await supabase
+      .from('inbox_messages')
+      .select('wa_id, body, direction, created_at')
+      .in('wa_id', waIds)
+      .order('created_at', { ascending: false })
+      .limit(300)
+
+    for (const m of recent ?? []) {
+      if (lastMsgByWa.has(m.wa_id)) continue
+      lastMsgByWa.set(m.wa_id, {
+        body: m.body,
+        direction: m.direction === 'outbound' ? 'outbound' : 'inbound',
+      })
+    }
+  }
+
+  const views = sessions.map((session) => {
+    const ticketCtx = ticketByPhone.get(session.wa_id)
+    const last = lastMsgByWa.get(session.wa_id)
+    return enrichSession(session, {
+      storeName: resolveStoreName(
+        session.store_id,
+        session.store_code,
+        storeMap,
+      ),
+      lastMessage: last?.body ?? session.last_inbound ?? null,
+      lastDirection:
+        last?.direction ?? (session.last_inbound ? 'inbound' : null),
+      openPriorities: ticketCtx?.priorities ?? [],
+      customerName: ticketCtx?.customerName ?? null,
+    })
+  })
+
+  return { sessions: views, backend: 'supabase' }
 }
 
 export async function setSessionTakeover(
   waId: string,
   humanTakeover: boolean,
+  opts?: { state?: InboxSession['state'] },
 ): Promise<InboxSession> {
   if (!(await supabaseReady())) {
-    return memSetSessionTakeover(waId, humanTakeover)
+    return memSetSessionTakeover(waId, humanTakeover, opts)
   }
 
   const supabase = createSystemClient('inbox_takeover')
+  const payload: Record<string, unknown> = { human_takeover: humanTakeover }
+  if (opts?.state) payload.state = opts.state
+
   const { data, error } = await supabase
     .from('intake_sessions')
-    .update({ human_takeover: humanTakeover })
+    .update(payload)
     .eq('wa_id', waId)
     .select(SESSION_SELECT_FULL)
     .single()
@@ -138,7 +414,7 @@ export async function setSessionTakeover(
         .single()
       if (legacyError) {
         if (isSupabaseSchemaError(legacyError)) {
-          return memSetSessionTakeover(waId, humanTakeover)
+          return memSetSessionTakeover(waId, humanTakeover, opts)
         }
         throw new Error(legacyError.message)
       }
@@ -147,22 +423,65 @@ export async function setSessionTakeover(
       })
     }
     if (isSupabaseSchemaError(error)) {
-      return memSetSessionTakeover(waId, humanTakeover)
+      return memSetSessionTakeover(waId, humanTakeover, opts)
     }
     throw new Error(error.message)
   }
   return mapSessionRow(data as Record<string, unknown>)
 }
 
+/**
+ * Mark conversation handled (bot resumes / closed) or waiting (human takeover).
+ * handled → human_takeover false + state done
+ * waiting → human_takeover true
+ */
+export async function markSessionInboxStatus(
+  waId: string,
+  status: 'handled' | 'waiting',
+): Promise<InboxSession> {
+  if (status === 'waiting') {
+    return setSessionTakeover(waId, true)
+  }
+  return setSessionTakeover(waId, false, { state: 'done' })
+}
+
 export async function listSessionMessages(waId: string): Promise<{
   messages: InboxMessage[]
   ticketIds: string[]
+  openTickets: InboxOpenTicket[]
+  context: InboxSessionContext
   backend: 'memory' | 'supabase'
 }> {
   if (!(await supabaseReady())) {
     const messages = memListInboxMessages(waId)
-    const ticketIds = [...new Set(messages.map((m) => m.ticket_id).filter(Boolean))] as string[]
-    return { messages, ticketIds, backend: 'memory' }
+    const ticketIds = [
+      ...new Set(messages.map((m) => m.ticket_id).filter(Boolean)),
+    ] as string[]
+    const openTickets = ticketsForWa(waId)
+    const session = memListSessions().find((s) => s.wa_id === waId)
+    const store_name = resolveStoreName(
+      session?.store_id ?? null,
+      session?.store_code ?? null,
+    )
+    const customer_name =
+      memListTickets().find((t) => t.reporter_phone === waId)?.reporter_name ??
+      null
+    for (const id of openTickets.map((t) => t.id)) {
+      if (!ticketIds.includes(id)) ticketIds.push(id)
+    }
+    return {
+      messages,
+      ticketIds,
+      openTickets,
+      context: {
+        store_name,
+        store_code: session?.store_code ?? null,
+        customer_name,
+        wa_display: formatWaDisplay(waId),
+        openTickets,
+      },
+      backend: 'memory',
+    }
   }
 
   const supabase = createSystemClient('inbox_messages_list')
@@ -173,30 +492,71 @@ export async function listSessionMessages(waId: string): Promise<{
     .order('created_at', { ascending: true })
 
   if (error) {
-    if (isMissingTableError(error, 'inbox_messages')) {
+    if (
+      isMissingTableError(error, 'inbox_messages') ||
+      isSupabaseSchemaError(error)
+    ) {
       const messages = memListInboxMessages(waId)
       const ticketIds = [
         ...new Set(messages.map((m) => m.ticket_id).filter(Boolean)),
       ] as string[]
-      return { messages, ticketIds, backend: 'memory' }
-    }
-    if (isSupabaseSchemaError(error)) {
-      const messages = memListInboxMessages(waId)
-      const ticketIds = [
-        ...new Set(messages.map((m) => m.ticket_id).filter(Boolean)),
-      ] as string[]
-      return { messages, ticketIds, backend: 'memory' }
+      const openTickets = ticketsForWa(waId)
+      const session = memListSessions().find((s) => s.wa_id === waId)
+      return {
+        messages,
+        ticketIds,
+        openTickets,
+        context: {
+          store_name: resolveStoreName(
+            session?.store_id ?? null,
+            session?.store_code ?? null,
+          ),
+          store_code: session?.store_code ?? null,
+          customer_name:
+            memListTickets().find((t) => t.reporter_phone === waId)
+              ?.reporter_name ?? null,
+          wa_display: formatWaDisplay(waId),
+          openTickets,
+        },
+        backend: 'memory',
+      }
     }
     throw new Error(error.message)
   }
 
   const { data: tickets } = await supabase
     .from('tickets')
-    .select('id, reporter_phone')
+    .select(
+      'id, display_number, title, status, priority, description, reporter_name, store_id, stores(code, name)',
+    )
     .eq('reporter_phone', waId)
     .limit(20)
 
   const ticketIds = (tickets ?? []).map((t) => t.id)
+  const openTickets: InboxOpenTicket[] = (tickets ?? [])
+    .filter((t) =>
+      OPEN_TICKET_STATUSES.includes(
+        t.status as (typeof OPEN_TICKET_STATUSES)[number],
+      ),
+    )
+    .map((t) => {
+      const stores = t.stores as
+        | { code: string; name: string }
+        | { code: string; name: string }[]
+        | null
+      const store = Array.isArray(stores) ? stores[0] : stores
+      return {
+        id: t.id,
+        display_number: t.display_number,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        description: t.description ?? '',
+        store_code: store?.code ?? null,
+        store_name: store?.name ?? null,
+      }
+    })
+
   const ticketMessages: InboxMessage[] = []
 
   if (ticketIds.length > 0) {
@@ -239,7 +599,32 @@ export async function listSessionMessages(waId: string): Promise<{
     return true
   })
 
-  return { messages, ticketIds, backend: 'supabase' }
+  const { data: sessionRow } = await supabase
+    .from('intake_sessions')
+    .select('store_id, store_code')
+    .eq('wa_id', waId)
+    .maybeSingle()
+
+  const store_name = resolveStoreName(
+    (sessionRow?.store_id as string | null) ?? null,
+    (sessionRow?.store_code as string | null) ?? null,
+  )
+  const customer_name =
+    (tickets ?? []).find((t) => t.reporter_name)?.reporter_name ?? null
+
+  return {
+    messages,
+    ticketIds,
+    openTickets,
+    context: {
+      store_name,
+      store_code: (sessionRow?.store_code as string | null) ?? null,
+      customer_name,
+      wa_display: formatWaDisplay(waId),
+      openTickets,
+    },
+    backend: 'supabase',
+  }
 }
 
 export async function replyToSession(input: {

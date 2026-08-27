@@ -7,6 +7,7 @@ import {
 import { AuthError } from '@/lib/auth/types'
 import {
   listInboxSessions,
+  markSessionInboxStatus,
   setSessionTakeover,
 } from '@/modules/inbox/service'
 import { captureError } from '@/lib/monitoring'
@@ -23,10 +24,16 @@ export async function GET(request: Request) {
   }
 }
 
-const patchSchema = z.object({
-  wa_id: z.string().min(5),
-  human_takeover: z.boolean(),
-})
+const patchSchema = z
+  .object({
+    wa_id: z.string().min(5),
+    human_takeover: z.boolean().optional(),
+    /** handled = bot/closed; waiting = human takeover */
+    status: z.enum(['handled', 'waiting']).optional(),
+  })
+  .refine((d) => d.human_takeover !== undefined || d.status !== undefined, {
+    message: 'human_takeover or status required',
+  })
 
 export async function PATCH(request: Request) {
   try {
@@ -35,10 +42,13 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
     }
-    const session = await setSessionTakeover(
-      parsed.data.wa_id,
-      parsed.data.human_takeover,
-    )
+    const session =
+      parsed.data.status !== undefined
+        ? await markSessionInboxStatus(parsed.data.wa_id, parsed.data.status)
+        : await setSessionTakeover(
+            parsed.data.wa_id,
+            parsed.data.human_takeover!,
+          )
     return NextResponse.json({ session })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
