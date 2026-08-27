@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageHeader, EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
+import { PageToolbar } from '@/components/layout/page-toolbar'
+import { EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -14,12 +15,7 @@ import {
 } from '@/components/ui/table'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
-import {
-  StatusLabel,
-  PriorityText,
-  priorityEdgeClass,
-  priorityRowClass,
-} from '@/components/ui/signal'
+import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { QueueToolbar } from './queue-toolbar'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
@@ -66,9 +62,6 @@ export default async function TicketsPage({
     redirect('/login')
   }
 
-  const actorId = actor?.id
-  const filtersWithActor = { ...filters, actorId }
-
   // Prefer user-scoped Supabase (RLS) when session auth; else system/memory.
   const resolved = await resolveTicketsSupabase(actor)
   const hasFieldFilters = Boolean(
@@ -110,16 +103,16 @@ export default async function TicketsPage({
     all,
     hasFieldFilters
       ? {
-          ...filtersWithActor,
+          ...filters,
           status: undefined,
           priority: undefined,
           store: undefined,
           tech: undefined,
           q: undefined,
         }
-      : filtersWithActor,
+      : filters,
   )
-  const views = viewCounts(allScoped, new Date(), actorId)
+  const views = viewCounts(allScoped)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
@@ -131,10 +124,16 @@ export default async function TicketsPage({
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5">
-        <PageHeader
+        <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
+          <p className="t-caption text-white/60">OPERATIONS OS V2 / QUEUE</p>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">תקלות</h1><p className="t-body mt-2 text-white/70">מיון, תיעדוף והעברה מהירה של כל מה שדורש תשומת לב.</p></div><div className="text-end"><p className="t-caption text-white/60">בתצוגה</p><p className="t-title t-num text-white">{filtered.length}</p></div></div>
+        </div>
+        <PageToolbar
+          backHref="/ops/dashboard"
+          backLabel="חזרה ללוח בקרה"
           title="תקלות"
-          description="סביבת עבודה נקייה לניהול תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          showRefresh
         />
 
         <QueueToolbar
@@ -180,13 +179,24 @@ export default async function TicketsPage({
               <div className="hidden md:block">
                 <Table>
                   <THead>
-                    <TH className="w-[88px]">עדיפות</TH>
                     <TH className="w-[112px]">מס׳</TH>
-                    <TH>כותרת</TH>
-                    <TH className="w-[180px]">סניף</TH>
-                    <TH className="w-[136px]">אחראי</TH>
+                    <TH className="w-[220px]">חנות</TH>
+                    <TH>תקלה</TH>
+                    <TH className="w-[132px]">סטטוס</TH>
+                    <TH className="w-[136px]">טכנאי</TH>
+                    <TH
+                      className="w-[104px]"
+                      sort={{
+                        href: sortHref('oldest'),
+                        active: filters.sort === 'oldest' || filters.sort === 'newest',
+                        direction: filters.sort === 'newest' ? 'desc' : 'asc',
+                      }}
+                    >
+                      גיל
+                    </TH>
                     <TH
                       className="w-[112px]"
+                      align="end"
                       sort={{
                         href: sortHref('sla'),
                         active: filters.sort === 'sla',
@@ -195,7 +205,6 @@ export default async function TicketsPage({
                     >
                       SLA
                     </TH>
-                    <TH className="w-[120px]">סטטוס</TH>
                   </THead>
                   <TBody>
                     {rows.map((t) => (
@@ -205,9 +214,6 @@ export default async function TicketsPage({
                         className={priorityRowClass(t.priority)}
                       >
                         <TD className="relative ps-4">
-                          <PriorityText priority={t.priority} />
-                        </TD>
-                        <TD>
                           <RowLink
                             href={`/ops/tickets/${t.id}`}
                             label={`תקלה ${ticketNumber(t)}`}
@@ -216,11 +222,6 @@ export default async function TicketsPage({
                               {ticketNumber(t)}
                             </span>
                           </RowLink>
-                        </TD>
-                        <TD>
-                          <span className="t-body block max-w-[46ch] truncate text-ink">
-                            {t.title || t.description}
-                          </span>
                         </TD>
                         <TD>
                           <span className="t-body block truncate text-ink">
@@ -233,15 +234,23 @@ export default async function TicketsPage({
                           ) : null}
                         </TD>
                         <TD>
+                          <span className="t-body block max-w-[46ch] truncate text-ink-2">
+                            {t.title || t.description}
+                          </span>
+                        </TD>
+                        <TD>
+                          <StatusLabel status={t.status} />
+                        </TD>
+                        <TD>
                           <span className="t-body block truncate text-ink-2">
                             {technicianName(t.assigned_to, technicians)}
                           </span>
                         </TD>
                         <TD>
-                          <LiveSla ticket={t} />
+                          <LiveAge createdAt={t.created_at} />
                         </TD>
-                        <TD>
-                          <StatusLabel status={t.status} />
+                        <TD align="end">
+                          <LiveSla ticket={t} />
                         </TD>
                       </TR>
                     ))}

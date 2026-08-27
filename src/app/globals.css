@@ -18,6 +18,7 @@
   --border-strong: #b6cbd0;
   --ink: #102b35;
   --ink-2: #4c6972;
+  /* Darkened for WCAG AA ≥4.5:1 on --canvas (#eef4f6) and white */
   --ink-3: #556870;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */

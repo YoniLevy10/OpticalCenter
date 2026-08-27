@@ -33,7 +33,8 @@ export function PageToolbar({
       {backHref ? <BackButton href={backHref} label={backLabel} /> : null}
       {title ? (
         <div className="min-w-0 flex-1">
-          <h1 className="t-title text-ink">{title}</h1>
+          {/* Decorative title — page heroes own the sole <h1> */}
+          <p className="t-title text-ink">{title}</p>
           {meta ? <p className="t-meta text-ink-3">{meta}</p> : null}
         </div>
       ) : (

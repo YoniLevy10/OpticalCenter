@@ -21,17 +21,14 @@ test.describe('Navigation & layout', () => {
     // /ops redirects to dashboard
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
-    await expect(
-      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב/ }),
-    ).toBeVisible()
-    await expect(page.getByText('דורש את תשומת לבך')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'לוח בקרה' })).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
-    await expect(page.getByRole('heading', { name: /סניפים|חנויות/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
     await gotoStable(page, '/ops/reports')
     await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /ייצוא CSV/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /ייצוא CSV/ }).first()).toBeVisible()
     await gotoStable(page, '/ops/settings')
     await expect(page.getByRole('heading', { name: 'הגדרות' })).toBeVisible()
   })

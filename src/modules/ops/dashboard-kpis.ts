@@ -24,8 +24,10 @@ export type StoreRank = { code: string; name: string; count: number }
 export type TechLoad = { id: string; name: string; count: number }
 
 export type DashboardKpis = {
-  /** new + triaged + assigned (not in_progress / waiting_parts). */
+  /** All open (non-terminal) tickets. */
   open: number
+  /** new + triaged + assigned (not yet in progress). */
+  queueFront: number
   inProgress: number
   waiting: number
   done: number
@@ -149,7 +151,7 @@ export function computeDashboardKpis(
   now = new Date(),
 ): DashboardKpis {
   const openTickets = tickets.filter((t) => isOpen(t.status))
-  let open = 0
+  let queueFront = 0
   let inProgress = 0
   let waiting = 0
   let done = 0
@@ -162,7 +164,7 @@ export function computeDashboardKpis(
   const urgentCandidates: QueueTicket[] = []
 
   for (const t of tickets) {
-    if (QUEUE_FRONT.includes(t.status as TicketStatus)) open += 1
+    if (QUEUE_FRONT.includes(t.status as TicketStatus)) queueFront += 1
     if (t.status === 'in_progress') inProgress += 1
     if (t.status === 'waiting_parts') waiting += 1
     if (t.status === 'resolved' || t.status === 'closed') done += 1
@@ -256,7 +258,8 @@ export function computeDashboardKpis(
   }
 
   return {
-    open,
+    open: openTickets.length,
+    queueFront,
     inProgress,
     waiting,
     done,

@@ -53,7 +53,8 @@ describe('computeDashboardKpis', () => {
       now,
     )
 
-    expect(kpis.open).toBe(2)
+    expect(kpis.open).toBe(3)
+    expect(kpis.queueFront).toBe(2)
     expect(kpis.inProgress).toBe(1)
     expect(kpis.waiting).toBe(0)
     expect(kpis.done).toBe(1)
