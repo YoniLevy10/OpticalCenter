@@ -43,8 +43,8 @@ export default async function SettingsPage() {
         <div className="flex flex-col gap-2">
           <h2 className="t-section px-1 text-ink-2">קישורים</h2>
           <nav aria-label="קישורי הגדרות">
-          <Panel flush className="overflow-hidden">
-            <ul className="divide-y divide-border">
+          <Panel flush elevated className="overflow-hidden">
+            <ul className="grid gap-px bg-border sm:grid-cols-2">
               {LINKS.map((item) => (
                 <li key={item.href}>
                   <Link

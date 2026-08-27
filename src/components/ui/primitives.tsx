@@ -23,7 +23,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface',
+        'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
         elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
