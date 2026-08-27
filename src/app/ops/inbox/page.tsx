@@ -1,7 +1,8 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader } from '@/components/ui/primitives'
+import { PageHeader, Skeleton } from '@/components/ui/primitives'
 import { InboxClient } from './inbox-client'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -27,7 +28,16 @@ export default async function InboxPage() {
           meta="השתלטות אנושית"
           className="hidden md:flex"
         />
-        <InboxClient />
+        <Suspense
+          fallback={
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-[420px] w-full" />
+            </div>
+          }
+        >
+          <InboxClient />
+        </Suspense>
       </div>
     </OpsAppShell>
   )

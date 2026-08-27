@@ -32,6 +32,7 @@ export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
   { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
   { id: 'reports', href: '/ops/reports', label: 'דוחות' },
+  { id: 'status', href: '/ops/status', label: 'סטטוס מערכת' },
   { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
   { id: 'users', href: '/ops/users', label: 'משתמשים' },
   { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
@@ -65,6 +66,10 @@ export function canAccessSettings(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
+export function canAccessStatus(actor: Actor | null): boolean {
+  return canAccessSettings(actor)
+}
+
 export function canAccessSimulator(actor: Actor | null): boolean {
   if (isProductionRuntime()) return false
   if (!actor) return true
@@ -92,6 +97,7 @@ const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   vendors: canAccessVendors,
   activity: canAccessActivity,
   reports: canAccessReports,
+  status: canAccessStatus,
   settings: canAccessSettings,
   users: canAccessUsers,
   'print-qr': canAccessPrintQr,

@@ -27,6 +27,7 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
+import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
 /**
@@ -298,6 +299,9 @@ export function AppShell({
             tabIndex={-1}
             className="pb-nav mx-auto min-w-0 w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
           >
+            <div className="mb-4 hidden justify-end md:flex">
+              <SystemStatusBanner compact />
+            </div>
             {children}
           </main>
         </PullToRefresh>

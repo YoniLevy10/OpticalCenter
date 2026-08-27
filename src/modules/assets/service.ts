@@ -33,6 +33,8 @@ export async function listAssets(opts?: {
         backend: 'supabase',
         assets: data.map((a) => ({
           ...(a as MemAsset),
+          // DB has no status column — UI derives / defaults to ok.
+          status: (a as MemAsset).status ?? 'ok',
           store_code: storeMap.get(a.store_id)?.code,
           store_name: storeMap.get(a.store_id)?.name,
         })),
@@ -76,7 +78,12 @@ export async function createAsset(input: {
 
 export async function updateAsset(
   id: string,
-  patch: { name?: string; code?: string; asset_type?: string },
+  patch: {
+    name?: string
+    code?: string
+    asset_type?: string
+    status?: MemAsset['status']
+  },
 ): Promise<AssetRow> {
   if (await supabaseReady()) {
     const supabase = createSystemClient('assets_update')
@@ -84,6 +91,7 @@ export async function updateAsset(
     if (patch.name != null) body.name = patch.name.trim()
     if (patch.code != null) body.code = patch.code.trim().toUpperCase()
     if (patch.asset_type != null) body.asset_type = patch.asset_type.trim() || 'other'
+    // status is memory-only until a DB column exists
     const { data, error } = await supabase
       .from('assets')
       .update(body)
@@ -91,7 +99,7 @@ export async function updateAsset(
       .select('id, store_id, code, name, asset_type, created_at')
       .single()
     if (error || !data) throw new Error(error?.message || 'עדכון נכס נכשל')
-    return data as MemAsset
+    return { ...(data as MemAsset), status: patch.status ?? 'ok' }
   }
   return memUpdateAsset(id, patch)
 }

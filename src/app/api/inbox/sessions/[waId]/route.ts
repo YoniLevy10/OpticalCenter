@@ -18,8 +18,15 @@ export async function GET(
   try {
     await requireActor(request)
     const { waId } = await ctx.params
-    const { messages, ticketIds, backend } = await listSessionMessages(waId)
-    return NextResponse.json({ messages, ticketIds, backend })
+    const { messages, ticketIds, openTickets, context, backend } =
+      await listSessionMessages(waId)
+    return NextResponse.json({
+      messages,
+      ticketIds,
+      openTickets,
+      context,
+      backend,
+    })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'GET /api/inbox/sessions/[waId]' })

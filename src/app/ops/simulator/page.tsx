@@ -18,6 +18,7 @@ export default function SimulatorPage() {
         />
         <PageHeader
           title="סימולטור WhatsApp"
+          description="כלי פנימי לבדיקת intake — אותה זרימה כמו ה־webhook האמיתי."
           meta="כלי פיתוח"
           className="hidden md:flex"
           actions={<SeedDemoTicketButton />}

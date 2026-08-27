@@ -8,19 +8,25 @@ import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { StoresMobileList } from './stores-mobile-list'
+import { StoreRowActions } from './store-row-actions'
 import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
-import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
-import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+
+function activityLabel(isActive: boolean | undefined, openCount: number) {
+  if (isActive === false) return { text: 'מושבת', tone: 'muted' as const }
+  if (openCount > 0) return { text: 'פעיל · תקלות', tone: 'warn' as const }
+  return { text: 'פעיל', tone: 'ok' as const }
+}
 
 export default async function StoresPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; region?: string; status?: string }>
 }) {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -29,6 +35,8 @@ export default async function StoresPage({
 
   const sp = await searchParams
   const q = (sp.q ?? '').trim().toLowerCase()
+  const region = (sp.region ?? '').trim()
+  const status = (sp.status ?? '').trim()
   const { stores, fromDb } = await fetchStores({ includeInactive: true })
 
   const { tickets } = await listTickets(500).catch(() => ({
@@ -48,11 +56,24 @@ export default async function StoresPage({
     openCountByStore.set(t.store_id, (openCountByStore.get(t.store_id) ?? 0) + 1)
   }
 
-  const filtered = q
-    ? stores.filter((s) =>
-        `${s.code} ${s.name} ${s.city ?? ''}`.toLowerCase().includes(q),
-      )
-    : stores
+  const regions = Array.from(
+    new Set(
+      stores
+        .map((s) => s.city?.trim())
+        .filter((c): c is string => Boolean(c)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, 'he'))
+
+  const filtered = stores.filter((s) => {
+    if (q) {
+      const hay = `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    if (region && (s.city ?? '') !== region) return false
+    if (status === 'active' && s.is_active === false) return false
+    if (status === 'inactive' && s.is_active !== false) return false
+    return true
+  })
 
   const canMutate =
     actor?.memberships.some(
@@ -65,128 +86,135 @@ export default async function StoresPage({
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageHeader
-         
           title="חנויות"
-          meta={fromDb ? `${activeCount} פעילות` : 'מצב דמו'}
+          meta={fromDb ? `${activeCount} פעילים` : 'מצב דמו'}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                <Link href="/ops/stores/print-qr">הדפסת QR</Link>
+              </Button>
+              {canMutate ? <StoreCreateForm /> : null}
+            </div>
+          }
         />
 
-        {canMutate ? <StoreCreateForm /> : null}
+        <StoreSearch
+          initialQ={sp.q ?? ''}
+          initialRegion={region}
+          initialStatus={status}
+          regions={regions}
+        />
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <StoreSearch initial={sp.q ?? ''} />
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="touch" className="min-h-[var(--tap)]">
-              <Link href="/ops/stores/print-qr">הדפסת QR</Link>
-            </Button>
-            <p className="t-meta t-num text-ink-3">{filtered.length} תוצאות</p>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <Button asChild variant="ghost" size="touch" className="min-h-[var(--tap)] sm:hidden">
+            <Link href="/ops/stores/print-qr">הדפסת QR</Link>
+          </Button>
+          <p className="t-meta t-num ms-auto text-ink-3">{filtered.length} תוצאות</p>
         </div>
 
         <Panel flush elevated className="overflow-hidden">
           {filtered.length === 0 ? (
             <EmptyState
               title="לא נמצאו חנויות"
-              description="נסו קוד חנות, שם או עיר."
+              description="נסו קוד, שם, עיר או שנו את הסינון."
               icon={Store}
             />
           ) : (
             <>
-              {/* Desktop */}
               <div className="hidden md:block">
                 <Table>
                   <THead>
-                    <TH className="w-[88px]">קוד</TH>
                     <TH>שם</TH>
-                    <TH className="w-[140px]">עיר</TH>
+                    <TH className="w-[88px]">קוד</TH>
                     <TH className="w-[88px]" align="end">
                       פתוחות
                     </TH>
-                    <TH className="w-[160px]">טקסט זיהוי</TH>
-                    <TH className="w-[100px]" align="end">
-                      QR
-                    </TH>
-                    <TH className="w-[120px]" align="end">
-                      קישור
+                    <TH className="w-[120px]">סטטוס</TH>
+                    <TH className="w-[160px]">איש קשר</TH>
+                    <TH className="w-[148px]" align="end">
+                      פעולות
                     </TH>
                   </THead>
                   <TBody>
                     {filtered.map((s) => {
                       const openCount = openCountByStore.get(s.id) ?? 0
+                      const activity = activityLabel(s.is_active, openCount)
                       return (
-                      <TR key={s.id}>
-                        <TD>
-                          <span className="t-body-strong t-num text-ink">
-                            {s.code}
-                          </span>
-                          {s.is_active === false ? (
-                            <span className="t-caption ms-1 text-ink-3">מושבת</span>
-                          ) : null}
-                        </TD>
-                        <TD>
-                          <Link
-                            href={`/ops/stores/${encodeURIComponent(s.code)}`}
-                            className="t-body text-ink underline-offset-2 hover:underline"
-                          >
-                            {s.name}
-                          </Link>
-                        </TD>
-                        <TD>
-                          <span className="t-body text-ink-2">
-                            {s.city ?? '—'}
-                          </span>
-                        </TD>
-                        <TD align="end">
-                          {openCount > 0 ? (
+                        <TR key={s.id}>
+                          <TD>
                             <Link
-                              href={`/ops/tickets?store=${encodeURIComponent(s.code)}`}
-                              className="t-body-strong t-num text-[var(--signal-critical)] underline-offset-2 hover:underline"
+                              href={`/ops/stores/${encodeURIComponent(s.code)}`}
+                              className="t-body-strong text-ink underline-offset-2 hover:underline"
                             >
-                              {openCount}
+                              {s.name}
                             </Link>
-                          ) : (
-                            <span className="t-caption t-num text-ink-3">0</span>
-                          )}
-                        </TD>
-                        <TD>
-                          <span
-                            dir="ltr"
-                            className="t-caption t-num inline-block rounded-[var(--radius-sm)] bg-sunken px-1.5 py-0.5 text-ink-2"
-                          >
-                            {storeWhatsAppPrefill(s.code)}
-                          </span>
-                        </TD>
-                        <TD align="end">
-                          <Link
-                            href={`/ops/stores/${encodeURIComponent(s.code)}`}
-                            className="t-body text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-                          >
-                            QR
-                          </Link>
-                        </TD>
-                        <TD align="end">
-                          <a
-                            href={storeWhatsAppDeepLink(s.code)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="t-body text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-                          >
-                            WhatsApp
-                          </a>
-                        </TD>
-                      </TR>
+                            {s.city ? (
+                              <span className="t-caption mt-0.5 block text-ink-3">
+                                {s.city}
+                              </span>
+                            ) : null}
+                          </TD>
+                          <TD>
+                            <span className="t-body-strong t-num text-ink">
+                              {s.code}
+                            </span>
+                          </TD>
+                          <TD align="end">
+                            {openCount > 0 ? (
+                              <Link
+                                href={`/ops/tickets?store=${encodeURIComponent(s.code)}`}
+                                className="t-body-strong t-num text-[var(--signal-critical)] underline-offset-2 hover:underline"
+                              >
+                                {openCount}
+                              </Link>
+                            ) : (
+                              <span className="t-caption t-num text-ink-3">0</span>
+                            )}
+                          </TD>
+                          <TD>
+                            <span
+                              className={cn(
+                                't-caption inline-flex items-center gap-1.5',
+                                activity.tone === 'ok' && 'text-[var(--signal-resolved)]',
+                                activity.tone === 'warn' && 'text-[var(--signal-warning)]',
+                                activity.tone === 'muted' && 'text-ink-3',
+                              )}
+                            >
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'h-1.5 w-1.5 rounded-full',
+                                  activity.tone === 'ok' && 'bg-[var(--signal-resolved)]',
+                                  activity.tone === 'warn' && 'bg-[var(--signal-warning)]',
+                                  activity.tone === 'muted' && 'bg-ink-3',
+                                )}
+                              />
+                              {activity.text}
+                            </span>
+                          </TD>
+                          <TD>
+                            <span className="t-body text-ink-2">
+                              {s.address?.trim() || s.city || '—'}
+                            </span>
+                          </TD>
+                          <TD align="end">
+                            <StoreRowActions code={s.code} canEdit={canMutate} />
+                          </TD>
+                        </TR>
                       )
                     })}
                   </TBody>
                 </Table>
               </div>
 
-              {/* Mobile */}
               <StoresMobileList
+                canEdit={canMutate}
                 stores={filtered.map((s) => ({
                   id: s.id,
                   code: s.code,
                   name: s.name,
                   city: s.city,
+                  address: s.address,
                   is_active: s.is_active,
                   openCount: openCountByStore.get(s.id) ?? 0,
                 }))}
@@ -194,10 +222,6 @@ export default async function StoresPage({
             </>
           )}
         </Panel>
-
-        <p className="t-caption text-ink-3">
-          קוד החנות זהה בקישור ה־QR, ה־NFC ובהודעת הטקסט ל־WhatsApp.
-        </p>
       </div>
     </OpsAppShell>
   )

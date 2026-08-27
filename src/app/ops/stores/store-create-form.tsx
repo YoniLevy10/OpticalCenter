@@ -2,24 +2,32 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
-import { Notice, Panel, PanelHeader } from '@/components/ui/primitives'
+import { Modal } from '@/components/ui/overlay'
+import { Notice } from '@/components/ui/primitives'
 
 export function StoreCreateForm() {
   const router = useRouter()
+  const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+
+  function reset() {
+    setCode('')
+    setName('')
+    setCity('')
+    setError(null)
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       const res = await fetch('/api/stores', {
         method: 'POST',
@@ -32,10 +40,8 @@ export function StoreCreateForm() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'יצירה נכשלה')
-      setCode('')
-      setName('')
-      setCity('')
-      setNotice(`נוספה חנות ${json.store?.code ?? ''}`)
+      reset()
+      setOpen(false)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'יצירה נכשלה')
@@ -45,10 +51,28 @@ export function StoreCreateForm() {
   }
 
   return (
-    <Panel flush className="overflow-hidden">
-      <PanelHeader title="הוספת חנות" meta="ישראל" />
-      <form onSubmit={onSubmit} className="space-y-3 p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <>
+      <Button
+        type="button"
+        variant="primary"
+        size="touch"
+        className="md:h-9 md:px-3.5"
+        onClick={() => setOpen(true)}
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+        הוספת סניף
+      </Button>
+
+      <Modal
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) reset()
+        }}
+        title="הוספת סניף"
+        description="קוד מספרי · שם · עיר (אזור)"
+      >
+        <form onSubmit={onSubmit} className="space-y-3">
           <Field label="קוד" htmlFor="store-code">
             <Input
               id="store-code"
@@ -56,6 +80,7 @@ export function StoreCreateForm() {
               inputMode="numeric"
               pattern="\d{1,6}"
               required
+              autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="172"
@@ -70,7 +95,7 @@ export function StoreCreateForm() {
               placeholder="תל אביב…"
             />
           </Field>
-          <Field label="עיר" htmlFor="store-city">
+          <Field label="עיר / אזור" htmlFor="store-city">
             <Input
               id="store-city"
               value={city}
@@ -78,13 +103,26 @@ export function StoreCreateForm() {
               placeholder="תל אביב"
             />
           </Field>
-        </div>
-        {error ? <Notice tone="warning">{error}</Notice> : null}
-        {notice ? <Notice tone="progress">{notice}</Notice> : null}
-        <Button type="submit" size="sm" disabled={busy}>
-          {busy ? 'שומר…' : 'הוספה'}
-        </Button>
-      </form>
-    </Panel>
+          {error ? <Notice tone="warning">{error}</Notice> : null}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                setOpen(false)
+                reset()
+              }}
+            >
+              ביטול
+            </Button>
+            <Button type="submit" variant="primary" size="sm" disabled={busy}>
+              {busy ? 'שומר…' : 'הוספה'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   )
 }

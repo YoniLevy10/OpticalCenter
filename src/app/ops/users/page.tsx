@@ -26,6 +26,7 @@ export default async function UsersPage() {
         />
         <PageHeader
           title="משתמשים"
+          description="טבלת משתמשים עם תפקיד, סניף, סטטוס והתחברות אחרונה — הרשאות בשפה עסקית."
           meta="ניהול פרופילים והרשאות"
           className="hidden md:flex"
         />
