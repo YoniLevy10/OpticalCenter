@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { AlertTriangle, Inbox, PackageOpen, UserRound, Wrench } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
-  PageHeader,
   Panel,
   PanelHeader,
   EmptyState,
@@ -229,18 +228,23 @@ export default async function OpsDashboardPage() {
             <p className="t-caption text-[var(--tenant)]">OPTICAL CENTER · OPERATIONS OS</p>
             <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.04em] text-ink md:text-5xl">לוח בקרה</h1>
             <p className="t-body mt-2 max-w-xl text-ink-2">תמונה חיה של מה שדורש תשומת לב היום.</p>
+            {ticketResult.backend !== 'supabase' ? (
+              <p className="t-meta mt-2 text-ink-3">מצב דמו</p>
+            ) : null}
           </div>
-          <div className="hidden shrink-0 text-end md:block"><p className="t-caption text-ink-3">מצב מערכת</p><p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-ink"><span className="size-2 rounded-full bg-[var(--signal-resolved)]" />פעילות תקינה</p></div>
-        </div>
-        <PageHeader
-          title="לוח בקרה"
-          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          actions={
+          <div className="hidden shrink-0 flex-col items-end gap-3 md:flex">
+            <div className="text-end">
+              <p className="t-caption text-ink-3">מצב מערכת</p>
+              <p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-ink">
+                <span className="size-2 rounded-full bg-[var(--signal-resolved)]" />
+                פעילות תקינה
+              </p>
+            </div>
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/tickets">לתור התקלות</Link>
             </Button>
-          }
-        />
+          </div>
+        </div>
 
         <div className="md:hidden">
           <Button asChild variant="secondary" size="touch" className="w-full">
