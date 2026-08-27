@@ -215,12 +215,17 @@ export type MemSession = {
   last_inbound?: string | null
 }
 
+/** Operational asset health — optional; UI may also derive from open tickets. */
+export type MemAssetStatus = 'ok' | 'in_service' | 'disabled'
+
 export type MemAsset = {
   id: string
   store_id: string
   code: string
   name: string
   asset_type: string
+  /** Optional client/memory status when no DB column exists. */
+  status?: MemAssetStatus
   created_at: string
 }
 
@@ -342,15 +347,34 @@ function store(): GlobalMem {
 
 function seedDemoAssets(mem: GlobalMem) {
   if (mem.assets.size > 0) return
-  const row: MemAsset = {
+  const now = new Date().toISOString()
+  mem.assets.set('asset-demo-ac04', {
     id: 'asset-demo-ac04',
     store_id: 'demo-172',
     code: 'AC-04',
     name: 'יחידת מיזוג ראשית',
     asset_type: 'hvac',
-    created_at: new Date().toISOString(),
-  }
-  mem.assets.set(row.id, row)
+    status: 'ok',
+    created_at: now,
+  })
+  mem.assets.set('asset-demo-ac05', {
+    id: 'asset-demo-ac05',
+    store_id: 'demo-172',
+    code: 'AC-05',
+    name: 'מזגן מחסן',
+    asset_type: 'hvac',
+    status: 'in_service',
+    created_at: now,
+  })
+  mem.assets.set('asset-demo-opt01', {
+    id: 'asset-demo-opt01',
+    store_id: 'demo-101',
+    code: 'OPT-01',
+    name: 'מכשיר מדידה',
+    asset_type: 'optical',
+    status: 'disabled',
+    created_at: now,
+  })
 }
 
 function seedDemoVendors(mem: GlobalMem) {
@@ -862,6 +886,7 @@ export function memCreateAsset(input: {
   code: string
   name: string
   asset_type?: string
+  status?: MemAssetStatus
 }): MemAsset {
   const code = input.code.trim().toUpperCase()
   if ([...store().assets.values()].some(
@@ -875,6 +900,7 @@ export function memCreateAsset(input: {
     code,
     name: input.name.trim(),
     asset_type: input.asset_type?.trim() || 'other',
+    status: input.status ?? 'ok',
     created_at: new Date().toISOString(),
   }
   store().assets.set(row.id, row)
@@ -883,7 +909,7 @@ export function memCreateAsset(input: {
 
 export function memUpdateAsset(
   id: string,
-  patch: Partial<Pick<MemAsset, 'name' | 'code' | 'asset_type'>>,
+  patch: Partial<Pick<MemAsset, 'name' | 'code' | 'asset_type' | 'status'>>,
 ): MemAsset {
   const row = store().assets.get(id)
   if (!row) throw new Error('נכס לא נמצא')
@@ -898,6 +924,7 @@ export function memUpdateAsset(
   }
   if (patch.name != null) row.name = patch.name.trim()
   if (patch.asset_type != null) row.asset_type = patch.asset_type.trim() || 'other'
+  if (patch.status != null) row.status = patch.status
   return row
 }
 
