@@ -4,14 +4,23 @@ import {
   memAddMessage,
   memDedupe,
   memGetSession,
+  memLinkStorePhone,
   memUpsertSession,
   MEM_COUNTRY_ID,
   MEM_ORG_ID,
   supabaseReady,
 } from '@/lib/data/memory-store'
-import { classifyFaultText } from '@/modules/tickets/classify'
-import { parseStoreCodeFromText } from '@/modules/tickets/constants'
+import { logEvent } from '@/lib/logging'
+import {
+  normalizeTicketCategory,
+  parseStoreCodeFromText,
+} from '@/modules/tickets/constants'
 import { createTicket } from '@/modules/tickets/service'
+import {
+  findPossibleDuplicateTicket,
+  runIntakeAgent,
+  type IntakeDecision,
+} from './agent'
 import { WA_COPY } from './copy'
 import { enhanceWhatsAppMessage, type WhatsAppAiSituation } from './ai'
 import { resolveInboundMediaUrl } from './media'
@@ -45,7 +54,49 @@ type SessionRow = {
   store_code: string | null
   state: IntakeState
   pending_description: string | null
+  clarification_count: number
+  draft_payload: Record<string, unknown> | null
+  active_ticket_id: string | null
+  human_takeover: boolean
   expires_at: string
+}
+
+const SESSION_SELECT =
+  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, clarification_count, draft_payload, active_ticket_id, human_takeover, expires_at'
+
+const SESSION_SELECT_LEGACY =
+  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, human_takeover, expires_at'
+
+function isMissingColumnError(error: { message?: string } | null, col: string) {
+  return Boolean(error?.message && error.message.includes(col))
+}
+
+async function selectSession(
+  supabase: SupabaseClient,
+  countryId: string,
+  waId: string,
+) {
+  let { data, error } = await supabase
+    .from('intake_sessions')
+    .select(SESSION_SELECT)
+    .eq('country_id', countryId)
+    .eq('wa_id', waId)
+    .maybeSingle()
+  if (
+    error &&
+    (isMissingColumnError(error, 'clarification_count') ||
+      isMissingColumnError(error, 'draft_payload') ||
+      isMissingColumnError(error, 'active_ticket_id'))
+  ) {
+    ;({ data, error } = await supabase
+      .from('intake_sessions')
+      .select(SESSION_SELECT_LEGACY)
+      .eq('country_id', countryId)
+      .eq('wa_id', waId)
+      .maybeSingle())
+  }
+  if (error) throw new Error(error.message)
+  return data
 }
 
 const DEMO_COUNTRY: CountryRow = {
@@ -75,6 +126,46 @@ function isIdentityOnly(text: string | null, storeCode: string): boolean {
   )
 }
 
+function sessionFromMem(
+  waId: string,
+  country: CountryRow,
+  existing: NonNullable<ReturnType<typeof memGetSession>>,
+): SessionRow {
+  return {
+    id: `mem-${waId}`,
+    organization_id: MEM_ORG_ID,
+    country_id: existing.country_id || country.id,
+    wa_id: existing.wa_id,
+    store_id: existing.store_id,
+    store_code: existing.store_code,
+    state: existing.state,
+    pending_description: existing.pending_description,
+    clarification_count: existing.clarification_count ?? 0,
+    draft_payload: existing.draft_payload ?? null,
+    active_ticket_id: existing.active_ticket_id ?? null,
+    human_takeover: Boolean(existing.human_takeover),
+    expires_at: existing.expires_at,
+  }
+}
+
+function normalizeSessionRow(row: Record<string, unknown>): SessionRow {
+  return {
+    id: String(row.id),
+    organization_id: String(row.organization_id),
+    country_id: String(row.country_id),
+    wa_id: String(row.wa_id),
+    store_id: (row.store_id as string | null) ?? null,
+    store_code: (row.store_code as string | null) ?? null,
+    state: row.state as IntakeState,
+    pending_description: (row.pending_description as string | null) ?? null,
+    clarification_count: Number(row.clarification_count ?? 0),
+    draft_payload: (row.draft_payload as Record<string, unknown> | null) ?? null,
+    active_ticket_id: (row.active_ticket_id as string | null) ?? null,
+    human_takeover: Boolean(row.human_takeover),
+    expires_at: String(row.expires_at),
+  }
+}
+
 export async function resolveCountryByPhoneNumberId(
   supabase: SupabaseClient | null,
   phoneNumberId: string | null,
@@ -94,7 +185,6 @@ export async function resolveCountryByPhoneNumberId(
   const id = phoneNumberId?.trim() || null
   if (!id) {
     if (strict) return null
-    // Dev only: allow env default mapping
     const envId =
       process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
       process.env.WHATSAPP_PHONE_NUMBER_ID ||
@@ -118,8 +208,6 @@ export async function resolveCountryByPhoneNumberId(
     .eq('whatsapp_phone_number_id', id)
     .maybeSingle()
   if (data) return data as CountryRow
-
-  // Unknown phone_number_id — never guess IL/any country
   return null
 }
 
@@ -177,6 +265,45 @@ export async function resolveStoreByWaId(
   return store
 }
 
+async function linkStorePhone(
+  supabase: SupabaseClient | null,
+  country: CountryRow,
+  waId: string,
+  store: StoreRow,
+) {
+  if (!waId || !store.id) return
+  if (!supabase) {
+    memLinkStorePhone(waId, store.id, country.id)
+    return
+  }
+  try {
+    const { data: existing } = await supabase
+      .from('store_phones')
+      .select('id, store_id')
+      .eq('wa_id', waId)
+      .limit(1)
+      .maybeSingle()
+    if (existing?.store_id === store.id) return
+    if (existing) {
+      await supabase
+        .from('store_phones')
+        .update({ store_id: store.id })
+        .eq('id', existing.id)
+      return
+    }
+    await supabase.from('store_phones').insert({
+      store_id: store.id,
+      wa_id: waId,
+      is_primary: true,
+      label: 'whatsapp_intake',
+    })
+  } catch (e) {
+    logEvent('whatsapp:intake', 'warn', 'store_phone_link_failed', {
+      error: e instanceof Error ? e.message : 'unknown',
+    })
+  }
+}
+
 async function markProcessed(
   supabase: SupabaseClient | null,
   messageId: string,
@@ -198,6 +325,46 @@ async function markProcessed(
   return true
 }
 
+async function logWhatsAppMessage(params: {
+  supabase: SupabaseClient | null
+  country: CountryRow
+  session: SessionRow | null
+  waId: string
+  direction: 'inbound' | 'outbound'
+  body: string | null
+  metaMessageId: string | null
+  mediaKind?: string | null
+  ticketId?: string | null
+}) {
+  const {
+    supabase,
+    country,
+    session,
+    waId,
+    direction,
+    body,
+    metaMessageId,
+    mediaKind,
+    ticketId,
+  } = params
+  if (!supabase) return
+  try {
+    await supabase.from('whatsapp_messages').insert({
+      organization_id: country.organization_id,
+      country_id: country.id,
+      wa_id: waId,
+      direction,
+      body,
+      meta_message_id: metaMessageId,
+      media_kind: mediaKind ?? null,
+      ticket_id: ticketId ?? null,
+      intake_session_id: session && !session.id.startsWith('mem-') ? session.id : null,
+    })
+  } catch {
+    // Table may not exist pre-migration — non-fatal
+  }
+}
+
 async function getOrCreateSession(
   supabase: SupabaseClient | null,
   country: CountryRow,
@@ -209,17 +376,7 @@ async function getOrCreateSession(
     if (existing) {
       const expired = new Date(existing.expires_at).getTime() < now
       if (!expired && existing.state !== 'done') {
-        return {
-          id: `mem-${waId}`,
-          organization_id: MEM_ORG_ID,
-          country_id: existing.country_id,
-          wa_id: existing.wa_id,
-          store_id: existing.store_id,
-          store_code: existing.store_code,
-          state: existing.state,
-          pending_description: existing.pending_description,
-          expires_at: existing.expires_at,
-        }
+        return sessionFromMem(waId, country, existing)
       }
     }
     const session = memUpsertSession({
@@ -229,79 +386,97 @@ async function getOrCreateSession(
       store_code: null,
       state: 'awaiting_store',
       pending_description: null,
+      clarification_count: 0,
+      draft_payload: null,
+      active_ticket_id: null,
+      human_takeover: false,
     })
-    return {
-      id: `mem-${waId}`,
-      organization_id: MEM_ORG_ID,
-      country_id: session.country_id,
-      wa_id: session.wa_id,
-      store_id: session.store_id,
-      store_code: session.store_code,
-      state: session.state,
-      pending_description: session.pending_description,
-      expires_at: session.expires_at,
-    }
+    return sessionFromMem(waId, country, session)
   }
 
-  const { data: existing } = await supabase
-    .from('intake_sessions')
-    .select(
-      'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, expires_at',
-    )
-    .eq('country_id', country.id)
-    .eq('wa_id', waId)
-    .maybeSingle()
+  const existing = await selectSession(supabase, country.id, waId)
 
   if (existing) {
     const expired = new Date(existing.expires_at).getTime() < now
     if (!expired && existing.state !== 'done') {
-      return existing as SessionRow
+      return normalizeSessionRow(existing as Record<string, unknown>)
     }
-    const { data: updated, error } = await supabase
+    const resetPatch: Record<string, unknown> = {
+      store_id: null,
+      store_code: null,
+      state: 'awaiting_store',
+      pending_description: null,
+      clarification_count: 0,
+      draft_payload: null,
+      active_ticket_id: null,
+      expires_at: new Date(now + 30 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    let { data: updated, error } = await supabase
       .from('intake_sessions')
-      .update({
-        store_id: null,
-        store_code: null,
-        state: 'awaiting_store',
-        pending_description: null,
-        expires_at: new Date(now + 30 * 60 * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(resetPatch)
       .eq('id', existing.id)
-      .select(
-        'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, expires_at',
-      )
+      .select(SESSION_SELECT)
       .single()
+    if (
+      error &&
+      (isMissingColumnError(error, 'clarification_count') ||
+        isMissingColumnError(error, 'draft_payload'))
+    ) {
+      delete resetPatch.clarification_count
+      delete resetPatch.draft_payload
+      delete resetPatch.active_ticket_id
+      ;({ data: updated, error } = await supabase
+        .from('intake_sessions')
+        .update(resetPatch)
+        .eq('id', existing.id)
+        .select(SESSION_SELECT_LEGACY)
+        .single())
+    }
     if (error || !updated) throw new Error(error?.message || 'session reset failed')
-    return updated as SessionRow
+    return normalizeSessionRow(updated as Record<string, unknown>)
   }
 
-  const { data: created, error } = await supabase
+  const insertRow: Record<string, unknown> = {
+    organization_id: country.organization_id,
+    country_id: country.id,
+    wa_id: waId,
+    state: 'awaiting_store',
+    clarification_count: 0,
+    expires_at: new Date(now + 30 * 60 * 1000).toISOString(),
+  }
+  let { data: created, error } = await supabase
     .from('intake_sessions')
-    .insert({
-      organization_id: country.organization_id,
-      country_id: country.id,
-      wa_id: waId,
-      state: 'awaiting_store',
-      expires_at: new Date(now + 30 * 60 * 1000).toISOString(),
-    })
-    .select(
-      'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, expires_at',
-    )
+    .insert(insertRow)
+    .select(SESSION_SELECT)
     .single()
+  if (error && isMissingColumnError(error, 'clarification_count')) {
+    delete insertRow.clarification_count
+    ;({ data: created, error } = await supabase
+      .from('intake_sessions')
+      .insert(insertRow)
+      .select(SESSION_SELECT_LEGACY)
+      .single())
+  }
   if (error || !created) throw new Error(error?.message || 'session create failed')
-  return created as SessionRow
+  return normalizeSessionRow(created as Record<string, unknown>)
 }
+
+type SessionPatch = Partial<{
+  store_id: string | null
+  store_code: string | null
+  state: IntakeState
+  pending_description: string | null
+  clarification_count: number
+  draft_payload: Record<string, unknown> | null
+  active_ticket_id: string | null
+  last_inbound: string | null
+}>
 
 async function updateSession(
   supabase: SupabaseClient | null,
   session: SessionRow,
-  patch: Partial<{
-    store_id: string | null
-    store_code: string | null
-    state: IntakeState
-    pending_description: string | null
-  }>,
+  patch: SessionPatch,
 ) {
   if (!supabase) {
     memUpsertSession({
@@ -315,23 +490,35 @@ async function updateSession(
         patch.pending_description !== undefined
           ? patch.pending_description
           : session.pending_description,
+      clarification_count:
+        patch.clarification_count ?? session.clarification_count,
+      draft_payload:
+        patch.draft_payload !== undefined
+          ? patch.draft_payload
+          : session.draft_payload,
+      active_ticket_id:
+        patch.active_ticket_id !== undefined
+          ? patch.active_ticket_id
+          : session.active_ticket_id,
+      human_takeover: session.human_takeover,
+      last_inbound: patch.last_inbound ?? undefined,
     })
     return
   }
-  await supabase
-    .from('intake_sessions')
-    .update({
-      ...patch,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', session.id)
+  const dbPatch: Record<string, unknown> = {
+    ...patch,
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  // last_inbound may exist from phase6
+  await supabase.from('intake_sessions').update(dbPatch).eq('id', session.id)
 }
 
 async function createTicketFromIntake(params: {
   store: StoreRow
   country: CountryRow
   description: string
+  decision: IntakeDecision
   mediaUrl: string | null
   mediaKind?: InboundMessage['mediaKind']
   waId: string
@@ -348,6 +535,7 @@ async function createTicketFromIntake(params: {
     store,
     country,
     description,
+    decision,
     mediaUrl,
     mediaKind,
     waId,
@@ -357,24 +545,31 @@ async function createTicketFromIntake(params: {
     useMemory,
   } = params
 
+  const summary = decision.summary || description
   const title =
-    description.length > 80
-      ? `${description.slice(0, 77)}…`
-      : description || 'דיווח WhatsApp'
+    summary.length > 80 ? `${summary.slice(0, 77)}…` : summary || 'דיווח WhatsApp'
 
-  const classified = classifyFaultText(description || '')
+  const category = normalizeTicketCategory(decision.category)
 
   const ticket = await createTicket({
     storeCode: store.code,
     storeId: store.id,
     countryCode: country.code,
-    description: description || '(תמונה ללא טקסט)',
+    description: summary || description || '(תמונה ללא טקסט)',
     title,
-    category: classified.category,
-    priority: classified.priority,
+    category,
+    priority: decision.priority,
     source,
     reporterPhone: waId,
     language: country.code === 'FR' ? 'fr' : 'he',
+    aiSummary: summary,
+    aiRaw: {
+      ai: decision.ai,
+      rules: decision.rules,
+      provider: decision.provider,
+      original: inboundText || description,
+      asset: decision.asset,
+    },
   })
 
   const displayNumber =
@@ -418,7 +613,12 @@ async function createTicketFromIntake(params: {
         body: inboundText || description,
         wa_message_id: messageId,
         media_url: resolvedUrl,
-        raw: { source, media_source: resolved.source, media_error: resolved.error ?? null },
+        raw: {
+          source,
+          media_source: resolved.source,
+          media_error: resolved.error ?? null,
+          ai_summary: summary,
+        },
       })
       if (resolvedUrl && !resolvedUrl.startsWith('meta-media:')) {
         await client.from('ticket_attachments').insert({
@@ -439,9 +639,9 @@ async function createTicketFromIntake(params: {
 
   return { ticketId: ticket.id, displayNumber, mediaFailed }
 }
+
 /**
- * Dumb intake: store (+ optional STORE_ prefill) → description (+ optional photo) → ticket.
- * Uses Supabase when ready; otherwise in-memory sessions + createTicket().
+ * WhatsApp AI intake: hybrid store resolve → agent+rules → optional clarify → ticket.
  */
 export async function processInboundMessage(
   message: InboundMessage,
@@ -469,10 +669,33 @@ export async function processInboundMessage(
 
     let session = await getOrCreateSession(supabase, country, message.waId)
     const text = message.text?.trim() || null
+
+    await logWhatsAppMessage({
+      supabase,
+      country,
+      session,
+      waId: message.waId,
+      direction: 'inbound',
+      body: text,
+      metaMessageId: message.messageId,
+      mediaKind: message.mediaKind,
+    })
+    await updateSession(supabase, session, {
+      last_inbound: text || (message.mediaUrl ? '[media]' : null),
+    })
+
+    // Human takeover: log only, bot silent
+    if (session.human_takeover) {
+      logEvent('whatsapp:intake', 'info', 'human_takeover_skip', {
+        waId: message.waId,
+      })
+      return { ok: true, reply: null, state: session.state }
+    }
+
     const storeCodeFromText = text ? parseStoreCodeFromText(text) : null
     let source = inferSourceFromText(text, message.sourceHint)
 
-    // Hybrid identity: known phone → store, before asking for code
+    // Hybrid identity: known phone → store
     if ((!session.store_id || session.state === 'awaiting_store') && !storeCodeFromText) {
       const byPhone = await resolveStoreByWaId(
         supabase,
@@ -496,7 +719,7 @@ export async function processInboundMessage(
             WA_COPY.askDescription(byPhone.name, byPhone.code),
             'intake_ask_description',
           )
-          await sendReply(supabase, message, country, reply, null, options)
+          await sendReply(supabase, message, country, reply, null, options, session)
           return { ok: true, reply, state: 'awaiting_description' }
         }
       }
@@ -513,7 +736,7 @@ export async function processInboundMessage(
           WA_COPY.storeNotFound(storeCodeFromText),
           'intake_store_not_found',
         )
-        await sendReply(supabase, message, country, reply, null, options)
+        await sendReply(supabase, message, country, reply, null, options, session)
         return { ok: true, reply, state: session.state }
       }
 
@@ -528,13 +751,14 @@ export async function processInboundMessage(
         store_code: store.code,
         state: 'awaiting_description',
       }
+      await linkStorePhone(supabase, country, message.waId, store)
 
       if (isIdentityOnly(text, store.code) && !message.mediaUrl) {
         const reply = await craftIntakeReply(
           WA_COPY.askDescription(store.name, store.code),
           'intake_ask_description',
         )
-        await sendReply(supabase, message, country, reply, null, options)
+        await sendReply(supabase, message, country, reply, null, options, session)
         return { ok: true, reply, state: 'awaiting_description' }
       }
 
@@ -543,7 +767,7 @@ export async function processInboundMessage(
           ? text.replace(/\bSTORE[_\s-]?\d{1,6}\b/i, '').trim() || text
           : text || ''
       if (description || message.mediaUrl) {
-        return await finalizeTicket({
+        return await analyzeAndFinalize({
           supabase,
           session,
           store,
@@ -558,7 +782,7 @@ export async function processInboundMessage(
 
     if (session.state === 'awaiting_store' || !session.store_id) {
       const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
-      await sendReply(supabase, message, country, reply, null, options)
+      await sendReply(supabase, message, country, reply, null, options, session)
       return { ok: true, reply, state: 'awaiting_store' }
     }
 
@@ -574,8 +798,34 @@ export async function processInboundMessage(
         state: 'awaiting_store',
       })
       const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
-      await sendReply(supabase, message, country, reply, null, options)
+      await sendReply(supabase, message, country, reply, null, options, session)
       return { ok: true, reply, state: 'awaiting_store' }
+    }
+
+    // Clarification follow-up: merge answer with pending description
+    if (session.state === 'awaiting_clarification') {
+      const prior = session.pending_description || ''
+      const answer = text || ''
+      const combined = [prior, answer].filter(Boolean).join('\n').trim()
+      if (!combined && !message.mediaUrl) {
+        const q =
+          (session.draft_payload?.clarificationQuestion as string) ||
+          WA_COPY.needDescription
+        const reply = await craftIntakeReply(q, 'intake_need_description')
+        await sendReply(supabase, message, country, reply, null, options, session)
+        return { ok: true, reply, state: 'awaiting_clarification' }
+      }
+      return await analyzeAndFinalize({
+        supabase,
+        session,
+        store,
+        description: combined || 'תמונה מצורפת',
+        message,
+        source,
+        country,
+        options,
+        forceCreate: session.clarification_count >= 2,
+      })
     }
 
     if (!text && !message.mediaUrl) {
@@ -583,7 +833,7 @@ export async function processInboundMessage(
         WA_COPY.needDescription,
         'intake_need_description',
       )
-      await sendReply(supabase, message, country, reply, null, options)
+      await sendReply(supabase, message, country, reply, null, options, session)
       return { ok: true, reply, state: 'awaiting_description' }
     }
 
@@ -597,7 +847,7 @@ export async function processInboundMessage(
           ? 'whatsapp'
           : source
 
-    return await finalizeTicket({
+    return await analyzeAndFinalize({
       supabase,
       session,
       store,
@@ -609,6 +859,9 @@ export async function processInboundMessage(
     })
   } catch (e) {
     console.error('[whatsapp] intake error', e)
+    logEvent('whatsapp:intake', 'error', 'intake_error', {
+      error: e instanceof Error ? e.message : 'unknown',
+    })
     const reply = await craftIntakeReply(
       WA_COPY.genericError,
       'intake_generic_error',
@@ -621,7 +874,7 @@ export async function processInboundMessage(
   }
 }
 
-async function finalizeTicket(params: {
+async function analyzeAndFinalize(params: {
   supabase: SupabaseClient | null
   session: SessionRow
   store: StoreRow
@@ -630,14 +883,107 @@ async function finalizeTicket(params: {
   source: TicketSource
   country: CountryRow
   options?: { skipOutboundGraph?: boolean }
+  forceCreate?: boolean
 }): Promise<IntakeResult> {
-  const { supabase, session, store, description, message, source, country, options } =
-    params
+  const {
+    supabase,
+    session,
+    store,
+    description,
+    message,
+    source,
+    country,
+    options,
+    forceCreate,
+  } = params
+
+  const decision = await runIntakeAgent({
+    text: description,
+    storeName: store.name,
+    storeCode: store.code,
+    hasMedia: Boolean(message.mediaUrl),
+  })
+
+  const canClarify =
+    !forceCreate &&
+    decision.needsClarification &&
+    Boolean(decision.clarificationQuestion) &&
+    session.clarification_count < 2
+
+  if (canClarify) {
+    const nextCount = session.clarification_count + 1
+    await updateSession(supabase, session, {
+      state: 'awaiting_clarification',
+      pending_description: description,
+      clarification_count: nextCount,
+      draft_payload: {
+        summary: decision.summary,
+        category: decision.category,
+        priority: decision.priority,
+        clarificationQuestion: decision.clarificationQuestion,
+        provider: decision.provider,
+      },
+    })
+    const reply = decision.clarificationQuestion!
+    await sendReply(supabase, message, country, reply, null, options, {
+      ...session,
+      clarification_count: nextCount,
+      state: 'awaiting_clarification',
+    })
+    return { ok: true, reply, state: 'awaiting_clarification' }
+  }
+
+  return finalizeTicket({
+    supabase,
+    session,
+    store,
+    description,
+    decision,
+    message,
+    source,
+    country,
+    options,
+  })
+}
+
+async function finalizeTicket(params: {
+  supabase: SupabaseClient | null
+  session: SessionRow
+  store: StoreRow
+  description: string
+  decision: IntakeDecision
+  message: InboundMessage
+  source: TicketSource
+  country: CountryRow
+  options?: { skipOutboundGraph?: boolean }
+}): Promise<IntakeResult> {
+  const {
+    supabase,
+    session,
+    store,
+    description,
+    decision,
+    message,
+    source,
+    country,
+    options,
+  } = params
+
+  const dup = await findPossibleDuplicateTicket({
+    supabase,
+    storeId: store.id,
+    summary: decision.summary || description,
+    category: decision.category,
+  })
+  const duplicateHint = dup
+    ? `ייתכן שקיימת תקלה דומה פתוחה ${dup.displayNumber || ''}`.trim()
+    : decision.possibleDuplicateHint
 
   const { ticketId, displayNumber, mediaFailed } = await createTicketFromIntake({
     store,
     country,
     description,
+    decision,
     mediaUrl: message.mediaUrl,
     mediaKind: message.mediaKind,
     waId: message.waId,
@@ -650,16 +996,37 @@ async function finalizeTicket(params: {
   await updateSession(supabase, session, {
     state: 'done',
     pending_description: null,
+    draft_payload: null,
+    active_ticket_id: ticketId,
+    clarification_count: 0,
   })
 
+  await linkStorePhone(supabase, country, message.waId, store)
+
   let reply = await craftIntakeReply(
-    WA_COPY.confirmed(displayNumber, store.name),
+    WA_COPY.confirmedIntake({
+      displayNumber,
+      storeCode: store.code,
+      summary: decision.asset
+        ? `${decision.asset} — ${decision.summary}`
+        : decision.summary,
+      priority: decision.priority,
+      duplicateHint,
+    }),
     'intake_confirmed',
   )
   if (mediaFailed) {
     reply = `${reply}\n\n${await craftIntakeReply(WA_COPY.mediaNotSaved, 'intake_media_not_saved')}`
   }
-  await sendReply(supabase, message, country, reply, ticketId, options)
+  await sendReply(supabase, message, country, reply, ticketId, options, session)
+
+  logEvent('whatsapp:intake', 'info', 'ticket_created', {
+    ticketId,
+    displayNumber,
+    category: decision.category,
+    priority: decision.priority,
+    provider: decision.provider,
+  })
 
   return {
     ok: true,
@@ -669,6 +1036,7 @@ async function finalizeTicket(params: {
     state: 'done',
   }
 }
+
 async function craftIntakeReply(
   baseText: string,
   situation: WhatsAppAiSituation,
@@ -683,14 +1051,25 @@ async function sendReply(
   reply: string,
   ticketId: string | null,
   options?: { skipOutboundGraph?: boolean },
+  session?: SessionRow | null,
 ) {
-  await sendWhatsAppText({
+  const result = await sendWhatsAppText({
     toWaId: message.waId,
     text: reply,
     phoneNumberId: message.phoneNumberId || country.whatsapp_phone_number_id,
     ticketId,
     supabase: ticketId && supabase ? supabase : undefined,
     forceDryRun: options?.skipOutboundGraph === true || !supabase,
+  })
+  await logWhatsAppMessage({
+    supabase,
+    country,
+    session: session ?? null,
+    waId: message.waId,
+    direction: 'outbound',
+    body: reply,
+    metaMessageId: result.waMessageId,
+    ticketId,
   })
 }
 

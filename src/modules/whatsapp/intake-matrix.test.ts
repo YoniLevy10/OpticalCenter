@@ -264,4 +264,50 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(r.ok).toBe(false)
     expect(r.ticketId).toBeFalsy()
   })
+
+  it('WA-13 human_takeover silences bot', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    memUpsertSession({
+      wa_id: waId,
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'demo-172',
+      store_code: '172',
+      state: 'awaiting_description',
+      pending_description: null,
+      human_takeover: true,
+    })
+    const before = memListTickets().length
+    const r = await processInboundMessage(
+      msg({ waId, text: 'המזגן לא עובד בזמן takeover' }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(true)
+    expect(r.reply).toBeNull()
+    expect(r.ticketId).toBeFalsy()
+    expect(memListTickets().length).toBe(before)
+  })
+
+  it('WA-14 STORE_172 HVAC leak → high priority ticket', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    await processInboundMessage(msg({ text: 'STORE_172', waId }), {
+      skipOutboundGraph: true,
+    })
+    const r = await processInboundMessage(
+      msg({
+        waId,
+        text: 'המזגן הראשי לא עובד ויש ממנו נזילה',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(true)
+    expect(r.ticketId).toBeTruthy()
+    const ticket = memListTickets().find((t) => t.id === r.ticketId)
+    expect(ticket?.category).toBe('hvac')
+    expect(ticket?.priority).toBe('high')
+    expect(r.reply || '').toMatch(/פתחתי תקלה|OC-/)
+  })
 })
