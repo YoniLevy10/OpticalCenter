@@ -131,7 +131,7 @@ describe('queueCounts', () => {
 
 describe('queueHref / parseQueueParams', () => {
   it('omits defaults and round-trips the rest', () => {
-    expect(queueHref({ view: 'attention', sort: 'urgency' })).toBe('/ops/tickets')
+    expect(queueHref({ view: 'all', sort: 'urgency' })).toBe('/ops/tickets')
     const href = queueHref(
       { view: 'open', sort: 'sla', q: 'מזגן' },
       { priority: 'critical' },
@@ -141,9 +141,21 @@ describe('queueHref / parseQueueParams', () => {
     expect(href).toContain('priority=critical')
   })
 
-  it('falls back to the attention view', () => {
-    expect(parseQueueParams({}).view).toBe('attention')
-    expect(parseQueueParams({ view: 'nonsense' }).view).toBe('attention')
+  it('falls back to the all view', () => {
+    expect(parseQueueParams({}).view).toBe('all')
+    expect(parseQueueParams({ view: 'nonsense' }).view).toBe('all')
     expect(parseQueueParams({ view: 'resolved' }).view).toBe('resolved')
+  })
+
+  it('filters mine and urgent views', () => {
+    const mine = applyQueue(
+      ALL,
+      { view: 'mine', sort: 'urgency', actorId: 'tech-1' },
+      NOW,
+    )
+    expect(mine.map((t) => t.id).sort()).toEqual(['breached', 'critical'])
+
+    const urgent = applyQueue(ALL, { view: 'urgent', sort: 'urgency' }, NOW)
+    expect(urgent.map((t) => t.id)).toEqual(['breached', 'critical'])
   })
 })

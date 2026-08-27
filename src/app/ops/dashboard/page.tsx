@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Inbox, PackageOpen, UserRound, Wrench } from 'lucide-react'
+import { format } from 'date-fns'
+import { he } from 'date-fns/locale'
+import { AlertTriangle, MessageSquare, Plus, Search } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   PageHeader,
@@ -18,6 +20,7 @@ import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { isBreached, queueHref } from '@/modules/tickets/queue'
+import { listInboxSessions } from '@/modules/inbox/service'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -26,130 +29,90 @@ function ticketNumber(t: QueueTicket): string {
   return t.display_number ?? (t.number != null ? `OC-${t.number}` : '—')
 }
 
-function StatStrip({
+function greetingForHour(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'בוקר טוב'
+  if (hour >= 12 && hour < 17) return 'צהריים טובים'
+  return 'ערב טוב'
+}
+
+function MetricGrid({
   open,
-  breached,
-  unassigned,
-  resolved,
+  inProgress,
+  waiting,
+  done,
 }: {
   open: number
-  breached: number
-  unassigned: number
-  resolved: number
+  inProgress: number
+  waiting: number
+  done: number
 }) {
   const items = [
     {
       label: 'פתוחות',
       value: open,
       href: queueHref({ view: 'open', sort: 'urgency' }),
-      tone: 'default' as const,
-      icon: Inbox,
-      iconClass: 'bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
     },
     {
-      label: 'חריגות SLA',
-      value: breached,
-      href: queueHref({ view: 'attention', sort: 'sla' }),
-      tone: 'critical' as const,
-      icon: AlertTriangle,
-      iconClass:
-        'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
+      label: 'בטיפול',
+      value: inProgress,
+      href: queueHref({
+        view: 'open',
+        status: 'in_progress',
+        sort: 'urgency',
+      }),
     },
     {
-      label: 'לא משויכות',
-      value: unassigned,
-      href: queueHref({ view: 'unassigned', sort: 'urgency' }),
-      tone: 'warn' as const,
-      icon: UserRound,
-      iconClass:
-        'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
+      label: 'ממתינות',
+      value: waiting,
+      href: queueHref({
+        view: 'open',
+        status: 'waiting_parts',
+        sort: 'urgency',
+      }),
     },
     {
-      label: 'נפתרו',
-      value: resolved,
+      label: 'הושלמו',
+      value: done,
       href: queueHref({ view: 'resolved', sort: 'newest' }),
-      tone: 'default' as const,
-      icon: PackageOpen,
-      iconClass: 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-      {items.map((item) => {
-        const hot =
-          (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
-        const Icon = item.icon
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="group flex items-start gap-3.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-[background-color,box-shadow,transform] duration-[var(--dur-1)] hover:-translate-y-px hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
-          >
-            <span
-              aria-hidden
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] ring-1 ring-inset ring-black/[0.04]',
-                item.iconClass,
-              )}
-            >
-              <Icon className="h-5 w-5" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0">
-              <p className="t-caption text-ink-3">{item.label}</p>
-              <p
-                className={cn(
-                  't-display t-num mt-1',
-                  hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
-                  hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
-                  !hot && 'text-ink',
-                )}
-              >
-                {item.value}
-              </p>
-            </div>
-          </Link>
-        )
-      })}
+    <div className="grid grid-cols-2 gap-3">
+      {items.map((item) => (
+        <Link
+          key={item.label}
+          href={item.href}
+          className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3.5 shadow-[var(--shadow-1)] transition-[background-color,box-shadow] duration-[var(--dur-1)] hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+        >
+          <p className="t-caption text-ink-3">{item.label}</p>
+          <p className="t-display t-num mt-1 text-ink">{item.value}</p>
+        </Link>
+      ))}
     </div>
   )
 }
 
-function BarList({
-  items,
+function AttentionList({
+  tickets,
+  sessions,
 }: {
-  items: { label: string; count: number }[]
+  tickets: QueueTicket[]
+  sessions: {
+    wa_id: string
+    display_name: string
+    last_message: string | null
+    store_code: string | null
+  }[]
 }) {
-  const max = Math.max(1, ...items.map((i) => i.count))
-  return (
-    <ul className="flex flex-col gap-3.5 px-4 py-3.5">
-      {items.map((item) => (
-        <li key={item.label}>
-          <div className="mb-1.5 flex items-baseline justify-between gap-2">
-            <span className="t-body truncate text-ink">{item.label}</span>
-            <span className="t-body-strong t-num shrink-0 text-ink-2">
-              {item.count}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
-            <div
-              className="h-full rounded-full bg-[var(--signal-progress)] transition-all duration-700 ease-[var(--ease)]"
-              style={{ width: `${Math.round((item.count / max) * 100)}%` }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
-  )
-}
+  const hasTickets = tickets.length > 0
+  const hasSessions = sessions.length > 0
 
-function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
-  if (tickets.length === 0) {
+  if (!hasTickets && !hasSessions) {
     return (
       <EmptyState
-        title="אין חריגים כרגע"
-        description="כשתופיע חריגת SLA או תקלה לא משויכת — היא תופיע כאן."
-        icon={Inbox}
+        title="הכול תחת שליטה"
+        description="אין הודעות ממתינות או תקלות חריגות כרגע."
         className="py-12"
       />
     )
@@ -157,6 +120,35 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
 
   return (
     <ul className="divide-y divide-border">
+      {sessions.map((s) => (
+        <li key={`wa-${s.wa_id}`}>
+          <Link
+            href="/ops/inbox"
+            className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
+          >
+            <span
+              aria-hidden
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="t-body-strong truncate text-ink">
+                  {s.display_name}
+                </span>
+                <span className="t-caption shrink-0 text-[var(--signal-warning)]">
+                  WhatsApp שלא נענה
+                </span>
+              </div>
+              <p className="t-meta mt-0.5 line-clamp-1 text-ink-2">
+                {s.last_message ||
+                  (s.store_code ? `סניף #${s.store_code}` : 'הודעה ממתינה')}
+              </p>
+            </div>
+          </Link>
+        </li>
+      ))}
       {tickets.map((t) => {
         const breached = isBreached(t)
         return (
@@ -179,7 +171,11 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
                     <span className="t-caption text-[var(--signal-warning)]">
                       לא משויך
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="t-caption text-[var(--signal-warning)]">
+                      דחוף
+                    </span>
+                  )}
                 </div>
                 <p className="t-body mt-0.5 line-clamp-1 text-ink">
                   {t.title || t.description}
@@ -187,7 +183,7 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
                 <p className="t-meta mt-0.5 truncate text-ink-2">
                   {t.stores
                     ? `${t.stores.name}${t.stores.code ? ` · #${t.stores.code}` : ''}`
-                    : 'ללא חנות'}
+                    : 'ללא סניף'}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
@@ -202,15 +198,54 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
   )
 }
 
+function RecentActivity({ tickets }: { tickets: QueueTicket[] }) {
+  if (tickets.length === 0) {
+    return (
+      <EmptyState
+        title="אין פעילות אחרונה"
+        description="כשתתעדכן תקלה — היא תופיע כאן."
+        className="py-10"
+      />
+    )
+  }
+
+  return (
+    <ul className="divide-y divide-border">
+      {tickets.map((t) => (
+        <li key={t.id}>
+          <Link
+            href={`/ops/tickets/${t.id}`}
+            className="flex min-h-[52px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-sunken/40"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="t-body line-clamp-1 text-ink">
+                <span className="t-caption t-num text-ink-3">
+                  {ticketNumber(t)}
+                </span>{' '}
+                {t.title || t.description}
+              </p>
+              <p className="t-meta mt-0.5 truncate text-ink-2">
+                {t.stores?.name ?? 'ללא סניף'}
+              </p>
+            </div>
+            <StatusLabel status={t.status} />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default async function OpsDashboardPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
 
-  const [ticketResult, techRows] = await Promise.all([
+  const [ticketResult, techRows, inboxResult] = await Promise.all([
     listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
+    listInboxSessions().catch(() => ({ sessions: [], backend: 'memory' as const })),
   ])
 
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
@@ -221,116 +256,120 @@ export default async function OpsDashboardPage() {
   }))
   const kpis = computeDashboardKpis(all, technicians)
 
+  const unanswered = inboxResult.sessions
+    .filter((s) => s.unread || s.inbox_status === 'waiting')
+    .slice(0, 5)
+    .map((s) => ({
+      wa_id: s.wa_id,
+      display_name: s.display_name,
+      last_message: s.last_message,
+      store_code: s.store_code,
+    }))
+
+  const attentionTickets =
+    kpis.urgentTickets.length > 0 ? kpis.urgentTickets : kpis.exceptions
+
+  const now = new Date()
+  const name =
+    actor?.full_name?.trim() ||
+    actor?.email?.split('@')[0] ||
+    'צוות התפעול'
+  const greet = greetingForHour(now.getHours())
+  const dateLabel = format(now, "EEEE, d בMMMM yyyy", { locale: he })
+
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <div className="flex items-end justify-between gap-4 border-b border-border px-1 pb-6 pt-2 md:px-2 md:pb-8">
-          <div className="min-w-0">
-            <p className="t-caption text-[var(--tenant)]">OPTICAL CENTER · OPERATIONS OS</p>
-            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.04em] text-ink md:text-5xl">לוח בקרה</h1>
-            <p className="t-body mt-2 max-w-xl text-ink-2">תמונה חיה של מה שדורש תשומת לב היום.</p>
-          </div>
-          <div className="hidden shrink-0 text-end md:block"><p className="t-caption text-ink-3">מצב מערכת</p><p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-ink"><span className="size-2 rounded-full bg-[var(--signal-resolved)]" />פעילות תקינה</p></div>
-        </div>
         <PageHeader
-          title="לוח בקרה"
+          title={`${greet}, ${name}`}
+          description={`${dateLabel} · מה דורש טיפול היום`}
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
           actions={
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/tickets">לתור התקלות</Link>
+            <Button asChild variant="primary" size="sm" className="hidden md:inline-flex">
+              <Link href="/ops/tickets?new=1">
+                <Plus className="h-4 w-4" aria-hidden />
+                פתיחת תקלה
+              </Link>
             </Button>
           }
         />
 
-        <div className="md:hidden">
-          <Button asChild variant="secondary" size="touch" className="w-full">
-            <Link href="/ops/tickets">לתור התקלות</Link>
-          </Button>
-        </div>
-
-        <div
-          className={cn(
-            'flex items-center gap-3 rounded-[var(--radius-lg)] border px-4 py-3',
-            kpis.breached > 0
-              ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
-              : 'border-border bg-surface shadow-[var(--shadow-1)]',
-          )}
+        <form
+          action="/ops/tickets"
+          method="get"
+          className="flex items-center gap-2"
+          role="search"
         >
-          <span
-            aria-hidden
-            className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
-              kpis.breached > 0
-                ? 'bg-white/60 text-[var(--signal-critical)]'
-                : 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
-            )}
-          >
-            {kpis.breached > 0 ? (
-              <AlertTriangle className="h-5 w-5" strokeWidth={1.75} />
-            ) : (
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--signal-resolved)]" />
-            )}
-          </span>
-          <p
-            className={cn(
-              't-body-strong',
-              kpis.breached > 0
-                ? 'text-[var(--signal-critical)]'
-                : 'text-ink',
-            )}
-          >
-            {kpis.breached > 0
-              ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
-              : 'המערכת תקינה — אין חריגות SLA'}
-          </p>
-        </div>
+          <label className="relative min-w-0 flex-1">
+            <span className="sr-only">חיפוש תקלות</span>
+            <Search
+              className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3 start-3"
+              aria-hidden
+            />
+            <input
+              type="search"
+              name="q"
+              placeholder="חיפוש תקלה, סניף או מספר…"
+              className="t-body h-11 w-full rounded-[var(--radius-md)] border border-border bg-surface pe-3 ps-10 text-ink shadow-[var(--shadow-1)] outline-none placeholder:text-ink-3 focus:border-[var(--tenant)] focus:ring-2 focus:ring-[var(--tenant)]/20"
+            />
+          </label>
+          <Button type="submit" variant="secondary" size="touch" className="shrink-0">
+            חיפוש
+          </Button>
+        </form>
 
-        <StatStrip
+        <MetricGrid
           open={kpis.open}
-          breached={kpis.breached}
-          unassigned={kpis.unassigned}
-          resolved={kpis.resolvedCount}
+          inProgress={kpis.inProgress}
+          waiting={kpis.waiting}
+          done={kpis.done}
         />
 
         <Panel flush elevated className="overflow-hidden">
           <PanelHeader
-            title="דורש טיפול עכשיו"
-            meta={`${kpis.exceptions.length}`}
+            title="דורש את תשומת לבך"
+            meta={`${unanswered.length + attentionTickets.length}`}
             action={
               <Link
-                href={queueHref({ view: 'attention', sort: 'urgency' })}
+                href={queueHref({ view: 'urgent', sort: 'urgency' })}
                 className="t-caption text-ink-3 hover:text-ink"
               >
                 הכל
               </Link>
             }
           />
-          <ExceptionList tickets={kpis.exceptions} />
+          <AttentionList tickets={attentionTickets} sessions={unanswered} />
         </Panel>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Panel flush elevated className="overflow-hidden">
-            <PanelHeader title="לפי קטגוריה" meta={`${kpis.byCategory.length}`} />
-            {kpis.byCategory.length === 0 ? (
-              <EmptyState title="אין תקלות פתוחות" icon={PackageOpen} />
-            ) : (
-              <BarList items={kpis.byCategory} />
-            )}
-          </Panel>
+        <Panel flush elevated className="overflow-hidden">
+          <PanelHeader
+            title="פעילות אחרונה"
+            meta={`${kpis.recentActivity.length}`}
+            action={
+              <Link
+                href={queueHref({ view: 'all', sort: 'newest' })}
+                className="t-caption text-ink-3 hover:text-ink"
+              >
+                הכל
+              </Link>
+            }
+          />
+          <RecentActivity tickets={kpis.recentActivity} />
+        </Panel>
 
-          <Panel flush elevated className="overflow-hidden">
-            <PanelHeader title="עומס טכנאים" meta="משויכות פתוחות" />
-            {kpis.techLoad.length === 0 ? (
-              <EmptyState title="אין שיוכים פתוחים" icon={Wrench} />
-            ) : (
-              <BarList
-                items={kpis.techLoad.map((t) => ({
-                  label: t.name,
-                  count: t.count,
-                }))}
-              />
-            )}
-          </Panel>
+        {/* Mobile FAB — above bottom nav */}
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottomnav-h)+var(--safe-b)+12px)] z-20 flex justify-center md:hidden">
+          <Button
+            asChild
+            variant="primary"
+            size="touch"
+            className="pointer-events-auto shadow-[var(--shadow-pop)]"
+          >
+            <Link href="/ops/tickets?new=1">
+              <Plus className="h-4 w-4" aria-hidden />
+              פתיחת תקלה
+            </Link>
+          </Button>
         </div>
       </div>
     </OpsAppShell>

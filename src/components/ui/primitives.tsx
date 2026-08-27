@@ -57,11 +57,14 @@ export function PanelHeader({
 
 export function PageHeader({
   title,
+  description,
   meta,
   actions,
   className,
 }: {
   title: string
+  /** Short supporting line under the title. */
+  description?: React.ReactNode
   meta?: React.ReactNode
   actions?: React.ReactNode
   className?: string
@@ -69,13 +72,18 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-1',
+        'flex flex-wrap items-start justify-between gap-x-4 gap-y-2 pb-1',
         className,
       )}
     >
-      <div className="flex items-baseline gap-3">
-        <h1 className="t-title text-ink">{title}</h1>
-        {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-baseline gap-3">
+          <h1 className="t-title text-ink">{title}</h1>
+          {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
+        </div>
+        {description ? (
+          <p className="t-body mt-1 max-w-2xl text-ink-2">{description}</p>
+        ) : null}
       </div>
       {actions ? (
         <div className="flex items-center gap-2">{actions}</div>
@@ -140,7 +148,7 @@ export function Notice({
   tone = 'neutral',
   children,
 }: {
-  tone?: 'neutral' | 'warning' | 'progress'
+  tone?: 'neutral' | 'warning' | 'progress' | 'success' | 'critical'
   children: React.ReactNode
 }) {
   return (
@@ -152,11 +160,39 @@ export function Notice({
           'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
         tone === 'progress' &&
           'border-border bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
+        tone === 'success' &&
+          'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
+        tone === 'critical' &&
+          'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
       )}
     >
       {children}
     </div>
   )
+}
+
+export function PermissionDenied({
+  title = 'אין הרשאה',
+  description = 'אין לך הרשאה לצפות במסך זה או לבצע פעולה זו.',
+  action,
+}: {
+  title?: string
+  description?: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="rounded-[var(--radius-lg)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-4 py-3">
+      <p className="t-body-strong text-[var(--signal-warning)]">{title}</p>
+      {description ? (
+        <p className="t-body mt-1 text-ink-2">{description}</p>
+      ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  )
+}
+
+export function SuccessNotice({ children }: { children: React.ReactNode }) {
+  return <Notice tone="success">{children}</Notice>
 }
 
 export function Skeleton({ className }: { className?: string }) {

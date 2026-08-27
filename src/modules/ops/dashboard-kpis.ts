@@ -9,6 +9,9 @@ function isOpen(status: string): boolean {
   return OPEN_TICKET_STATUSES.includes(status as TicketStatus)
 }
 
+/** Queue-front statuses: waiting to start work (not yet in progress). */
+const QUEUE_FRONT: TicketStatus[] = ['new', 'triaged', 'assigned']
+
 const PRIORITY_RANK: Record<string, number> = {
   critical: 0,
   high: 1,
@@ -21,7 +24,14 @@ export type StoreRank = { code: string; name: string; count: number }
 export type TechLoad = { id: string; name: string; count: number }
 
 export type DashboardKpis = {
+  /** new + triaged + assigned (not in_progress / waiting_parts). */
   open: number
+  inProgress: number
+  waiting: number
+  done: number
+  urgent: number
+  urgentTickets: QueueTicket[]
+  slaBreaches: number
   breached: number
   unassigned: number
   byCategory: CategoryBar[]
@@ -29,6 +39,7 @@ export type DashboardKpis = {
   techLoad: TechLoad[]
   /** Open tickets that need action now — breached first, then unassigned. */
   exceptions: QueueTicket[]
+  recentActivity: QueueTicket[]
   /** Average hours to resolve among resolved tickets with resolved_at. */
   avgResolveHours: number | null
   resolvedCount: number
@@ -122,6 +133,12 @@ export function computeStoreReport(
   return [...map.values()].sort((a, b) => b.total - a.total)
 }
 
+function isUrgent(t: QueueTicket, now: Date): boolean {
+  if (!isOpen(t.status)) return false
+  if (t.priority === 'critical' || t.priority === 'high') return true
+  return isBreached(t, now)
+}
+
 /**
  * Aggregate open-ticket KPIs for the HQ dashboard.
  * Uses the same breach semantics as the inbox (`isBreached`).
@@ -132,18 +149,31 @@ export function computeDashboardKpis(
   now = new Date(),
 ): DashboardKpis {
   const openTickets = tickets.filter((t) => isOpen(t.status))
+  let open = 0
+  let inProgress = 0
+  let waiting = 0
+  let done = 0
   let breached = 0
   let unassigned = 0
   const categoryMap = new Map<string, number>()
   const storeMap = new Map<string, { code: string; name: string; count: number }>()
   const techMap = new Map<string, number>()
   const exceptionCandidates: QueueTicket[] = []
+  const urgentCandidates: QueueTicket[] = []
+
+  for (const t of tickets) {
+    if (QUEUE_FRONT.includes(t.status as TicketStatus)) open += 1
+    if (t.status === 'in_progress') inProgress += 1
+    if (t.status === 'waiting_parts') waiting += 1
+    if (t.status === 'resolved' || t.status === 'closed') done += 1
+  }
 
   for (const t of openTickets) {
     const breachedNow = isBreached(t, now)
     if (breachedNow) breached += 1
     if (!t.assigned_to) unassigned += 1
     if (breachedNow || !t.assigned_to) exceptionCandidates.push(t)
+    if (isUrgent(t, now)) urgentCandidates.push(t)
 
     const cat = t.category?.trim() || 'other'
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + 1)
@@ -190,6 +220,26 @@ export function computeDashboardKpis(
     })
     .slice(0, 8)
 
+  const urgentTickets = [...urgentCandidates]
+    .sort((a, b) => {
+      const aBreach = isBreached(a, now) ? 0 : 1
+      const bBreach = isBreached(b, now) ? 0 : 1
+      if (aBreach !== bBreach) return aBreach - bBreach
+      const aPri = PRIORITY_RANK[a.priority ?? ''] ?? 9
+      const bPri = PRIORITY_RANK[b.priority ?? ''] ?? 9
+      if (aPri !== bPri) return aPri - bPri
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    })
+    .slice(0, 8)
+
+  const recentActivity = [...tickets]
+    .sort((a, b) => {
+      const aMs = new Date(a.updated_at ?? a.created_at).getTime()
+      const bMs = new Date(b.updated_at ?? b.created_at).getTime()
+      return bMs - aMs
+    })
+    .slice(0, 8)
+
   let resolveHoursSum = 0
   let resolvedCount = 0
   for (const t of tickets) {
@@ -206,13 +256,20 @@ export function computeDashboardKpis(
   }
 
   return {
-    open: openTickets.length,
+    open,
+    inProgress,
+    waiting,
+    done,
+    urgent: urgentCandidates.length,
+    urgentTickets,
+    slaBreaches: breached,
     breached,
     unassigned,
     byCategory,
     topStores,
     techLoad,
     exceptions,
+    recentActivity,
     avgResolveHours:
       resolvedCount > 0
         ? Math.round((resolveHoursSum / resolvedCount) * 10) / 10

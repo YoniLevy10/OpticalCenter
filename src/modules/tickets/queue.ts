@@ -8,24 +8,32 @@ import { activeSlaTarget } from '@/modules/tickets/sla-display'
 /**
  * Queue semantics for the operational inbox.
  *
- * The old SEGMENTS control mixed three different things — statuses, a priority,
- * and a derived set — into one row of chips, so picking "critical" silently
- * discarded your status filter. Here VIEW and FILTERS are orthogonal:
+ * VIEW and FILTERS are orthogonal:
  *
  *   view    = which slice of the operation am I working  (one of, mutually exclusive)
  *   filters = status / priority / store / technician     (independent, combinable)
  *   sort    = how the slice is ordered
  */
 
-export type QueueView = 'attention' | 'open' | 'unassigned' | 'resolved' | 'all'
+export type QueueView =
+  | 'all'
+  | 'mine'
+  | 'urgent'
+  | 'unassigned'
+  | 'attention'
+  | 'open'
+  | 'resolved'
+
 export type QueueSort = 'urgency' | 'newest' | 'oldest' | 'sla'
 
 export const QUEUE_VIEWS: { key: QueueView; label: string }[] = [
+  { key: 'all', label: 'הכל' },
+  { key: 'mine', label: 'שלי' },
+  { key: 'urgent', label: 'דחופות' },
+  { key: 'unassigned', label: 'ללא אחראי' },
   { key: 'attention', label: 'דורש תשומת לב' },
   { key: 'open', label: 'פתוחות' },
-  { key: 'unassigned', label: 'לא משויכות' },
   { key: 'resolved', label: 'נפתרו' },
-  { key: 'all', label: 'הכל' },
 ]
 
 export const QUEUE_SORTS: { key: QueueSort; label: string }[] = [
@@ -72,6 +80,8 @@ export type QueueFilters = {
   tech?: string
   q?: string
   sort: QueueSort
+  /** Current actor — used by `mine` view; not serialized to the URL. */
+  actorId?: string
 }
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -107,7 +117,18 @@ export function needsAttention(t: QueueTicket, now = new Date()): boolean {
   return false
 }
 
-function matchesView(t: QueueTicket, view: QueueView, now: Date): boolean {
+function isUrgentView(t: QueueTicket, now: Date): boolean {
+  if (!isOpen(t.status)) return false
+  if (t.priority === 'critical' || t.priority === 'high') return true
+  return isBreached(t, now)
+}
+
+function matchesView(
+  t: QueueTicket,
+  view: QueueView,
+  now: Date,
+  actorId?: string,
+): boolean {
   switch (view) {
     case 'attention':
       return needsAttention(t, now)
@@ -115,6 +136,10 @@ function matchesView(t: QueueTicket, view: QueueView, now: Date): boolean {
       return isOpen(t.status)
     case 'unassigned':
       return isOpen(t.status) && !t.assigned_to
+    case 'urgent':
+      return isUrgentView(t, now)
+    case 'mine':
+      return Boolean(actorId) && t.assigned_to === actorId
     case 'resolved':
       return t.status === 'resolved' || t.status === 'closed'
     case 'all':
@@ -167,7 +192,7 @@ export function applyQueue(
   const q = filters.q?.trim().toLowerCase()
 
   const filtered = tickets.filter((t) => {
-    if (!matchesView(t, filters.view, now)) return false
+    if (!matchesView(t, filters.view, now, filters.actorId)) return false
     if (filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
     if (filters.store && t.stores?.code !== filters.store) return false
@@ -204,10 +229,16 @@ export function queueCounts(tickets: QueueTicket[], now = new Date()) {
   return { open, breached, critical, unassigned }
 }
 
-export function viewCounts(tickets: QueueTicket[], now = new Date()) {
+export function viewCounts(
+  tickets: QueueTicket[],
+  now = new Date(),
+  actorId?: string,
+) {
   return QUEUE_VIEWS.reduce<Record<QueueView, number>>(
     (acc, v) => {
-      acc[v.key] = tickets.filter((t) => matchesView(t, v.key, now)).length
+      acc[v.key] = tickets.filter((t) =>
+        matchesView(t, v.key, now, actorId),
+      ).length
       return acc
     },
     {} as Record<QueueView, number>,
@@ -216,7 +247,7 @@ export function viewCounts(tickets: QueueTicket[], now = new Date()) {
 
 export function parseQueueParams(sp: Record<string, string | undefined>): QueueFilters {
   const view = (QUEUE_VIEWS.find((v) => v.key === sp.view)?.key ??
-    'attention') as QueueView
+    'all') as QueueView
   const sort = (QUEUE_SORTS.find((s) => s.key === sp.sort)?.key ??
     'urgency') as QueueSort
   return {
@@ -237,7 +268,7 @@ export function queueHref(
 ): string {
   const merged = { ...filters, ...overrides }
   const params = new URLSearchParams()
-  if (merged.view && merged.view !== 'attention') params.set('view', merged.view)
+  if (merged.view && merged.view !== 'all') params.set('view', merged.view)
   if (merged.sort && merged.sort !== 'urgency') params.set('sort', merged.sort)
   if (merged.status) params.set('status', merged.status)
   if (merged.priority) params.set('priority', merged.priority)

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState, useTransition } from 'react'
-import { SlidersHorizontal, X } from 'lucide-react'
+import { Plus, SlidersHorizontal, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SearchField, Select, Field } from '@/components/ui/input'
 import { BottomSheet } from '@/components/ui/overlay'
@@ -24,11 +24,12 @@ import {
 type StoreOption = { code: string; name: string }
 type TechOption = { id: string; name: string }
 
-/** Primary queue tabs — fewer choices, less chrome. */
+/** Primary quick filters for the daily work loop. */
 const PRIMARY_VIEWS: { key: QueueView; label: string }[] = [
-  { key: 'attention', label: 'דורש טיפול' },
-  { key: 'open', label: 'פתוחות' },
   { key: 'all', label: 'הכל' },
+  { key: 'mine', label: 'שלי' },
+  { key: 'urgent', label: 'דחופות' },
+  { key: 'unassigned', label: 'ללא אחראי' },
 ]
 
 export function QueueToolbar({
@@ -86,14 +87,14 @@ export function QueueToolbar({
       clear: { priority: undefined },
     },
     filters.store && {
-      label: `חנות ${filters.store}`,
+      label: `סניף ${filters.store}`,
       clear: { store: undefined },
     },
     filters.tech && {
       label:
         filters.tech === 'none'
-          ? 'ללא טכנאי'
-          : (technicians.find((t) => t.id === filters.tech)?.name ?? 'טכנאי'),
+          ? 'ללא אחראי'
+          : (technicians.find((t) => t.id === filters.tech)?.name ?? 'אחראי'),
       clear: { tech: undefined },
     },
     filters.sort !== 'urgency' && {
@@ -103,12 +104,12 @@ export function QueueToolbar({
   ].filter(Boolean) as { label: string; clear: Partial<QueueFilters> }[]
 
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border bg-surface p-3 shadow-[var(--shadow-1)] md:p-4">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="flex flex-col gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <SearchField
           value={q}
           onValueChange={setQ}
-          placeholder="חיפוש לפי כותרת, חנות או מספר תקלה…"
+          placeholder="חיפוש לפי כותרת, סניף או מספר תקלה…"
           autoFocusKey="/"
           className="min-w-0 flex-1"
         />
@@ -126,9 +127,16 @@ export function QueueToolbar({
             </span>
           ) : null}
         </Button>
+        <Button asChild variant="primary" className="shrink-0">
+          <Link href="/ops/tickets?new=1">
+            <Plus className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">תקלה חדשה</span>
+            <span className="sm:hidden">חדשה</span>
+          </Link>
+        </Button>
       </div>
 
-      <div className="flex min-w-0 items-center justify-between gap-3 border-t border-border pt-3">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <SegmentedLinks
           scrollable
           activeKey={filters.view}
@@ -167,7 +175,7 @@ export function QueueToolbar({
       <BottomSheet
         open={filtersOpen}
         onOpenChange={setFiltersOpen}
-        title="מסננים ומיון"
+        title="מסננים"
       >
         <div className="flex flex-col gap-4">
           <Field label="סטטוס">
@@ -200,7 +208,7 @@ export function QueueToolbar({
             </Select>
           </Field>
 
-          <Field label="חנות">
+          <Field label="סניף">
             <Select
               value={filters.store ?? ''}
               onChange={(e) => setFilter({ store: e.target.value || undefined })}
@@ -214,13 +222,13 @@ export function QueueToolbar({
             </Select>
           </Field>
 
-          <Field label="טכנאי">
+          <Field label="אחראי">
             <Select
               value={filters.tech ?? ''}
               onChange={(e) => setFilter({ tech: e.target.value || undefined })}
             >
               <option value="">הכל</option>
-              <option value="none">ללא טכנאי</option>
+              <option value="none">ללא אחראי</option>
               {technicians.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
