@@ -1,6 +1,19 @@
-import { redirect } from 'next/navigation'
+import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { PageHeader } from '@/components/ui/primitives'
+import { StatusHealthPanel } from './status-health-panel'
 
-/** System status moved into settings — keep old links working. */
+export const dynamic = 'force-dynamic'
+
 export default function OpsStatusPage() {
-  redirect('/ops/settings')
+  return (
+    <OpsAppShell>
+      <div className="mx-auto flex max-w-2xl flex-col gap-4">
+        <PageHeader
+          title="סטטוס מערכת"
+          description="האם הכול עובד? תשובה ברורה בלי צ׳קליסט טכני."
+        />
+        <StatusHealthPanel />
+      </div>
+    </OpsAppShell>
+  )
 }

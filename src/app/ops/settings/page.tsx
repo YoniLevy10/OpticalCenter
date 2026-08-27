@@ -4,29 +4,20 @@ import { SettingsForm } from './settings-form'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { getSettings } from '@/modules/settings/service'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
-
-const LINKS = [
-  { href: '/ops/users', title: 'משתמשים', desc: 'תפקידים והיקף גאוגרפי' },
-  { href: '/ops/assets', title: 'נכסים', desc: 'ציוד לפי חנות + QR' },
-  { href: '/ops/vendors', title: 'ספקים', desc: 'שיגור Partner עם HMAC' },
-  { href: '/ops/activity', title: 'יומן פעילות', desc: 'אירועי תקלות גלובלי' },
-  { href: '/ops/inbox', title: 'תיבת WhatsApp', desc: 'השתלטות אנושית על שיחות' },
-  { href: '/ops/reports', title: 'דוחות', desc: 'מגמות וייצוא' },
-  { href: '/ops/stores/print-qr', title: 'הדפסת QR אצווה', desc: 'מדבקות לכל החנויות' },
-  { href: '/ops/simulator', title: 'סימולטור WhatsApp', desc: 'בדיקת intake' },
-  { href: '/api/health', title: 'בדיקת שירות', desc: 'סטטוס API' },
-]
 
 export default async function SettingsPage() {
   const { settings } = await getSettings()
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <PageHeader title="הגדרות" meta="פיילוט ישראל" />
+      <div className="mx-auto flex max-w-3xl flex-col gap-4">
+        <PageHeader
+          title="הגדרות"
+          description="פרופיל, התראות, הרשאות, WhatsApp ומערכת — שמירה לפי קטגוריה."
+          meta="פיילוט ישראל"
+        />
 
         <SettingsForm initial={settings} />
 
@@ -40,32 +31,18 @@ export default async function SettingsPage() {
           </dl>
         </Panel>
 
-        <div className="flex flex-col gap-2">
-          <h2 className="t-section px-1 text-ink-2">קישורים</h2>
-          <nav aria-label="קישורי הגדרות">
-          <Panel flush elevated className="overflow-hidden">
-            <ul className="grid gap-px bg-border sm:grid-cols-2">
-              {LINKS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="t-body-strong block text-ink">{item.title}</span>
-                      <span className="t-meta block text-ink-2">{item.desc}</span>
-                    </span>
-                    <ChevronRight
-                      aria-hidden
-                      className="h-4 w-4 shrink-0 text-ink-3 rtl:rotate-180"
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-          </nav>
-        </div>
+        <Panel>
+          <h2 className="t-section text-ink">בריאות המערכת</h2>
+          <p className="t-body mb-3 mt-1 text-ink-2">
+            סטטוס תפעולי בשפה פשוטה — לא צ׳קליסט טכני.
+          </p>
+          <Link
+            href="/ops/status"
+            className="t-body-strong text-[var(--signal-progress)] hover:underline"
+          >
+            האם הכול עובד?
+          </Link>
+        </Panel>
 
         <Panel>
           <h2 className="t-section text-ink">כלי פיתוח</h2>

@@ -26,7 +26,12 @@ export default async function PrintQrBatchPage() {
           meta={`${active.length} חנויות`}
         />
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <PageHeader title="הדפסת QR" meta={`${active.length} חנויות`} className="hidden md:flex" />
+          <PageHeader
+            title="הדפסת QR"
+            description="מדבקות QR לכל הסניפים — פעולה ברורה להדפסה מהדפדפן."
+            meta={`${active.length} חנויות`}
+            className="hidden md:flex"
+          />
           <PrintQrClient />
         </div>
 
