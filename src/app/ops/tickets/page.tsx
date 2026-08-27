@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader, EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
+import { EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -126,7 +126,7 @@ export default async function TicketsPage({
       <div className="flex flex-col gap-5">
         <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
           <p className="t-caption text-white/60">OPERATIONS OS V2 / QUEUE</p>
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">מרכז התקלות</h1><p className="t-body mt-2 text-white/70">מיון, תיעדוף והעברה מהירה של כל מה שדורש תשומת לב.</p></div><div className="text-end"><p className="t-caption text-white/60">בתצוגה</p><p className="t-title t-num text-white">{filtered.length}</p></div></div>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">תקלות</h1><p className="t-body mt-2 text-white/70">מיון, תיעדוף והעברה מהירה של כל מה שדורש תשומת לב.</p></div><div className="text-end"><p className="t-caption text-white/60">בתצוגה</p><p className="t-title t-num text-white">{filtered.length}</p></div></div>
         </div>
         <PageToolbar
           backHref="/ops/dashboard"
@@ -134,11 +134,6 @@ export default async function TicketsPage({
           title="תקלות"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
           showRefresh
-        />
-        <PageHeader
-          title="תקלות"
-          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
-          className="hidden md:flex"
         />
 
         <QueueToolbar
