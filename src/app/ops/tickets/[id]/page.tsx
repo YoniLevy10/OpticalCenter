@@ -113,7 +113,8 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
+        <header className="relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 start-0 w-1 bg-[var(--tenant)]" />
           {/* Title + store — the "what" and "where" */}
           <div>
             <h1 className="max-w-4xl text-balance text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
@@ -145,7 +146,7 @@ export default async function TicketDetailPage({
           </div>
 
           {/* Metadata strip — the "how urgent / who / SLA" */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-white/15 pt-4">
             <div className="flex items-center gap-1.5">
               <span className="t-caption text-ink-3">עדיפות</span>
               <PriorityText priority={ticket.priority as TicketPriority} />

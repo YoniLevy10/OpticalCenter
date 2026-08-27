@@ -103,8 +103,32 @@ export function QueueToolbar({
   ].filter(Boolean) as { label: string; clear: Partial<QueueFilters> }[]
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border bg-surface p-3 shadow-[var(--shadow-1)] md:p-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <SearchField
+          value={q}
+          onValueChange={setQ}
+          placeholder="חיפוש לפי כותרת, חנות או מספר תקלה…"
+          autoFocusKey="/"
+          className="min-w-0 flex-1"
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setFiltersOpen(true)}
+          className="shrink-0"
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          <span className="hidden sm:inline">מסננים</span>
+          {extraFilters > 0 ? (
+            <span className="t-caption t-num rounded-full bg-[var(--tenant-soft)] px-1.5 text-[var(--tenant)]">
+              {extraFilters}
+            </span>
+          ) : null}
+        </Button>
+      </div>
+
+      <div className="flex min-w-0 items-center justify-between gap-3 border-t border-border pt-3">
         <SegmentedLinks
           scrollable
           activeKey={filters.view}
@@ -115,30 +139,7 @@ export function QueueToolbar({
             href: queueHref(filters, { view: v.key }),
           }))}
         />
-
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:min-w-[14rem]">
-          <SearchField
-            value={q}
-            onValueChange={setQ}
-            placeholder="חיפוש…"
-            autoFocusKey="/"
-            className="min-w-0 flex-1"
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setFiltersOpen(true)}
-            className="shrink-0"
-          >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">מסננים</span>
-            {extraFilters > 0 ? (
-              <span className="t-caption t-num rounded-full bg-[var(--tenant-soft)] px-1.5 text-[var(--tenant)]">
-                {extraFilters}
-              </span>
-            ) : null}
-          </Button>
-        </div>
+        <p className="t-meta t-num shrink-0 text-ink-3">{resultCount} תקלות</p>
       </div>
 
       {chips.length > 0 ? (
@@ -162,8 +163,6 @@ export function QueueToolbar({
           </Link>
         </div>
       ) : null}
-
-      <p className="t-meta t-num text-ink-3">{resultCount} תקלות</p>
 
       <BottomSheet
         open={filtersOpen}

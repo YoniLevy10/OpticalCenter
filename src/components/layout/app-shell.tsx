@@ -50,6 +50,7 @@ const PRIMARY: NavItem[] = [
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
+  { href: '/ops/inbox', label: 'WhatsApp', icon: MessageSquare, match: '/ops/inbox' },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
