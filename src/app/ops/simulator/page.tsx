@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export default function SimulatorPage() {
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/tickets"
           backLabel="חזרה לתקלות"

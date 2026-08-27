@@ -23,7 +23,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface',
+        'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
         elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
@@ -100,7 +100,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-10 text-center',
+        'flex flex-col items-center justify-center gap-1.5 px-6 py-10 text-center',
         className,
       )}
     >

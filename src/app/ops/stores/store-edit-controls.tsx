@@ -47,7 +47,7 @@ export function StoreEditControls({
   }
 
   return (
-    <form onSubmit={onSave} className="space-y-2">
+    <form onSubmit={onSave} className="flex flex-col gap-2">
       <div className="flex flex-wrap items-end gap-2">
         <Field label="שם" htmlFor={`edit-name-${id}`}>
           <Input

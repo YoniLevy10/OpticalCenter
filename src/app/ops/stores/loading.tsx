@@ -4,7 +4,7 @@ import { Panel, RowSkeleton, Skeleton } from '@/components/ui/primitives'
 export default function StoresLoading() {
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <Skeleton className="h-6 w-24" />
         <Skeleton className="h-10 w-72" />
         <Panel flush className="overflow-hidden">

@@ -5,7 +5,7 @@ import { Panel, RowSkeleton, Skeleton } from '@/components/ui/primitives'
 export default function TicketsLoading() {
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-8 w-28" />

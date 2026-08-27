@@ -30,10 +30,12 @@ function StatStrip({
   open,
   breached,
   unassigned,
+  resolved,
 }: {
   open: number
   breached: number
   unassigned: number
+  resolved: number
 }) {
   const items = [
     {
@@ -62,10 +64,18 @@ function StatStrip({
       iconClass:
         'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
     },
+    {
+      label: 'נפתרו',
+      value: resolved,
+      href: queueHref({ view: 'resolved', sort: 'newest' }),
+      tone: 'default' as const,
+      icon: PackageOpen,
+      iconClass: 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
+    },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
       {items.map((item) => {
         const hot =
           (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
@@ -112,7 +122,7 @@ function BarList({
 }) {
   const max = Math.max(1, ...items.map((i) => i.count))
   return (
-    <ul className="space-y-3.5 px-4 py-3.5">
+    <ul className="flex flex-col gap-3.5 px-4 py-3.5">
       {items.map((item) => (
         <li key={item.label}>
           <div className="mb-1.5 flex items-baseline justify-between gap-2">
@@ -213,7 +223,15 @@ export default async function OpsDashboardPage() {
 
   return (
     <OpsAppShell>
-      <div className="space-y-4 stagger">
+      <div className="flex flex-col gap-5 stagger">
+        <div className="flex items-end justify-between gap-4 border-b border-border px-1 pb-6 pt-2 md:px-2 md:pb-8">
+          <div className="min-w-0">
+            <p className="t-caption text-[var(--tenant)]">OPTICAL CENTER · OPERATIONS OS</p>
+            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.04em] text-ink md:text-5xl">לוח בקרה</h1>
+            <p className="t-body mt-2 max-w-xl text-ink-2">תמונה חיה של מה שדורש תשומת לב היום.</p>
+          </div>
+          <div className="hidden shrink-0 text-end md:block"><p className="t-caption text-ink-3">מצב מערכת</p><p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-ink"><span className="size-2 rounded-full bg-[var(--signal-resolved)]" />פעילות תקינה</p></div>
+        </div>
         <PageHeader
           title="לוח בקרה"
           meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
@@ -271,6 +289,7 @@ export default async function OpsDashboardPage() {
           open={kpis.open}
           breached={kpis.breached}
           unassigned={kpis.unassigned}
+          resolved={kpis.resolvedCount}
         />
 
         <Panel flush elevated className="overflow-hidden">

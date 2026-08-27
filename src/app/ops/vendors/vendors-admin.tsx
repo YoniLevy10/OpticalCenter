@@ -136,7 +136,7 @@ export function VendorsAdmin() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {notice ? <Notice tone="progress">{notice}</Notice> : null}
       {error ? <ErrorState title={error} /> : null}
 

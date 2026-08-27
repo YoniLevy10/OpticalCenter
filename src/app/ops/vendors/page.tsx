@@ -14,7 +14,7 @@ export default async function VendorsPage() {
 
   return (
     <OpsAppShell>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/settings"
           backLabel="חזרה להגדרות"

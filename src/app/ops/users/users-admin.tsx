@@ -165,7 +165,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {error ? <ErrorState title="שגיאה" description={error} /> : null}
       {notice ? <Notice tone="progress">{notice}</Notice> : null}
 

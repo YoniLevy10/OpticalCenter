@@ -57,7 +57,7 @@ export function Field({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <label htmlFor={htmlFor} className="t-caption block text-ink-2">
         {label}
       </label>

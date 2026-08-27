@@ -152,7 +152,7 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="space-y-4 max-md:pb-actions-hq">
+      <div className="flex flex-col gap-4">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה לתקלות" showRefresh />
 
         {/* Breadcrumb — quiet, one line, never a heading. */}
@@ -171,22 +171,22 @@ export default async function TicketDetailPage({
         </nav>
 
         {/* ---------- Answer block: what / where / how urgent / who ---------- */}
-        <header className="space-y-4">
-          {/* Title + store — the "what" and "where" */}
+        <header className="relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-8">
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 start-0 w-1 bg-[var(--tenant)]" />
           <div>
-            <h1 className="t-display text-ink">
+            <h1 className="max-w-4xl text-balance text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
               {ticket.title || ticket.description}
             </h1>
-            <p className="t-body mt-2 text-ink-2">
+            <p className="t-body mt-2 text-white/70">
               {ticket.stores ? (
                 <>
                   <Link
                     href={`/ops/stores/${encodeURIComponent(ticket.stores.code)}`}
-                    className="hover:text-[var(--tenant)] hover:underline"
+                    className="text-white hover:text-[var(--tenant)] hover:underline"
                   >
                     {ticket.stores.name}
                   </Link>
-                  <span className="t-num text-ink-3"> · #{ticket.stores.code}</span>
+                  <span className="t-num text-white/50"> · #{ticket.stores.code}</span>
                   {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
                   {' · '}
                   <Link
@@ -202,33 +202,32 @@ export default async function TicketDetailPage({
             </p>
           </div>
 
-          {/* Metadata strip — the "how urgent / who / SLA" */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-white/15 pt-4">
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">עדיפות</span>
+              <span className="t-caption text-white/50">עדיפות</span>
               <PriorityText priority={ticket.priority as TicketPriority} />
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">סטטוס</span>
+              <span className="t-caption text-white/50">סטטוס</span>
               <StatusLabel status={ticket.status as TicketStatus} />
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">אחראי</span>
-              <span className="t-body-strong text-ink">
+              <span className="t-caption text-white/50">אחראי</span>
+              <span className="t-body-strong text-white">
                 {assignee?.full_name || assignee?.email || 'לא משויך'}
               </span>
             </div>
 
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
+            <span aria-hidden className="hidden h-3.5 w-px bg-white/20 sm:block" />
 
             <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">SLA</span>
+              <span className="t-caption text-white/50">SLA</span>
               <SlaBlock view={slaView} />
             </div>
           </div>
@@ -236,7 +235,7 @@ export default async function TicketDetailPage({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* ---------- Main column ---------- */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {ticket.title && ticket.description !== ticket.title ? (
               <Panel>
                 <p className="t-body whitespace-pre-wrap leading-relaxed text-ink">
@@ -257,6 +256,9 @@ export default async function TicketDetailPage({
               </Panel>
             ) : null}
 
+            {/* Actions first on mobile (v0: document flow — no overlay on content) */}
+            <div className="md:hidden">{actionsPanel}</div>
+
             <div className="md:hidden">{detailsPanel}</div>
 
             <Panel flush data-visual="ticket-timeline">
@@ -265,25 +267,20 @@ export default async function TicketDetailPage({
             </Panel>
           </div>
 
-          {/* ---------- Side column (desktop) / action dock (mobile) ---------- */}
-          <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-            <div className="hq-ticket-dock fixed inset-x-0 max-h-[min(50dvh,420px)] overflow-y-auto border-t border-border bg-surface/95 px-4 pt-3 shadow-[var(--shadow-1)] backdrop-blur-sm md:static md:inset-auto md:max-h-none md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
-              {actionsPanel}
-            </div>
+          {/* ---------- Side column (desktop) ---------- */}
+          <div className="hidden space-y-4 md:block lg:sticky lg:top-4 lg:self-start">
+            {actionsPanel}
+            {detailsPanel}
 
-            <div className="hidden space-y-4 md:block">
-              {detailsPanel}
-
-              {attachments.length === 0 ? (
-                <Panel flush>
-                  <EmptyState
-                    title="אין תיעוד מצורף"
-                    description="תמונות שנשלחו ב־WhatsApp או צולמו בשטח יופיעו כאן."
-                    className="py-10"
-                  />
-                </Panel>
-              ) : null}
-            </div>
+            {attachments.length === 0 ? (
+              <Panel flush>
+                <EmptyState
+                  title="אין תיעוד מצורף"
+                  description="תמונות שנשלחו ב־WhatsApp או צולמו בשטח יופיעו כאן."
+                  className="py-10"
+                />
+              </Panel>
+            ) : null}
           </div>
         </div>
       </div>
