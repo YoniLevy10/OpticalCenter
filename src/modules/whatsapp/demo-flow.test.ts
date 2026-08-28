@@ -31,12 +31,13 @@ describe('E2E demo flow (memory)', () => {
     expect(a.reply).toMatch(/אבן גבירול|172/)
 
     const b = await processInboundMessage(
-      msg({ text: 'המזגן הראשי לא עובד' }),
+      msg({ text: 'המזגן הראשי לא עובד ויש ממנו נזילה' }),
       { skipOutboundGraph: true },
     )
     expect(b.ok).toBe(true)
     expect(b.ticketId).toBeTruthy()
     expect(b.displayNumber || b.reply).toBeTruthy()
-    expect(b.reply).toMatch(/OC-|הדיווח התקבל/)
+    expect(b.reply).toMatch(/OC-|פתחתי תקלה|הדיווח התקבל/)
+    expect(b.reply).toMatch(/גבוה|עדיפות/)
   })
 })

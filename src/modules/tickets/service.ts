@@ -103,6 +103,10 @@ export type CreateTicketInput = {
   reporterName?: string
   language?: string
   assetId?: string
+  /** WhatsApp AI intake summary (optional column). */
+  aiSummary?: string | null
+  /** Raw AI + rules audit payload (optional column). */
+  aiRaw?: Record<string, unknown> | null
 }
 
 export function formatDisplayNumber(n: number | null | undefined) {
@@ -281,27 +285,46 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
     if (input.assetId) {
       await assertAssetBelongsToStore(supabase, input.assetId, store.id)
     }
-    const { data, error } = await supabase
+    const insertRow: Record<string, unknown> = {
+      organization_id: store.organization_id,
+      country_id: store.country_id,
+      region_id: store.region_id,
+      store_id: store.id,
+      asset_id: input.assetId ?? null,
+      category: input.category ?? 'other',
+      priority,
+      status: 'new',
+      title: input.title?.trim() || null,
+      description,
+      source: input.source ?? 'web_fallback',
+      reporter_phone: input.reporterPhone ?? null,
+      reporter_name: input.reporterName ?? null,
+      language: input.language ?? 'he',
+      ...sla,
+    }
+    if (input.aiSummary != null) insertRow.ai_summary = input.aiSummary
+    if (input.aiRaw != null) insertRow.ai_raw = input.aiRaw
+
+    let { data, error } = await supabase
       .from('tickets')
-      .insert({
-        organization_id: store.organization_id,
-        country_id: store.country_id,
-        region_id: store.region_id,
-        store_id: store.id,
-        asset_id: input.assetId ?? null,
-        category: input.category ?? 'other',
-        priority,
-        status: 'new',
-        title: input.title?.trim() || null,
-        description,
-        source: input.source ?? 'web_fallback',
-        reporter_phone: input.reporterPhone ?? null,
-        reporter_name: input.reporterName ?? null,
-        language: input.language ?? 'he',
-        ...sla,
-      })
+      .insert(insertRow)
       .select('*')
       .single()
+
+    // Pre-migration environments: retry without AI columns
+    if (
+      error &&
+      (input.aiSummary != null || input.aiRaw != null) &&
+      /ai_summary|ai_raw|column/i.test(error.message)
+    ) {
+      delete insertRow.ai_summary
+      delete insertRow.ai_raw
+      ;({ data, error } = await supabase
+        .from('tickets')
+        .insert(insertRow)
+        .select('*')
+        .single())
+    }
     if (error || !data) throw new Error(error?.message || 'יצירה נכשלה')
     const display_number = formatDisplayNumber(data.number)
     if (display_number) {

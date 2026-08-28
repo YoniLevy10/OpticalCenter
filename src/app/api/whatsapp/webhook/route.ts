@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import {
   parseWhatsAppWebhook,
   processInboundMessage,
   verifyWhatsAppSignature,
 } from '@/modules/whatsapp'
 import { captureError } from '@/lib/monitoring'
+import { logEvent } from '@/lib/logging'
 import { checkRateLimit, clientIpFromRequest } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -33,10 +34,9 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Inbound WhatsApp messages.
- * Always 200 so Meta does not retry storms; errors are logged.
- * Signature required in production-like mode; optional only in explicit dev/demo bypass.
- * Rate limited to ~60 req/min per IP (in-memory).
+ * Inbound WhatsApp messages — fast path.
+ * Verify + parse + acknowledge 200; AI/intake runs via `after()` so Meta
+ * does not hit timeouts (Helban-style separation).
  */
 export async function POST(request: NextRequest) {
   const ip = clientIpFromRequest(request)
@@ -70,19 +70,55 @@ export async function POST(request: NextRequest) {
     }
 
     const messages = parseWhatsAppWebhook(body)
-    const results = []
-    for (const msg of messages) {
-      const result = await processInboundMessage(msg)
-      results.push({
-        messageId: msg.messageId,
-        ok: result.ok,
-        duplicate: result.duplicate ?? false,
-        ticketId: result.ticketId ?? null,
-        state: result.state ?? null,
-      })
+    if (messages.length === 0) {
+      return NextResponse.json({ ok: true, accepted: 0 }, { status: 200 })
     }
 
-    return NextResponse.json({ ok: true, processed: results.length, results }, { status: 200 })
+    // Sync path for tests / memory when AFTER is disabled
+    const sync =
+      process.env.WHATSAPP_WEBHOOK_SYNC === '1' ||
+      process.env.MAINTAINOS_FORCE_MEMORY === '1' ||
+      process.env.NODE_ENV === 'test'
+
+    if (sync) {
+      const results = []
+      for (const msg of messages) {
+        const result = await processInboundMessage(msg)
+        results.push({
+          messageId: msg.messageId,
+          ok: result.ok,
+          duplicate: result.duplicate ?? false,
+          ticketId: result.ticketId ?? null,
+          state: result.state ?? null,
+        })
+      }
+      return NextResponse.json(
+        { ok: true, processed: results.length, results },
+        { status: 200 },
+      )
+    }
+
+    after(async () => {
+      for (const msg of messages) {
+        try {
+          await processInboundMessage(msg)
+        } catch (e) {
+          captureError(e, {
+            route: 'POST /api/whatsapp/webhook after',
+            messageId: msg.messageId,
+          })
+          logEvent('whatsapp:webhook', 'error', 'after_process_failed', {
+            messageId: msg.messageId,
+            error: e instanceof Error ? e.message : 'unknown',
+          })
+        }
+      }
+    })
+
+    return NextResponse.json(
+      { ok: true, accepted: messages.length },
+      { status: 200 },
+    )
   } catch (e) {
     captureError(e, { route: 'POST /api/whatsapp/webhook' })
     return NextResponse.json(

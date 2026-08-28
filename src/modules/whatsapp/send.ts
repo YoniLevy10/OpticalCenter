@@ -50,36 +50,53 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
 
   if (token && phoneNumberId) {
     dryRun = false
-    try {
-      const res = await fetch(
-        `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+    const maxAttempts = 4
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: params.toWaId,
+              type: 'text',
+              text: { body: params.text },
+            }),
           },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: params.toWaId,
-            type: 'text',
-            text: { body: params.text },
-          }),
-        },
-      )
-      const json = (await res.json()) as {
-        messages?: Array<{ id?: string }>
-        error?: { message?: string }
-      }
-      if (!res.ok) {
-        ok = false
+        )
+        const json = (await res.json()) as {
+          messages?: Array<{ id?: string }>
+          error?: { message?: string; code?: number }
+        }
+        if (res.ok) {
+          ok = true
+          error = undefined
+          waMessageId = json.messages?.[0]?.id ?? null
+          break
+        }
+        const retryable = res.status === 429 || res.status >= 500
         error = json.error?.message || `Graph API ${res.status}`
-      } else {
-        waMessageId = json.messages?.[0]?.id ?? null
+        ok = false
+        if (!retryable || attempt === maxAttempts) break
+        const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 8000)
+        logEvent('whatsapp:send', 'warn', 'retry', {
+          attempt,
+          status: res.status,
+          backoffMs,
+        })
+        await new Promise((r) => setTimeout(r, backoffMs))
+      } catch (e) {
+        ok = false
+        error = e instanceof Error ? e.message : 'send failed'
+        if (attempt === maxAttempts) break
+        const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 8000)
+        await new Promise((r) => setTimeout(r, backoffMs))
       }
-    } catch (e) {
-      ok = false
-      error = e instanceof Error ? e.message : 'send failed'
     }
   } else {
     logEvent('whatsapp:send', 'info', 'dry_run', {

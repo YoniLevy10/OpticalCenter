@@ -166,6 +166,21 @@ export function memFindStoreByCodeInCountry(
   return MEM_STORES.find((s) => s.country_id === countryId && s.code === code)
 }
 
+/** Persist wa_id → store mapping in memory (hybrid identity learn). */
+export function memLinkStorePhone(
+  waId: string,
+  storeId: string,
+  countryId: string,
+) {
+  if (!waId || !storeId) return
+  const existing = MEM_PHONES.findIndex((p) => p.wa_id === waId)
+  if (existing >= 0) {
+    MEM_PHONES[existing] = { wa_id: waId, store_id: storeId, country_id: countryId }
+  } else {
+    MEM_PHONES.push({ wa_id: waId, store_id: storeId, country_id: countryId })
+  }
+}
+
 export function memResolveStoreByWaId(
   waId: string,
   countryId: string | null,
@@ -206,8 +221,15 @@ export type MemSession = {
   country_id: string
   store_id: string | null
   store_code: string | null
-  state: 'awaiting_store' | 'awaiting_description' | 'done'
+  state:
+    | 'awaiting_store'
+    | 'awaiting_description'
+    | 'awaiting_clarification'
+    | 'done'
   pending_description: string | null
+  clarification_count?: number
+  draft_payload?: Record<string, unknown> | null
+  active_ticket_id?: string | null
   expires_at: string
   updated_at: string
   /** HQ human takeover — bot pauses replies while true. */
@@ -778,6 +800,9 @@ export function memUpsertSession(
     expires_at?: string
     human_takeover?: boolean
     last_inbound?: string | null
+    clarification_count?: number
+    draft_payload?: Record<string, unknown> | null
+    active_ticket_id?: string | null
   },
 ): MemSession {
   const now = new Date().toISOString()
@@ -789,6 +814,16 @@ export function memUpsertSession(
     store_code: session.store_code,
     state: session.state,
     pending_description: session.pending_description ?? null,
+    clarification_count:
+      session.clarification_count ?? existing?.clarification_count ?? 0,
+    draft_payload:
+      session.draft_payload !== undefined
+        ? session.draft_payload
+        : (existing?.draft_payload ?? null),
+    active_ticket_id:
+      session.active_ticket_id !== undefined
+        ? session.active_ticket_id
+        : (existing?.active_ticket_id ?? null),
     expires_at:
       session.expires_at ??
       new Date(Date.now() + 30 * 60 * 1000).toISOString(),

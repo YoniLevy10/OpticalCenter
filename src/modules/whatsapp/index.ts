@@ -21,4 +21,10 @@ export {
   isDirectHttpsMediaUrl,
   parseMetaMediaId,
 } from './media'
+export {
+  runIntakeAgent,
+  applyIntakeRules,
+  isWhatsAppAiIntakeEnabled,
+  parseIntakeAgentOutput,
+} from './agent'
 export type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'

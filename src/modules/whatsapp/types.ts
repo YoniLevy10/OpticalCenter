@@ -1,6 +1,10 @@
 export type TicketSource = 'whatsapp' | 'qr_whatsapp' | 'nfc_whatsapp' | 'web_fallback' | 'demo'
 
-export type IntakeState = 'awaiting_store' | 'awaiting_description' | 'done'
+export type IntakeState =
+  | 'awaiting_store'
+  | 'awaiting_description'
+  | 'awaiting_clarification'
+  | 'done'
 
 export type InboundMessage = {
   messageId: string
