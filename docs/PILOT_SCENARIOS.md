@@ -1,6 +1,8 @@
 # תרחישי פיילוט — Supabase production
 
-הריצו **אחרי** `npm run db:migrate` על Supabase אמיתי (לא `MAINTAINOS_FORCE_MEMORY`).
+הריצו **אחרי** `npm run db:migrate` / `npm run db:migrate:ai-intake` על Supabase אמיתי (לא `MAINTAINOS_FORCE_MEMORY`).
+
+מדד מוכנות חי: [`/api/health/pilot`](https://optical-center-rose.vercel.app/api/health/pilot) · Runbook: [`docs/META_PILOT_HANDOFF.md`](./META_PILOT_HANDOFF.md)
 
 | # | תרחיש | צעדים | KPI |
 |---|--------|--------|-----|
@@ -12,13 +14,21 @@
 
 ## אימות אוטומטי (memory / CI)
 
-Playwright: `e2e/pilot-scenarios.spec.ts` — זרימות 2–4 על memory backend.
+Playwright: `e2e/pilot-scenarios.spec.ts` — זרימות 2–4 על memory backend.  
+Unit: `npm test -- src/modules/whatsapp` (כולל WA-14 HVAC leak).
 
 ## Checklist production
 
-- [ ] `NEXT_PUBLIC_SUPABASE_*` + service role ב-Vercel
-- [ ] `npm run db:migrate` (Phase 6 + report_snapshots)
-- [ ] Google OAuth provider ב-Supabase
-- [ ] Meta WhatsApp webhook + credentials
+### צד בנייה
+- [ ] `npm run db:migrate:ai-intake` (או הדבקת SQL ב־Supabase)
+- [ ] `OPENAI_API_KEY` + `WHATSAPP_AI_INTAKE_ENABLED=true` ב־Vercel
+- [ ] `MAINTAINOS_FORCE_MEMORY` **לא** set
 - [ ] Storage bucket `ticket-media` עם policies
-- [ ] `MAINTAINOS_FORCE_MEMORY` **לא** set ב-production
+- [ ] `/api/health/pilot` → `buildSideReady: true`
+
+### צד Meta (שלך)
+- [ ] Meta WhatsApp webhook + credentials ב־Vercel
+- [ ] `NEXT_PUBLIC_WA_BUSINESS_PHONE` / Ops settings מספר עסקי
+- [ ] `countries.whatsapp_phone_number_id` = מזהה Meta אמיתי
+- [ ] QR מודפס מחדש אחרי המספר
+- [ ] `/api/health/pilot` → `readyForPilot: true`

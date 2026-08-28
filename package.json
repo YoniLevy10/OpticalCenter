@@ -15,6 +15,8 @@
     "test:qa": "npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build",
     "test:qa:load": "node scripts/qa-load.mjs",
     "db:migrate": "node scripts/apply-migrations.mjs",
+    "db:migrate:ai-intake": "node scripts/apply-migration.mjs 20260827230000_whatsapp_ai_intake.sql",
+    "pilot:readiness": "node scripts/pilot-readiness.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

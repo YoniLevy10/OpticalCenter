@@ -154,9 +154,17 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                   placeholder="9725…"
                 />
               </Field>
-              <Notice tone="progress">
-                תיבת WhatsApp היא מוקד התקשורת — שיחות מקושרות לתקלות.
-              </Notice>
+              {!form.wa_business_phone?.replace(/\D/g, '') ? (
+                <Notice tone="warning">
+                  בלי מספר עסקי לא ניתן להדפיס QR תקין לחנויות. הזינו את מספר
+                  ה־WhatsApp Business (ספרות עם קידומת מדינה, בלי +) ואז הדפיסו
+                  מחדש מ־/ops/stores/print-qr.
+                </Notice>
+              ) : (
+                <Notice tone="progress">
+                  המספר משמש לקישורי QR/NFC. אחרי שינוי — הדפיסו QR מחדש.
+                </Notice>
+              )}
             </div>
           ) : null}
 

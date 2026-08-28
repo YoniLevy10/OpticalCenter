@@ -10,5 +10,6 @@ export async function GET() {
     pilot: 'IL',
     storeIdentity: ['qr', 'nfc', 'store_code'],
     backend: ready ? 'supabase' : 'memory',
+    pilotReadiness: '/api/health/pilot',
   })
 }

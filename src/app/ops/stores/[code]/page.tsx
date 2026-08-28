@@ -21,6 +21,7 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { getStoreByCode } from '@/modules/stores/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
+import { getSettings } from '@/modules/settings/service'
 import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { listTickets } from '@/modules/tickets/service'
 import { listAssets } from '@/modules/assets/service'
@@ -104,7 +105,13 @@ export default async function StoreDetailPage({
   const { store, backend } = await getStoreByCode(code)
   if (!store) notFound()
 
-  const deepLink = storeWhatsAppDeepLink(store.code)
+  const { settings } = await getSettings().catch(() => ({
+    settings: { wa_business_phone: '' } as { wa_business_phone: string },
+  }))
+  const deepLink = storeWhatsAppDeepLink(
+    store.code,
+    settings.wa_business_phone || process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE,
+  )
   const canEdit =
     Boolean(
       actor?.memberships.some(
@@ -175,6 +182,7 @@ export default async function StoreDetailPage({
               storeId={store.id}
               isActive={store.is_active !== false}
               canEdit={canEdit}
+              waLink={deepLink}
             />
           }
         />

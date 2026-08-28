@@ -9,11 +9,13 @@ export function StoreSecondaryActions({
   storeId,
   isActive,
   canEdit,
+  waLink,
 }: {
   code: string
   storeId: string
   isActive: boolean
   canEdit: boolean
+  waLink?: string | null
 }) {
   const router = useRouter()
 
@@ -31,6 +33,8 @@ export function StoreSecondaryActions({
     }
   }
 
+  const whatsappHref = waLink || storeWhatsAppDeepLink(code)
+
   return (
     <ActionMenu
       label="פעולות נוספות לסניף"
@@ -43,7 +47,7 @@ export function StoreSecondaryActions({
         {
           key: 'wa',
           label: 'פתיחת WhatsApp',
-          href: storeWhatsAppDeepLink(code),
+          href: whatsappHref,
         },
         {
           key: 'tickets',

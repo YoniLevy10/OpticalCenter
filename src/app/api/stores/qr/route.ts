@@ -5,15 +5,31 @@ import {
   whatsAppShareUrl,
 } from '@/modules/stores/whatsapp-link'
 import { assetWhatsAppPrefill } from '@/modules/assets/service'
+import { getSettings } from '@/modules/settings/service'
 import { captureError } from '@/lib/monitoring'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+async function resolveBusinessPhone(): Promise<string | null> {
+  try {
+    const { settings } = await getSettings()
+    const fromSettings = (settings.wa_business_phone || '').replace(/\D/g, '')
+    if (fromSettings) return fromSettings
+  } catch {
+    /* fall through */
+  }
+  const fromEnv = (process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE || '').replace(
+    /\D/g,
+    '',
+  )
+  return fromEnv || null
+}
+
 /**
  * Lightweight QR for store / asset WhatsApp deep links.
+ * Prefers Ops settings wa_business_phone, then NEXT_PUBLIC_WA_BUSINESS_PHONE.
  * GET /api/stores/qr?code=172&format=svg|png
- * GET /api/stores/qr?code=172&asset=AC-04&format=svg|png
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,9 +40,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'קוד חנות לא תקין' }, { status: 400 })
     }
 
+    const businessPhone = await resolveBusinessPhone()
+    if (!businessPhone) {
+      return NextResponse.json(
+        {
+          error:
+            'חסר מספר WhatsApp עסקי. הגדירו ב־Ops → הגדרות → WhatsApp או NEXT_PUBLIC_WA_BUSINESS_PHONE.',
+          code: 'wa_business_phone_missing',
+        },
+        { status: 503 },
+      )
+    }
+
     const url = asset
-      ? whatsAppShareUrl(assetWhatsAppPrefill(code, asset))
-      : storeWhatsAppDeepLink(code)
+      ? whatsAppShareUrl(assetWhatsAppPrefill(code, asset), businessPhone)
+      : storeWhatsAppDeepLink(code, businessPhone)
 
     const fileBase = asset
       ? `asset-${code}-${asset.replace(/[^a-zA-Z0-9_-]/g, '')}-qr`
@@ -43,8 +71,9 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'public, max-age=300',
           'Content-Disposition': `inline; filename="${fileBase}.png"`,
+          'X-WhatsApp-Deep-Link': url,
         },
       })
     }
@@ -59,8 +88,9 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'image/svg+xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, max-age=300',
         'Content-Disposition': `inline; filename="${fileBase}.svg"`,
+        'X-WhatsApp-Deep-Link': url,
       },
     })
   } catch (err) {
