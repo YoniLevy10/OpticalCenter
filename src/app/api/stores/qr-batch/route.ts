@@ -2,17 +2,39 @@ import { NextResponse } from 'next/server'
 import QRCode from 'qrcode'
 import { fetchStores } from '@/modules/stores/data'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
+import { getSettings } from '@/modules/settings/service'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const format = url.searchParams.get('format') ?? 'html'
+
+  let businessPhone =
+    (process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE || '').replace(/\D/g, '') || null
+  try {
+    const { settings } = await getSettings()
+    const fromSettings = (settings.wa_business_phone || '').replace(/\D/g, '')
+    if (fromSettings) businessPhone = fromSettings
+  } catch {
+    /* ignore */
+  }
+
+  if (!businessPhone) {
+    return NextResponse.json(
+      {
+        error:
+          'חסר מספר WhatsApp עסקי. הגדירו ב־Ops → הגדרות → WhatsApp לפני הדפסת QR.',
+        code: 'wa_business_phone_missing',
+      },
+      { status: 503 },
+    )
+  }
 
   const { stores } = await fetchStores()
   const active = stores.filter((s) => s.is_active !== false)
 
   const cards = await Promise.all(
     active.map(async (s) => {
-      const waLink = storeWhatsAppDeepLink(s.code)
+      const waLink = storeWhatsAppDeepLink(s.code, businessPhone)
       const qrDataUrl = await QRCode.toDataURL(waLink, {
         margin: 1,
         width: 200,
@@ -24,6 +46,7 @@ export async function GET(request: Request) {
   if (format === 'json') {
     return NextResponse.json({
       count: cards.length,
+      businessPhone,
       stores: cards.map((c) => ({
         code: c.store.code,
         name: c.store.name,
@@ -58,20 +81,17 @@ export async function GET(request: Request) {
     <div class="card">
       <img src="${c.qrDataUrl}" alt="QR ${c.store.code}" />
       <div class="name">${c.store.name}</div>
-      <div class="code">#${c.store.code}</div>
-      <div class="prefill">STORE_${c.store.code}</div>
+      <div class="code">חנות ${c.store.code}</div>
+      <div class="prefill">${c.waLink}</div>
     </div>`,
       )
       .join('')}
   </div>
-  <script>window.onload = () => { /* optional auto-print */ };</script>
 </body>
 </html>`
 
   return new NextResponse(html, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Content-Disposition': 'inline; filename="maintainos-qr-batch.html"',
-    },
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
   })
 }

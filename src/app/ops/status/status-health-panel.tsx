@@ -16,9 +16,30 @@ type HealthPayload = {
   checks?: Record<string, { ok?: boolean; message?: string }>
 }
 
-function levelFrom(data: HealthPayload | null): Level {
+type PilotCheck = {
+  id: string
+  ok: boolean
+  level: string
+  message: string
+  owner: string
+}
+
+type PilotPayload = {
+  ok?: boolean
+  buildSideReady?: boolean
+  metaSideReady?: boolean
+  readyForPilot?: boolean
+  checks?: PilotCheck[]
+  nextSteps?: Array<{ id: string; owner: string; message: string }>
+}
+
+function levelFrom(data: HealthPayload | null, pilot: PilotPayload | null): Level {
   if (!data) return 'unknown'
   if (data.ok === false) return 'issue'
+  if (pilot && pilot.readyForPilot === false) {
+    if (pilot.buildSideReady === false) return 'issue'
+    return 'partial'
+  }
   const checks = data.checks ? Object.values(data.checks) : []
   if (checks.some((c) => c.ok === false)) return 'partial'
   if (data.ok === true) return 'ok'
@@ -58,18 +79,25 @@ const COPY: Record<
 export function StatusHealthPanel() {
   const [level, setLevel] = useState<Level>('unknown')
   const [backend, setBackend] = useState<string | null>(null)
+  const [pilot, setPilot] = useState<PilotPayload | null>(null)
   const [checking, setChecking] = useState(false)
 
   async function refresh() {
     setChecking(true)
     try {
-      const res = await fetch('/api/health')
-      const data = (await res.json()) as HealthPayload
-      setLevel(levelFrom(res.ok ? data : { ok: false }))
+      const [healthRes, pilotRes] = await Promise.all([
+        fetch('/api/health'),
+        fetch('/api/health/pilot'),
+      ])
+      const data = (await healthRes.json()) as HealthPayload
+      const pilotData = (await pilotRes.json()) as PilotPayload
+      setPilot(pilotData)
+      setLevel(levelFrom(healthRes.ok ? data : { ok: false }, pilotData))
       setBackend(data.backend ?? null)
     } catch {
       setLevel('issue')
       setBackend(null)
+      setPilot(null)
     } finally {
       setChecking(false)
     }
@@ -81,6 +109,7 @@ export function StatusHealthPanel() {
 
   const copy = COPY[level]
   const Icon = copy.icon
+  const openSteps = pilot?.nextSteps ?? []
 
   return (
     <div className="flex flex-col gap-4">
@@ -112,8 +141,35 @@ export function StatusHealthPanel() {
               מצב נתונים: {backend === 'supabase' ? 'מחובר' : 'דמו מקומי'}
             </p>
           ) : null}
+          {pilot ? (
+            <p className="t-caption mt-1 opacity-70">
+              פיילוט WhatsApp — בנייה:{' '}
+              {pilot.buildSideReady ? 'מוכן' : 'חסר'} · Meta:{' '}
+              {pilot.metaSideReady ? 'מוכן' : 'ממתין'}
+            </p>
+          ) : null}
         </div>
       </div>
+
+      {openSteps.length > 0 ? (
+        <Panel flush elevated>
+          <PanelHeader title="חסר לפיילוט חנויות" />
+          <ul className="divide-y divide-border px-4 py-2">
+            {openSteps.map((s) => (
+              <li key={s.id} className="py-2">
+                <p className="t-caption text-ink-3">
+                  {s.owner === 'meta'
+                    ? 'Meta / מספר'
+                    : s.owner === 'build'
+                      ? 'בנייה / DB'
+                      : 'Ops'}
+                </p>
+                <p className="t-body text-ink">{s.message}</p>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       <Panel flush elevated>
         <PanelHeader title="מצבים" />
@@ -146,12 +202,19 @@ export function StatusHealthPanel() {
       </Panel>
 
       <p className="t-body text-ink-2">
-        להגדרות תפעול נוספות:{' '}
+        להגדרות WhatsApp ומספר עסקי:{' '}
         <Link
           href="/ops/settings"
           className="text-[var(--signal-progress)] hover:underline"
         >
           הגדרות
+        </Link>
+        {' · '}
+        <Link
+          href="/api/health/pilot"
+          className="text-[var(--signal-progress)] hover:underline"
+        >
+          דוח מוכנות JSON
         </Link>
       </p>
     </div>
