@@ -391,11 +391,11 @@ Optical Center is international — plan **i18n from day one** (EN + FR at minim
 
 ---
 
-## 10. Figma MCP assessment
+## 10. Figma MCP assessment → Penpot OSS upgrade
 
 **Figma MCP is not connected** in this Cursor environment.
 
-Available MCP servers observed:
+Available MCP servers observed (research-time snapshot):
 
 | Server | Status |
 |--------|--------|
@@ -406,13 +406,20 @@ Available MCP servers observed:
 
 No Figma resources, files, tokens, or inspect tools available.
 
+### Open-source upgrade option: **Penpot + official MCP**
+
+Replace paid Figma (~$45/editor/mo) with **[Penpot](https://github.com/penpot/penpot)** and its MCP
+([`penpot/penpot` → `mcp`](https://github.com/penpot/penpot/tree/develop/mcp); formerly `penpot/penpot-mcp`).
+
+Practical repo wiring: [`PENPOT_DESIGN_UPGRADE.md`](./PENPOT_DESIGN_UPGRADE.md) · `npm run tokens:export` · `.cursor/mcp.penpot.example.json`.
+
 ### UX tooling recommendation: **Code-first Hybrid (lean)**
 
 | Approach | Verdict |
 |----------|---------|
 | Figma-first | **No** — MCP unavailable; design-handoff overhead slows pilot |
 | Code-first (shadcn/custom) | **Primary** — fastest path to Linear-like ops UI |
-| Hybrid | **Light hybrid:** optional Figma only for stakeholder moodboards later; implementation stays code-first |
+| Hybrid | **Light hybrid:** optional **Penpot** (preferred OSS) or Figma for stakeholder moodboards; implementation stays code-first |
 
 Build a small design system in code (tokens, StatusBadge, DataTable, filters) inspired by Bamakor’s density and Fixly’s mobile patterns — not a template theme.
 

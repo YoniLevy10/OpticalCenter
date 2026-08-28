@@ -208,3 +208,14 @@ Every route: `loading` (skeleton), empty, error. Offline honesty on tech surface
 
 Logical properties only (`ms/me`, `ps/pe`, `start/end`). Priority edge uses
 `inline-start`. Latin IDs / phones / URLs: `dir="ltr"`.
+
+---
+
+## 9. Design tool handoff (optional)
+
+**Source of truth stays this file + `globals.css`.**  
+Optional open-source upgrade path (Penpot instead of Figma): [`PENPOT_DESIGN_UPGRADE.md`](./PENPOT_DESIGN_UPGRADE.md).
+
+```bash
+npm run tokens:export   # → design-tokens/maintainos.tokens.json
+```

@@ -67,6 +67,7 @@ MAINTAINOS_FORCE_MEMORY=1
 ## מסמכים
 
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)
+- [`docs/PENPOT_DESIGN_UPGRADE.md`](docs/PENPOT_DESIGN_UPGRADE.md) — שדרוג אופציונלי: Penpot MCP (קוד פתוח) במקום Figma
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 - [`docs/MESSAGING_COST_POLICY.md`](docs/MESSAGING_COST_POLICY.md)

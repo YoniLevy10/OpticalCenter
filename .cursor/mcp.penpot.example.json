@@ -1,0 +1,8 @@
+{
+  "$comment": "Optional Penpot MCP — open-source Figma alternative. Copy entries into mcp.json after: npx -y @penpot/mcp@latest",
+  "mcpServers": {
+    "penpot": {
+      "url": "http://localhost:4401/mcp"
+    }
+  }
+}
