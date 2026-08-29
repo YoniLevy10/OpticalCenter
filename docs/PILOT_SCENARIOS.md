@@ -21,7 +21,7 @@ Unit: `npm test -- src/modules/whatsapp` (כולל WA-14 HVAC leak).
 
 ### צד בנייה
 - [ ] `npm run db:migrate:ai-intake` (או הדבקת SQL ב־Supabase)
-- [ ] `OPENAI_API_KEY` + `WHATSAPP_AI_INTAKE_ENABLED=true` ב־Vercel
+- [ ] AI Gateway enabled ב־Vercel **או** `OPENAI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` + `WHATSAPP_AI_INTAKE_ENABLED=true`
 - [ ] `MAINTAINOS_FORCE_MEMORY` **לא** set
 - [ ] Storage bucket `ticket-media` עם policies
 - [ ] `/api/health/pilot` → `buildSideReady: true`
