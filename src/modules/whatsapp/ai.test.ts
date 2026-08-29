@@ -11,18 +11,19 @@ describe('whatsapp ai', () => {
   beforeEach(() => {
     process.env = { ...env }
     delete process.env.WHATSAPP_AI_ENABLED
-    delete process.env.ANTHROPIC_API_KEY
+    delete process.env.AI_GATEWAY_API_KEY
+    delete process.env.VERCEL_OIDC_TOKEN
   })
 
   afterEach(() => {
     process.env = env
   })
 
-  it('isWhatsAppAiEnabled requires flag + key', () => {
+  it('isWhatsAppAiEnabled requires flag + Vercel Gateway auth', () => {
     expect(isWhatsAppAiEnabled()).toBe(false)
     process.env.WHATSAPP_AI_ENABLED = 'true'
     expect(isWhatsAppAiEnabled()).toBe(false)
-    process.env.ANTHROPIC_API_KEY = 'sk-test'
+    process.env.AI_GATEWAY_API_KEY = 'gw-test'
     expect(isWhatsAppAiEnabled()).toBe(true)
   })
 

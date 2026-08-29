@@ -70,6 +70,9 @@ MAINTAINOS_FORCE_MEMORY=1
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 - [`docs/MESSAGING_COST_POLICY.md`](docs/MESSAGING_COST_POLICY.md)
+- [`docs/VERCEL_AI_WHATSAPP.md`](docs/VERCEL_AI_WHATSAPP.md) — Vercel AI SDK + AI Gateway לבוט WhatsApp
+- [`docs/BAMAKOR_AI_WHATSAPP_COMPAT.md`](docs/BAMAKOR_AI_WHATSAPP_COMPAT.md) — התאמה ל־Bamakor (דיירים)
+- [`docs/WHATSAPP_AI_INTAKE_PLAN.md`](docs/WHATSAPP_AI_INTAKE_PLAN.md)
 
 ## סקריפט דמו
 
