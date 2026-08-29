@@ -3,7 +3,7 @@
  * Rewrites fixed template text into natural Hebrew while preserving facts.
  *
  * Uses Vercel AI SDK (+ AI Gateway when available).
- * Enable: WHATSAPP_AI_ENABLED=true + (AI Gateway auth OR ANTHROPIC/GOOGLE/OPENAI key)
+ * Enable: WHATSAPP_AI_ENABLED=true + (AI Gateway auth OR ANTHROPIC / Gemini key)
  * Falls back to the base template on any error or when disabled.
  */
 

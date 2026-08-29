@@ -17,7 +17,7 @@
    SQL Editor → הדביקו את הקובץ, או:  
    `SUPABASE_DB_PASSWORD=… node scripts/apply-migration.mjs`
 2. **Vercel env ל־AI**  
-   `OPENAI_API_KEY` + `WHATSAPP_AI_INTAKE_ENABLED=true`  
+   AI Gateway (`AI_GATEWAY_API_KEY` / OIDC) או `GOOGLE_GENERATIVE_AI_API_KEY` / `ANTHROPIC_API_KEY` + `WHATSAPP_AI_INTAKE_ENABLED=true`  
    (סובבו מפתח שנחשף בצ'אט)
 3. אופציונלי: `SENTRY_DSN`, `CRON_SECRET`
 

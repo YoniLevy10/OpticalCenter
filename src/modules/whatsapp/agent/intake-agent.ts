@@ -16,7 +16,7 @@ export type IntakeDecision = {
   possibleDuplicateHint: string | null
   rules: RulesResult
   ai: IntakeAgentOutput | null
-  provider: 'gateway' | 'gemini' | 'openai' | 'anthropic' | 'none' | 'rules'
+  provider: 'gateway' | 'gemini' | 'anthropic' | 'none' | 'rules'
 }
 
 /**

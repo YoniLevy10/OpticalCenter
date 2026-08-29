@@ -108,7 +108,7 @@ export async function GET() {
     level: 'should',
     message: aiOn
       ? `AI Intake פעיל (${aiProvider})`
-      : 'AI Intake כבוי — יעבוד rules-only; מומלץ OPENAI_API_KEY / Gemini ב־Vercel',
+      : 'AI Intake כבוי — יעבוד rules-only; מומלץ AI Gateway / Gemini / Anthropic ב־Vercel',
     owner: 'ops',
   })
 

@@ -12,12 +12,7 @@ import {
   type IntakeAgentOutput,
 } from './schema'
 
-export type IntakeLlmProvider =
-  | 'gateway'
-  | 'gemini'
-  | 'openai'
-  | 'anthropic'
-  | 'none'
+export type IntakeLlmProvider = 'gateway' | 'gemini' | 'anthropic' | 'none'
 
 export function resolveIntakeLlmProvider(): IntakeLlmProvider {
   return routeToProviderLabel(resolveIntakeRoute())
@@ -28,7 +23,7 @@ export function isWhatsAppAiIntakeEnabled(): boolean {
   if (process.env.WHATSAPP_AI_INTAKE_ENABLED === 'true') {
     return resolveIntakeLlmProvider() !== 'none'
   }
-  // Auto-enable when gateway or a provider key is present
+  // Auto-enable when Vercel Gateway / Gemini / Anthropic is configured
   return resolveIntakeLlmProvider() !== 'none'
 }
 

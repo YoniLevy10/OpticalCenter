@@ -15,7 +15,6 @@ describe('whatsapp ai', () => {
     delete process.env.AI_GATEWAY_API_KEY
     delete process.env.VERCEL_OIDC_TOKEN
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
-    delete process.env.OPENAI_API_KEY
   })
 
   afterEach(() => {

@@ -14,8 +14,8 @@ describe('ai-sdk models resolver', () => {
     delete process.env.AI_GATEWAY_API_KEY
     delete process.env.VERCEL_OIDC_TOKEN
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
-    delete process.env.OPENAI_API_KEY
     delete process.env.ANTHROPIC_API_KEY
+    delete process.env.OPENAI_API_KEY
   })
 
   afterEach(() => {
@@ -35,18 +35,24 @@ describe('ai-sdk models resolver', () => {
     expect(routeToProviderLabel('gateway')).toBe('gateway')
   })
 
-  it('falls back gemini → openai for intake', () => {
+  it('falls back gemini → anthropic for intake (no OpenAI)', () => {
     expect(resolveIntakeRoute()).toBe('none')
-    process.env.OPENAI_API_KEY = 'o'
-    expect(resolveIntakeRoute()).toBe('openai')
+    process.env.ANTHROPIC_API_KEY = 'a'
+    expect(resolveIntakeRoute()).toBe('anthropic')
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'g'
     expect(resolveIntakeRoute()).toBe('google')
     expect(routeToProviderLabel('google')).toBe('gemini')
   })
 
+  it('ignores OPENAI_API_KEY entirely', () => {
+    process.env.OPENAI_API_KEY = 'should-not-matter'
+    expect(resolveIntakeRoute()).toBe('none')
+    expect(resolveReplyRoute()).toBe('none')
+  })
+
   it('prefers anthropic for reply rewrite without gateway', () => {
     process.env.ANTHROPIC_API_KEY = 'a'
-    process.env.OPENAI_API_KEY = 'o'
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'g'
     expect(resolveReplyRoute()).toBe('anthropic')
   })
 })
