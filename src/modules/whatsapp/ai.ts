@@ -1,12 +1,14 @@
 /**
- * AI-powered WhatsApp response generator (ported from Bamakor `lib/whatsapp-ai.ts`).
+ * AI-powered WhatsApp response generator.
  * Rewrites fixed template text into natural Hebrew while preserving facts.
  *
- * Enable: WHATSAPP_AI_ENABLED=true + ANTHROPIC_API_KEY
+ * Uses Vercel AI SDK (+ AI Gateway when available).
+ * Enable: WHATSAPP_AI_ENABLED=true + (AI Gateway auth OR ANTHROPIC/GOOGLE/OPENAI key)
  * Falls back to the base template on any error or when disabled.
- *
- * Server-only — Anthropic SDK is loaded dynamically to avoid client bundles.
  */
+
+import { generateText } from 'ai'
+import { resolveReplyModel, resolveReplyRoute } from './ai-sdk/models'
 
 export type WhatsAppAiSituation =
   | 'intake_ask_store'
@@ -55,7 +57,7 @@ const SITUATION_HINT: Partial<Record<WhatsAppAiSituation, string>> = {
 export function isWhatsAppAiEnabled(): boolean {
   return (
     process.env.WHATSAPP_AI_ENABLED === 'true' &&
-    Boolean(process.env.ANTHROPIC_API_KEY?.trim())
+    resolveReplyRoute() !== 'none'
   )
 }
 
@@ -88,32 +90,28 @@ export async function enhanceWhatsAppMessage(
 
   if (!isWhatsAppAiEnabled()) return interpolated
 
-  const apiKey = process.env.ANTHROPIC_API_KEY!.trim()
+  const resolved = await resolveReplyModel()
+  if (!resolved) return interpolated
 
   try {
-    const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    const client = new Anthropic({ apiKey })
     const situationHint = context?.situation
       ? SITUATION_HINT[context.situation]
       : undefined
 
-    const userPrompt =
+    const prompt =
       `צור הודעת WhatsApp טבעית ויפה למצב הזה.\n` +
       (situationHint ? `מצב: ${situationHint}\n` : '') +
       `תבנית בסיסית:\n${interpolated}\n\n` +
       `החזר רק את טקסט ההודעה, ללא הסברים.`
 
-    const message = await client.messages.create({
-      model: process.env.WHATSAPP_AI_MODEL?.trim() || 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+    const { text } = await generateText({
+      model: resolved.model,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+      prompt,
+      maxOutputTokens: 300,
     })
 
-    const content = message.content[0]
-    if (content?.type === 'text' && content.text.trim()) {
-      return content.text.trim()
-    }
+    if (text?.trim()) return text.trim()
   } catch (e) {
     console.warn(
       '[whatsapp-ai] AI generation failed, using template fallback:',

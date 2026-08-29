@@ -10,7 +10,7 @@
 | נושא | החלטה |
 |------|--------|
 | Vision | ארכיטקטורה + שמירת מדיה בלבד; בלי ניתוח תמונה ב-MVP |
-| AI provider | **Gemini Flash** (שכבה חינמית) כברירת מחדל; אם אין `GOOGLE_GENERATIVE_AI_API_KEY` → **OpenAI** (`gpt-4o-mini`) |
+| AI provider | **Vercel AI SDK** — AI Gateway מועדף בפרודקשן; fallback: Gemini Flash → OpenAI |
 | SoT | רק Supabase + `createTicket` הקיים; אין DB מקביל לבוט |
 | עדיפויות | מיפוי UX `URGENT` → `critical` במערכת (`critical \| high \| medium \| low`) |
 
@@ -95,7 +95,8 @@ Meta webhook
 | קובץ | תפקיד |
 |------|--------|
 | `src/modules/whatsapp/agent/schema.ts` | Zod schema ל-JSON של ה-agent |
-| `src/modules/whatsapp/agent/provider.ts` | Gemini → fallback OpenAI; structured output |
+| `src/modules/whatsapp/agent/provider.ts` | Vercel AI SDK (`generateText` + `Output.object`); Gateway → Gemini → OpenAI |
+| `src/modules/whatsapp/ai-sdk/models.ts` | בחירת מודל (gateway / @ai-sdk providers) |
 | `src/modules/whatsapp/agent/intake-agent.ts` | קריאה + validate + history context |
 | `src/modules/whatsapp/agent/rules.ts` | Rules Engine — מרחיב/עוטף `classifyFaultText` |
 | `src/modules/whatsapp/agent/duplicates.ts` | חיפוש תקלות פתוחות באותה חנות |

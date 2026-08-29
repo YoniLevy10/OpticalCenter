@@ -12,17 +12,27 @@ describe('whatsapp ai', () => {
     process.env = { ...env }
     delete process.env.WHATSAPP_AI_ENABLED
     delete process.env.ANTHROPIC_API_KEY
+    delete process.env.AI_GATEWAY_API_KEY
+    delete process.env.VERCEL_OIDC_TOKEN
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    delete process.env.OPENAI_API_KEY
   })
 
   afterEach(() => {
     process.env = env
   })
 
-  it('isWhatsAppAiEnabled requires flag + key', () => {
+  it('isWhatsAppAiEnabled requires flag + provider/gateway auth', () => {
     expect(isWhatsAppAiEnabled()).toBe(false)
     process.env.WHATSAPP_AI_ENABLED = 'true'
     expect(isWhatsAppAiEnabled()).toBe(false)
     process.env.ANTHROPIC_API_KEY = 'sk-test'
+    expect(isWhatsAppAiEnabled()).toBe(true)
+  })
+
+  it('isWhatsAppAiEnabled accepts AI Gateway auth', () => {
+    process.env.WHATSAPP_AI_ENABLED = 'true'
+    process.env.AI_GATEWAY_API_KEY = 'gw-test'
     expect(isWhatsAppAiEnabled()).toBe(true)
   })
 
