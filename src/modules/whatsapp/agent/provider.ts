@@ -12,7 +12,7 @@ import {
   type IntakeAgentOutput,
 } from './schema'
 
-export type IntakeLlmProvider = 'gateway' | 'gemini' | 'anthropic' | 'none'
+export type IntakeLlmProvider = 'gateway' | 'none'
 
 export function resolveIntakeLlmProvider(): IntakeLlmProvider {
   return routeToProviderLabel(resolveIntakeRoute())
@@ -23,7 +23,7 @@ export function isWhatsAppAiIntakeEnabled(): boolean {
   if (process.env.WHATSAPP_AI_INTAKE_ENABLED === 'true') {
     return resolveIntakeLlmProvider() !== 'none'
   }
-  // Auto-enable when Vercel Gateway / Gemini / Anthropic is configured
+  // Auto-enable only when Vercel AI Gateway is configured
   return resolveIntakeLlmProvider() !== 'none'
 }
 
@@ -41,8 +41,8 @@ const SYSTEM_INSTRUCTION = `אתה AI Intake Agent של MaintainOS לתחזוק�
 - אל תהיה נחמד או שיחתי — תמציתי בלבד`
 
 /**
- * Call LLM via Vercel AI SDK (AI Gateway preferred) for structured intake JSON.
- * Returns null when disabled / no keys / failure (caller uses rules fallback).
+ * Structured intake via Vercel AI Gateway only.
+ * Returns null when Gateway is off / failure (caller uses rules fallback).
  */
 export async function callIntakeLlm(params: {
   text: string

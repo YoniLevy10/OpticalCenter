@@ -2,8 +2,8 @@
  * AI-powered WhatsApp response generator.
  * Rewrites fixed template text into natural Hebrew while preserving facts.
  *
- * Uses Vercel AI SDK (+ AI Gateway when available).
- * Enable: WHATSAPP_AI_ENABLED=true + (AI Gateway auth OR ANTHROPIC / Gemini key)
+ * Vercel AI Gateway ONLY (package `ai` + Gateway auth).
+ * Enable: WHATSAPP_AI_ENABLED=true + AI_GATEWAY_API_KEY / VERCEL_OIDC_TOKEN
  * Falls back to the base template on any error or when disabled.
  */
 
@@ -61,7 +61,7 @@ export function isWhatsAppAiEnabled(): boolean {
   )
 }
 
-/** Interpolate {{key}} placeholders before AI rewrite (Bamakor pattern). */
+/** Interpolate {{key}} placeholders before AI rewrite. */
 export function interpolateWhatsAppTemplate(
   text: string,
   vars: Record<string, string> = {},

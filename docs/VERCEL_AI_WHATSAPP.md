@@ -1,49 +1,37 @@
-# Vercel AI SDK + AI Gateway — WhatsApp bot
+# Vercel AI Chatbot (Gateway) — WhatsApp
 
-**Status:** ממומש  
-**Stack:** `ai` (Vercel AI SDK) · AI Gateway · `@ai-sdk/google` · `@ai-sdk/anthropic`  
-**לא בשימוש:** OpenAI
+**Stack:** רק `ai` (Vercel AI SDK) + **AI Gateway**  
+**לא בשימוש:** OpenAI · Anthropic SDK · Google SDK · מפתחות ספק ישירים
 
 ---
 
-## למה
+## מה זה
 
-MaintainOS רץ על Vercel, והבוט של WhatsApp כבר קורא ל־LLM.  
-הכל עובר דרך **Vercel AI SDK** על פלטפורמות שאנחנו כבר עובדים איתן:
-
-1. **AI Gateway** (מועדף בפרודקשן) — OIDC / `AI_GATEWAY_API_KEY`
-2. **Gemini** — intake structured JSON
-3. **Anthropic Claude** — ניסוח הודעות טבעיות במקום תבניות קבועות
-
-## זרימת שיחה עם חנויות
+בוט WhatsApp של MaintainOS מדבר עם מודלים **רק דרך Vercel AI Gateway**.  
+אין `@ai-sdk/anthropic`, אין `@ai-sdk/google`, אין `OPENAI_API_KEY`.
 
 ```
-WhatsApp (חנות)
-  → webhook / demo
-  → intake FSM (חנות → תיאור → תקלה)
-  → WA_COPY templates כבסיס עובדתי
-  → enhanceWhatsAppMessage (AI SDK) כשמופעל
-  → createTicket + אישור בעברית
+WhatsApp → intake FSM → WA_COPY (facts)
+  → generateText(model: "provider/model")  // Gateway
+  → createTicket
 ```
 
-| מודול | תפקיד | מודל ברירת מחדל |
-|-------|--------|------------------|
-| `ai.ts` | מחליף תבניות בשיחה טבעית | `anthropic/claude-haiku-4.5` |
-| `agent/provider.ts` | Intake structured JSON | `google/gemini-2.0-flash` |
+## הפעלה
 
-בלי מפתחות — templates + rules בלבד (זהה להתנהגות הקודמת).
-
-## הפעלה ב־Vercel
-
-1. Dashboard → **AI Gateway** (enable)
-2. `vercel env pull .env.local` או `AI_GATEWAY_API_KEY`
+1. Vercel Dashboard → Project → **AI Gateway** (enable)
+2. `vercel env pull .env.local` **או** `AI_GATEWAY_API_KEY=...`
 3. אופציונלי:
 
 ```env
 WHATSAPP_AI_ENABLED=true
 WHATSAPP_AI_INTAKE_ENABLED=true
+# WHATSAPP_AI_MODEL=anthropic/claude-haiku-4.5
+# WHATSAPP_AI_INTAKE_MODEL=google/gemini-2.0-flash
 ```
+
+בלי Gateway — templates + rules בלבד.
 
 ## Bamakor
 
-ראה [`BAMAKOR_AI_WHATSAPP_COMPAT.md`](./BAMAKOR_AI_WHATSAPP_COMPAT.md) — אותו pattern כבר קיים ב־`lib/whatsapp-ai.ts` של Bamakor (Anthropic ישיר); ניתן להחליף באותו AI SDK.
+אותו עיקרון: להחליף `lib/whatsapp-ai.ts` ל־`generateText` דרך Gateway בלבד.  
+ראה `docs/BAMAKOR_AI_WHATSAPP_COMPAT.md`.

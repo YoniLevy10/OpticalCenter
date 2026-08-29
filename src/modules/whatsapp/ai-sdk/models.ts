@@ -1,15 +1,12 @@
 import type { LanguageModel } from 'ai'
 
 /**
- * Resolve language models via platforms we already use:
- * - Vercel AI Gateway (preferred on Vercel)
- * - Google Gemini (intake)
- * - Anthropic Claude (reply rewrite)
- *
- * No OpenAI. Gateway auth: AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN.
+ * Vercel AI Gateway ONLY.
+ * Auth: AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN (from `vercel env pull`).
+ * No direct Anthropic / Google / OpenAI SDKs or API keys.
  */
 
-export type AiRoute = 'gateway' | 'google' | 'anthropic' | 'none'
+export type AiRoute = 'gateway' | 'none'
 
 export function hasAiGatewayAuth(): boolean {
   return Boolean(
@@ -19,124 +16,50 @@ export function hasAiGatewayAuth(): boolean {
 }
 
 export function resolveIntakeRoute(): AiRoute {
-  if (hasAiGatewayAuth()) return 'gateway'
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) return 'google'
-  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'anthropic'
-  return 'none'
+  return hasAiGatewayAuth() ? 'gateway' : 'none'
 }
 
 export function resolveReplyRoute(): AiRoute {
-  if (hasAiGatewayAuth()) return 'gateway'
-  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'anthropic'
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) return 'google'
-  return 'none'
+  return hasAiGatewayAuth() ? 'gateway' : 'none'
 }
 
-/** Provider label for logging / IntakeDecision.provider. */
-export function routeToProviderLabel(
-  route: AiRoute,
-): 'gateway' | 'gemini' | 'anthropic' | 'none' {
-  if (route === 'google') return 'gemini'
+export function routeToProviderLabel(route: AiRoute): 'gateway' | 'none' {
   return route
 }
 
-function gatewayOrOverride(
+function gatewayModel(
   envOverride: string | undefined,
   fallback: string,
 ): string {
   const raw = envOverride?.trim()
-  if (!raw) return fallback
-  if (raw.includes('/')) {
-    // Reject openai/* — stick to Vercel Gateway + Google + Anthropic
-    if (raw.startsWith('openai/')) return fallback
-    return raw
-  }
-  if (raw.startsWith('gemini')) return `google/${raw}`
-  if (raw.startsWith('claude')) return `anthropic/${raw}`
+  if (raw?.includes('/') && !raw.startsWith('openai/')) return raw
   return fallback
 }
 
-/**
- * Intake defaults: Gemini Flash via gateway / Google key.
- * Anthropic is last-resort fallback when only ANTHROPIC_API_KEY is set.
- */
+/** Intake via Vercel AI Gateway (default Gemini Flash slug). */
 export async function resolveIntakeModel(): Promise<{
   model: LanguageModel
   route: AiRoute
   modelId: string
 } | null> {
-  const route = resolveIntakeRoute()
-  if (route === 'none') return null
-
-  const override = process.env.WHATSAPP_AI_INTAKE_MODEL
-
-  if (route === 'gateway') {
-    const modelId = gatewayOrOverride(override, 'google/gemini-2.0-flash')
-    return { model: modelId, route, modelId }
-  }
-
-  if (route === 'google') {
-    const { google } = await import('@ai-sdk/google')
-    const id =
-      override?.trim() && !override.includes('/')
-        ? override.trim()
-        : override?.startsWith('google/')
-          ? override.replace(/^google\//, '')
-          : 'gemini-2.0-flash'
-    return { model: google(id), route, modelId: `google/${id}` }
-  }
-
-  if (route === 'anthropic') {
-    const { anthropic } = await import('@ai-sdk/anthropic')
-    const id =
-      override?.trim() && !override.includes('/')
-        ? override.trim()
-        : override?.startsWith('anthropic/')
-          ? override.replace(/^anthropic\//, '')
-          : 'claude-haiku-4-5-20251001'
-    return { model: anthropic(id), route, modelId: `anthropic/${id}` }
-  }
-
-  return null
+  if (!hasAiGatewayAuth()) return null
+  const modelId = gatewayModel(
+    process.env.WHATSAPP_AI_INTAKE_MODEL,
+    'google/gemini-2.0-flash',
+  )
+  return { model: modelId, route: 'gateway', modelId }
 }
 
-/**
- * Reply rewrite defaults: Claude Haiku via gateway / Anthropic.
- */
+/** Reply rewrite via Vercel AI Gateway (default Claude Haiku slug). */
 export async function resolveReplyModel(): Promise<{
   model: LanguageModel
   route: AiRoute
   modelId: string
 } | null> {
-  const route = resolveReplyRoute()
-  if (route === 'none') return null
-
-  const override = process.env.WHATSAPP_AI_MODEL
-
-  if (route === 'gateway') {
-    const modelId = gatewayOrOverride(override, 'anthropic/claude-haiku-4.5')
-    return { model: modelId, route, modelId }
-  }
-
-  if (route === 'anthropic') {
-    const { anthropic } = await import('@ai-sdk/anthropic')
-    const id =
-      override?.trim() && !override.includes('/')
-        ? override.trim()
-        : override?.startsWith('anthropic/')
-          ? override.replace(/^anthropic\//, '')
-          : 'claude-haiku-4-5-20251001'
-    return { model: anthropic(id), route, modelId: `anthropic/${id}` }
-  }
-
-  if (route === 'google') {
-    const { google } = await import('@ai-sdk/google')
-    return {
-      model: google('gemini-2.0-flash'),
-      route,
-      modelId: 'google/gemini-2.0-flash',
-    }
-  }
-
-  return null
+  if (!hasAiGatewayAuth()) return null
+  const modelId = gatewayModel(
+    process.env.WHATSAPP_AI_MODEL,
+    'anthropic/claude-haiku-4.5',
+  )
+  return { model: modelId, route: 'gateway', modelId }
 }

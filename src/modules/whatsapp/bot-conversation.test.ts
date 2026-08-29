@@ -1,8 +1,6 @@
 /**
  * End-to-end conversation contract for store WhatsApp intake:
- * templates (WA_COPY) → optional AI rewrite → ticket open.
- *
- * AI is mocked so CI proves the wiring without live LLM keys.
+ * templates (WA_COPY) → optional AI rewrite via Vercel Gateway → ticket open.
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { processInboundMessage } from '@/modules/whatsapp/intake'
@@ -37,7 +35,7 @@ function msg(
   }
 }
 
-describe('WhatsApp store conversation (AI-enhanced templates)', () => {
+describe('WhatsApp store conversation (Vercel AI Gateway)', () => {
   const env = { ...process.env }
 
   beforeEach(() => {
@@ -45,10 +43,8 @@ describe('WhatsApp store conversation (AI-enhanced templates)', () => {
     process.env.MAINTAINOS_FORCE_MEMORY = '1'
     delete process.env.WHATSAPP_AI_ENABLED
     delete process.env.WHATSAPP_AI_INTAKE_ENABLED
-    delete process.env.ANTHROPIC_API_KEY
-    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
     delete process.env.AI_GATEWAY_API_KEY
-    delete process.env.OPENAI_API_KEY
+    delete process.env.VERCEL_OIDC_TOKEN
     generateTextMock.mockReset()
   })
 
@@ -78,13 +74,13 @@ describe('WhatsApp store conversation (AI-enhanced templates)', () => {
     expect(generateTextMock).not.toHaveBeenCalled()
   })
 
-  it('rewrites ask-store template via AI SDK when WHATSAPP_AI_ENABLED', async () => {
+  it('rewrites ask-store template via Vercel Gateway when enabled', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
     process.env.WHATSAPP_AI_ENABLED = 'true'
     process.env.WHATSAPP_AI_INTAKE_ENABLED = 'false'
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test'
+    process.env.AI_GATEWAY_API_KEY = 'gw-test'
     generateTextMock.mockResolvedValue({
       text: 'היי! שלחו קוד חנות או סרקו QR ליד הדלפק.',
     })
@@ -100,18 +96,20 @@ describe('WhatsApp store conversation (AI-enhanced templates)', () => {
     const call = generateTextMock.mock.calls[0]?.[0] as {
       system?: string
       prompt?: string
+      model?: string
     }
     expect(call.system).toMatch(/MaintainOS|Optical Center/)
     expect(call.prompt).toContain(WA_COPY.askStore.slice(0, 20))
+    expect(call.model).toMatch(/^anthropic\//)
   })
 
-  it('falls back to WA_COPY when AI throws', async () => {
+  it('falls back to WA_COPY when Gateway call throws', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
     process.env.WHATSAPP_AI_ENABLED = 'true'
     process.env.WHATSAPP_AI_INTAKE_ENABLED = 'false'
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test'
+    process.env.AI_GATEWAY_API_KEY = 'gw-test'
     generateTextMock.mockRejectedValue(new Error('boom'))
 
     const r = await processInboundMessage(msg({ text: 'שלום' }, waId), {

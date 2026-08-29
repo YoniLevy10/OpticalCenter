@@ -1,7 +1,7 @@
 # WhatsApp AI Intake Agent — Optical Center
 
 **Status:** אושר וממומש  
-**החלטות:** Vision = ארכיטקטורה+מדיה בלבד · AI = Vercel Gateway / Gemini Flash / Anthropic (ללא OpenAI)
+**החלטות:** Vision = ארכיטקטורה+מדיה בלבד · AI = **Vercel AI Gateway בלבד**
 
 ---
 
@@ -10,7 +10,7 @@
 | נושא | החלטה |
 |------|--------|
 | Vision | ארכיטקטורה + שמירת מדיה בלבד; בלי ניתוח תמונה ב-MVP |
-| AI provider | **Vercel AI SDK** — AI Gateway מועדף; fallback: Gemini Flash → Anthropic |
+| AI provider | **Vercel AI Gateway בלבד** (package `ai`) |
 | SoT | רק Supabase + `createTicket` הקיים; אין DB מקביל לבוט |
 | עדיפויות | מיפוי UX `URGENT` → `critical` במערכת (`critical \| high \| medium \| low`) |
 
@@ -95,8 +95,8 @@ Meta webhook
 | קובץ | תפקיד |
 |------|--------|
 | `src/modules/whatsapp/agent/schema.ts` | Zod schema ל-JSON של ה-agent |
-| `src/modules/whatsapp/agent/provider.ts` | Vercel AI SDK (`generateText` + `Output.object`); Gateway → Gemini → Anthropic |
-| `src/modules/whatsapp/ai-sdk/models.ts` | בחירת מודל (gateway / Google / Anthropic — ללא OpenAI) |
+| `src/modules/whatsapp/agent/provider.ts` | Vercel AI Gateway (`generateText` + `Output.object`) |
+| `src/modules/whatsapp/ai-sdk/models.ts` | Gateway auth בלבד — בלי SDKs של ספקים |
 | `src/modules/whatsapp/agent/intake-agent.ts` | קריאה + validate + history context |
 | `src/modules/whatsapp/agent/rules.ts` | Rules Engine — מרחיב/עוטף `classifyFaultText` |
 | `src/modules/whatsapp/agent/duplicates.ts` | חיפוש תקלות פתוחות באותה חנות |
@@ -104,7 +104,7 @@ Meta webhook
 | `src/modules/whatsapp/send.ts` | retries + exponential backoff |
 | `src/app/api/whatsapp/webhook/route.ts` | verify/parse → `after()` → 200 מיידי |
 | `src/modules/whatsapp/ai.ts` | נשאר לניסוח אישור (אופציונלי); לא ה-brain |
-| `.env.example` | AI Gateway / Gemini / Anthropic + `WHATSAPP_AI_INTAKE_ENABLED` |
+| `.env.example` | `AI_GATEWAY_API_KEY` / OIDC + `WHATSAPP_AI_*` |
 
 ### Structured output
 

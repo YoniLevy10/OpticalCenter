@@ -6,7 +6,7 @@ import {
   routeToProviderLabel,
 } from './models'
 
-describe('ai-sdk models resolver', () => {
+describe('ai-sdk models resolver (Vercel Gateway only)', () => {
   const env = { ...process.env }
 
   beforeEach(() => {
@@ -22,37 +22,27 @@ describe('ai-sdk models resolver', () => {
     process.env = env
   })
 
-  it('detects gateway auth', () => {
+  it('requires Gateway auth', () => {
     expect(hasAiGatewayAuth()).toBe(false)
+    expect(resolveIntakeRoute()).toBe('none')
+    expect(resolveReplyRoute()).toBe('none')
     process.env.AI_GATEWAY_API_KEY = 'gw'
     expect(hasAiGatewayAuth()).toBe(true)
-  })
-
-  it('prefers gateway for intake when available', () => {
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'g'
-    process.env.AI_GATEWAY_API_KEY = 'gw'
     expect(resolveIntakeRoute()).toBe('gateway')
+    expect(resolveReplyRoute()).toBe('gateway')
     expect(routeToProviderLabel('gateway')).toBe('gateway')
   })
 
-  it('falls back gemini → anthropic for intake (no OpenAI)', () => {
-    expect(resolveIntakeRoute()).toBe('none')
+  it('ignores provider API keys (Anthropic / Google / OpenAI)', () => {
     process.env.ANTHROPIC_API_KEY = 'a'
-    expect(resolveIntakeRoute()).toBe('anthropic')
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'g'
-    expect(resolveIntakeRoute()).toBe('google')
-    expect(routeToProviderLabel('google')).toBe('gemini')
-  })
-
-  it('ignores OPENAI_API_KEY entirely', () => {
-    process.env.OPENAI_API_KEY = 'should-not-matter'
+    process.env.OPENAI_API_KEY = 'o'
     expect(resolveIntakeRoute()).toBe('none')
     expect(resolveReplyRoute()).toBe('none')
   })
 
-  it('prefers anthropic for reply rewrite without gateway', () => {
-    process.env.ANTHROPIC_API_KEY = 'a'
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'g'
-    expect(resolveReplyRoute()).toBe('anthropic')
+  it('accepts VERCEL_OIDC_TOKEN', () => {
+    process.env.VERCEL_OIDC_TOKEN = 'oidc'
+    expect(resolveReplyRoute()).toBe('gateway')
   })
 })
