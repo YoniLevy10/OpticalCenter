@@ -669,7 +669,8 @@ export async function replyToSession(input: {
   if (!waId) throw new Error('מזהה WhatsApp חסר')
 
   const ticketIdInput = sanitizeOptionalUuid(input.ticketId ?? undefined) ?? null
-  const countryIdInput = sanitizeOptionalUuid(input.countryId)
+  // Israel-only pilot: ignore client countryId entirely.
+  void input.countryId
 
   if (!(await supabaseReady())) {
     const message = memAddInboxMessage({
@@ -690,42 +691,20 @@ export async function replyToSession(input: {
 
   const supabase = createSystemClient('inbox_reply')
 
-  // Never fall back to memory demo country UUID — that FK-fails in production.
-  let countryId = countryIdInput ?? null
+  // Israel-only pilot: always resolve IL.
+  let countryId: string
   let phoneNumberIdCandidate: string | null = null
   let lastInboundAt: string | null = null
 
-  if (countryId) {
-    const { data: byId } = await supabase
+  {
+    const { data: il } = await supabase
       .from('countries')
       .select('id, whatsapp_phone_number_id')
-      .eq('id', countryId)
+      .eq('code', 'IL')
       .maybeSingle()
-    if (byId?.id) {
-      countryId = byId.id
-      phoneNumberIdCandidate = byId.whatsapp_phone_number_id ?? null
-    } else {
-      countryId = null
-    }
-  }
-
-  {
-    const { data: sessions } = await supabase
-      .from('intake_sessions')
-      .select('country_id')
-      .eq('wa_id', waId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-    const sessionCountryId = sessions?.[0]?.country_id as string | undefined
-    if (!countryId && sessionCountryId) {
-      countryId = sessionCountryId
-      const { data: c } = await supabase
-        .from('countries')
-        .select('whatsapp_phone_number_id')
-        .eq('id', sessionCountryId)
-        .maybeSingle()
-      phoneNumberIdCandidate = c?.whatsapp_phone_number_id ?? null
-    }
+    if (!il?.id) throw new Error('לא נמצאה מדינה לשליחה (IL)')
+    countryId = il.id
+    phoneNumberIdCandidate = il.whatsapp_phone_number_id ?? null
   }
 
   // Last inbound timestamp (message body lives in last_inbound — do NOT Date.parse it).
@@ -752,18 +731,7 @@ export async function replyToSession(input: {
     }
   }
 
-  if (!countryId) {
-    const { data: il } = await supabase
-      .from('countries')
-      .select('id, whatsapp_phone_number_id')
-      .eq('code', 'IL')
-      .maybeSingle()
-    if (!il?.id) throw new Error('לא נמצאה מדינה לשליחה (IL)')
-    countryId = il.id
-    phoneNumberIdCandidate = il.whatsapp_phone_number_id ?? null
-  }
-
-  // Prefer valid Meta ID from country; otherwise env (never demo placeholders).
+  // Prefer valid Meta ID from IL country; otherwise env (never demo placeholders).
   const phoneNumberId = resolveWhatsAppPhoneNumberId(phoneNumberIdCandidate)
 
   // Active customer-care window: free-form text is allowed for 24h after last inbound.

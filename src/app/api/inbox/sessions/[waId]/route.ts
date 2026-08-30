@@ -34,19 +34,10 @@ export async function GET(
   }
 }
 
-/** Treat null / "" / "null" / "undefined" as absent before UUID check. */
-const optionalUuid = z.preprocess((value) => {
-  if (
-    value == null ||
-    value === '' ||
-    value === 'null' ||
-    value === 'undefined'
-  ) {
-    return undefined
-  }
-  return value
-}, z.string().uuid().optional())
-
+/**
+ * Pilot is Israel-only for now.
+ * Ignore countryId entirely (clients may still send "null" / garbage).
+ */
 const replySchema = z.object({
   text: z.string().min(1).max(4096),
   ticketId: z.preprocess((value) => {
@@ -59,8 +50,9 @@ const replySchema = z.object({
       return null
     }
     return value
-  }, z.string().uuid().nullable()),
-  countryId: optionalUuid,
+  }, z.string().uuid().nullable().optional()),
+  // Accepted but ignored — Israel is resolved server-side.
+  countryId: z.any().optional(),
 })
 
 export async function POST(
@@ -94,7 +86,8 @@ export async function POST(
       waId,
       text: parsed.data.text,
       ticketId: parsed.data.ticketId ?? null,
-      countryId: parsed.data.countryId,
+      // Israel-only pilot: never trust client countryId.
+      countryId: undefined,
     })
     return NextResponse.json(result)
   } catch (err) {

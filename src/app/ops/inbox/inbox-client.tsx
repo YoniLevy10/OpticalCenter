@@ -175,15 +175,7 @@ export function InboxClient() {
     setNotice(null)
     setError(null)
     try {
-      const active = sessions.find((s) => s.wa_id === selected)
-      const rawCountry = active?.country_id
-      const countryId =
-        rawCountry &&
-        rawCountry !== 'null' &&
-        rawCountry !== 'undefined' &&
-        /^[0-9a-f-]{36}$/i.test(rawCountry)
-          ? rawCountry
-          : undefined
+      // Israel-only pilot: do not send countryId (server defaults to IL).
       const rawTicket = ticketIds[0] ?? openTickets[0]?.id ?? null
       const ticketId =
         rawTicket &&
@@ -200,7 +192,6 @@ export function InboxClient() {
           body: JSON.stringify({
             text: reply.trim(),
             ticketId,
-            ...(countryId ? { countryId } : {}),
           }),
         },
       )
