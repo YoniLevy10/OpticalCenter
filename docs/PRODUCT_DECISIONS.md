@@ -6,7 +6,7 @@
 |------|--------|--------|
 | דוחות | CSV + Excel + PDF + dashboard מספיק; PDF לא חובה נפרד | `/api/reports/export?format=csv\|xlsx\|pdf` |
 | היסטוריה | דוחות חודשיים נשמרים ידנית | `/ops/reports/history` + `report_snapshots` |
-| התראות טכנאי | WhatsApp + קישור `/tech` — לא Web Push בפיילוט | Push UI «בקרוב» |
+| התראות טכנאי | SMS (019) בשיוך + WhatsApp עם קישור `/tech` — כמו Bamakor; לא Web Push בפיילוט | Push UI «בקרוב» |
 | Inbox reply | HQ יכול לשלוח WA (UI קיים); policy: takeover + ticket ops | ללא שינוי policy ב-wave זה |
 | Auth | Google OAuth ראשי; מייל Supabase כגיבוי | `/login` + Supabase provider |
 | עובדי חנות | פורטל `/store` — לא HQ מלא | `store_employee` role + `/store/report` |

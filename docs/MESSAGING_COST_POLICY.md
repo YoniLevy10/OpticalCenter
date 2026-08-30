@@ -17,8 +17,9 @@ Goal: keep WhatsApp spend near-zero for fault reporting.
 |----------|---------|
 | Store reporter | WhatsApp replies in open session only |
 | HQ | Web `/ops` (SoT) |
-| Technician | Web/PWA `/tech` (+ optional future push/email) |
+| Technician | **SMS (019)** on assign + WhatsApp deep link to `/tech/{id}` (Bamakor parity) |
 
 ## Providers
-- Default: **Meta Cloud API direct**
-- Aggregators (e.g. Sent.dm) do **not** remove Meta conversation fees; evaluate later only for SMS/RCS fallback
+- Default WhatsApp: **Meta Cloud API direct**
+- Technician assign SMS: **019SMS** (`SMS_019_*` env) — short “שויכת לתקלה … + link”
+- Aggregators (e.g. Sent.dm) do **not** remove Meta conversation fees; evaluate later for broader SMS/RCS
