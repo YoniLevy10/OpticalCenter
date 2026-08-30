@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { israelStoresAsRows } from '@/modules/stores/israel-stores'
 
 export type StoreRow = {
   id: string
@@ -39,19 +40,8 @@ export type TicketRow = {
   } | null
 }
 
-/** Fallback seed when DB migrations not applied yet — mirrors Israel demo stores. */
-export const DEMO_STORES: StoreRow[] = [
-  { id: 'demo-172', code: '172', name: 'תל אביב אבן גבירול', city: 'תל אביב', address: 'אבן גבירול', region_id: 'ta', is_active: true },
-  { id: 'demo-101', code: '101', name: 'תל אביב שינקין', city: 'תל אביב', address: 'שינקין', region_id: 'ta', is_active: true },
-  { id: 'demo-102', code: '102', name: 'בני ברק', city: 'בני ברק', address: 'רבי עקיבא 128', region_id: 'ta', is_active: true },
-  { id: 'demo-104', code: '104', name: 'בת ים פארק הים', city: 'בת ים', address: 'הקוממיות 16', region_id: 'ctr', is_active: true },
-  { id: 'demo-105', code: '105', name: 'ראשון לציון', city: 'ראשון לציון', address: 'שדרות יוסף לישנסקי 9', region_id: 'ctr', is_active: true },
-  { id: 'demo-106', code: '106', name: 'חולון', city: 'חולון', address: 'הפלד 7', region_id: 'ctr', is_active: true },
-  { id: 'demo-109', code: '109', name: 'ירושלים כיכר ציון', city: 'ירושלים', address: null, region_id: 'jlm', is_active: true },
-  { id: 'demo-111', code: '111', name: 'חיפה הרצל', city: 'חיפה', address: null, region_id: 'hfa', is_active: true },
-  { id: 'demo-113', code: '113', name: 'יקנעם G Mall', city: 'יקנעם', address: 'התמר 2', region_id: 'n', is_active: true },
-  { id: 'demo-115', code: '115', name: 'באר שבע מול', city: 'באר שבע', address: null, region_id: 's', is_active: true },
-]
+/** Fallback when DB is unavailable — 48 real Optical Center IL branches. */
+export const DEMO_STORES: StoreRow[] = israelStoresAsRows()
 
 export async function fetchStores(opts?: {
   includeInactive?: boolean

@@ -108,7 +108,7 @@ function seedDefaultMemberships(mem: GlobalAuthMem) {
     m(HQ_STORE_172, 'store_manager', {
       country_id: MEM_COUNTRY_ID,
       region_id: 'ta',
-      store_id: 'demo-172',
+      store_id: 'il-store-172',
     }),
   ])
   mem.memberships.set(EXTERNAL, [

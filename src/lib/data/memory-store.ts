@@ -112,7 +112,7 @@ const MEM_STORES: MemStore[] = [
 const MEM_PHONES: { wa_id: string; store_id: string; country_id: string }[] = [
   {
     wa_id: MEM_KNOWN_EMPLOYEE_WA,
-    store_id: 'demo-172',
+    store_id: 'il-store-172',
     country_id: MEM_COUNTRY_ID,
   },
 ]
@@ -372,7 +372,7 @@ function seedDemoAssets(mem: GlobalMem) {
   const now = new Date().toISOString()
   mem.assets.set('asset-demo-ac04', {
     id: 'asset-demo-ac04',
-    store_id: 'demo-172',
+    store_id: 'il-store-172',
     code: 'AC-04',
     name: 'יחידת מיזוג ראשית',
     asset_type: 'hvac',
@@ -381,7 +381,7 @@ function seedDemoAssets(mem: GlobalMem) {
   })
   mem.assets.set('asset-demo-ac05', {
     id: 'asset-demo-ac05',
-    store_id: 'demo-172',
+    store_id: 'il-store-172',
     code: 'AC-05',
     name: 'מזגן מחסן',
     asset_type: 'hvac',
@@ -390,7 +390,7 @@ function seedDemoAssets(mem: GlobalMem) {
   })
   mem.assets.set('asset-demo-opt01', {
     id: 'asset-demo-opt01',
-    store_id: 'demo-101',
+    store_id: 'il-store-101',
     code: 'OPT-01',
     name: 'מכשיר מדידה',
     asset_type: 'optical',
