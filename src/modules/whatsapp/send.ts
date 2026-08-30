@@ -71,7 +71,14 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
         )
         const json = (await res.json()) as {
           messages?: Array<{ id?: string }>
-          error?: { message?: string; code?: number }
+          error?: {
+            message?: string
+            type?: string
+            code?: number
+            error_subcode?: number
+            error_user_msg?: string
+            fbtrace_id?: string
+          }
         }
         if (res.ok) {
           ok = true
@@ -90,6 +97,10 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
         console.error('[whatsapp:send] Graph API failed', {
           status: res.status,
           error,
+          errorType: json.error?.type ?? null,
+          errorCode: json.error?.code ?? null,
+          errorSubcode: json.error?.error_subcode ?? null,
+          errorUserMsg: json.error?.error_user_msg ?? null,
           phoneNumberId,
           to: params.toWaId,
           attempt,
@@ -97,6 +108,9 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
         logEvent('whatsapp:send', 'error', 'graph_failed', {
           status: res.status,
           error,
+          errorType: json.error?.type ?? null,
+          errorCode: json.error?.code ?? null,
+          errorSubcode: json.error?.error_subcode ?? null,
           phoneNumberId,
           to: params.toWaId,
           attempt,
