@@ -1,4 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import {
+  hqProductRoles,
+  techProductRoles,
+} from '@/lib/auth/roles'
 
 export type MemberRole =
   | 'global_admin'
@@ -62,7 +66,6 @@ export function parseTestBearer(header: string | null): string | null {
   const rest = token.slice('test_'.length)
   const secret = process.env.MAINTAINOS_TEST_AUTH_SECRET
   if (!secret) {
-    // Memory/dev only: bare test_<uuid>
     if (/^[0-9a-f-]{36}$/i.test(rest)) return rest
     return null
   }
@@ -88,17 +91,11 @@ export function signTestBearer(profileId: string, secret?: string) {
 }
 
 export function hqRoles(): MemberRole[] {
-  return [
-    'global_admin',
-    'global_maintenance',
-    'country_manager',
-    'regional_manager',
-    'store_manager',
-  ]
+  return hqProductRoles()
 }
 
 export function techRoles(): MemberRole[] {
-  return ['internal_technician', 'external_provider']
+  return techProductRoles()
 }
 
 export function actorHasHqAccess(actor: Actor): boolean {
@@ -129,8 +126,10 @@ export function canReadTicket(actor: Actor, ticket: TicketScopeRow): boolean {
   for (const m of actor.memberships) {
     if (m.organization_id !== ticket.organization_id) continue
     if (m.role === 'global_admin' || m.role === 'global_maintenance') return true
-    if (m.role === 'country_manager' && m.country_id === ticket.country_id) return true
-    if (m.role === 'regional_manager' && m.region_id === ticket.region_id) return true
+    if (m.role === 'country_manager' && m.country_id === ticket.country_id)
+      return true
+    if (m.role === 'regional_manager' && m.region_id === ticket.region_id)
+      return true
     if (
       (m.role === 'store_manager' || m.role === 'store_employee') &&
       m.store_id === ticket.store_id
@@ -151,9 +150,10 @@ export function canMutateHqTicket(actor: Actor, ticket: TicketScopeRow): boolean
   for (const m of actor.memberships) {
     if (m.organization_id !== ticket.organization_id) continue
     if (m.role === 'global_admin' || m.role === 'global_maintenance') return true
-    if (m.role === 'country_manager' && m.country_id === ticket.country_id) return true
-    if (m.role === 'regional_manager' && m.region_id === ticket.region_id) return true
-    if (m.role === 'store_manager' && m.store_id === ticket.store_id) return true
+    if (m.role === 'country_manager' && m.country_id === ticket.country_id)
+      return true
+    if (m.role === 'regional_manager' && m.region_id === ticket.region_id)
+      return true
   }
   return false
 }
@@ -161,7 +161,6 @@ export function canMutateHqTicket(actor: Actor, ticket: TicketScopeRow): boolean
 export function canTechActOnTicket(actor: Actor, ticket: TicketScopeRow): boolean {
   if (!actorIsTech(actor)) return false
   if (ticket.assigned_to === actor.id) return true
-  // Unassigned pool for internal technicians only
   if (
     !ticket.assigned_to &&
     ticket.status === 'assigned' &&

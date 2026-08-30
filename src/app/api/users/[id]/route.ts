@@ -15,12 +15,8 @@ const patchSchema = z.object({
     .enum([
       'global_admin',
       'global_maintenance',
-      'country_manager',
-      'regional_manager',
-      'store_manager',
       'store_employee',
       'internal_technician',
-      'external_provider',
     ])
     .optional(),
   country_id: z.string().uuid().nullable().optional(),

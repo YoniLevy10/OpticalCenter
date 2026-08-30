@@ -5,6 +5,7 @@ import { resolveHomePath } from '@/lib/auth/home-path'
 import type { Actor } from '@/lib/auth/types'
 import { memListMemberships } from '@/lib/auth/memory-memberships'
 import { ensurePilotAccessForAuthUser } from '@/lib/auth/seed-pilot-user'
+import { isApprovedLoginEmail } from '@/lib/auth/login-allowlist'
 import { supabaseReady } from '@/lib/data/memory-store'
 
 async function loadMemberships(profileId: string): Promise<Actor['memberships']> {
@@ -92,12 +93,18 @@ export async function GET(request: Request) {
       fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
     })
 
+    const allowed = await isApprovedLoginEmail(user.email)
     const memberships = await loadMemberships(user.id)
-  const home = resolveHomePath({ memberships })
-  const nextPath = url.searchParams.get('next')
-  const safeNext =
-    nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null
-  return NextResponse.redirect(`${origin}${safeNext ?? home}`)
+    if (!allowed || memberships.length === 0) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(`${origin}/login?error=unauthorized`)
+    }
+
+    const home = resolveHomePath({ memberships })
+    const nextPath = url.searchParams.get('next')
+    const safeNext =
+      nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null
+    return NextResponse.redirect(`${origin}${safeNext ?? home}`)
   } catch {
     return NextResponse.redirect(`${origin}/login?error=auth`)
   }

@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   memAddMembership,
   memListUsers,
@@ -8,6 +9,7 @@ import {
 } from '@/lib/auth/memory-memberships'
 import type { MemberRole, Membership } from '@/lib/auth/types'
 import { AuthError, type Actor } from '@/lib/auth/types'
+import { isAssignableRole } from '@/lib/auth/roles'
 import { MEM_COUNTRY_ID, MEM_ORG_ID, supabaseReady } from '@/lib/data/memory-store'
 
 export type UserRow = {
@@ -18,9 +20,7 @@ export type UserRow = {
 }
 
 export function requireUsersAdmin(actor: Actor) {
-  const ok = actor.memberships.some(
-    (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
-  )
+  const ok = actor.memberships.some((m) => m.role === 'global_admin')
   if (!ok) {
     throw new AuthError('אין הרשאת ניהול משתמשים', 403)
   }
@@ -74,20 +74,28 @@ export type CreateUserInput = {
   organization_id?: string | null
   /** Optional explicit profile id (defaults to new uuid). */
   id?: string
+  /** When set, also creates a Supabase Auth user that can log in with password. */
+  password?: string
 }
 
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
-  const id = input.id ?? crypto.randomUUID()
+  if (!isAssignableRole(input.role)) {
+    throw new Error('תפקיד לא נתמך — בחרו מנהל מערכת, תפעול, חנות או טכנאי')
+  }
+
+  let id = input.id ?? crypto.randomUUID()
   const orgId = input.organization_id ?? MEM_ORG_ID
   const countryId =
     input.country_id === undefined
       ? techDefaultCountry(input.role)
       : input.country_id
+  const email = input.email.trim().toLowerCase()
+  const password = input.password?.trim() || null
 
   if (!(await supabaseReady())) {
     memUpsertProfile({
       id,
-      email: input.email,
+      email,
       full_name: input.full_name,
     })
     memAddMembership(id, input.role, {
@@ -100,10 +108,25 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     return toUserRow(row!)
   }
 
+  // Prefer Auth user id so Google/password sessions match the profile row.
+  if (password) {
+    const admin = createAdminClient()
+    const { data: created, error: authErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: input.full_name },
+    })
+    if (authErr || !created.user) {
+      throw new Error(authErr?.message || 'יצירת חשבון התחברות נכשלה')
+    }
+    id = created.user.id
+  }
+
   const supabase = createSystemClient('users_create')
   const { error: pErr } = await supabase.from('profiles').upsert({
     id,
-    email: input.email,
+    email,
     full_name: input.full_name,
     locale: 'he',
   })
@@ -127,7 +150,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
 
   return {
     id,
-    email: input.email,
+    email,
     full_name: input.full_name,
     memberships: [membership as Membership],
   }
