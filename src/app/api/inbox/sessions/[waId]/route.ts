@@ -34,20 +34,33 @@ export async function GET(
   }
 }
 
-const optionalCountryUuid = z.preprocess(
-  (value) => {
-    if (value == null || value === '' || value === 'null' || value === 'undefined') {
-      return undefined
-    }
-    return value
-  },
-  z.string().uuid().optional(),
-)
+/** Treat null / "" / "null" / "undefined" as absent before UUID check. */
+const optionalUuid = z.preprocess((value) => {
+  if (
+    value == null ||
+    value === '' ||
+    value === 'null' ||
+    value === 'undefined'
+  ) {
+    return undefined
+  }
+  return value
+}, z.string().uuid().optional())
 
 const replySchema = z.object({
   text: z.string().min(1).max(4096),
-  ticketId: z.string().uuid().optional().nullable(),
-  countryId: optionalCountryUuid,
+  ticketId: z.preprocess((value) => {
+    if (
+      value == null ||
+      value === '' ||
+      value === 'null' ||
+      value === 'undefined'
+    ) {
+      return null
+    }
+    return value
+  }, z.string().uuid().nullable()),
+  countryId: optionalUuid,
 })
 
 export async function POST(
@@ -57,23 +70,37 @@ export async function POST(
   try {
     await requireActor(request)
     const { waId } = await ctx.params
-    const parsed = replySchema.safeParse(await request.json())
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'גוף בקשה לא תקין (JSON)' }, { status: 400 })
     }
+
+    const parsed = replySchema.safeParse(body)
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      const field = issue?.path?.join('.') || 'payload'
+      return NextResponse.json(
+        {
+          error: `בקשה לא תקינה (${field}): ${issue?.message || 'validation'}`,
+          details: parsed.error.flatten(),
+        },
+        { status: 400 },
+      )
+    }
+
     const result = await replyToSession({
       waId,
       text: parsed.data.text,
-      ticketId: parsed.data.ticketId,
+      ticketId: parsed.data.ticketId ?? null,
       countryId: parsed.data.countryId,
     })
     return NextResponse.json(result)
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'POST /api/inbox/sessions/[waId]' })
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'שגיאה' },
-      { status: 400 },
-    )
+    const message = err instanceof Error ? err.message : 'שגיאה'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

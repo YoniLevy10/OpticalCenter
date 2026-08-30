@@ -176,6 +176,22 @@ export function InboxClient() {
     setError(null)
     try {
       const active = sessions.find((s) => s.wa_id === selected)
+      const rawCountry = active?.country_id
+      const countryId =
+        rawCountry &&
+        rawCountry !== 'null' &&
+        rawCountry !== 'undefined' &&
+        /^[0-9a-f-]{36}$/i.test(rawCountry)
+          ? rawCountry
+          : undefined
+      const rawTicket = ticketIds[0] ?? openTickets[0]?.id ?? null
+      const ticketId =
+        rawTicket &&
+        rawTicket !== 'null' &&
+        /^[0-9a-f-]{36}$/i.test(rawTicket)
+          ? rawTicket
+          : null
+
       const res = await fetch(
         `/api/inbox/sessions/${encodeURIComponent(selected)}`,
         {
@@ -183,15 +199,23 @@ export function InboxClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: reply.trim(),
-            ticketId: ticketIds[0] ?? openTickets[0]?.id ?? null,
-            countryId: active?.country_id,
+            ticketId,
+            ...(countryId ? { countryId } : {}),
           }),
         },
       )
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'שליחה נכשלה')
+      if (json.send && json.send.ok === false) {
+        throw new Error(json.send.error || 'שליחת WhatsApp נכשלה')
+      }
+      if (json.send?.dryRun) {
+        throw new Error(
+          'ההודעה לא נשלחה ללקוח (מצב הדמיה / חסרים פרטי Meta). בדקו WHATSAPP_ACCESS_TOKEN ו־WHATSAPP_PHONE_NUMBER_ID.',
+        )
+      }
       setReply('')
-      setNotice(json.send?.dryRun ? 'נשלח (מצב דמו)' : 'הודעה נשלחה')
+      setNotice('הודעה נשלחה')
       await loadThread(selected)
       await loadSessions()
     } catch (err) {
