@@ -77,11 +77,30 @@ export async function sendWhatsAppText(params: SendWhatsAppParams): Promise<{
           ok = true
           error = undefined
           waMessageId = json.messages?.[0]?.id ?? null
+          logEvent('whatsapp:send', 'info', 'graph_ok', {
+            to: params.toWaId,
+            phoneNumberId,
+            waMessageId,
+          })
           break
         }
         const retryable = res.status === 429 || res.status >= 500
         error = json.error?.message || `Graph API ${res.status}`
         ok = false
+        console.error('[whatsapp:send] Graph API failed', {
+          status: res.status,
+          error,
+          phoneNumberId,
+          to: params.toWaId,
+          attempt,
+        })
+        logEvent('whatsapp:send', 'error', 'graph_failed', {
+          status: res.status,
+          error,
+          phoneNumberId,
+          to: params.toWaId,
+          attempt,
+        })
         if (!retryable || attempt === maxAttempts) break
         const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 8000)
         logEvent('whatsapp:send', 'warn', 'retry', {
