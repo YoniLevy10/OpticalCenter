@@ -34,10 +34,20 @@ export async function GET(
   }
 }
 
+const optionalCountryUuid = z.preprocess(
+  (value) => {
+    if (value == null || value === '' || value === 'null' || value === 'undefined') {
+      return undefined
+    }
+    return value
+  },
+  z.string().uuid().optional(),
+)
+
 const replySchema = z.object({
   text: z.string().min(1).max(4096),
   ticketId: z.string().uuid().optional().nullable(),
-  countryId: z.string().uuid().optional(),
+  countryId: optionalCountryUuid,
 })
 
 export async function POST(
