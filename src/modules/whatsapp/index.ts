@@ -9,6 +9,11 @@ export { parseWhatsAppWebhook, inferSourceFromText } from './parse'
 export { verifyWhatsAppSignature } from './signature'
 export { sendWhatsAppText } from './send'
 export {
+  isMetaPhoneNumberId,
+  resolveWhatsAppPhoneNumberId,
+  normalizeWhatsAppRecipient,
+} from './phone-number-id'
+export {
   processInboundMessage,
   processDemoInbound,
   resolveCountryByPhoneNumberId,
