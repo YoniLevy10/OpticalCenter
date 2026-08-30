@@ -659,6 +659,17 @@ export async function processInboundMessage(
         WA_COPY.countryMissing,
         'intake_country_missing',
       )
+      // Still try outbound so the reporter is not left without a reply.
+      await sendWhatsAppText({
+        toWaId: message.waId,
+        text: reply,
+        phoneNumberId:
+          message.phoneNumberId ||
+          process.env.WHATSAPP_PHONE_NUMBER_ID ||
+          null,
+        forceDryRun: options?.skipOutboundGraph === true,
+        purpose: 'intake_reply',
+      })
       return { ok: false, reply, error: 'country_missing' }
     }
 
@@ -1053,14 +1064,32 @@ async function sendReply(
   options?: { skipOutboundGraph?: boolean },
   session?: SessionRow | null,
 ) {
+  // Real Graph send whenever we have a DB session (supabase) OR production token.
+  // Previously `!supabase` forced dry-run and silently dropped live replies.
+  const forceDryRun = options?.skipOutboundGraph === true
   const result = await sendWhatsAppText({
     toWaId: message.waId,
     text: reply,
     phoneNumberId: message.phoneNumberId || country.whatsapp_phone_number_id,
     ticketId,
     supabase: ticketId && supabase ? supabase : undefined,
-    forceDryRun: options?.skipOutboundGraph === true || !supabase,
+    forceDryRun,
+    purpose: 'intake_reply',
   })
+  if (!result.ok || result.dryRun) {
+    logEvent('whatsapp:send', result.ok ? 'warn' : 'error', 'outbound_result', {
+      ok: result.ok,
+      dryRun: result.dryRun,
+      error: result.error ?? null,
+      to: message.waId,
+      phoneNumberId: message.phoneNumberId || country.whatsapp_phone_number_id,
+    })
+  } else {
+    logEvent('whatsapp:send', 'info', 'outbound_ok', {
+      to: message.waId,
+      waMessageId: result.waMessageId,
+    })
+  }
   await logWhatsAppMessage({
     supabase,
     country,
