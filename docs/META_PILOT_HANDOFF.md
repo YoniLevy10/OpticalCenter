@@ -46,8 +46,9 @@
      --phone-number-id=<META_ID> \
      --display=9725...
    ```
-5. שמירת המספר גם ב־Ops → הגדרות → WhatsApp (ל־QR)
-6. הדפסת QR מחדש לפיילוט
+5. שמירת המספר גם ב־Ops → הגדרות → WhatsApp (ל־QR)  
+   אם השתמשתם ב־`--display=` בסקריפט למעלה — `app_settings.wa_business_phone` מסונכרן אוטומטית.
+6. הדפסת QR מחדש לפיילוט מ־`/ops/stores/print-qr` (PNG מומלץ)
 7. (מומלץ) מיפוי טלפוני עובדים:
    ```bash
    node scripts/seed-store-phones.mjs --store=172 --wa=97250... --label="מנהל"

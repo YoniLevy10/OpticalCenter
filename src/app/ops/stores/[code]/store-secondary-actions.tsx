@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { ActionMenu } from '@/components/ui/action-menu'
-import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 
 export function StoreSecondaryActions({
   code,
@@ -33,7 +32,7 @@ export function StoreSecondaryActions({
     }
   }
 
-  const whatsappHref = waLink || storeWhatsAppDeepLink(code)
+  const whatsappHref = waLink || null
 
   return (
     <ActionMenu
@@ -44,11 +43,15 @@ export function StoreSecondaryActions({
           label: 'הדפסת QR',
           href: '/ops/stores/print-qr',
         },
-        {
-          key: 'wa',
-          label: 'פתיחת WhatsApp',
-          href: whatsappHref,
-        },
+        ...(whatsappHref
+          ? [
+              {
+                key: 'wa',
+                label: 'פתיחת WhatsApp',
+                href: whatsappHref,
+              },
+            ]
+          : []),
         {
           key: 'tickets',
           label: 'תקלות בתור',

@@ -2,21 +2,13 @@ import { NextResponse } from 'next/server'
 import QRCode from 'qrcode'
 import { fetchStores } from '@/modules/stores/data'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
-import { getSettings } from '@/modules/settings/service'
+import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const format = url.searchParams.get('format') ?? 'html'
 
-  let businessPhone =
-    (process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE || '').replace(/\D/g, '') || null
-  try {
-    const { settings } = await getSettings()
-    const fromSettings = (settings.wa_business_phone || '').replace(/\D/g, '')
-    if (fromSettings) businessPhone = fromSettings
-  } catch {
-    /* ignore */
-  }
+  const businessPhone = await resolveWhatsAppBusinessPhone()
 
   if (!businessPhone) {
     return NextResponse.json(
@@ -37,7 +29,8 @@ export async function GET(request: Request) {
       const waLink = storeWhatsAppDeepLink(s.code, businessPhone)
       const qrDataUrl = await QRCode.toDataURL(waLink, {
         margin: 1,
-        width: 200,
+        width: 280,
+        errorCorrectionLevel: 'M',
       })
       return { store: s, qrDataUrl, waLink }
     }),
@@ -69,7 +62,7 @@ export async function GET(request: Request) {
     .card img { width: 160px; height: 160px; }
     .name { font-weight: 600; margin-top: 8px; }
     .code { color: #6b6b66; font-size: 12px; }
-    .prefill { direction: ltr; font-size: 11px; color: #9a9a94; margin-top: 4px; }
+    .prefill { direction: ltr; font-size: 11px; color: #9a9a94; margin-top: 4px; word-break: break-all; }
   </style>
 </head>
 <body>
