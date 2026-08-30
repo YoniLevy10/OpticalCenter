@@ -104,7 +104,16 @@ export function formatDurationHe(ms: number): string {
 function clockHe(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  try {
+    return new Intl.DateTimeFormat('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(d)
+  } catch {
+    return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+  }
 }
 
 /**
@@ -185,6 +194,32 @@ export function formatAgeHe(createdAt: string, now = new Date()): string {
   const started = new Date(createdAt).getTime()
   if (Number.isNaN(started)) return '—'
   const diff = now.getTime() - started
+  if (!Number.isFinite(diff)) return '—'
+  // Small clock skew (future) → treat as now; larger skew → absolute-ish dash
+  if (diff < 0) {
+    if (diff > -2 * MIN) return 'עכשיו'
+    return '—'
+  }
   if (diff < MIN) return 'עכשיו'
   return `לפני ${formatDurationHe(diff)}`
+}
+
+/** Absolute datetime in Israel for ops surfaces. */
+export function formatDateTimeHe(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  try {
+    return new Intl.DateTimeFormat('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(d)
+  } catch {
+    return '—'
+  }
 }

@@ -109,7 +109,7 @@ export function QueueToolbar({
         <SearchField
           value={q}
           onValueChange={setQ}
-          placeholder="חיפוש לפי כותרת, סניף או מספר תקלה…"
+          placeholder="חיפוש…"
           autoFocusKey="/"
           className="min-w-0 flex-1"
         />
@@ -147,7 +147,7 @@ export function QueueToolbar({
             href: queueHref(filters, { view: v.key }),
           }))}
         />
-        <p className="t-meta t-num shrink-0 text-ink-3">{resultCount} תקלות</p>
+        <p className="t-meta t-num shrink-0 text-ink-3">{resultCount}</p>
       </div>
 
       {chips.length > 0 ? (

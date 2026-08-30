@@ -33,6 +33,8 @@ export const WA_COPY = {
   },
   mediaNotSaved:
     'הדיווח נקלט, אך לא הצלחנו לשמור את התמונה. אפשר לשלוח אותה שוב בהודעה נפרדת.',
+  mediaAttached: (displayNumber: string) =>
+    `קיבלתי את התמונה ✓\nצורפה לתקלה #${displayNumber}`,
   countryMissing:
     'לא זוהתה מדינה עבור מספר הוואטסאפ. פנו לתמיכה או בדקו את הגדרות הסביבה.',
   genericError: 'אירעה תקלה זמנית בקליטת הדיווח. נסו שוב בעוד רגע.',

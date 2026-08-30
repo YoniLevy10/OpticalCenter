@@ -2,7 +2,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { EmptyState, Panel, ErrorState } from '@/components/ui/primitives'
+import {
+  EmptyState,
+  PageHeader,
+  Panel,
+  ErrorState,
+} from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -126,7 +131,6 @@ export default async function TicketsPage({
         }
       : filters,
   )
-  const views = viewCounts(allScoped)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
@@ -135,26 +139,34 @@ export default async function TicketsPage({
   const sortHref = (key: (typeof QUEUE_SORTS)[number]['key']) =>
     queueHref(filters, { sort: key })
 
+  const scopedForViews = filters.includeDemo
+    ? allScoped
+    : allScoped.filter((t) => t.source !== 'demo')
+  const views = viewCounts(scopedForViews)
+
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5">
-        <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
-          <p className="t-caption text-white/60">OPERATIONS OS V2 / QUEUE</p>
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">תקלות</h1><p className="t-body mt-2 text-white/70">מיון, תיעדוף והעברה מהירה של כל מה שדורש תשומת לב.</p></div><div className="text-end"><p className="t-caption text-white/60">בתצוגה</p><p className="t-title t-num text-white">{filtered.length}</p></div></div>
-        </div>
+      <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה ללוח בקרה"
-          title="תקלות"
-          meta={ticketResult.backend === 'supabase' ? undefined : 'מצב דמו'}
+          backLabel="חזרה"
           showRefresh
         />
 
-        {canPurgeDemo && ticketResult.backend === 'supabase' ? (
-          <div className="flex justify-end">
-            <PurgeDemoButton />
-          </div>
-        ) : null}
+        <PageHeader
+          title="תקלות"
+          meta={
+            <span className="t-num">
+              {filtered.length}
+              {ticketResult.backend !== 'supabase' ? ' · דמו' : ''}
+            </span>
+          }
+          actions={
+            canPurgeDemo && ticketResult.backend === 'supabase' ? (
+              <PurgeDemoButton />
+            ) : undefined
+          }
+        />
 
         <QueueToolbar
           filters={filters}
@@ -166,7 +178,7 @@ export default async function TicketsPage({
 
         {listError ? (
           <ErrorState
-            title="שגיאה בטעינת תקלות"
+            title="שגיאה בטעינה"
             description={listError}
             action={
               <Button asChild variant="secondary" size="sm">
@@ -178,11 +190,11 @@ export default async function TicketsPage({
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
           <ErrorState
-            title="אין חיבור לנתונים"
-            description="המערכת פועלת במצב זיכרון. אפשר ליצור דיווח בדיקה דרך הסימולטור."
+            title="אין נתונים"
+            description="המערכת במצב זיכרון."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link href="/ops/simulator">פתיחת סימולטור</Link>
+                <Link href="/ops/simulator">סימולטור</Link>
               </Button>
             }
           />
@@ -191,16 +203,14 @@ export default async function TicketsPage({
         <Panel flush elevated className="overflow-hidden">
           {rows.length === 0 ? (
             <EmptyState
-              title="אין תקלות בתצוגה הזו"
+              title="אין תקלות"
               description={
-                filters.q
-                  ? `לא נמצאו תוצאות עבור «${filters.q}».`
-                  : 'כשמגיעים דיווחים מהחנויות הם יופיעו כאן.'
+                filters.q ? `אין תוצאות עבור «${filters.q}».` : undefined
               }
               action={
                 <Button asChild variant="secondary" size="sm">
                   <Link href={queueHref({ view: 'all', sort: 'newest' })}>
-                    הצגת כל התקלות
+                    הכל
                   </Link>
                 </Button>
               }

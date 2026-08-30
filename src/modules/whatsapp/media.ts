@@ -92,7 +92,8 @@ function toDataUrl(bytes: ArrayBuffer, mimeType: string): string {
  * Resolve inbound WhatsApp media to a durable URL.
  * - Already-https (demo/simulator): keep as-is
  * - `meta-media:{id}`: download via Graph, upload to `ticket-media` when possible
- * - Memory / no storage: data URL when download succeeds, else leave stub
+ * - Memory / no storage: data URL when download succeeds
+ * - Never return a bare `meta-media:` stub for UI display (url=null + source stub/failed)
  */
 export async function resolveInboundMediaUrl(
   opts: ResolveInboundMediaOpts,
@@ -106,6 +107,7 @@ export async function resolveInboundMediaUrl(
 
   const mediaId = parseMetaMediaId(raw)
   if (!mediaId) {
+    if (raw.startsWith('data:')) return { url: raw, source: 'data_url' }
     return { url: raw, source: 'unchanged' }
   }
 
@@ -116,7 +118,7 @@ export async function resolveInboundMediaUrl(
 
   if (!token) {
     logEvent('whatsapp:media', 'warn', 'no_access_token', { mediaId })
-    return { url: raw, source: 'stub', mediaId, error: 'no_access_token' }
+    return { url: null, source: 'stub', mediaId, error: 'no_access_token' }
   }
 
   try {
@@ -152,6 +154,17 @@ export async function resolveInboundMediaUrl(
   } catch (e) {
     const error = e instanceof Error ? e.message : 'media_resolve_failed'
     logEvent('whatsapp:media', 'error', 'download_failed', { mediaId, error })
-    return { url: raw, source: 'failed', mediaId, error }
+    return { url: null, source: 'failed', mediaId, error }
   }
+}
+
+/** True when URL can be shown in <img>/<video> (not a Meta stub). */
+export function isDisplayableMediaUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  if (url.startsWith(META_MEDIA_PREFIX)) return false
+  return (
+    isDirectHttpsMediaUrl(url) ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:')
+  )
 }
