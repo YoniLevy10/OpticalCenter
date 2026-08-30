@@ -86,12 +86,7 @@ export default async function StoresPage({
       <div className="flex flex-col gap-4">
         <PageHeader
           title="חנויות"
-          meta={
-            <span className="t-num">
-              {filtered.length}
-              {!fromDb ? ' · דמו' : ''}
-            </span>
-          }
+          meta={<span className="t-num">{filtered.length}</span>}
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">

@@ -155,12 +155,7 @@ export default async function TicketsPage({
 
         <PageHeader
           title="תקלות"
-          meta={
-            <span className="t-num">
-              {filtered.length}
-              {ticketResult.backend !== 'supabase' ? ' · דמו' : ''}
-            </span>
-          }
+          meta={<span className="t-num">{filtered.length}</span>}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (
               <PurgeDemoButton />
@@ -183,18 +178,6 @@ export default async function TicketsPage({
             action={
               <Button asChild variant="secondary" size="sm">
                 <Link href="/ops/tickets">רענון</Link>
-              </Button>
-            }
-          />
-        ) : null}
-
-        {all.length === 0 && ticketResult.backend !== 'supabase' ? (
-          <ErrorState
-            title="אין נתונים"
-            description="המערכת במצב זיכרון."
-            action={
-              <Button asChild variant="secondary" size="sm">
-                <Link href="/ops/simulator">סימולטור</Link>
               </Button>
             }
           />

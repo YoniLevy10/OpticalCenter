@@ -1,4 +1,3 @@
-import { format } from 'date-fns'
 import { ArrowLeft, MessageSquare, Send, StickyNote, Activity } from 'lucide-react'
 import type { ActivityItem } from '@/modules/tickets/activity'
 import { EmptyState } from '@/components/ui/primitives'
@@ -11,8 +10,17 @@ import { cn } from '@/lib/utils'
  */
 
 function timeOf(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
   try {
-    return format(new Date(iso), 'dd/MM · HH:mm')
+    return new Intl.DateTimeFormat('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(d)
   } catch {
     return '—'
   }
