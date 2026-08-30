@@ -36,11 +36,15 @@ test.describe('Search & filters', () => {
 
   test('seed ticket then search by description', async ({ page, request }) => {
     const wa = uniqueWaId()
-    await demoWhatsApp(request, { wa_id: wa, text: 'STORE_101', source: 'demo' })
+    await demoWhatsApp(request, {
+      wa_id: wa,
+      text: 'STORE_101',
+      source: 'whatsapp',
+    })
     const created = await demoWhatsApp(request, {
       wa_id: wa,
       text: 'QAUNIQUE_SEARCH_TOKEN_9911 נורה שרופה',
-      source: 'demo',
+      source: 'whatsapp',
     })
     expect(created.ticket_id).toBeTruthy()
 
