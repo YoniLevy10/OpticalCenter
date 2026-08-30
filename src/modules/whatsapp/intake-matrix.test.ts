@@ -185,7 +185,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     memUpsertSession({
       wa_id: waId,
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-172',
+      store_id: 'il-store-172',
       store_code: '172',
       state: 'awaiting_description',
       pending_description: null,
@@ -306,7 +306,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     memUpsertSession({
       wa_id: waId,
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-172',
+      store_id: 'il-store-172',
       store_code: '172',
       state: 'awaiting_description',
       pending_description: null,

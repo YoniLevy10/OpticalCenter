@@ -33,13 +33,13 @@ describe('Hierarchy / data integrity', () => {
       source: 'demo',
     })
     expect(t.country_id).toBe(MEM_COUNTRY_ID)
-    expect(t.store_id).toBe('demo-172')
+    expect(t.store_id).toBe('il-store-172')
   })
 
   it('France store 172 is distinct from Israel 172', () => {
     const il = memFindStoreByCodeInCountry(MEM_COUNTRY_ID, '172')
     const fr = memFindStoreByCodeInCountry(MEM_COUNTRY_FR_ID, '172')
-    expect(il?.id).toBe('demo-172')
+    expect(il?.id).toBe('il-store-172')
     expect(fr?.id).toBe('demo-fr-172')
     expect(il?.id).not.toBe(fr?.id)
   })
@@ -48,7 +48,7 @@ describe('Hierarchy / data integrity', () => {
     process.env.MAINTAINOS_FORCE_MEMORY = '1'
     await expect(
       createTicket({
-        storeId: 'demo-172',
+        storeId: 'il-store-172',
         countryCode: 'FR',
         description: 'cross hierarchy',
         source: 'demo',

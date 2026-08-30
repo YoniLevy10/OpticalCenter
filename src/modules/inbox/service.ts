@@ -88,7 +88,7 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972501112233',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-172',
+      store_id: 'il-store-172',
       store_code: '172',
       state: 'awaiting_description',
       pending_description: null,
@@ -98,7 +98,7 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972509998877',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-101',
+      store_id: 'il-store-101',
       store_code: '101',
       state: 'awaiting_description',
       pending_description: null,
@@ -108,8 +108,8 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972503334455',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-109',
-      store_code: '109',
+      store_id: 'il-store-124',
+      store_code: '124',
       state: 'done',
       pending_description: null,
       human_takeover: false,
