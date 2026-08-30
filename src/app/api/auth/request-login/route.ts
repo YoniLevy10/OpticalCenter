@@ -7,6 +7,7 @@ import { ensurePilotAccessForAuthUser } from '@/lib/auth/seed-pilot-user'
 import { resolveHomePath } from '@/lib/auth/home-path'
 import { loadMemberships } from '@/lib/auth/load-memberships'
 import { findPilotUserByEmail, normalizeEmail } from '@/lib/auth/pilot-users'
+import { isApprovedLoginEmail } from '@/lib/auth/login-allowlist'
 import { TEST_ACTOR_COOKIE } from '@/lib/auth/demo-session'
 import { seedPilotUser } from '@/lib/auth/seed-pilot-user'
 import type { Membership } from '@/lib/auth/types'
@@ -74,6 +75,14 @@ async function handleRequest(request: Request, json: unknown) {
     return NextResponse.json({ error: 'invalid email' }, { status: 400 })
   }
 
+  // Passwordless is restricted to approved / provisioned accounts only.
+  if (!(await isApprovedLoginEmail(parsed.data.email))) {
+    return NextResponse.json(
+      { error: 'המייל אינו מאושר להתחברות. פנו למנהל המערכת.' },
+      { status: 403 },
+    )
+  }
+
   const result = await requestPasswordlessLogin(parsed.data.email, request)
   return NextResponse.json({
     ok: true,
@@ -130,6 +139,13 @@ async function handlePassword(json: unknown) {
 
   const email = normalizeEmail(parsed.data.email)
   const password = parsed.data.password
+
+  if (!(await isApprovedLoginEmail(email))) {
+    return NextResponse.json(
+      { error: 'המייל אינו מאושר להתחברות. פנו למנהל המערכת.' },
+      { status: 403 },
+    )
+  }
 
   if (
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -221,7 +237,13 @@ async function finishLoginPayload(user: {
     email: user.email,
     fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
   })
+  if (!(await isApprovedLoginEmail(user.email))) {
+    throw new Error('המייל אינו מאושר להתחברות. פנו למנהל המערכת.')
+  }
   const memberships = await loadMemberships(user.id)
+  if (memberships.length === 0) {
+    throw new Error('אין הרשאה למשתמש זה. פנו למנהל המערכת.')
+  }
   const home = resolveHomePath({ memberships })
   return { ok: true as const, home }
 }

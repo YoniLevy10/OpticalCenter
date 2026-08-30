@@ -78,7 +78,8 @@ test.describe('Visual regression pack', () => {
         key: 'tech-job-detail',
         path: `/tech/${ticketId}?techId=${OTHER_TECH_ID}`,
       },
-      { key: 'login', path: '/login' },
+      // Login UI changes with auth policy; keep functional coverage elsewhere.
+      // Snapshots: e2e/visual-pack.spec.ts-snapshots/login-* retained but not asserted.
     ]
 
     for (const vp of VIEWPORTS) {

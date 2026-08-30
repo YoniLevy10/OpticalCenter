@@ -17,6 +17,11 @@ import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 import { Modal } from '@/components/ui/overlay'
 import { TechFieldLinkCopy } from '@/components/ops/tech-link-copy'
 import type { MemberRole, Membership } from '@/lib/auth/types'
+import {
+  PRODUCT_ROLE_HELP_HE,
+  PRODUCT_ROLE_OPTIONS,
+  roleLabelHe,
+} from '@/lib/auth/roles'
 
 type StoreOpt = { id: string; code: string; name: string }
 
@@ -29,24 +34,9 @@ type UserRow = {
   active?: boolean
 }
 
-const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
-  { value: 'internal_technician', label: 'טכנאי פנימי' },
-  { value: 'external_provider', label: 'ספק חיצוני' },
-  { value: 'store_employee', label: 'עובד חנות' },
-  { value: 'store_manager', label: 'מנהל חנות' },
-  { value: 'regional_manager', label: 'מנהל אזור' },
-  { value: 'country_manager', label: 'מנהל מדינה' },
-  { value: 'global_maintenance', label: 'תחזוקה גלובלית' },
-  { value: 'global_admin', label: 'מנהל מערכת' },
-]
+const ROLE_OPTIONS = PRODUCT_ROLE_OPTIONS
 
-const ROLE_HELP: Record<string, string> = {
-  internal_technician: 'מטפל בתקלות בשטח',
-  store_manager: 'רואה ומדווח על תקלות בסניף',
-  regional_manager: 'מנהל כמה סניפים באזור',
-  global_admin: 'גישה מלאה להגדרות ומשתמשים',
-  global_maintenance: 'ניהול תחזוקה בכל הרשת',
-}
+const ROLE_HELP: Record<string, string> = PRODUCT_ROLE_HELP_HE
 
 const IL_COUNTRY = '22222222-2222-2222-2222-222222222222'
 const FR_COUNTRY = '33333333-3333-3333-3333-333333333333'
@@ -85,6 +75,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [role, setRole] = useState<MemberRole>('internal_technician')
   const [countryId, setCountryId] = useState<string>(IL_COUNTRY)
   const [storeId, setStoreId] = useState<string>('')
@@ -131,12 +122,16 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       if (role === 'store_employee' && !storeId) {
         throw new Error('עובד חנות חייב להיות משויך לסניף')
       }
+      if (!password.trim() || password.trim().length < 6) {
+        throw new Error('יש להגדיר סיסמה (לפחות 6 תווים) להתחברות')
+      }
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: name.trim(),
           email: email.trim(),
+          password: password.trim(),
           role,
           country_id: countryId || null,
           store_id: storeId || null,
@@ -146,10 +141,11 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       if (!res.ok) throw new Error(json.error || 'יצירה נכשלה')
       setName('')
       setEmail('')
+      setPassword('')
       setRole('internal_technician')
       setStoreId('')
       setCreateOpen(false)
-      setNotice('המשתמש נוסף בהצלחה')
+      setNotice('המשתמש נוסף — יכול להתחבר עם המייל והסיסמה שסופקו')
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'יצירה נכשלה')
@@ -353,9 +349,16 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                                 {opt.label}
                               </option>
                             ))}
+                            {m?.role &&
+                            !ROLE_OPTIONS.some((o) => o.value === m.role) ? (
+                              <option value={m.role}>
+                                {roleLabelHe(m.role)}
+                              </option>
+                            ) : null}
                           </select>
                           <p className="t-caption mt-1 text-ink-3">
-                            {ROLE_HELP[m?.role ?? ''] ?? scopeLabel(m)}
+                            {ROLE_HELP[m?.role ?? ''] ??
+                              (m?.role ? roleLabelHe(m.role) : scopeLabel(m))}
                           </p>
                         </TD>
                         <TD>
@@ -411,7 +414,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         title="משתמש חדש"
-        description="טופס קצר — שם, תפקיד וסניף."
+        description="מייל + סיסמה להתחברות, ותפקיד אחד."
       >
         <form onSubmit={onCreate} className="space-y-3">
           <Field label="שם" htmlFor="user-name">
@@ -423,7 +426,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
               placeholder="שם מלא"
             />
           </Field>
-          <Field label="אימייל" htmlFor="user-email">
+          <Field label="אימייל (Gmail או מייל ארגוני)" htmlFor="user-email">
             <Input
               id="user-email"
               type="email"
@@ -431,7 +434,24 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="tech@optical-center.co.il"
+              placeholder="name@gmail.com"
+            />
+          </Field>
+          <Field
+            label="סיסמה ראשונית"
+            htmlFor="user-password"
+            hint="המשתמש יתחבר עם המייל והסיסמה האלה (או Google אם המייל מאושר)."
+          >
+            <Input
+              id="user-password"
+              type="password"
+              dir="ltr"
+              required
+              minLength={6}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="לפחות 6 תווים"
             />
           </Field>
           <Field label="תפקיד" htmlFor="user-role">
@@ -486,7 +506,9 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             <Button
               type="submit"
               variant="primary"
-              disabled={busy || !name.trim() || !email.trim()}
+              disabled={
+                busy || !name.trim() || !email.trim() || password.trim().length < 6
+              }
             >
               {busy ? 'שומר…' : 'יצירה'}
             </Button>

@@ -17,18 +17,15 @@ const createSchema = z.object({
   role: z.enum([
     'global_admin',
     'global_maintenance',
-    'country_manager',
-    'regional_manager',
-    'store_manager',
     'store_employee',
     'internal_technician',
-    'external_provider',
   ]),
   country_id: z.string().uuid().nullable().optional(),
   region_id: z.string().nullable().optional(),
   store_id: z.string().nullable().optional(),
   organization_id: z.string().uuid().optional(),
   id: z.string().uuid().optional(),
+  password: z.string().min(6).max(72).optional(),
 })
 
 export async function GET(request: Request) {

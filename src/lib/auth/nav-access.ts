@@ -1,4 +1,5 @@
 import type { Actor, MemberRole } from '@/lib/auth/types'
+import { canManageUsersRole, hqProductRoles } from '@/lib/auth/roles'
 
 export type NavTool = {
   id: string
@@ -6,13 +7,7 @@ export type NavTool = {
   label: string
 }
 
-const HQ_ROLES: MemberRole[] = [
-  'global_admin',
-  'global_maintenance',
-  'country_manager',
-  'regional_manager',
-  'store_manager',
-]
+const HQ_ROLES: MemberRole[] = hqProductRoles()
 
 function hasHq(actor: Actor): boolean {
   return actor.memberships.some((m) => HQ_ROLES.includes(m.role))
@@ -41,9 +36,7 @@ export const ALL_NAV_TOOLS: NavTool[] = [
 
 export function canAccessUsers(actor: Actor | null): boolean {
   if (!actor) return false
-  return actor.memberships.some(
-    (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
-  )
+  return actor.memberships.some((m) => canManageUsersRole(m.role))
 }
 
 export function canAccessVendors(actor: Actor | null): boolean {
