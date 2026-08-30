@@ -566,6 +566,11 @@ export function memGet(id: string): MemTicket | undefined {
   return store().tickets.get(id)
 }
 
+/** Hard-delete a ticket from the in-memory store (tests / demo purge). */
+export function memDeleteTicket(id: string): boolean {
+  return store().tickets.delete(id)
+}
+
 export function memCreate(input: {
   store: StoreRow | { id: string; code: string; name: string; city: string | null; address?: string | null; region_id?: string }
   description: string
