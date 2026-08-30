@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isDirectHttpsMediaUrl,
+  isDisplayableMediaUrl,
   parseMetaMediaId,
   resolveInboundMediaUrl,
 } from './media'
@@ -31,7 +32,7 @@ describe('inbound media URL helpers', () => {
     })
   })
 
-  it('returns stub when meta-media has no access token', async () => {
+  it('returns null url when meta-media has no access token (no stub for UI)', async () => {
     const prev = process.env.WHATSAPP_ACCESS_TOKEN
     delete process.env.WHATSAPP_ACCESS_TOKEN
     try {
@@ -40,14 +41,21 @@ describe('inbound media URL helpers', () => {
         useMemory: true,
         accessToken: null,
       })
-      expect(result.url).toBe('meta-media:media123')
+      expect(result.url).toBeNull()
       expect(result.source).toBe('stub')
       expect(result.mediaId).toBe('media123')
       expect(result.error).toBe('no_access_token')
+      expect(isDisplayableMediaUrl(result.url)).toBe(false)
     } finally {
       if (prev === undefined) delete process.env.WHATSAPP_ACCESS_TOKEN
       else process.env.WHATSAPP_ACCESS_TOKEN = prev
     }
+  })
+
+  it('rejects meta-media stubs as non-displayable', () => {
+    expect(isDisplayableMediaUrl('meta-media:abc')).toBe(false)
+    expect(isDisplayableMediaUrl('https://cdn.example.com/a.jpg')).toBe(true)
+    expect(isDisplayableMediaUrl('data:image/png;base64,xx')).toBe(true)
   })
 
   it('returns empty for missing media', async () => {

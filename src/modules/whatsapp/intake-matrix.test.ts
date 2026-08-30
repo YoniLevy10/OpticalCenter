@@ -233,6 +233,40 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(second.ticketId).not.toBe(first.ticketId)
   })
 
+  it('WA-15 follow-up photo after ticket attaches to same ticket', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    await processInboundMessage(msg({ text: 'STORE_172', waId }), {
+      skipOutboundGraph: true,
+    })
+    const created = await processInboundMessage(
+      msg({ waId, text: 'נזילה מהתקרה בחנות' }),
+      { skipOutboundGraph: true },
+    )
+    expect(created.ticketId).toBeTruthy()
+    const before = memListTickets().length
+    const followUp = await processInboundMessage(
+      msg({
+        waId,
+        text: null,
+        mediaUrl: 'https://example.com/follow-up-leak.jpg',
+        mediaKind: 'image',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(followUp.ok).toBe(true)
+    expect(followUp.ticketId).toBe(created.ticketId)
+    expect(memListTickets().length).toBe(before)
+    const ticket = memListTickets().find((t) => t.id === created.ticketId)
+    expect(
+      ticket?.messages.some(
+        (m) => m.media_url === 'https://example.com/follow-up-leak.jpg',
+      ),
+    ).toBe(true)
+    expect(followUp.reply || '').toMatch(/צורפה|תמונה/i)
+  })
+
   it('WA-12 France phone_number_id + 172 → FR store not IL', async () => {
     const { MEM_WA_PHONE_FR } = await import('@/lib/data/memory-store')
     const waId = `97250${Math.floor(Math.random() * 1e7)

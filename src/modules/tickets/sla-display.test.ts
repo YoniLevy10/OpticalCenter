@@ -115,6 +115,14 @@ describe('formatAgeHe', () => {
   it('reports relative age', () => {
     expect(formatAgeHe('2026-08-16T09:00:00.000Z', NOW)).toBe('לפני 3ש׳')
   })
+
+  it('treats tiny future skew as now', () => {
+    expect(formatAgeHe('2026-08-16T12:00:30.000Z', NOW)).toBe('עכשיו')
+  })
+
+  it('returns dash for large future skew', () => {
+    expect(formatAgeHe('2026-08-16T14:00:00.000Z', NOW)).toBe('—')
+  })
 })
 
 describe('buildActivity', () => {

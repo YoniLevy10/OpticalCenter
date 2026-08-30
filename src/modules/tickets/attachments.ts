@@ -53,17 +53,34 @@ export function mergeEvidence(
   attachments: TicketEvidence[],
   messages: MessageLike[] = [],
 ): TicketEvidence[] {
-  const seen = new Set(attachments.map((a) => a.url))
-  const fromMessages: TicketEvidence[] = []
+  const usable = (url: string) =>
+    Boolean(url) &&
+    !url.startsWith('meta-media:') &&
+    (url.startsWith('https://') ||
+      url.startsWith('http://') ||
+      url.startsWith('data:') ||
+      url.startsWith('/'))
 
-  for (const m of messages) {
-    if (!m.media_url || seen.has(m.media_url)) continue
-    seen.add(m.media_url)
-    const kind = inferMediaKind(m.media_url)
-    fromMessages.push({ id: `msg-${m.id}`, url: m.media_url, kind })
+  const seen = new Set<string>()
+  const out: TicketEvidence[] = []
+
+  for (const a of attachments) {
+    if (!usable(a.url) || seen.has(a.url)) continue
+    seen.add(a.url)
+    out.push(a)
   }
 
-  return [...attachments, ...fromMessages]
+  for (const m of messages) {
+    if (!m.media_url || !usable(m.media_url) || seen.has(m.media_url)) continue
+    seen.add(m.media_url)
+    out.push({
+      id: `msg-${m.id}`,
+      url: m.media_url,
+      kind: inferMediaKind(m.media_url),
+    })
+  }
+
+  return out
 }
 
 /** Attach store-submitted photos from the public report form. */

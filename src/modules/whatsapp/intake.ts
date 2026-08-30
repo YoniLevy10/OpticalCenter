@@ -378,6 +378,10 @@ async function getOrCreateSession(
       if (!expired && existing.state !== 'done') {
         return sessionFromMem(waId, country, existing)
       }
+      // Keep a just-completed session so a follow-up photo attaches to the ticket.
+      if (!expired && existing.state === 'done' && existing.active_ticket_id) {
+        return sessionFromMem(waId, country, existing)
+      }
     }
     const session = memUpsertSession({
       wa_id: waId,
@@ -398,8 +402,12 @@ async function getOrCreateSession(
 
   if (existing) {
     const expired = new Date(existing.expires_at).getTime() < now
-    if (!expired && existing.state !== 'done') {
-      return normalizeSessionRow(existing as Record<string, unknown>)
+    const row = normalizeSessionRow(existing as Record<string, unknown>)
+    if (!expired && row.state !== 'done') {
+      return row
+    }
+    if (!expired && row.state === 'done' && row.active_ticket_id) {
+      return row
     }
     const resetPatch: Record<string, unknown> = {
       store_id: null,
@@ -593,7 +601,9 @@ async function createTicketFromIntake(params: {
   const resolvedUrl = resolved.url
   const mediaFailed =
     Boolean(mediaUrl) &&
-    (resolved.source === 'failed' || resolved.source === 'stub')
+    (resolved.source === 'failed' ||
+      resolved.source === 'stub' ||
+      !resolvedUrl)
 
   if (useMemory) {
     memAddMessage(ticket.id, {
@@ -638,6 +648,122 @@ async function createTicketFromIntake(params: {
   }
 
   return { ticketId: ticket.id, displayNumber, mediaFailed }
+}
+
+/** Attach a follow-up photo/video to the ticket that was just opened. */
+async function attachMediaToActiveTicket(params: {
+  supabase: SupabaseClient | null
+  session: SessionRow
+  message: InboundMessage
+  country: CountryRow
+  options?: { skipOutboundGraph?: boolean }
+}): Promise<IntakeResult> {
+  const { supabase, session, message, country, options } = params
+  const ticketId = session.active_ticket_id
+  if (!ticketId || !message.mediaUrl) {
+    return { ok: false, reply: null, error: 'no_active_ticket' }
+  }
+
+  const accessToken =
+    country.whatsapp_access_token ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    null
+  const useMemory = !supabase
+
+  const resolved = await resolveInboundMediaUrl({
+    mediaUrl: message.mediaUrl,
+    mediaKind: message.mediaKind ?? null,
+    accessToken,
+    ticketId,
+    supabase,
+    useMemory,
+  })
+  const mediaFailed =
+    resolved.source === 'failed' ||
+    resolved.source === 'stub' ||
+    !resolved.url
+
+  let displayNumber = ticketId.slice(0, 8)
+  try {
+    const { getById } = await import('@/modules/tickets/service')
+    const ticket = await getById(ticketId)
+    if (ticket?.display_number) displayNumber = ticket.display_number
+    else if (ticket?.number != null) displayNumber = `OC-${ticket.number}`
+  } catch {
+    /* keep short id */
+  }
+
+  const caption = message.text?.trim() || null
+
+  if (useMemory) {
+    memAddMessage(ticketId, {
+      channel: 'whatsapp',
+      direction: 'inbound',
+      body: caption,
+      media_url: resolved.url,
+      wa_message_id: message.messageId,
+    })
+  } else {
+    try {
+      const client = supabase ?? admin()
+      await client.from('ticket_messages').insert({
+        ticket_id: ticketId,
+        channel: 'whatsapp',
+        direction: 'inbound',
+        body: caption,
+        wa_message_id: message.messageId,
+        media_url: resolved.url,
+        raw: {
+          follow_up: true,
+          media_source: resolved.source,
+          media_error: resolved.error ?? null,
+        },
+      })
+      if (resolved.url && !resolved.url.startsWith('meta-media:')) {
+        await client.from('ticket_attachments').insert({
+          ticket_id: ticketId,
+          url: resolved.url,
+          kind:
+            message.mediaKind === 'document'
+              ? 'document'
+              : message.mediaKind === 'video'
+                ? 'video'
+                : 'image',
+        })
+      }
+    } catch (e) {
+      console.error('[whatsapp] follow-up media persist failed', e)
+    }
+  }
+
+  // Refresh follow-up window
+  await updateSession(supabase, session, {
+    state: 'done',
+    active_ticket_id: ticketId,
+  })
+
+  let reply = await craftIntakeReply(
+    WA_COPY.mediaAttached(displayNumber),
+    'intake_confirmed',
+  )
+  if (mediaFailed) {
+    reply = await craftIntakeReply(WA_COPY.mediaNotSaved, 'intake_media_not_saved')
+  }
+  await sendReply(supabase, message, country, reply, ticketId, options, session)
+
+  logEvent('whatsapp:intake', 'info', 'media_attached', {
+    ticketId,
+    displayNumber,
+    mediaSource: resolved.source,
+  })
+
+  return {
+    ok: true,
+    reply,
+    ticketId,
+    displayNumber,
+    state: 'done',
+  }
 }
 
 /**
@@ -705,6 +831,71 @@ export async function processInboundMessage(
 
     const storeCodeFromText = text ? parseStoreCodeFromText(text) : null
     let source = inferSourceFromText(text, message.sourceHint)
+
+    // Photo (or other media) right after a ticket was opened → attach to that ticket.
+    if (
+      session.state === 'done' &&
+      session.active_ticket_id &&
+      message.mediaUrl &&
+      !storeCodeFromText
+    ) {
+      return await attachMediaToActiveTicket({
+        supabase,
+        session,
+        message,
+        country,
+        options,
+      })
+    }
+
+    // Explicit new STORE_ after a completed ticket → start a fresh intake.
+    if (session.state === 'done' && storeCodeFromText) {
+      await updateSession(supabase, session, {
+        store_id: null,
+        store_code: null,
+        state: 'awaiting_store',
+        pending_description: null,
+        draft_payload: null,
+        active_ticket_id: null,
+        clarification_count: 0,
+      })
+      session = {
+        ...session,
+        store_id: null,
+        store_code: null,
+        state: 'awaiting_store',
+        pending_description: null,
+        draft_payload: null,
+        active_ticket_id: null,
+        clarification_count: 0,
+      }
+    }
+
+    // New text issue after a completed ticket, same store still known.
+    if (
+      session.state === 'done' &&
+      session.store_id &&
+      session.store_code &&
+      text &&
+      !storeCodeFromText &&
+      !message.mediaUrl
+    ) {
+      await updateSession(supabase, session, {
+        state: 'awaiting_description',
+        active_ticket_id: null,
+        pending_description: null,
+        draft_payload: null,
+        clarification_count: 0,
+      })
+      session = {
+        ...session,
+        state: 'awaiting_description',
+        active_ticket_id: null,
+        pending_description: null,
+        draft_payload: null,
+        clarification_count: 0,
+      }
+    }
 
     // Hybrid identity: known phone → store
     if ((!session.store_id || session.state === 'awaiting_store') && !storeCodeFromText) {

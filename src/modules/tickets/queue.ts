@@ -80,6 +80,8 @@ export type QueueFilters = {
   tech?: string
   q?: string
   sort: QueueSort
+  /** Include simulator/demo tickets (hidden by default). */
+  includeDemo?: boolean
   /** Current actor — used by `mine` view; not serialized to the URL. */
   actorId?: string
 }
@@ -192,6 +194,7 @@ export function applyQueue(
   const q = filters.q?.trim().toLowerCase()
 
   const filtered = tickets.filter((t) => {
+    if (!filters.includeDemo && t.source === 'demo') return false
     if (!matchesView(t, filters.view, now, filters.actorId)) return false
     if (filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
@@ -258,6 +261,7 @@ export function parseQueueParams(sp: Record<string, string | undefined>): QueueF
     store: sp.store?.trim() || undefined,
     tech: sp.tech?.trim() || undefined,
     q: sp.q?.trim() || undefined,
+    includeDemo: sp.demo === '1' || sp.demo === 'true',
   }
 }
 
@@ -275,6 +279,7 @@ export function queueHref(
   if (merged.store) params.set('store', merged.store)
   if (merged.tech) params.set('tech', merged.tech)
   if (merged.q) params.set('q', merged.q)
+  if (merged.includeDemo) params.set('demo', '1')
   const qs = params.toString()
   return qs ? `/ops/tickets?${qs}` : '/ops/tickets'
 }

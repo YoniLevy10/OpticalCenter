@@ -46,6 +46,7 @@ export default async function StoresPage({
 
   const openCountByStore = new Map<string, number>()
   for (const t of tickets) {
+    if (t.source === 'demo') continue
     if (
       t.status === 'closed' ||
       t.status === 'cancelled' ||
@@ -80,14 +81,12 @@ export default async function StoresPage({
       (m) => m.role === 'global_admin' || m.role === 'country_manager',
     ) || shouldAllowDemoEntry()
 
-  const activeCount = stores.filter((s) => s.is_active !== false).length
-
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageHeader
           title="חנויות"
-          meta={fromDb ? `${activeCount} פעילים` : 'מצב דמו'}
+          meta={<span className="t-num">{filtered.length}</span>}
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
@@ -105,11 +104,10 @@ export default async function StoresPage({
           regions={regions}
         />
 
-        <div className="flex items-center justify-between gap-3">
-          <Button asChild variant="ghost" size="touch" className="min-h-[var(--tap)] sm:hidden">
+        <div className="sm:hidden">
+          <Button asChild variant="ghost" size="touch" className="min-h-[var(--tap)]">
             <Link href="/ops/stores/print-qr">הדפסת QR</Link>
           </Button>
-          <p className="t-meta t-num ms-auto text-ink-3">{filtered.length} תוצאות</p>
         </div>
 
         <Panel flush elevated className="overflow-hidden">
@@ -174,22 +172,15 @@ export default async function StoresPage({
                           <TD>
                             <span
                               className={cn(
-                                't-caption inline-flex items-center gap-1.5',
+                                't-caption',
                                 activity.tone === 'ok' && 'text-[var(--signal-resolved)]',
                                 activity.tone === 'warn' && 'text-[var(--signal-warning)]',
                                 activity.tone === 'muted' && 'text-ink-3',
                               )}
                             >
-                              <span
-                                aria-hidden
-                                className={cn(
-                                  'h-1.5 w-1.5 rounded-full',
-                                  activity.tone === 'ok' && 'bg-[var(--signal-resolved)]',
-                                  activity.tone === 'warn' && 'bg-[var(--signal-warning)]',
-                                  activity.tone === 'muted' && 'bg-ink-3',
-                                )}
-                              />
-                              {activity.text}
+                              {activity.text === 'פעיל · תקלות'
+                                ? 'תקלות'
+                                : activity.text}
                             </span>
                           </TD>
                           <TD>
