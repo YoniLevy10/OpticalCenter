@@ -150,7 +150,7 @@ export default async function TicketsPage({
           showRefresh
         />
 
-        {canPurgeDemo ? (
+        {canPurgeDemo && ticketResult.backend === 'supabase' ? (
           <div className="flex justify-end">
             <PurgeDemoButton />
           </div>

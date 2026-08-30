@@ -636,17 +636,17 @@ export async function replyToSession(input: {
   const text = input.text.trim()
   if (!text) throw new Error('הודעה ריקה')
 
-  const countryId = input.countryId ?? MEM_COUNTRY_ID
+  const waId = input.waId.replace(/\D/g, '') || input.waId
 
   if (!(await supabaseReady())) {
     const message = memAddInboxMessage({
-      wa_id: input.waId,
+      wa_id: waId,
       direction: 'outbound',
       body: text,
       ticket_id: input.ticketId ?? null,
     })
     const send = await sendWhatsAppText({
-      toWaId: input.waId,
+      toWaId: waId,
       text,
       ticketId: input.ticketId ?? null,
       purpose: 'ops_reply',
@@ -656,22 +656,96 @@ export async function replyToSession(input: {
   }
 
   const supabase = createSystemClient('inbox_reply')
+
+  // Never fall back to memory demo country UUID — that FK-fails in production.
+  let countryId = input.countryId?.trim() || null
+  let phoneNumberId: string | null = null
+
+  if (countryId) {
+    const { data: byId } = await supabase
+      .from('countries')
+      .select('id, whatsapp_phone_number_id')
+      .eq('id', countryId)
+      .maybeSingle()
+    if (byId?.id) {
+      countryId = byId.id
+      phoneNumberId = byId.whatsapp_phone_number_id ?? null
+    } else {
+      countryId = null
+    }
+  }
+
+  if (!countryId) {
+    const { data: sessions } = await supabase
+      .from('intake_sessions')
+      .select('country_id')
+      .eq('wa_id', waId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+    const sessionCountryId = sessions?.[0]?.country_id as string | undefined
+    if (sessionCountryId) {
+      countryId = sessionCountryId
+      const { data: c } = await supabase
+        .from('countries')
+        .select('whatsapp_phone_number_id')
+        .eq('id', sessionCountryId)
+        .maybeSingle()
+      phoneNumberId = c?.whatsapp_phone_number_id ?? null
+    }
+  }
+
+  if (!countryId) {
+    const { data: il } = await supabase
+      .from('countries')
+      .select('id, whatsapp_phone_number_id')
+      .eq('code', 'IL')
+      .maybeSingle()
+    if (!il?.id) throw new Error('לא נמצאה מדינה לשליחה (IL)')
+    countryId = il.id
+    phoneNumberId = il.whatsapp_phone_number_id ?? null
+  }
+
+  // Ops reply = human takeover so the bot stays quiet.
+  await supabase
+    .from('intake_sessions')
+    .update({ human_takeover: true, updated_at: new Date().toISOString() })
+    .eq('wa_id', waId)
+
   const send = await sendWhatsAppText({
-    toWaId: input.waId,
+    toWaId: waId,
     text,
+    phoneNumberId,
     ticketId: input.ticketId ?? null,
     supabase,
     purpose: 'ops_reply',
   })
 
+  if (!send.ok) {
+    throw new Error(
+      send.error
+        ? `שליחת WhatsApp נכשלה: ${send.error}`
+        : 'שליחת WhatsApp נכשלה',
+    )
+  }
+
+  let ticketId = input.ticketId ?? null
+  if (ticketId) {
+    const { data: ticket } = await supabase
+      .from('tickets')
+      .select('id')
+      .eq('id', ticketId)
+      .maybeSingle()
+    if (!ticket) ticketId = null
+  }
+
   const { data, error } = await supabase
     .from('inbox_messages')
     .insert({
       country_id: countryId,
-      wa_id: input.waId,
+      wa_id: waId,
       direction: 'outbound',
       body: text,
-      ticket_id: input.ticketId ?? null,
+      ticket_id: ticketId,
     })
     .select('id, direction, body, created_at, ticket_id')
     .single()
@@ -679,14 +753,32 @@ export async function replyToSession(input: {
   if (error) {
     if (isMissingTableError(error, 'inbox_messages') || isSupabaseSchemaError(error)) {
       const message = memAddInboxMessage({
-        wa_id: input.waId,
+        wa_id: waId,
         direction: 'outbound',
         body: text,
-        ticket_id: input.ticketId ?? null,
+        ticket_id: ticketId,
       })
       return { message, send }
     }
     throw new Error(error.message)
+  }
+
+  // Also mirror on whatsapp_messages when present (best-effort audit).
+  const { data: countryRow } = await supabase
+    .from('countries')
+    .select('organization_id')
+    .eq('id', countryId)
+    .maybeSingle()
+  if (countryRow?.organization_id) {
+    await supabase.from('whatsapp_messages').insert({
+      organization_id: countryRow.organization_id,
+      country_id: countryId,
+      wa_id: waId,
+      direction: 'outbound',
+      body: text,
+      meta_message_id: send.waMessageId,
+      ticket_id: ticketId,
+    })
   }
 
   return {
