@@ -41,12 +41,7 @@ function iconFor(kind: ActivityItem['kind']) {
 
 export function Timeline({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) {
-    return (
-      <EmptyState
-        title="אין פעילות עדיין"
-        description="הודעות מהחנות ופעולות הצוות יופיעו כאן."
-      />
-    )
+    return <EmptyState title="אין פעילות" />
   }
 
   return (
