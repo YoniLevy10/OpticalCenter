@@ -17,6 +17,7 @@ import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { LiveAge, LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { QueueToolbar } from './queue-toolbar'
+import { PurgeDemoButton } from './purge-demo-button'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
 import {
@@ -77,7 +78,11 @@ export default async function TicketsPage({
       assignedTo: filters.tech,
       q: filters.q,
       client: resolved?.client,
-    }).catch(() => ({ tickets: [], backend: 'memory' as const })),
+    }).catch((err) => ({
+      tickets: [] as Awaited<ReturnType<typeof listTickets>>['tickets'],
+      backend: 'supabase' as const,
+      error: err instanceof Error ? err.message : 'שגיאה בטעינת תקלות',
+    })),
     fetchStores().catch(() => ({ stores: [], fromDb: false })),
     listInternalTechnicians().catch(() => []),
   ])
@@ -97,6 +102,15 @@ export default async function TicketsPage({
     id: t.id,
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
+  const canPurgeDemo = Boolean(
+    actor?.memberships.some(
+      (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
+    ),
+  )
+  const listError =
+    'error' in ticketResult && ticketResult.error
+      ? String(ticketResult.error)
+      : null
 
   // View + sort here; status/priority/store/tech/q already applied server-side when set.
   const filtered = applyQueue(
@@ -136,6 +150,12 @@ export default async function TicketsPage({
           showRefresh
         />
 
+        {canPurgeDemo ? (
+          <div className="flex justify-end">
+            <PurgeDemoButton />
+          </div>
+        ) : null}
+
         <QueueToolbar
           filters={filters}
           viewCounts={views}
@@ -143,6 +163,18 @@ export default async function TicketsPage({
           technicians={technicians}
           resultCount={filtered.length}
         />
+
+        {listError ? (
+          <ErrorState
+            title="שגיאה בטעינת תקלות"
+            description={listError}
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/ops/tickets">רענון</Link>
+              </Button>
+            }
+          />
+        ) : null}
 
         {all.length === 0 && ticketResult.backend !== 'supabase' ? (
           <ErrorState

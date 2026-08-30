@@ -193,6 +193,53 @@ export async function GET() {
     owner: 'ops',
   })
 
+  // Live Graph probe — token must be able to read the configured phone number.
+  let graphOk = false
+  let graphMessage = 'לא נבדק — חסר טוקן או מזהה מספר'
+  if (waToken && waPhoneId) {
+    const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim()
+    const phoneId = (
+      process.env.WHATSAPP_PHONE_NUMBER_ID ||
+      process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+      ''
+    ).trim()
+    try {
+      const res = await fetch(
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(phoneId)}?fields=id,display_phone_number,verified_name`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        },
+      )
+      const json = (await res.json()) as {
+        id?: string
+        display_phone_number?: string
+        error?: { message?: string; code?: number }
+      }
+      if (res.ok && json.id) {
+        graphOk = true
+        const display = json.display_phone_number
+          ? ` (${json.display_phone_number})`
+          : ''
+        graphMessage = `Meta Graph מאשר את מספר הבוט${display}`
+      } else {
+        graphMessage =
+          json.error?.message ||
+          `Meta Graph דחה את הטוקן (HTTP ${res.status}) — צרו System User Token על ה־WABA הנכון`
+      }
+    } catch (e) {
+      graphMessage =
+        e instanceof Error ? e.message : 'בדיקת Graph נכשלה'
+    }
+  }
+  checks.push({
+    id: 'meta_graph_send_ready',
+    ok: graphOk,
+    level: 'must',
+    message: graphMessage,
+    owner: 'meta',
+  })
+
   const must = checks.filter((c) => c.level === 'must')
   const mustOk = must.every((c) => c.ok)
   const buildMustOk = must.filter((c) => c.owner === 'build').every((c) => c.ok)

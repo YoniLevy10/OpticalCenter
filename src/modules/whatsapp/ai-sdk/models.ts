@@ -36,7 +36,7 @@ function gatewayModel(
   return fallback
 }
 
-/** Intake via Vercel AI Gateway (default Gemini Flash slug). */
+/** Intake via Vercel AI Gateway (Haiku — available on Gateway after top-up). */
 export async function resolveIntakeModel(): Promise<{
   model: LanguageModel
   route: AiRoute
@@ -45,7 +45,7 @@ export async function resolveIntakeModel(): Promise<{
   if (!hasAiGatewayAuth()) return null
   const modelId = gatewayModel(
     process.env.WHATSAPP_AI_INTAKE_MODEL,
-    'google/gemini-2.0-flash',
+    'anthropic/claude-haiku-4.5',
   )
   return { model: modelId, route: 'gateway', modelId }
 }

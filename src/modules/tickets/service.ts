@@ -9,6 +9,7 @@ import {
   memFindStoreByCodeInCountry,
   memFindStoreById,
   memGet,
+  memDeleteTicket,
   memListTickets,
   memUpdateStatus,
   supabaseReady,
@@ -155,12 +156,52 @@ export type ListTicketsQuery = {
   client?: SupabaseClient
 }
 
+async function queryTicketsList(
+  supabase: SupabaseClient,
+  filters: {
+    status?: string
+    priority?: string
+    storeCode?: string
+    assignedTo?: string
+    q?: string
+  },
+  limit: number,
+): Promise<{ rows: TicketRow[]; error: string | null }> {
+  const storeJoin = filters.storeCode
+    ? 'stores!inner(code, name, city, address)'
+    : 'stores(code, name, city, address)'
+  let query = supabase
+    .from('tickets')
+    .select(
+      `id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, ${storeJoin}`,
+    )
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(limit * (filters.q ? 4 : 1), 1), 2000))
+
+  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.priority) query = query.eq('priority', filters.priority)
+  if (filters.storeCode) query = query.eq('stores.code', filters.storeCode)
+  if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
+  else if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
+
+  const { data, error } = await query
+  if (error) return { rows: [], error: error.message }
+  let rows = (data ?? []) as unknown as TicketRow[]
+  if (filters.q?.trim()) {
+    rows = memFilterTickets(rows as unknown as MemTicket[], {
+      q: filters.q,
+    }) as unknown as TicketRow[]
+  }
+  return { rows: rows.slice(0, limit), error: null }
+}
+
 export async function listTickets(
   limitOrQuery: number | ListTicketsQuery = 100,
 ): Promise<{
   tickets: TicketRow[]
   backend: 'supabase' | 'memory'
   mode?: 'user' | 'system' | 'memory'
+  error?: string
 }> {
   const opts: ListTicketsQuery =
     typeof limitOrQuery === 'number' ? { limit: limitOrQuery } : limitOrQuery
@@ -174,38 +215,47 @@ export async function listTickets(
   }
 
   if (await supabaseReady()) {
-    const supabase = opts.client ?? createSystemClient('tickets_service')
-    const storeJoin = filters.storeCode
-      ? 'stores!inner(code, name, city, address)'
-      : 'stores(code, name, city, address)'
-    let query = supabase
-      .from('tickets')
-      .select(
-        `id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, ${storeJoin}`,
+    const primary = opts.client ?? createSystemClient('tickets_service')
+    const primaryMode: 'user' | 'system' = opts.client ? 'user' : 'system'
+    let result = await queryTicketsList(primary, filters, limit)
+
+    // User RLS client often fails (policy / embed) — fall back to system + app scope.
+    if (result.error && opts.client) {
+      console.error('[tickets:list] user client failed, retrying system', {
+        error: result.error,
+      })
+      result = await queryTicketsList(
+        createSystemClient('tickets_service'),
+        filters,
+        limit,
       )
-      .order('created_at', { ascending: false })
-      .limit(Math.min(Math.max(limit * (filters.q ? 4 : 1), 1), 2000))
-
-    if (filters.status) query = query.eq('status', filters.status)
-    if (filters.priority) query = query.eq('priority', filters.priority)
-    if (filters.storeCode) query = query.eq('stores.code', filters.storeCode)
-    if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
-    else if (filters.assignedTo)
-      query = query.eq('assigned_to', filters.assignedTo)
-
-    const { data, error } = await query
-    if (!error && data) {
-      let rows = data as unknown as TicketRow[]
-      if (filters.q?.trim()) {
-        rows = memFilterTickets(rows as unknown as MemTicket[], {
-          q: filters.q,
-        }) as unknown as TicketRow[]
+      if (!result.error) {
+        return {
+          tickets: result.rows,
+          backend: 'supabase',
+          mode: 'system',
+        }
       }
+    }
+
+    if (!result.error) {
       return {
-        tickets: rows.slice(0, limit),
+        tickets: result.rows,
         backend: 'supabase',
-        mode: opts.client ? 'user' : 'system',
+        mode: primaryMode,
       }
+    }
+
+    console.error('[tickets:list] supabase query failed', {
+      error: result.error,
+    })
+    // Never pretend "memory mode" when Supabase is configured — that shows a
+    // false "אין חיבור לנתונים" on /ops/tickets.
+    return {
+      tickets: [],
+      backend: 'supabase',
+      mode: primaryMode,
+      error: result.error,
     }
   }
 
@@ -215,6 +265,29 @@ export async function listTickets(
     backend: 'memory',
     mode: 'memory',
   }
+}
+
+/** Delete demo / simulator tickets (source=demo). Cascades messages/events. */
+export async function purgeDemoTickets(): Promise<{
+  deleted: number
+  backend: 'supabase' | 'memory'
+}> {
+  if (await supabaseReady()) {
+    const supabase = createSystemClient('tickets_purge_demo')
+    const { data, error } = await supabase
+      .from('tickets')
+      .delete()
+      .eq('source', 'demo')
+      .select('id')
+    if (error) throw new Error(error.message)
+    return { deleted: data?.length ?? 0, backend: 'supabase' }
+  }
+
+  const demoIds = memListTickets()
+    .filter((t) => t.source === 'demo')
+    .map((t) => t.id)
+  for (const id of demoIds) memDeleteTicket(id)
+  return { deleted: demoIds.length, backend: 'memory' }
 }
 
 export async function getById(

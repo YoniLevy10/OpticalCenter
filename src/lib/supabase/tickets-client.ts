@@ -6,13 +6,24 @@ import { createUserClient } from '@/lib/supabase/scoped'
 
 /**
  * Prefer user-scoped client (RLS) when the actor authenticated via Supabase
- * session. Falls back to system client for test bearer / memory / missing session.
+ * session. Global HQ roles use the system client for reliable queue reads
+ * (RLS join failures previously fell through to a fake "memory" empty state).
+ * Falls back to system client for test bearer / memory / missing session.
  */
 export async function resolveTicketsSupabase(
   actor: Actor | null | undefined,
   systemLabel = 'tickets_service',
 ): Promise<{ client: SupabaseClient; mode: 'user' | 'system' } | null> {
   if (!(await supabaseReady())) return null
+
+  const isGlobalHq = Boolean(
+    actor?.memberships.some(
+      (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
+    ),
+  )
+  if (isGlobalHq) {
+    return { client: createSystemClient(systemLabel), mode: 'system' }
+  }
 
   if (actor?.authVia === 'supabase_session') {
     try {
