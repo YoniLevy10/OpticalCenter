@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSystemClient } from '@/lib/supabase/system'
 import { supabaseReady } from '@/lib/data/memory-store'
-import { getSettings } from '@/modules/settings/service'
+import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { isWhatsAppAiIntakeEnabled, resolveIntakeLlmProvider } from '@/modules/whatsapp/agent'
 
 export const dynamic = 'force-dynamic'
@@ -79,17 +79,7 @@ export async function GET() {
     owner: 'meta',
   })
 
-  let businessPhone = (process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE || '').replace(
-    /\D/g,
-    '',
-  )
-  try {
-    const { settings } = await getSettings()
-    const fromSettings = (settings.wa_business_phone || '').replace(/\D/g, '')
-    if (fromSettings) businessPhone = fromSettings
-  } catch {
-    /* ignore */
-  }
+  const businessPhone = (await resolveWhatsAppBusinessPhone()) || ''
   checks.push({
     id: 'wa_business_phone',
     ok: businessPhone.length >= 8,

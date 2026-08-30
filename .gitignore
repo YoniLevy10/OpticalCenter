@@ -51,3 +51,4 @@ storybook-static
 
 .agents/
 skills-lock.json
+.playwright-mcp/

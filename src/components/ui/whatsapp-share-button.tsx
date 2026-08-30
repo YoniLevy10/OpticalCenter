@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 
 type Props = {
   prefillText: string
+  /** Digits-only business phone from server when env is empty. */
+  businessPhone?: string | null
   label?: string
   className?: string
   size?: 'sm' | 'default'
@@ -16,12 +18,13 @@ type Props = {
 /** Opens wa.me with pre-filled text; Web Share API on mobile when available. */
 export function WhatsAppShareButton({
   prefillText,
+  businessPhone,
   label = 'שיתוף ב-WhatsApp',
   className,
   size = 'default',
   variant = 'secondary',
 }: Props) {
-  const url = whatsAppShareUrl(prefillText)
+  const url = whatsAppShareUrl(prefillText, businessPhone)
 
   async function onClick() {
     if (typeof navigator !== 'undefined' && navigator.share) {

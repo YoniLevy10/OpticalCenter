@@ -82,6 +82,7 @@ export function ActionMenu({
                 : 'text-ink',
             )
             if (item.href) {
+              const external = /^https?:\/\//i.test(item.href)
               return (
                 <a
                   key={item.key}
@@ -89,6 +90,9 @@ export function ActionMenu({
                   href={item.href}
                   className={classNameItem}
                   onClick={() => setOpen(false)}
+                  {...(external
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {})}
                 >
                   {item.label}
                 </a>

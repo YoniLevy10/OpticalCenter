@@ -21,13 +21,13 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { getStoreByCode } from '@/modules/stores/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
-import { getSettings } from '@/modules/settings/service'
+import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { listTickets } from '@/modules/tickets/service'
 import { listAssets } from '@/modules/assets/service'
 import { isBreached } from '@/modules/tickets/queue'
 import type { QueueTicket } from '@/modules/tickets/queue'
-import { QrDownloadButtons } from '../qr-download-buttons'
+import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
 import { StoreAssetsPanel } from './store-assets-panel'
 import { StoreSecondaryActions } from './store-secondary-actions'
@@ -105,13 +105,10 @@ export default async function StoreDetailPage({
   const { store, backend } = await getStoreByCode(code)
   if (!store) notFound()
 
-  const { settings } = await getSettings().catch(() => ({
-    settings: { wa_business_phone: '' } as { wa_business_phone: string },
-  }))
-  const deepLink = storeWhatsAppDeepLink(
-    store.code,
-    settings.wa_business_phone || process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE,
-  )
+  const businessPhone = await resolveWhatsAppBusinessPhone()
+  const deepLink = businessPhone
+    ? storeWhatsAppDeepLink(store.code, businessPhone)
+    : null
   const canEdit =
     Boolean(
       actor?.memberships.some(
@@ -235,19 +232,8 @@ export default async function StoreDetailPage({
             </Panel>
 
             <Panel flush className="overflow-hidden" id="store-qr">
-              <PanelHeader title="QR להדפסה" meta="wa.me" />
-              <div className="flex flex-col items-center gap-4 p-6">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/stores/qr?code=${encodeURIComponent(store.code)}&format=svg`}
-                  alt={`QR לסניף ${store.code}`}
-                  className="h-48 w-48 rounded-[var(--radius-md)] border border-border bg-surface p-2"
-                />
-                <QrDownloadButtons code={store.code} />
-                <p className="t-caption max-w-sm text-center text-ink-3">
-                  אותו קישור משמש גם לכתיבת NFC. סרקו או הדביקו על דלת הסניף.
-                </p>
-              </div>
+              <PanelHeader title="QR להדפסה" meta="WhatsApp" />
+              <StoreQrPanel code={store.code} deepLink={deepLink} />
             </Panel>
 
             {canEdit ? (
@@ -346,15 +332,19 @@ export default async function StoreDetailPage({
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
             <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
             <KeyValue label="קישור WhatsApp">
-              <a
-                href={deepLink}
-                target="_blank"
-                rel="noreferrer"
-                dir="ltr"
-                className="t-caption break-all text-ink-2 underline-offset-2 hover:underline"
-              >
-                {deepLink}
-              </a>
+              {deepLink ? (
+                <a
+                  href={deepLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="ltr"
+                  className="t-caption break-all text-ink-2 underline-offset-2 hover:underline"
+                >
+                  {deepLink}
+                </a>
+              ) : (
+                <span className="text-ink-3">חסר מספר עסקי — הגדירו בהגדרות</span>
+              )}
             </KeyValue>
             <KeyValue label="טקסט זיהוי" ltr>
               {storeWhatsAppPrefill(store.code)}
