@@ -22,25 +22,26 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
     await expect(
-      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב|לוח בקרה/ }),
+      page.getByRole('heading', { name: /מה קורה עכשיו|ראשי|בוקר טוב|צהריים טובים|ערב טוב/ }),
     ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
-    await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()
     await gotoStable(page, '/ops/stores')
-    await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'חנויות' }).first()).toBeVisible()
     await gotoStable(page, '/ops/reports')
-    await expect(page.getByRole('heading', { name: 'דוחות', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'דוחות', exact: true }).first()).toBeVisible()
     await expect(page.getByRole('button', { name: /ייצוא CSV/ }).first()).toBeVisible()
     await gotoStable(page, '/ops/settings')
-    await expect(page.getByRole('heading', { name: 'הגדרות', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'הגדרות', exact: true }).first()).toBeVisible()
   })
 
   test('mobile bottom nav + More', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
-    await expect(bottomNav.getByText('לוח בקרה')).toBeVisible()
+    await expect(bottomNav.getByText('ראשי')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
+    await expect(bottomNav.getByText('WhatsApp')).toBeVisible()
     await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
     await expect(page.getByRole('dialog').getByRole('link', { name: 'הגדרות' })).toBeVisible()
@@ -66,7 +67,7 @@ test.describe('Navigation & layout', () => {
   test('mobile shows page heading', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/tickets')
-    await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()
   })
 
   for (const vp of VIEWPORTS) {
@@ -164,7 +165,7 @@ test.describe('Offline honesty', () => {
     await gotoStable(page, `/tech/${ticketId}?techId=${DEMO_TECH_ID}`)
 
     await context.route('**/api/tech/tickets/**', (route) => route.abort())
-    const resolveBtn = page.getByRole('button', { name: /סיום|resolved|נפתר/i })
+    const resolveBtn = page.getByRole('button', { name: /סיימתי|סיום|resolved|נפתר/i })
     if ((await resolveBtn.count()) > 0) {
       await resolveBtn.first().click()
       await expect(page.getByText(/שגיאה|נכשל|רשת/i).first()).toBeVisible({

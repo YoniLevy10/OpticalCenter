@@ -18,7 +18,7 @@ export default async function InboxPage() {
       <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה ללוח בקרה"
+          backLabel="חזרה"
           title="תיבת WhatsApp"
           meta="השתלטות אנושית"
           showRefresh

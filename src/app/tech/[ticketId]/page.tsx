@@ -4,22 +4,13 @@ import { TechShell } from '@/components/layout/tech-shell'
 import { RefreshButton } from '@/components/layout/refresh-button'
 import { techHref } from '@/lib/tech-href'
 import { TechTicketActions } from '@/app/tech/[ticketId]/tech-ticket-actions'
-import { Panel, PanelHeader, ErrorState } from '@/components/ui/primitives'
-import { PriorityText, SlaBlock, StatusLabel } from '@/components/ui/signal'
+import { Panel, ErrorState } from '@/components/ui/primitives'
+import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
-import { Timeline } from '@/components/ui/timeline'
-import { Button } from '@/components/ui/button'
-import { PhoneCallLink } from '@/components/ui/phone-call-link'
-import {
-  TICKET_CATEGORY_LABELS_HE,
-  type TicketPriority,
-  type TicketStatus,
-} from '@/modules/tickets/constants'
+import type { TicketStatus } from '@/modules/tickets/constants'
 import { fetchTechTicket, isUuid } from '@/modules/tickets/tech'
 import { getById } from '@/modules/tickets/service'
 import { mergeEvidence } from '@/modules/tickets/attachments'
-import { getSlaView } from '@/modules/tickets/sla-display'
-import { buildActivityDesc } from '@/modules/tickets/activity'
 import {
   getServerActor,
   resolveServerTechId,
@@ -28,6 +19,7 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorFromProfileId } from '@/lib/auth/load-memberships'
 import { actorIsTech, testAuthAllowed } from '@/lib/auth/types'
 import { actorCanOpenTechTicket } from '@/lib/auth/ticket-scope'
+import { storeLabel } from '@/components/ops/plain-labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +51,7 @@ export default async function TechTicketDetailPage({
           title="עבודה"
           backHref={techHref('/tech', techId)}
           enablePullToRefresh
-          headerActions={<RefreshButton label="רענון עבודה" />}
+          headerActions={<RefreshButton label="רענון" />}
         >
           <ErrorState
             title="לא ניתן לטעון את העבודה"
@@ -72,7 +64,6 @@ export default async function TechTicketDetailPage({
     notFound()
   }
 
-  // Scope check: prefer session tech actor; in demo mid-switch load actor for resolved techId.
   let scopeActor = actor && actorIsTech(actor) ? actor : null
   if (!scopeActor && testAuthAllowed() && techId) {
     scopeActor = await actorFromProfileId(techId, 'test_bearer')
@@ -88,47 +79,20 @@ export default async function TechTicketDetailPage({
   }
 
   const fullTicket = await getById(ticketId).catch(() => null)
-  const reporterPhone =
-    fullTicket && 'reporter_phone' in fullTicket
-      ? (fullTicket.reporter_phone as string | null)
-      : null
-
-  const storeName = ticket.stores?.name ?? 'חנות'
-  const displayNo =
-    ticket.display_number ?? (ticket.number != null ? `OC-${ticket.number}` : null)
-
-  const slaView = getSlaView({
-    priority: ticket.priority,
-    status: ticket.status,
-    created_at: ticket.created_at,
-  })
-
-  const activity = buildActivityDesc([], ticket.events ?? [])
-  // WhatsApp photos may live only on ticket_messages.media_url — merge like HQ.
   const attachments = mergeEvidence(
     ticket.attachments ?? [],
     fullTicket?.messages ?? [],
   )
-
-  const mapsQuery = [ticket.stores?.address, ticket.stores?.city, storeName]
+  const address = [ticket.stores?.address, ticket.stores?.city]
     .filter(Boolean)
     .join(', ')
 
   return (
     <TechShell
-      title={storeName}
-      eyebrow={displayNo ?? 'עבודה'}
+      title={storeLabel(ticket.stores)}
       backHref={techHref('/tech', techId)}
       enablePullToRefresh
-      headerActions={<RefreshButton label="רענון עבודה" />}
-      subtitle={
-        <span className="flex items-center gap-1.5">
-          {ticket.stores?.code ? (
-            <span className="t-num">#{ticket.stores.code}</span>
-          ) : null}
-          {ticket.stores?.city ? <span>· {ticket.stores.city}</span> : null}
-        </span>
-      }
+      headerActions={<RefreshButton label="רענון" />}
       actions={
         <TechTicketActions
           ticketId={ticket.id}
@@ -139,73 +103,23 @@ export default async function TechTicketDetailPage({
       }
     >
       <div className="space-y-4">
-        {/* ---------- The three facts, above everything ---------- */}
         <Panel>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <PriorityText priority={ticket.priority as TicketPriority} />
-              <StatusLabel status={ticket.status as TicketStatus} />
-            </div>
-            <SlaBlock view={slaView} />
-          </div>
-
+          <StatusLabel status={ticket.status as TicketStatus} />
           <p className="t-lead mt-4 whitespace-pre-wrap leading-relaxed text-ink">
             {ticket.description || ticket.title || 'ללא תיאור'}
           </p>
-
-          <p className="t-meta mt-3 text-ink-3">
-            {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
-          </p>
+          {address ? (
+            <p className="t-body mt-4 flex items-start gap-2 text-ink-2">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              {address}
+            </p>
+          ) : null}
         </Panel>
 
-        {/* ---------- Getting there ---------- */}
-        {ticket.stores?.address || mapsQuery ? (
-          <Panel>
-            <div className="flex items-start gap-2.5">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="t-body text-ink">
-                  {ticket.stores?.address ?? storeName}
-                </p>
-                {ticket.stores?.city ? (
-                  <p className="t-meta text-ink-2">{ticket.stores.city}</p>
-                ) : null}
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button asChild variant="secondary" size="touch" className="flex-1">
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(mapsQuery)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <MapPin className="h-4 w-4" aria-hidden />
-                  ניווט
-                </a>
-              </Button>
-              {reporterPhone ? (
-                <PhoneCallLink
-                  phone={reporterPhone}
-                  className="h-11 flex-1 justify-center md:h-9"
-                />
-              ) : null}
-            </div>
-          </Panel>
-        ) : null}
-
         {attachments.length > 0 ? (
-          <Panel flush>
-            <PanelHeader title="תיעוד" meta={`${attachments.length}`} />
-            <div className="p-4">
-              <EvidenceGrid attachments={attachments} />
-            </div>
-          </Panel>
-        ) : null}
-
-        {activity.length > 0 ? (
-          <Panel flush>
-            <PanelHeader title="יומן" />
-            <Timeline items={activity} />
+          <Panel>
+            <p className="t-section mb-3 text-ink">תיעוד</p>
+            <EvidenceGrid attachments={attachments} />
           </Panel>
         ) : null}
       </div>

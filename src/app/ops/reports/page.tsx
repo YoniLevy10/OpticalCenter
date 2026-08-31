@@ -6,6 +6,7 @@ import {
   Panel,
   PanelHeader,
   EmptyState,
+  PageHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR, RowLink } from '@/components/ui/table'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
@@ -184,31 +185,6 @@ export default async function ReportsPage({
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5">
-        <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
-          <p className="t-caption text-white/60">OPERATIONS OS · REPORTS</p>
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">
-                דוחות
-              </h1>
-              <p className="t-body mt-2 max-w-xl text-white/70">
-                סיכום תפעולי, היסטוריית תקלות והנפקת דוחות לפי טווח תאריכים —
-                CSV, Excel ו-PDF.
-              </p>
-            </div>
-            <div className="text-end">
-              <p className="t-caption text-white/60">טווח פעיל</p>
-              <p className="t-title t-num mt-1 text-white" dir="ltr">
-                {rangeLabel}
-              </p>
-              <p className="t-caption mt-1 text-white/60">
-                {statusLabel ? statusLabel.replace(/^ · /, '') + ' · ' : null}
-                <span className="t-num">{all.length}</span> תקלות
-              </p>
-            </div>
-          </div>
-        </div>
-
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה"
@@ -219,6 +195,13 @@ export default async function ReportsPage({
               : 'מצב דמו'
           }
           showRefresh
+          actions={<ReportsExportActions query={exportQuery} count={all.length} />}
+        />
+
+        <PageHeader
+          className="hidden md:flex"
+          title="דוחות"
+          description={`סיכום תפעולי לפי טווח תאריכים · ${rangeLabel}${statusLabel}`}
           actions={<ReportsExportActions query={exportQuery} count={all.length} />}
         />
 

@@ -32,7 +32,7 @@ export default async function SettingsPage() {
             href="/ops/status"
             className="t-body mt-2 inline-block text-[var(--signal-progress)] hover:underline"
           >
-            סטטוס מערכת
+            מצב המערכת
           </Link>
         </Panel>
       </div>

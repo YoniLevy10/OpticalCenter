@@ -82,6 +82,65 @@ export type CreateUserInput = {
   password?: string
 }
 
+function hebrewAuthError(message: string): string {
+  const m = message.toLowerCase()
+  if (
+    m.includes('already') ||
+    m.includes('registered') ||
+    m.includes('exists') ||
+    m.includes('duplicate')
+  ) {
+    return 'המייל כבר רשום במערכת'
+  }
+  if (m.includes('password')) {
+    return 'הסיסמה לא תקינה — לפחות 6 תווים'
+  }
+  if (m.includes('email') && (m.includes('invalid') || m.includes('validate'))) {
+    return 'כתובת המייל לא תקינה'
+  }
+  if (
+    m.includes('foreign key') ||
+    m.includes('violates foreign key') ||
+    m.includes('organization_id') ||
+    m.includes('country_id') ||
+    m.includes('store_id')
+  ) {
+    return 'שיוך מדינה/סניף לא תקין — בדקו את הבחירה ונסו שוב'
+  }
+  if (m.includes('service_role') || m.includes('missing next_public_supabase')) {
+    return 'תקלת הגדרות שרת — חסר מפתח מנהל (Service Role)'
+  }
+  return message
+}
+
+function isDuplicateAuthError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('already') ||
+    m.includes('registered') ||
+    m.includes('exists') ||
+    m.includes('duplicate')
+  )
+}
+
+async function findAuthUserIdByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<string | null> {
+  // Paginate a bit — pilot orgs are small; avoid silent miss on page 1 only.
+  for (let page = 1; page <= 5; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    })
+    if (error) throw new Error(hebrewAuthError(error.message))
+    const hit = data.users.find((u) => u.email?.toLowerCase() === email)
+    if (hit) return hit.id
+    if (data.users.length < 200) break
+  }
+  return null
+}
+
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
   if (!isAssignableRole(input.role)) {
     throw new Error('תפקיד לא נתמך — בחרו מנהל מערכת, תפעול, חנות או טכנאי')
@@ -97,7 +156,17 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   const password = input.password?.trim() || null
   const phone = sanitizePhoneInput(input.phone)
 
+  if (input.role === 'internal_technician' && !phone) {
+    throw new Error('לטכנאי חובה להזין מספר טלפון להודעות שיוך')
+  }
+
   if (!(await supabaseReady())) {
+    const existing = memListUsers().find(
+      (u) => u.email?.toLowerCase() === email,
+    )
+    if (existing) {
+      throw new Error('המייל כבר רשום במערכת')
+    }
     memUpsertProfile({
       id,
       email,
@@ -114,53 +183,125 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     return toUserRow(row!)
   }
 
+  const supabase = createSystemClient('users_create')
+
+  // Prefer an existing profile with this email so we don't orphan Auth users.
+  const { data: existingByEmail } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .limit(1)
+    .maybeSingle()
+  if (existingByEmail?.id) {
+    id = existingByEmail.id
+  }
+
   // Prefer Auth user id so Google/password sessions match the profile row.
   if (password) {
-    const admin = createAdminClient()
+    let admin: ReturnType<typeof createAdminClient>
+    try {
+      admin = createAdminClient()
+    } catch (err) {
+      throw new Error(
+        hebrewAuthError(err instanceof Error ? err.message : String(err)),
+      )
+    }
+
     const { data: created, error: authErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name: input.full_name },
+      ...(existingByEmail?.id ? { id: existingByEmail.id } : {}),
     })
+
     if (authErr || !created.user) {
-      throw new Error(authErr?.message || 'יצירת חשבון התחברות נכשלה')
+      const raw = authErr?.message || 'יצירת חשבון התחברות נכשלה'
+      if (!isDuplicateAuthError(raw)) {
+        throw new Error(hebrewAuthError(raw))
+      }
+      // Email already in Auth — reuse that user and refresh password/profile.
+      const existingId = await findAuthUserIdByEmail(admin, email)
+      if (!existingId) {
+        throw new Error('המייל כבר רשום במערכת')
+      }
+      id = existingId
+      const { error: updErr } = await admin.auth.admin.updateUserById(id, {
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: input.full_name },
+      })
+      if (updErr) throw new Error(hebrewAuthError(updErr.message))
+    } else {
+      id = created.user.id
     }
-    id = created.user.id
   }
 
-  const supabase = createSystemClient('users_create')
-  const { error: pErr } = await supabase.from('profiles').upsert({
-    id,
-    email,
-    full_name: input.full_name,
-    phone,
-    locale: 'he',
-  })
-  if (pErr) throw new Error(pErr.message)
+  const { error: pErr } = await supabase.from('profiles').upsert(
+    {
+      id,
+      email,
+      full_name: input.full_name,
+      phone,
+      locale: 'he',
+    },
+    { onConflict: 'id' },
+  )
+  if (pErr) throw new Error(hebrewAuthError(pErr.message))
 
-  const { data: membership, error: mErr } = await supabase
+  // Reuse membership if the profile already has one; otherwise insert.
+  const { data: existingMembership } = await supabase
     .from('memberships')
-    .insert({
-      profile_id: id,
-      organization_id: orgId,
-      role: input.role,
-      country_id: countryId,
-      region_id: input.region_id ?? null,
-      store_id: input.store_id ?? null,
-    })
     .select(
       'id, profile_id, organization_id, role, country_id, region_id, store_id',
     )
-    .single()
-  if (mErr) throw new Error(mErr.message)
+    .eq('profile_id', id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  let membership = existingMembership as Membership | null
+  if (membership) {
+    const { data: updated, error: uErr } = await supabase
+      .from('memberships')
+      .update({
+        role: input.role,
+        country_id: countryId,
+        region_id: input.region_id ?? null,
+        store_id: input.store_id ?? null,
+      })
+      .eq('id', membership.id)
+      .select(
+        'id, profile_id, organization_id, role, country_id, region_id, store_id',
+      )
+      .single()
+    if (uErr) throw new Error(hebrewAuthError(uErr.message))
+    membership = updated as Membership
+  } else {
+    const { data: inserted, error: mErr } = await supabase
+      .from('memberships')
+      .insert({
+        profile_id: id,
+        organization_id: orgId,
+        role: input.role,
+        country_id: countryId,
+        region_id: input.region_id ?? null,
+        store_id: input.store_id ?? null,
+      })
+      .select(
+        'id, profile_id, organization_id, role, country_id, region_id, store_id',
+      )
+      .single()
+    if (mErr) throw new Error(hebrewAuthError(mErr.message))
+    membership = inserted as Membership
+  }
 
   return {
     id,
     email,
     full_name: input.full_name,
     phone,
-    memberships: [membership as Membership],
+    memberships: [membership],
   }
 }
 

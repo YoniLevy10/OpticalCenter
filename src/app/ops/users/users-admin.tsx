@@ -515,11 +515,17 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
 
       <Modal
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (open) setError(null)
+        }}
         title="משתמש חדש"
         description="מייל + סיסמה להתחברות, ותפקיד אחד."
       >
         <form onSubmit={onCreate} className="space-y-3">
+          {error ? (
+            <ErrorState title="לא ניתן ליצור משתמש" description={error} />
+          ) : null}
           <Field label="שם" htmlFor="user-name">
             <Input
               id="user-name"

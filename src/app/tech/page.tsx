@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { TechShell } from '@/components/layout/tech-shell'
 import { RefreshButton } from '@/components/layout/refresh-button'
 import { TechJobList } from '@/app/tech/tech-job-list'
-import { TechRealtimeHint } from '@/app/tech/tech-realtime-hint'
 import { TechPushSubscribe } from '@/app/tech/tech-push-subscribe'
 import { ErrorState, Notice } from '@/components/ui/primitives'
 import { fetchTechTickets } from '@/modules/tickets/tech'
@@ -44,9 +43,8 @@ export default async function TechPortalPage({
   return (
     <TechShell
       title="העבודות שלי"
-      eyebrow="MaintainOS · טכנאי"
       enablePullToRefresh
-      headerActions={<RefreshButton label="רענון עבודות" />}
+      headerActions={<RefreshButton label="רענון" />}
       subtitle={
         openCount > 0 ? (
           <span className="t-num">{openCount} עבודות פתוחות</span>
@@ -55,7 +53,6 @@ export default async function TechPortalPage({
         )
       }
     >
-      <TechRealtimeHint />
       <TechPushSubscribe />
 
       {error ? (

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { PartyPopper } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
@@ -9,49 +10,35 @@ import {
   ErrorState,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
-  RowLink,
-} from '@/components/ui/table'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { LiveAge, LiveSla } from '@/components/ui/time'
-import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
-import { QueueToolbar } from './queue-toolbar'
+import { StatusLabel } from '@/components/ui/signal'
+import { QueueTabs } from './queue-tabs'
 import { PurgeDemoButton } from './purge-demo-button'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
-import { fetchStores } from '@/modules/stores/data'
 import {
   applyQueue,
-  parseQueueParams,
-  queueHref,
-  viewCounts,
   type QueueTicket,
 } from '@/modules/tickets/queue'
-import { QUEUE_SORTS } from '@/modules/tickets/queue'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
+import {
+  plainOpenForHe,
+  storeLabel,
+} from '@/components/ops/plain-labels'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
 
-function ticketNumber(t: QueueTicket): string {
-  return t.display_number ?? (t.number != null ? `OC-${t.number}` : '—')
-}
-
 function technicianName(
   id: string | null | undefined,
   techs: { id: string; name: string }[],
 ): string {
-  if (!id) return '—'
-  return techs.find((t) => t.id === id)?.name ?? `${id.slice(0, 6)}…`
+  if (!id) return 'לא משויך'
+  return techs.find((t) => t.id === id)?.name ?? 'טכנאי'
 }
 
 export default async function TicketsPage({
@@ -60,48 +47,33 @@ export default async function TicketsPage({
   searchParams: Promise<Record<string, string | undefined>>
 }) {
   const sp = await searchParams
-  const filters = parseQueueParams(sp)
+  const viewRaw = (sp.view ?? 'open').trim()
+  const view = viewRaw === 'resolved' ? 'resolved' : 'open'
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
+  // Silent deep-link from store detail — no filter UI.
+  const storeCode = (sp.store ?? '').trim() || undefined
 
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
 
-  // Prefer user-scoped Supabase (RLS) when session auth; else system/memory.
   const resolved = await resolveTicketsSupabase(actor)
-  const hasFieldFilters = Boolean(
-    filters.status || filters.priority || filters.store || filters.tech || filters.q,
-  )
 
-  const [ticketResult, storeResult, techRows] = await Promise.all([
+  const [ticketResult, techRows] = await Promise.all([
     listTickets({
       limit: 1000,
-      status: filters.status,
-      priority: filters.priority,
-      storeCode: filters.store,
-      assignedTo: filters.tech,
-      q: filters.q,
+      storeCode,
       client: resolved?.client,
     }).catch((err) => ({
       tickets: [] as Awaited<ReturnType<typeof listTickets>>['tickets'],
       backend: 'supabase' as const,
       error: err instanceof Error ? err.message : 'שגיאה בטעינת תקלות',
     })),
-    fetchStores().catch(() => ({ stores: [], fromDb: false })),
     listInternalTechnicians().catch(() => []),
   ])
 
-  const countResult = hasFieldFilters
-    ? await listTickets({
-        limit: 1000,
-        client: resolved?.client,
-      }).catch(() => ({ tickets: [] as typeof ticketResult.tickets }))
-    : ticketResult
-
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
-  const countBase = (countResult.tickets ?? fetched) as unknown as QueueTicket[]
-  const allScoped = actor ? scopeTicketsForActor(actor, countBase) : countBase
   const all = actor ? scopeTicketsForActor(actor, fetched) : fetched
   const technicians = techRows.map((t) => ({
     id: t.id,
@@ -117,32 +89,22 @@ export default async function TicketsPage({
       ? String(ticketResult.error)
       : null
 
-  // View + sort here; status/priority/store/tech/q already applied server-side when set.
-  const filtered = applyQueue(
-    all,
-    hasFieldFilters
-      ? {
-          ...filters,
-          status: undefined,
-          priority: undefined,
-          store: undefined,
-          tech: undefined,
-          q: undefined,
-        }
-      : filters,
-  )
+  const filtered = applyQueue(all, {
+    view,
+    sort: 'urgency',
+    includeDemo: false,
+  })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
-  const sortHref = (key: (typeof QUEUE_SORTS)[number]['key']) =>
-    queueHref(filters, { sort: key })
-
-  const scopedForViews = filters.includeDemo
-    ? allScoped
-    : allScoped.filter((t) => t.source !== 'demo')
-  const views = viewCounts(scopedForViews)
+  const baseHref =
+    view === 'resolved'
+      ? '/ops/tickets?view=resolved'
+      : storeCode
+        ? `/ops/tickets?view=open&store=${encodeURIComponent(storeCode)}`
+        : '/ops/tickets?view=open'
 
   return (
     <OpsAppShell>
@@ -164,13 +126,7 @@ export default async function TicketsPage({
           }
         />
 
-        <QueueToolbar
-          filters={filters}
-          viewCounts={views}
-          stores={storeResult.stores.map((s) => ({ code: s.code, name: s.name }))}
-          technicians={technicians}
-          resultCount={filtered.length}
-        />
+        <QueueTabs active={view} />
 
         {listError ? (
           <ErrorState
@@ -187,135 +143,51 @@ export default async function TicketsPage({
         <Panel flush elevated className="overflow-hidden">
           {rows.length === 0 ? (
             <EmptyState
-              title="אין תקלות"
+              title={
+                view === 'resolved'
+                  ? 'אין תקלות שהסתיימו עדיין'
+                  : 'אין תקלות פתוחות 🎉'
+              }
               description={
-                filters.q ? `אין תוצאות עבור «${filters.q}».` : undefined
+                view === 'open'
+                  ? 'כשתדווח תקלה חדשה — היא תופיע כאן.'
+                  : undefined
               }
-              action={
-                <Button asChild variant="secondary" size="sm">
-                  <Link href={queueHref({ view: 'all', sort: 'newest' })}>
-                    הכל
-                  </Link>
-                </Button>
-              }
+              icon={PartyPopper}
             />
           ) : (
-            <>
-              {/* ---------- Desktop: dense table ---------- */}
-              <div className="hidden md:block">
-                <Table>
-                  <THead>
-                    <TH className="w-[112px]">מס׳</TH>
-                    <TH className="w-[220px]">חנות</TH>
-                    <TH>תקלה</TH>
-                    <TH className="w-[132px]">סטטוס</TH>
-                    <TH className="w-[136px]">טכנאי</TH>
-                    <TH
-                      className="w-[104px]"
-                      sort={{
-                        href: sortHref('oldest'),
-                        active: filters.sort === 'oldest' || filters.sort === 'newest',
-                        direction: filters.sort === 'newest' ? 'desc' : 'asc',
-                      }}
-                    >
-                      גיל
-                    </TH>
-                    <TH
-                      className="w-[112px]"
-                      align="end"
-                      sort={{
-                        href: sortHref('sla'),
-                        active: filters.sort === 'sla',
-                        direction: 'asc',
-                      }}
-                    >
-                      SLA
-                    </TH>
-                  </THead>
-                  <TBody>
-                    {rows.map((t) => (
-                      <TR
-                        key={t.id}
-                        edgeClass={priorityEdgeClass(t.priority)}
-                        className={priorityRowClass(t.priority)}
-                      >
-                        <TD className="relative ps-4">
-                          <RowLink
-                            href={`/ops/tickets/${t.id}`}
-                            label={`תקלה ${ticketNumber(t)}`}
-                          >
-                            <span className="t-body-strong t-num text-ink">
-                              {ticketNumber(t)}
-                            </span>
-                          </RowLink>
-                        </TD>
-                        <TD>
-                          <span className="t-body block truncate text-ink">
-                            {t.stores?.name ?? '—'}
-                          </span>
-                          {t.stores?.code ? (
-                            <span className="t-caption t-num text-ink-3">
-                              #{t.stores.code}
-                            </span>
-                          ) : null}
-                        </TD>
-                        <TD>
-                          <span className="t-body block max-w-[46ch] truncate text-ink-2">
-                            {t.title || t.description}
-                          </span>
-                        </TD>
-                        <TD>
-                          <StatusLabel status={t.status} />
-                        </TD>
-                        <TD>
-                          <span className="t-body block truncate text-ink-2">
-                            {technicianName(t.assigned_to, technicians)}
-                          </span>
-                        </TD>
-                        <TD>
-                          <LiveAge createdAt={t.created_at} />
-                        </TD>
-                        <TD align="end">
-                          <LiveSla ticket={t} />
-                        </TD>
-                      </TR>
-                    ))}
-                  </TBody>
-                </Table>
-              </div>
-
-              {/* ---------- Mobile: operational list ---------- */}
-              <div className="md:hidden">
-                <RowList>
-                  {rows.map((t) => (
-                    <OperationalRow
-                      key={t.id}
-                      href={`/ops/tickets/${t.id}`}
-                      priority={t.priority}
-                      leading={ticketNumber(t)}
-                      trailing={<LiveSla ticket={t} />}
-                      title={t.title || t.description}
-                      subtitle={
-                        t.stores
-                          ? `${t.stores.name}${t.stores.code ? ` · #${t.stores.code}` : ''}`
-                          : undefined
-                      }
-                      footer={
-                        <>
-                          <StatusLabel status={t.status} />
-                          <Dot />
-                          <span className="t-meta truncate text-ink-2">
-                            {technicianName(t.assigned_to, technicians)}
-                          </span>
-                          <Dot />
-                          <LiveAge createdAt={t.created_at} />
-                        </>
-                      }
-                    />
-                  ))}
-                </RowList>
-              </div>
-            </>
+            <RowList>
+              {rows.map((t) => {
+                const openFor = plainOpenForHe(t.created_at, t)
+                return (
+                  <OperationalRow
+                    key={t.id}
+                    href={`/ops/tickets/${t.id}`}
+                    priority={t.priority}
+                    leading={storeLabel(t.stores)}
+                    title={t.title || t.description}
+                    footer={
+                      <>
+                        <StatusLabel status={t.status} />
+                        <Dot />
+                        <span
+                          className={cn(
+                            't-meta truncate',
+                            openFor.overdue
+                              ? 'text-[var(--signal-critical)]'
+                              : 'text-ink-2',
+                          )}
+                        >
+                          {view === 'resolved'
+                            ? technicianName(t.assigned_to, technicians)
+                            : openFor.text}
+                        </span>
+                      </>
+                    }
+                  />
+                )
+              })}
+            </RowList>
           )}
         </Panel>
 
@@ -333,11 +205,7 @@ export default async function TicketsPage({
                 size="sm"
                 className={current <= 1 ? 'pointer-events-none opacity-40' : ''}
               >
-                <Link
-                  href={`${queueHref(filters)}${queueHref(filters).includes('?') ? '&' : '?'}page=${current - 1}`}
-                >
-                  הקודם
-                </Link>
+                <Link href={`${baseHref}&page=${current - 1}`}>הקודם</Link>
               </Button>
               <Button
                 asChild
@@ -347,11 +215,7 @@ export default async function TicketsPage({
                   current >= totalPages ? 'pointer-events-none opacity-40' : ''
                 }
               >
-                <Link
-                  href={`${queueHref(filters)}${queueHref(filters).includes('?') ? '&' : '?'}page=${current + 1}`}
-                >
-                  הבא
-                </Link>
+                <Link href={`${baseHref}&page=${current + 1}`}>הבא</Link>
               </Button>
             </div>
           </nav>

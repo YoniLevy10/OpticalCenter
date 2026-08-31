@@ -75,7 +75,7 @@ test.describe('Visual regression pack', () => {
     const routes: { key: string; path: string }[] = [
       {
         key: 'ops-tickets-open',
-        path: `/ops/tickets?view=open&q=${encodeURIComponent(marker)}`,
+        path: `/ops/tickets?view=open&store=172`,
       },
       { key: 'ops-ticket-detail', path: `/ops/tickets/${ticketId}` },
       { key: 'tech-jobs', path: `/tech?techId=${OTHER_TECH_ID}` },
