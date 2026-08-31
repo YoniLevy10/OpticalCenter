@@ -294,7 +294,9 @@ export function AppShell({
         >
           <TenantMark />
           <div className="min-w-0 flex-1">
-            <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
+            <h1 className="t-body-strong truncate text-ink">
+              {pageTitle(pathname)}
+            </h1>
           </div>
           <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
         </div>
