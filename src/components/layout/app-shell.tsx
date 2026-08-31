@@ -8,8 +8,8 @@ import {
   Box,
   Ellipsis,
   HardHat,
+  Home,
   Inbox,
-  LayoutDashboard,
   MessageSquare,
   QrCode,
   ScrollText,
@@ -33,9 +33,8 @@ import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
 /**
- * Optical Precision shell
+ * Novice-first shell: ~4 primary destinations + "עוד" for secondary modules.
  * Optical Center is the tenant identity; MaintainOS remains the quiet platform layer.
- * Desktop keeps navigation calm and persistent; mobile prioritizes the daily operating loop.
  */
 
 type NavItem = {
@@ -48,67 +47,67 @@ type NavItem = {
 const PRIMARY: NavItem[] = [
   {
     href: '/ops/dashboard',
-    label: 'לוח בקרה',
-    icon: LayoutDashboard,
+    label: 'ראשי',
+    icon: Home,
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
-  { href: '/ops/inbox', label: 'WhatsApp', icon: MessageSquare, match: '/ops/inbox' },
-  { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
+  { href: '/ops/inbox', label: 'הודעות', icon: MessageSquare, match: '/ops/inbox' },
+  { href: '/ops/stores', label: 'סניפים', icon: Store, match: '/ops/stores' },
 ]
 
+/** Secondary destinations — progressive disclosure under "עוד" / sidebar groups. */
 const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'תפעול',
+    label: 'עבודה יומית',
     items: [
-      {
-        href: '/ops/inbox',
-        label: 'תיבת WhatsApp',
-        icon: MessageSquare,
-        match: '/ops/inbox',
-      },
-      { href: '/ops/assets', label: 'נכסים', icon: Box, match: '/ops/assets' },
-      {
-        href: '/ops/vendors',
-        label: 'ספקים',
-        icon: Truck,
-        match: '/ops/vendors',
-      },
-      {
-        href: '/ops/activity',
-        label: 'יומן פעילות',
-        icon: ScrollText,
-        match: '/ops/activity',
-      },
+      { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/reports',
         label: 'דוחות',
         icon: BarChart3,
         match: '/ops/reports',
       },
+      {
+        href: '/ops/vendors',
+        label: 'ספקים',
+        icon: Truck,
+        match: '/ops/vendors',
+      },
     ],
   },
   {
-    label: 'מערכת',
+    label: 'ניהול',
     items: [
-      {
-        href: '/ops/status',
-        label: 'סטטוס מערכת',
-        icon: Server,
-        match: '/ops/status',
-      },
+      { href: '/ops/users', label: 'אנשים והרשאות', icon: Users, match: '/ops/users' },
       {
         href: '/ops/settings',
         label: 'הגדרות',
         icon: Settings,
         match: '/ops/settings',
       },
-      { href: '/ops/users', label: 'משתמשים', icon: Users, match: '/ops/users' },
+      {
+        href: '/ops/activity',
+        label: 'מה קרה במערכת',
+        icon: ScrollText,
+        match: '/ops/activity',
+      },
       {
         href: '/ops/stores/print-qr',
-        label: 'הדפסת QR',
+        label: 'הדפסת QR לסניפים',
         icon: QrCode,
         match: '/ops/stores/print-qr',
+      },
+    ],
+  },
+  {
+    label: 'כלים מתקדמים',
+    items: [
+      {
+        href: '/ops/status',
+        label: 'בריאות המערכת',
+        icon: Server,
+        match: '/ops/status',
       },
       {
         href: '/ops/lab',
@@ -118,13 +117,13 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
       },
       {
         href: '/ops/simulator',
-        label: 'סימולטור WhatsApp',
+        label: 'סימולטור הודעות',
         icon: Smartphone,
         match: '/ops/simulator',
       },
       {
         href: '/tech',
-        label: 'פורטל טכנאי',
+        label: 'מסך טכנאי',
         icon: HardHat,
         match: '/tech',
       },
@@ -185,20 +184,20 @@ function SidebarNavLink({
 }
 
 function pageTitle(pathname: string): string {
-  if (pathname.startsWith('/ops/dashboard')) return 'לוח בקרה'
+  if (pathname.startsWith('/ops/dashboard')) return 'ראשי'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
   if (pathname.startsWith('/ops/stores/print-qr')) return 'הדפסת QR'
-  if (pathname.startsWith('/ops/stores')) return 'חנויות'
-  if (pathname.startsWith('/ops/assets')) return 'נכסים'
+  if (pathname.startsWith('/ops/stores')) return 'סניפים'
+  if (pathname.startsWith('/ops/assets')) return 'ציוד'
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
-  if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
-  if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
-  if (pathname.startsWith('/ops/inbox')) return 'תיבת WhatsApp'
+  if (pathname.startsWith('/ops/activity')) return 'מה קרה במערכת'
+  if (pathname.startsWith('/ops/status')) return 'בריאות המערכת'
+  if (pathname.startsWith('/ops/inbox')) return 'הודעות'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
-  if (pathname.startsWith('/ops/users')) return 'משתמשים'
+  if (pathname.startsWith('/ops/users')) return 'אנשים והרשאות'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
   if (pathname.startsWith('/ops/lab')) return 'מעבדה'
-  if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
+  if (pathname.startsWith('/ops/simulator')) return 'סימולטור הודעות'
   return 'MaintainOS'
 }
 
@@ -239,16 +238,14 @@ export function AppShell({
           <div className="flex h-full items-center gap-2.5">
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-white">MaintainOS</p>
-              <p className="t-caption truncate text-white/55">
-                Optical Center · ישראל
-              </p>
+              <p className="t-body-strong truncate text-white">Optical Center</p>
+              <p className="t-caption truncate text-white/55">תחזוקה · ישראל</p>
             </div>
           </div>
         </div>
 
         <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-white/50">מרכז שליטה</p>
+          <p className="t-caption mb-2 px-2.5 text-white/50">ראשי</p>
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
@@ -279,15 +276,6 @@ export function AppShell({
           <div className="px-2.5">
             <LogoutButton className="w-full justify-start px-0 text-white/80 hover:text-white" />
           </div>
-          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
-            />
-            <span className="t-caption truncate text-white/50">
-              Optical Center · ישראל
-            </span>
-          </div>
         </div>
       </aside>
 
@@ -304,7 +292,6 @@ export function AppShell({
             </h1>
           </div>
           <ThemeToggle compact className="shrink-0" />
-          <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
         </div>
       </header>
 
@@ -368,7 +355,7 @@ export function AppShell({
       <BottomSheet
         open={moreOpen}
         onOpenChange={setMoreOpen}
-        title="כלים והגדרות"
+        title="עוד אפשרויות"
       >
         {toolGroups.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
@@ -405,9 +392,6 @@ export function AppShell({
         <div className="mt-4">
           <LogoutButton size="touch" variant="secondary" className="w-full" />
         </div>
-        <p className="t-caption mt-4 text-ink-3">
-          Optical Center · פיילוט ישראל
-        </p>
       </BottomSheet>
     </div>
   )

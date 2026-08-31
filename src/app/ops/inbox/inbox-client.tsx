@@ -384,10 +384,10 @@ export function InboxClient() {
                       ) : null}
                       <span className="t-caption text-ink-3">
                         {s.human_takeover || s.inbox_status === 'waiting'
-                          ? 'שיחה פרטית'
+                          ? 'אתה עונה עכשיו'
                           : s.state === 'done'
-                            ? 'טופל'
-                            : s.state}
+                            ? 'הבוט מטפל'
+                            : 'הבוט מטפל'}
                       </span>
                     </span>
                   </span>
@@ -520,7 +520,7 @@ export function InboxClient() {
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'waiting')}
               >
-                השהה בוט
+                אני אענה
               </Button>
               <Button
                 type="button"
@@ -535,7 +535,7 @@ export function InboxClient() {
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'handled')}
               >
-                {waiting ? 'החזר לבוט' : 'טופל'}
+                {waiting ? 'החזר לבוט' : 'הבוט מטפל'}
               </Button>
             </div>
           </header>
@@ -545,8 +545,8 @@ export function InboxClient() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="t-caption text-[var(--signal-warning)]">
                   {pauseUntilLabel
-                    ? `שיחה פרטית עד ${pauseUntilLabel} — הבוט לא מתערב כאן; בשאר השיחות ממשיך כרגיל.`
-                    : 'שיחה פרטית בשיחה זו — הבוט לא מתערב כאן; בשאר השיחות ממשיך כרגיל.'}
+                    ? `אתה עונה עכשיו עד ${pauseUntilLabel}  — הבוט לא מתערב כאן; בשאר השיחות ממשיך כרגיל.`
+                    : 'אתה עונה עכשיו במקום הבוט. בשאר השיחות הבוט ממשיך כרגיל.'}
                 </p>
                 <Button
                   type="button"

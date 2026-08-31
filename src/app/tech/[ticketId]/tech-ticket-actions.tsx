@@ -17,7 +17,7 @@ import { fileToCompressedDataUrl } from '@/lib/media/compress-image'
  * The technician gets ONE obvious next action, at the thumb.
  *
  * assigned      → התחלת טיפול
- * in_progress   → סיום העבודה   (+ ממתין לחלקים as a lesser move)
+ * in_progress   → סמן כטופל   (+ ממתין לחלקים as a lesser move)
  * waiting_parts → חזרה לטיפול   (+ סיום)
  *
  * Resolution requires a note, so the sheet gates the destructive-ish final move
@@ -44,14 +44,14 @@ function specFor(status: string, to: TicketStatus): ActionSpec {
   if (to === 'waiting_parts') {
     return {
       status: to,
-      label: 'ממתין לחלקים',
+      label: 'מחכה לחלק',
       variant: 'secondary',
       icon: Pause,
     }
   }
   return {
     status: to,
-    label: 'סיום העבודה',
+    label: 'סמן כטופל',
     variant: 'resolve',
     icon: Check,
     requiresNote: true,
@@ -319,7 +319,7 @@ export function TechTicketActions({
       <BottomSheet
         open={sheet === 'resolve'}
         onOpenChange={(v) => !v && setSheet(null)}
-        title="סיום העבודה"
+        title="סמן כטופל"
         description="תארו בקצרה מה בוצע בשטח"
       >
         <div className="space-y-4">
@@ -350,7 +350,7 @@ export function TechTicketActions({
               )
             }
           >
-            סיום העבודה
+            סמן כטופל
           </Button>
           {!note.trim() ? (
             <p className="t-caption text-center text-ink-3">

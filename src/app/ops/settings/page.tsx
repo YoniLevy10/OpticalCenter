@@ -12,7 +12,8 @@ export default async function SettingsPage() {
   return (
     <OpsAppShell>
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <PageHeader className="hidden md:flex" title="הגדרות" />
+        <PageHeader className="hidden md:flex" title="הגדרות"
+          description="התאמות כלליות לרשת" />
 
         <SettingsForm initial={settings} />
 

@@ -356,7 +356,7 @@ export function AssetsAdmin({
             disabled={!stores.length}
           >
             <Plus className="h-4 w-4" aria-hidden />
-            הוספת נכס
+            הוסף ציוד
           </Button>
         </div>
       </div>
@@ -380,15 +380,15 @@ export function AssetsAdmin({
         </div>
       ) : null}
 
-      <p className="t-meta t-num text-ink-3">{filtered.length} נכסים</p>
+      <p className="t-meta t-num text-ink-3">{filtered.length} פריטי ציוד</p>
 
       <Panel flush elevated className="overflow-hidden">
         {loading ? (
           <p className="t-body px-4 py-8 text-ink-2">טוען…</p>
         ) : filtered.length === 0 ? (
           <EmptyState
-            title="אין נכסים"
-            description="הוסיפו יחידת מיזוג או ציוד אופטי לפי סניף."
+            title="עדיין אין ציוד"
+            description="אפשר להוסיף מזגן, מקרר, קופה או כל ציוד אחר שתרצו לנהל."
             icon={Package}
           />
         ) : (
@@ -617,7 +617,7 @@ export function AssetsAdmin({
       <Modal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="הוספת נכס"
+        title="הוסף ציוד"
         description="ציוד לפי סניף — יופיע בטופס דיווח."
       >
         <form onSubmit={onCreate} className="space-y-3">
@@ -782,7 +782,7 @@ export function AssetsAdmin({
         onOpenChange={setScanOpen}
         onScan={onBarcodeScan}
         title={
-          scanTarget === 'create' ? 'סריקת ברקוד לנכס חדש' : 'סריקת ברקוד מוצר'
+          scanTarget === 'create' ? 'סריקת ברקוד לציוד חדש' : 'סריקת ברקוד מוצר'
         }
         description={
           scanTarget === 'create'

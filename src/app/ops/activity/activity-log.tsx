@@ -55,7 +55,7 @@ export function phraseEvent(e: AuditEvent): string {
       return source ? `תקלה נוצרה (${source})` : 'תקלה נוצרה'
     }
     case 'sla_breached':
-      return 'חריגת SLA'
+      return 'זמן הטיפול עבר'
     case 'partner_dispatched': {
       const name = p.vendor_name ? String(p.vendor_name) : null
       return name ? `שיגור ל־${name}` : 'שיגור לספק חיצוני'

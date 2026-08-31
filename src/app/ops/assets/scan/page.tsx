@@ -16,8 +16,8 @@ export default async function AssetScanPage() {
       <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/assets"
-          backLabel="חזרה לנכסים"
-          title="סריקת נכסים"
+          backLabel="חזרה לציוד"
+          title="סריקת ציוד"
           meta="מצב נייד רציף"
         />
         <AssetScanClient />

@@ -11,14 +11,15 @@ export const TICKET_STATUSES = [
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
 
+/** Human-facing status labels (novice-first). Internal keys unchanged. */
 export const TICKET_STATUS_LABELS_HE: Record<TicketStatus, string> = {
   new: 'חדש',
-  triaged: 'מסווג',
-  assigned: 'משויך',
+  triaged: 'מחכה לטיפול',
+  assigned: 'מחכה לטיפול',
   in_progress: 'בטיפול',
-  waiting_parts: 'ממתין לחלקים',
-  resolved: 'נפתר',
-  closed: 'סגור',
+  waiting_parts: 'מחכה לחלק',
+  resolved: 'הסתיים',
+  closed: 'הסתיים',
   cancelled: 'בוטל',
 }
 
@@ -93,7 +94,7 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   created: 'נוצרה',
   status_changed: 'שינוי סטטוס',
   assigned: 'שיוך טכנאי',
-  sla_breached: 'חריגת SLA',
+  sla_breached: 'זמן הטיפול שהוגדר עבר',
   tech_note: 'הערת טכנאי',
   tech_photo: 'תמונת טכנאי',
 }

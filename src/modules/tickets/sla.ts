@@ -93,8 +93,8 @@ export function formatSlaLabelHe(opts: {
   const priorityLabel = TICKET_PRIORITY_LABELS_HE[priority] ?? String(opts.priority)
   const kind = getSlaBreachKind(opts)
 
-  if (kind === 'resolve') return `חריגת SLA סיום · ${priorityLabel}`
-  if (kind === 'respond') return `חריגת SLA תגובה · ${priorityLabel}`
+  if (kind === 'resolve') return `זמן הטיפול לסיום עבר · ${priorityLabel}`
+  if (kind === 'respond') return `זמן הטיפול לתגובה עבר · ${priorityLabel}`
 
   if (window) {
     return `SLA ${priorityLabel}: תגובה ${window.respondHours}ש׳ · סיום ${window.resolveHours}ש׳`

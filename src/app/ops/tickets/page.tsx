@@ -156,6 +156,7 @@ export default async function TicketsPage({
         <PageHeader
           className="hidden md:flex"
           title="תקלות"
+          description="כל התקלות במקום אחד"
           meta={<span className="t-num">{filtered.length}</span>}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (
@@ -187,7 +188,7 @@ export default async function TicketsPage({
         <Panel flush elevated className="overflow-hidden">
           {rows.length === 0 ? (
             <EmptyState
-              title="אין תקלות"
+              title="עדיין אין תקלות כאן"
               description={
                 filters.q ? `אין תוצאות עבור «${filters.q}».` : undefined
               }

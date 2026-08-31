@@ -38,15 +38,15 @@ export default async function AssetsPage() {
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageToolbar
-          backHref="/ops/settings"
-          backLabel="חזרה להגדרות"
-          title="נכסים"
-          meta="ציוד לפי סניף"
+          backHref="/ops/dashboard"
+          backLabel="חזרה לראשי"
+          title="ציוד"
+          meta="מה יש בכל סניף"
           showRefresh
         />
         <PageHeader
-          title="נכסים"
-          meta="ציוד לפי סניף"
+          title="ציוד"
+          description="מה מותקן בכל סניף — אפשר גם לסרוק ברקוד"
           className="hidden md:flex"
         />
         <AssetsAdmin

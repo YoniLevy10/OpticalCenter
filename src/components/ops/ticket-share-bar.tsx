@@ -19,7 +19,7 @@ export function TicketShareBar({
     `MaintainOS · ${display}`,
     storeName && storeCode ? `${storeName} (#${storeCode})` : null,
     description.slice(0, 200),
-    techName ? `טכנאי: ${techName}` : 'לא משויך',
+    techName ? `טכנאי: ${techName}` : 'עדיין לא נבחר טכנאי',
     typeof window !== 'undefined' ? `${window.location.origin}/tech` : '/tech',
   ].filter(Boolean)
 
