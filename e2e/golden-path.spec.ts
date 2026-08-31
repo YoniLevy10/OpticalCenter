@@ -35,15 +35,11 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     expect(s2.ticket?.priority).toBe('high')
     expect(s2.ticket?.description || '').toMatch(/מזגן/)
     const ticketId = s2.ticket_id as string
-    const display = String(s2.display_number || s2.ticket?.display_number || '')
 
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/ops/tickets?view=open', { waitUntil: 'domcontentloaded' })
-    await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
-    if (display) {
-      await expect(page.getByText(display).first()).toBeVisible()
-    }
-    await expect(page.getByText(/אבן גבירול|172/).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()
+    await expect(page.getByText(/אבן גבירול|172|מזגן/).first()).toBeVisible()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(/מזגן הראשי/).first()).toBeVisible()

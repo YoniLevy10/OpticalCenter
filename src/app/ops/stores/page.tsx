@@ -61,6 +61,7 @@ export default async function StoresPage({
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageHeader
+          className="hidden md:flex"
           title="חנויות"
           meta={<span className="t-num">{filtered.length}</span>}
           actions={canMutate ? <StoreCreateForm /> : undefined}
