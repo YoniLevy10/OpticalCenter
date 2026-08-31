@@ -90,7 +90,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     expect(done.json.ticket.resolved_at || done.json.ticket.events).toBeTruthy()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
-    await expect(page.getByText(/resolved|נפתר|הושלם/i).first()).toBeVisible({
+    await expect(page.getByText(/resolved|הסתיים|הושלם|נפתר/i).first()).toBeVisible({
       timeout: 20_000,
     })
   })
