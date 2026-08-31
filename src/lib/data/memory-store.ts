@@ -230,6 +230,9 @@ export type MemSession = {
   clarification_count?: number
   draft_payload?: Record<string, unknown> | null
   active_ticket_id?: string | null
+  /** Bamakor-style stash: media received before ticket exists. */
+  pending_media_url?: string | null
+  pending_media_kind?: 'image' | 'video' | 'document' | null
   expires_at: string
   updated_at: string
   /** Private ops window for this wa_id only (bot stays on elsewhere). */
@@ -811,6 +814,8 @@ export function memUpsertSession(
     clarification_count?: number
     draft_payload?: Record<string, unknown> | null
     active_ticket_id?: string | null
+    pending_media_url?: string | null
+    pending_media_kind?: 'image' | 'video' | 'document' | null
   },
 ): MemSession {
   const now = new Date().toISOString()
@@ -832,6 +837,14 @@ export function memUpsertSession(
       session.active_ticket_id !== undefined
         ? session.active_ticket_id
         : (existing?.active_ticket_id ?? null),
+    pending_media_url:
+      session.pending_media_url !== undefined
+        ? session.pending_media_url
+        : (existing?.pending_media_url ?? null),
+    pending_media_kind:
+      session.pending_media_kind !== undefined
+        ? session.pending_media_kind
+        : (existing?.pending_media_kind ?? null),
     expires_at:
       session.expires_at ??
       new Date(Date.now() + 30 * 60 * 1000).toISOString(),

@@ -259,6 +259,44 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(session?.state).toBe('done')
   })
 
+  it('WA-16 photo before store is stashed and attached on ticket create', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    const stash = await processInboundMessage(
+      msg({
+        waId,
+        text: null,
+        mediaUrl: 'https://example.com/pre-store.jpg',
+        mediaKind: 'image',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(stash.ok).toBe(true)
+    expect(stash.ticketId).toBeFalsy()
+    expect(stash.state).toBe('awaiting_store')
+    expect(memGetSession(waId)?.pending_media_url).toBe(
+      'https://example.com/pre-store.jpg',
+    )
+
+    await processInboundMessage(msg({ text: 'STORE_172', waId }), {
+      skipOutboundGraph: true,
+    })
+    const created = await processInboundMessage(
+      msg({ waId, text: 'נזילה מהתקרה עם תמונה קודמת' }),
+      { skipOutboundGraph: true },
+    )
+    expect(created.ok).toBe(true)
+    expect(created.ticketId).toBeTruthy()
+    const ticket = memListTickets().find((t) => t.id === created.ticketId)
+    expect(
+      ticket?.messages.some(
+        (m) => m.media_url === 'https://example.com/pre-store.jpg',
+      ),
+    ).toBe(true)
+    expect(memGetSession(waId)?.pending_media_url).toBeFalsy()
+  })
+
   it('WA-15 follow-up photo after ticket attaches to same ticket', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()

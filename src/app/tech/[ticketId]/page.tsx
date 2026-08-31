@@ -17,6 +17,7 @@ import {
 } from '@/modules/tickets/constants'
 import { fetchTechTicket, isUuid } from '@/modules/tickets/tech'
 import { getById } from '@/modules/tickets/service'
+import { mergeEvidence } from '@/modules/tickets/attachments'
 import { getSlaView } from '@/modules/tickets/sla-display'
 import { buildActivityDesc } from '@/modules/tickets/activity'
 import {
@@ -103,7 +104,11 @@ export default async function TechTicketDetailPage({
   })
 
   const activity = buildActivityDesc([], ticket.events ?? [])
-  const attachments = ticket.attachments ?? []
+  // WhatsApp photos may live only on ticket_messages.media_url — merge like HQ.
+  const attachments = mergeEvidence(
+    ticket.attachments ?? [],
+    fullTicket?.messages ?? [],
+  )
 
   const mapsQuery = [ticket.stores?.address, ticket.stores?.city, storeName]
     .filter(Boolean)
