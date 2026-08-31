@@ -57,14 +57,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'יותר מדי בקשות' }, { status: 429 })
     }
 
-    const body = (await request.json()) as { month?: string; format?: string }
-    const month = body.month?.trim()
-    if (!month) {
-      return NextResponse.json({ error: 'חודש חסר (YYYY-MM)' }, { status: 400 })
+    const body = (await request.json()) as {
+      month?: string
+      from?: string
+      to?: string
+      format?: string
+      label?: string
     }
-    const range = monthRange(month)
-    if (!range) {
-      return NextResponse.json({ error: 'פורמט חודש לא תקין' }, { status: 400 })
+    const month = body.month?.trim()
+    const fromRaw = body.from?.trim()
+    const toRaw = body.to?.trim()
+
+    let from: string
+    let to: string
+    let label: string
+
+    if (month) {
+      const range = monthRange(month)
+      if (!range) {
+        return NextResponse.json({ error: 'פורמט חודש לא תקין' }, { status: 400 })
+      }
+      from = range.from
+      to = range.to
+      label = body.label?.trim() || `דוח ${range.label}`
+    } else if (fromRaw && toRaw) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fromRaw) || !/^\d{4}-\d{2}-\d{2}$/.test(toRaw)) {
+        return NextResponse.json({ error: 'תאריכים לא תקינים' }, { status: 400 })
+      }
+      if (fromRaw > toRaw) {
+        return NextResponse.json({ error: 'מתאריך חייב להיות לפני עד תאריך' }, { status: 400 })
+      }
+      from = fromRaw
+      to = toRaw
+      label = body.label?.trim() || `דוח ${from} — ${to}`
+    } else {
+      return NextResponse.json(
+        { error: 'נדרש חודש (YYYY-MM) או טווח from/to' },
+        { status: 400 },
+      )
     }
 
     const [result] = await Promise.all([
@@ -72,7 +102,7 @@ export async function POST(request: Request) {
     ])
     const fetched = (result.tickets ?? []) as unknown as QueueTicket[]
     let scoped = scopeTicketsForActor(actor, fetched)
-    scoped = filterTicketsByDateRange(scoped, range.from, range.to)
+    scoped = filterTicketsByDateRange(scoped, from, to)
 
     const kpis = computeDashboardKpis(scoped, [])
     const sla = computeSlaReport(scoped)
@@ -80,9 +110,9 @@ export async function POST(request: Request) {
 
     const snapshot = await createReportSnapshot({
       organizationId: orgIdForActor(actor),
-      periodStart: range.from,
-      periodEnd: range.to,
-      label: `דוח ${range.label}`,
+      periodStart: from,
+      periodEnd: to,
+      label,
       format,
       kpis,
       sla,

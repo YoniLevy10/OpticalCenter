@@ -2,47 +2,63 @@
 
 import { Button } from '@/components/ui/button'
 
-type Row = Record<string, string | number | null | undefined>
-
-function toCsv(rows: Row[]): string {
-  if (rows.length === 0) return ''
-  const keys = Object.keys(rows[0]!)
-  const esc = (v: unknown) => {
-    const s = v == null ? '' : String(v)
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-  }
-  return [keys.join(','), ...rows.map((r) => keys.map((k) => esc(r[k])).join(','))].join(
-    '\n',
-  )
+export type ReportExportQuery = {
+  from?: string
+  to?: string
+  month?: string
+  store?: string
+  status?: string
 }
 
-export function ReportsExportButton({
-  rows,
-  filename,
+function exportHref(format: 'csv' | 'xlsx' | 'pdf', query: ReportExportQuery) {
+  const params = new URLSearchParams({ format })
+  if (query.from) params.set('from', query.from)
+  if (query.to) params.set('to', query.to)
+  if (query.month) params.set('month', query.month)
+  if (query.store) params.set('store', query.store)
+  if (query.status) params.set('status', query.status)
+  return `/api/reports/export?${params.toString()}`
+}
+
+export function ReportsExportActions({
+  query,
+  count,
+  className,
 }: {
-  rows: Row[]
-  filename: string
+  query: ReportExportQuery
+  count: number
+  className?: string
 }) {
-  function download() {
-    const csv = '\uFEFF' + toCsv(rows)
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+  function download(format: 'csv' | 'xlsx' | 'pdf') {
+    window.location.href = exportHref(format, query)
   }
 
   return (
-    <Button
-      type="button"
-      variant="secondary"
-      size="touch"
-      className="md:h-9 md:min-h-0"
-      onClick={download}
-    >
-      ייצוא CSV ({rows.length})
-    </Button>
+    <div className={className ?? 'flex flex-wrap items-center gap-2'}>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => download('csv')}
+      >
+        ייצוא CSV{count > 0 ? ` (${count})` : ''}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => download('xlsx')}
+      >
+        Excel
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => download('pdf')}
+      >
+        PDF
+      </Button>
+    </div>
   )
 }

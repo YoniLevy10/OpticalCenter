@@ -1,6 +1,7 @@
 import { PublicReportForm } from './report-form'
 import { fetchStores } from '@/modules/stores/data'
 import { SkipLink } from '@/components/layout/skip-link'
+import { BrandMark } from '@/components/brand/brand-mark'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,22 +21,26 @@ export default async function PublicReportPage({
   return (
     <div className="dvh-screen safe-pt safe-pb bg-canvas px-4 py-8">
       <SkipLink />
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-md space-y-6 outline-none">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-md space-y-6 outline-none"
+      >
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]">
-            <span className="t-section" aria-hidden>
-              OC
-            </span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <BrandMark size={48} priority className="rounded-[var(--radius-lg)]" />
           </div>
           <h1 className="t-title text-ink">דיווח תקלה</h1>
-          <p className="t-body mt-1 text-ink-2">
-            Optical Center · MaintainOS
-          </p>
+          <p className="t-body mt-1 text-ink-2">Optical Center · MaintainOS</p>
         </div>
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]">
           <PublicReportForm
             initialStore={initial}
-            stores={stores.map((s) => ({ code: s.code, name: s.name, id: s.id }))}
+            stores={stores.map((s) => ({
+              code: s.code,
+              name: s.name,
+              id: s.id,
+            }))}
           />
         </div>
       </main>

@@ -41,6 +41,15 @@ function shareText(s: Snapshot): string {
   ].join('\n')
 }
 
+function downloadHref(s: Snapshot, format: 'csv' | 'xlsx' | 'pdf') {
+  const params = new URLSearchParams({
+    from: s.period_start,
+    to: s.period_end,
+    format,
+  })
+  return `/api/reports/export?${params.toString()}`
+}
+
 export function ReportsHistoryClient() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +59,8 @@ export function ReportsHistoryClient() {
     d.setMonth(d.getMonth() - 1)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -72,7 +83,7 @@ export function ReportsHistoryClient() {
     void load()
   }, [load])
 
-  async function generate() {
+  async function generate(body: Record<string, string>) {
     setBusy(true)
     setNotice(null)
     setError(null)
@@ -80,11 +91,11 @@ export function ReportsHistoryClient() {
       const res = await fetch('/api/reports/snapshots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month, format: 'pdf' }),
+        body: JSON.stringify({ ...body, format: 'pdf' }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'יצירה נכשלה')
-      setNotice(`נשמר: ${json.snapshot?.label ?? month}`)
+      setNotice(`נשמר: ${json.snapshot?.label ?? 'דוח'}`)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'יצירה נכשלה')
@@ -93,59 +104,90 @@ export function ReportsHistoryClient() {
     }
   }
 
-  function downloadSnapshot(s: Snapshot, format: 'csv' | 'xlsx' | 'pdf') {
-    const params = new URLSearchParams({
-      from: s.period_start,
-      to: s.period_end,
-      format,
-    })
-    window.location.href = `/api/reports/export?${params.toString()}`
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button asChild variant="secondary" size="sm">
-          <Link href="/ops/reports">סיכום חי</Link>
-        </Button>
-        <Button asChild variant="primary" size="sm">
-          <Link href="/ops/reports/history">היסטוריה</Link>
-        </Button>
+    <div className="flex flex-col gap-5">
+      {error ? <ErrorState title="שגיאה" description={error} /> : null}
+      {notice ? <Notice tone="success">{notice}</Notice> : null}
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel elevated className="!p-4 md:!p-5">
+          <h2 className="t-section mb-3 text-ink">יצירת דוח חודשי</h2>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="חודש" htmlFor="history-month">
+              <Input
+                id="history-month"
+                type="month"
+                dir="ltr"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              />
+            </Field>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy || !month}
+              onClick={() => void generate({ month })}
+            >
+              {busy ? 'יוצר…' : 'יצירה ושמירה'}
+            </Button>
+          </div>
+          <p className="t-caption mt-3 flex flex-wrap items-center gap-2 text-ink-3">
+            <ComingSoonBadge />
+            <span>שליחה אוטומטית ב-1 לחודש · email</span>
+          </p>
+        </Panel>
+
+        <Panel elevated className="!p-4 md:!p-5">
+          <h2 className="t-section mb-3 text-ink">יצירה לפי טווח תאריכים</h2>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="מתאריך" htmlFor="history-from">
+              <Input
+                id="history-from"
+                type="date"
+                dir="ltr"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+            </Field>
+            <Field label="עד תאריך" htmlFor="history-to">
+              <Input
+                id="history-to"
+                type="date"
+                dir="ltr"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </Field>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy || !from || !to}
+              onClick={() => void generate({ from, to })}
+            >
+              {busy ? 'יוצר…' : 'שמירת טווח'}
+            </Button>
+          </div>
+        </Panel>
       </div>
 
-      {error ? <ErrorState title="שגיאה" description={error} /> : null}
-      {notice ? <Notice tone="progress">{notice}</Notice> : null}
-
-      <Panel elevated className="!p-4">
-        <h2 className="t-section mb-3 text-ink">יצירת דוח חודשי</h2>
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="חודש" htmlFor="history-month">
-            <Input
-              id="history-month"
-              type="month"
-              dir="ltr"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-            />
-          </Field>
-          <Button type="button" variant="primary" size="sm" disabled={busy} onClick={() => void generate()}>
-            {busy ? 'יוצר…' : 'יצירה ושמירה'}
-          </Button>
-        </div>
-        <p className="t-caption mt-3 flex flex-wrap items-center gap-2 text-ink-3">
-          <ComingSoonBadge />
-          <span>שליחה אוטומטית ב-1 לחודש · email</span>
-        </p>
-      </Panel>
-
       <Panel flush elevated>
-        <PanelHeader title="דוחות שמורים" meta={loading ? '…' : String(snapshots.length)} />
+        <PanelHeader
+          title="ארכיון שמורים"
+          meta={loading ? '…' : String(snapshots.length)}
+          action={
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/ops/reports">סיכום חי</Link>
+            </Button>
+          }
+        />
         {loading ? (
           <p className="t-body px-4 py-8 text-ink-2">טוען…</p>
         ) : snapshots.length === 0 ? (
           <EmptyState
             title="אין דוחות שמורים"
-            description="צרו דוח חודשי למעלה — הוא יופיע כאן לצפייה והורדה."
+            description="צרו דוח חודשי או טווח תאריכים למעלה — הוא יופיע כאן לצפייה והורדה."
           />
         ) : (
           <ul className="divide-y divide-border">
@@ -164,13 +206,20 @@ export function ReportsHistoryClient() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => downloadSnapshot(s, 'pdf')}>
-                      PDF
+                    <Button asChild variant="secondary" size="sm">
+                      <a href={downloadHref(s, 'pdf')}>PDF</a>
                     </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => downloadSnapshot(s, 'xlsx')}>
-                      Excel
+                    <Button asChild variant="secondary" size="sm">
+                      <a href={downloadHref(s, 'xlsx')}>Excel</a>
                     </Button>
-                    <WhatsAppShareButton prefillText={shareText(s)} label="שיתוף" size="sm" />
+                    <Button asChild variant="secondary" size="sm">
+                      <a href={downloadHref(s, 'csv')}>CSV</a>
+                    </Button>
+                    <WhatsAppShareButton
+                      prefillText={shareText(s)}
+                      label="שיתוף"
+                      size="sm"
+                    />
                   </div>
                 </div>
               </li>

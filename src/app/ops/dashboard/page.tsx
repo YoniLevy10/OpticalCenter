@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Inbox, PackageOpen, UserRound, Wrench } from 'lucide-react'
+import { AlertTriangle, Inbox, PackageOpen, Wrench } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   Panel,
   PanelHeader,
   EmptyState,
+  PageHeader,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { LiveSla } from '@/components/ui/time'
@@ -42,71 +43,49 @@ function StatStrip({
       value: open,
       href: queueHref({ view: 'open', sort: 'urgency' }),
       tone: 'default' as const,
-      icon: Inbox,
-      iconClass: 'bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
     },
     {
       label: 'חריגות SLA',
       value: breached,
       href: queueHref({ view: 'attention', sort: 'sla' }),
       tone: 'critical' as const,
-      icon: AlertTriangle,
-      iconClass:
-        'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
     },
     {
       label: 'לא משויכות',
       value: unassigned,
       href: queueHref({ view: 'unassigned', sort: 'urgency' }),
       tone: 'warn' as const,
-      icon: UserRound,
-      iconClass:
-        'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
     },
     {
       label: 'נפתרו',
       value: resolved,
       href: queueHref({ view: 'resolved', sort: 'newest' }),
       tone: 'default' as const,
-      icon: PackageOpen,
-      iconClass: 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
       {items.map((item) => {
         const hot =
           (item.tone === 'critical' || item.tone === 'warn') && item.value > 0
-        const Icon = item.icon
         return (
           <Link
             key={item.label}
             href={item.href}
-            className="group flex items-start gap-3.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-[background-color,box-shadow,transform] duration-[var(--dur-1)] hover:-translate-y-px hover:bg-surface-sunken/30 hover:shadow-[var(--shadow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+            className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-sunken/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
           >
-            <span
-              aria-hidden
+            <p className="t-caption text-ink-3">{item.label}</p>
+            <p
               className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] ring-1 ring-inset ring-black/[0.04]',
-                item.iconClass,
+                't-display t-num mt-1',
+                hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
+                hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
+                !hot && 'text-ink',
               )}
             >
-              <Icon className="h-5 w-5" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0">
-              <p className="t-caption text-ink-3">{item.label}</p>
-              <p
-                className={cn(
-                  't-display t-num mt-1',
-                  hot && item.tone === 'critical' && 'text-[var(--signal-critical)]',
-                  hot && item.tone === 'warn' && 'text-[var(--signal-warning)]',
-                  !hot && 'text-ink',
-                )}
-              >
-                {item.value}
-              </p>
-            </div>
+              {item.value}
+            </p>
           </Link>
         )
       })}
@@ -223,28 +202,15 @@ export default async function OpsDashboardPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <div className="flex items-end justify-between gap-4 border-b border-border px-1 pb-6 pt-2 md:px-2 md:pb-8">
-          <div className="min-w-0">
-            <p className="t-caption text-[var(--tenant)]">OPTICAL CENTER · OPERATIONS OS</p>
-            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.04em] text-ink md:text-5xl">לוח בקרה</h1>
-            <p className="t-body mt-2 max-w-xl text-ink-2">תמונה חיה של מה שדורש תשומת לב היום.</p>
-            {ticketResult.backend !== 'supabase' ? (
-              <p className="t-meta mt-2 text-ink-3">מצב דמו</p>
-            ) : null}
-          </div>
-          <div className="hidden shrink-0 flex-col items-end gap-3 md:flex">
-            <div className="text-end">
-              <p className="t-caption text-ink-3">מצב מערכת</p>
-              <p className="mt-2 flex items-center justify-end gap-2 text-sm font-medium text-ink">
-                <span className="size-2 rounded-full bg-[var(--signal-resolved)]" />
-                פעילות תקינה
-              </p>
-            </div>
+        <PageHeader
+          className="hidden md:flex"
+          title="לוח בקרה"
+          actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/tickets">לתור התקלות</Link>
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <div className="md:hidden">
           <Button asChild variant="secondary" size="touch" className="w-full">
@@ -252,42 +218,18 @@ export default async function OpsDashboardPage() {
           </Button>
         </div>
 
-        <div
+        <p
           className={cn(
-            'flex items-center gap-3 rounded-[var(--radius-lg)] border px-4 py-3',
+            't-body border-b border-border pb-3',
             kpis.breached > 0
-              ? 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]'
-              : 'border-border bg-surface shadow-[var(--shadow-1)]',
+              ? 'text-[var(--signal-critical)]'
+              : 'text-ink-2',
           )}
         >
-          <span
-            aria-hidden
-            className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
-              kpis.breached > 0
-                ? 'bg-white/60 text-[var(--signal-critical)]'
-                : 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
-            )}
-          >
-            {kpis.breached > 0 ? (
-              <AlertTriangle className="h-5 w-5" strokeWidth={1.75} />
-            ) : (
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--signal-resolved)]" />
-            )}
-          </span>
-          <p
-            className={cn(
-              't-body-strong',
-              kpis.breached > 0
-                ? 'text-[var(--signal-critical)]'
-                : 'text-ink',
-            )}
-          >
-            {kpis.breached > 0
-              ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
-              : 'המערכת תקינה — אין חריגות SLA'}
-          </p>
-        </div>
+          {kpis.breached > 0
+            ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
+            : 'אין חריגות SLA'}
+        </p>
 
         <StatStrip
           open={kpis.open}

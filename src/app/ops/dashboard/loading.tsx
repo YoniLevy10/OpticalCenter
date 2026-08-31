@@ -1,11 +1,12 @@
 import { AppShell } from '@/components/layout/app-shell'
+import { BrandSplash } from '@/components/brand/brand-mark'
 import { Panel, Skeleton } from '@/components/ui/primitives'
 
 export default function DashboardLoading() {
   return (
     <AppShell>
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
+        <BrandSplash label="טוען לוח בקרה…" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Skeleton className="h-24 rounded-[var(--radius-lg)]" />
           <Skeleton className="h-24 rounded-[var(--radius-lg)]" />

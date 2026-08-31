@@ -188,7 +188,7 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pb-actions-hq md:pb-0">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
         <nav aria-label="מיקום בעמוד" className="hidden items-center gap-1 md:flex">
@@ -232,7 +232,6 @@ export default async function TicketDetailPage({
         </header>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* ---------- Main column ---------- */}
           <div className="flex flex-col gap-4">
             {ticket.title && ticket.description !== ticket.title ? (
               <Panel>
@@ -251,8 +250,6 @@ export default async function TicketDetailPage({
               </Panel>
             ) : null}
 
-            {/* Actions in document flow on mobile — no fixed overlay */}
-            <div className="md:hidden">{actionsPanel('ticket-assignee-mobile')}</div>
             <div className="md:hidden">{contextPanel}</div>
             <div className="md:hidden">{slaDatesPanel}</div>
 
@@ -272,6 +269,13 @@ export default async function TicketDetailPage({
                 <EmptyState title="אין תיעוד" className="py-10" />
               </Panel>
             ) : null}
+          </div>
+        </div>
+
+        {/* Mobile sticky action dock above bottom nav */}
+        <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:hidden">
+          <div className="mx-auto max-h-[min(40vh,var(--hq-actions-dock-h))] overflow-y-auto">
+            {actionsPanel('ticket-assignee-mobile')}
           </div>
         </div>
       </div>

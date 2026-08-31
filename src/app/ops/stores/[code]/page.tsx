@@ -1,10 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import {
-  AlertTriangle,
-  Package,
-  Ticket,
-} from 'lucide-react'
+import { Ticket } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
@@ -45,37 +41,22 @@ function MetricLink({
   label,
   value,
   href,
-  icon: Icon,
-  iconClass,
   valueClass,
 }: {
   label: string
   value: number
   href: string
-  icon: typeof Ticket
-  iconClass: string
   valueClass?: string
 }) {
   return (
     <Link
       href={href}
-      className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-3.5 shadow-[var(--shadow-1)] transition-[background-color,box-shadow] duration-[var(--dur-1)] hover:bg-surface-sunken/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+      className="rounded-[var(--radius-lg)] border border-border bg-surface px-3.5 py-3 transition-colors hover:bg-surface-sunken/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
     >
-      <span
-        aria-hidden
-        className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
-          iconClass,
-        )}
-      >
-        <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
-      </span>
-      <div className="min-w-0">
-        <p className="t-caption text-ink-3">{label}</p>
-        <p className={cn('t-display t-num mt-0.5 text-ink', valueClass)}>
-          {value}
-        </p>
-      </div>
+      <p className="t-caption text-ink-3">{label}</p>
+      <p className={cn('t-display t-num mt-0.5 text-ink', valueClass)}>
+        {value}
+      </p>
     </Link>
   )
 }
@@ -102,7 +83,7 @@ export default async function StoreDetailPage({
     ? (tabRaw as TabKey)
     : 'overview'
 
-  const { store, backend } = await getStoreByCode(code)
+  const { store } = await getStoreByCode(code)
   if (!store) notFound()
 
   const businessPhone = await resolveWhatsAppBusinessPhone()
@@ -163,13 +144,13 @@ export default async function StoreDetailPage({
         />
 
         <PageHeader
+          className="hidden md:flex"
           title={store.name}
           meta={
             <>
               <span className="t-num" dir="ltr">
                 #{store.code}
               </span>
-              {backend === 'memory' ? ' · מצב דמו' : null}
               {store.is_active === false ? ' · מושבת' : null}
             </>
           }
@@ -189,22 +170,16 @@ export default async function StoreDetailPage({
             label="תקלות פתוחות"
             value={openTickets.length}
             href={`/ops/tickets?store=${encodeURIComponent(store.code)}`}
-            icon={Ticket}
-            iconClass="bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]"
           />
           <MetricLink
             label="נכסים"
             value={assets.length}
             href={`${base}?tab=assets`}
-            icon={Package}
-            iconClass="bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]"
           />
           <MetricLink
             label="חריגות"
             value={exceptional.length}
             href={`${base}?tab=tickets`}
-            icon={AlertTriangle}
-            iconClass="bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]"
             valueClass={
               exceptional.length > 0 ? 'text-[var(--signal-critical)]' : undefined
             }

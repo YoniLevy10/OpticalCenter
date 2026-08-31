@@ -11,6 +11,7 @@ import {
   PanelHeader,
   SuccessNotice,
 } from '@/components/ui/primitives'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
 import { cn } from '@/lib/utils'
 import type { MemSettings } from '@/lib/data/memory-store'
@@ -175,6 +176,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
 
           {section === 'system' ? (
             <div className="space-y-4">
+              <ThemeToggle />
               <h3 className="t-section text-ink">שעות תגובה (SLA)</h3>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {(

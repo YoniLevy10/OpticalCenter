@@ -48,31 +48,31 @@ function levelFrom(data: HealthPayload | null, pilot: PilotPayload | null): Leve
 
 const COPY: Record<
   Level,
-  { title: string; detail: string; icon: typeof CheckCircle2; tone: string }
+  { title: string; detail: string; icon: typeof CheckCircle2; text: string }
 > = {
   ok: {
     title: 'הכול עובד',
-    detail: 'המערכת תקינה — אפשר להמשיך בעבודה הרגילה.',
+    detail: 'המערכת תקינה.',
     icon: CheckCircle2,
-    tone: 'border-[var(--signal-resolved-soft)] bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
+    text: 'text-[var(--signal-resolved)]',
   },
   partial: {
     title: 'מצב חלקי',
-    detail: 'חלק מהשירותים דורשים תשומת לב, אך אפשר להמשיך לעבוד.',
+    detail: 'חלק מהשירותים דורשים תשומת לב.',
     icon: AlertTriangle,
-    tone: 'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
+    text: 'text-[var(--signal-warning)]',
   },
   issue: {
     title: 'תקלה',
-    detail: 'זוהתה תקלה שעלולה להשפיע על העבודה. בדקו את החיבורים.',
+    detail: 'זוהתה תקלה שעלולה להשפיע על העבודה.',
     icon: CircleAlert,
-    tone: 'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
+    text: 'text-[var(--signal-critical)]',
   },
   unknown: {
     title: 'בודקים…',
     detail: 'ממתינים לתשובת המערכת.',
     icon: AlertTriangle,
-    tone: 'border-border bg-surface text-ink-2',
+    text: 'text-ink-2',
   },
 }
 
@@ -127,25 +127,18 @@ export function StatusHealthPanel() {
 
       <div
         role="status"
-        className={cn(
-          'flex items-start gap-4 rounded-[var(--radius-xl)] border px-5 py-6',
-          copy.tone,
-        )}
+        className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-4"
       >
-        <Icon className="mt-0.5 h-8 w-8 shrink-0" strokeWidth={1.75} />
+        <Icon
+          className={cn('mt-0.5 h-5 w-5 shrink-0', copy.text)}
+          strokeWidth={1.75}
+        />
         <div>
-          <p className="t-title">{copy.title}</p>
-          <p className="t-body mt-1 opacity-90">{copy.detail}</p>
+          <p className={cn('t-section', copy.text)}>{copy.title}</p>
+          <p className="t-body mt-1 text-ink-2">{copy.detail}</p>
           {backend ? (
-            <p className="t-caption mt-3 opacity-70">
-              מצב נתונים: {backend === 'supabase' ? 'מחובר' : 'דמו מקומי'}
-            </p>
-          ) : null}
-          {pilot ? (
-            <p className="t-caption mt-1 opacity-70">
-              פיילוט WhatsApp — בנייה:{' '}
-              {pilot.buildSideReady ? 'מוכן' : 'חסר'} · Meta:{' '}
-              {pilot.metaSideReady ? 'מוכן' : 'ממתין'}
+            <p className="t-caption mt-2 text-ink-3">
+              {backend === 'supabase' ? 'מחובר' : 'דמו מקומי'}
             </p>
           ) : null}
         </div>

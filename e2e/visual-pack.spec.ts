@@ -56,6 +56,11 @@ test.describe('Visual regression pack', () => {
   test('critical routes across viewports', async ({ page, request }) => {
     test.setTimeout(180_000)
 
+    // Stable light theme — CI hour must not flip auto dark and break snapshots.
+    await page.addInitScript(() => {
+      window.localStorage.setItem('maintainos-theme', 'light')
+    })
+
     // Isolate from tickets seeded by earlier e2e files in the shared memory store.
     await request.post('/api/demo/reset-memory')
 

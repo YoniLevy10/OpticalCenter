@@ -1,11 +1,15 @@
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { Panel, Skeleton } from '@/components/ui/primitives'
 
 export default function TicketDetailLoading() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-3 w-32" />
+        <div className="flex items-center gap-2.5">
+          <BrandMark size={28} className="rounded-[var(--radius-md)]" alt="" />
+          <Skeleton className="h-3 w-32" />
+        </div>
         <div className="flex flex-col gap-3">
           <Skeleton className="h-7 w-2/3" />
           <Skeleton className="h-4 w-52" />
