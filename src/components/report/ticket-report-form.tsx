@@ -45,12 +45,19 @@ export function TicketReportForm({
   stores,
   locked = false,
   showWhatsApp = true,
+  mode = 'public',
+  onCreated,
+  onDismiss,
 }: {
-  apiUrl: '/api/report' | '/api/store/tickets'
+  apiUrl: '/api/report' | '/api/store/tickets' | '/api/tickets'
   initialStore: string
   stores: { code: string; name: string; id?: string }[]
   locked?: boolean
   showWhatsApp?: boolean
+  /** HQ ops create — different success CTAs and source. */
+  mode?: 'public' | 'ops'
+  onCreated?: (ticket: { id: string; display_number: string | null }) => void
+  onDismiss?: () => void
 }) {
   const [storeCode, setStoreCode] = useState(initialStore)
   const [name, setName] = useState('')
@@ -159,16 +166,19 @@ export function TicketReportForm({
           reporterPhone: phone || undefined,
           category: category || undefined,
           assetId: assetId || undefined,
+          ...(mode === 'ops' ? { source: 'web_fallback' as const } : {}),
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'שליחה נכשלה')
       const id = json.ticket?.id as string
+      const displayNumber = (json.ticket?.display_number as string | null) ?? null
       if (id && media.length) {
         await uploadTicketMedia(id, media)
       }
       setTicketId(id ?? null)
-      setDisplay(json.ticket?.display_number ?? null)
+      setDisplay(displayNumber)
+      if (id) onCreated?.({ id, display_number: displayNumber })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שליחה נכשלה')
     } finally {
@@ -189,6 +199,31 @@ export function TicketReportForm({
   }
 
   if (ticketId) {
+    if (mode === 'ops') {
+      return (
+        <div className="space-y-4 text-center">
+          <Notice tone="progress">
+            התקלה נפתחה
+            {display ? ` · ${display}` : ''}
+          </Notice>
+          <p className="t-body text-ink-2">אפשר לשייך טכנאי או להמשיך לטפל מהתור.</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button asChild variant="primary" size="block">
+              <a href={`/ops/tickets/${ticketId}`}>לצפייה בתקלה</a>
+            </Button>
+            <Button type="button" variant="secondary" size="block" onClick={resetForm}>
+              תקלה נוספת
+            </Button>
+            {onDismiss ? (
+              <Button type="button" variant="ghost" size="block" onClick={onDismiss}>
+                סגירה
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-4 text-center">
         <Notice tone="progress">

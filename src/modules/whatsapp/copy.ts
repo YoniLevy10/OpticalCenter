@@ -35,6 +35,9 @@ export const WA_COPY = {
     'הדיווח נקלט, אך לא הצלחנו לשמור את התמונה. אפשר לשלוח אותה שוב בהודעה נפרדת.',
   mediaAttached: (displayNumber: string) =>
     `קיבלתי את התמונה ✓\nצורפה לתקלה #${displayNumber}`,
+  /** Short ack after completed ticket — do not reopen intake. */
+  nonIssueAck:
+    'בשמחה. אם יש תקלה נוספת — כתבו אותה כאן (או שלחו STORE_ וקוד החנות).',
   countryMissing:
     'לא זוהתה מדינה עבור מספר הוואטסאפ. פנו לתמיכה או בדקו את הגדרות הסביבה.',
   genericError: 'אירעה תקלה זמנית בקליטת הדיווח. נסו שוב בעוד רגע.',

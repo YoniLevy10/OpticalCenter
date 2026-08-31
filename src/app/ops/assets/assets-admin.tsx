@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, QrCode, Package } from 'lucide-react'
+import { Plus, QrCode, Package, ScanBarcode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, SearchField } from '@/components/ui/input'
 import {
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { Modal } from '@/components/ui/overlay'
+import { BarcodeScannerModal } from '@/components/assets/barcode-scanner'
+import { normalizeBarcode } from '@/modules/assets/barcode'
 import { assetWhatsAppPrefill } from '@/modules/assets/service'
 import { cn } from '@/lib/utils'
 
@@ -118,6 +120,8 @@ export function AssetsAdmin({
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [qrAsset, setQrAsset] = useState<AssetRow | null>(null)
+  const [scanOpen, setScanOpen] = useState(false)
+  const [scanTarget, setScanTarget] = useState<'lookup' | 'create'>('lookup')
 
   const [storeId, setStoreId] = useState(stores[0]?.id ?? '')
   const [code, setCode] = useState('')
@@ -127,6 +131,7 @@ export function AssetsAdmin({
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState<'' | AssetStatus>('')
   const [filterStore, setFilterStore] = useState('')
+  const [highlightId, setHighlightId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -215,6 +220,48 @@ export function AssetsAdmin({
     }
   }
 
+  const openScanner = useCallback((target: 'lookup' | 'create') => {
+    setScanTarget(target)
+    setScanOpen(true)
+  }, [])
+
+  const onBarcodeScan = useCallback(
+    (raw: string) => {
+      const value = normalizeBarcode(raw)
+      if (!value) return
+
+      if (scanTarget === 'create') {
+        setCode(value)
+        setNotice(`ברקוד נסרק · ${value}`)
+        return
+      }
+
+      const match = assets.find((a) => normalizeBarcode(a.code) === value)
+      setQ(value)
+      setStatusFilter('')
+
+      if (match) {
+        setHighlightId(match.id)
+        setNotice(
+          `נמצא נכס · ${match.name}${match.store_code ? ` · סניף ${match.store_code}` : ''}`,
+        )
+        return
+      }
+
+      setHighlightId(null)
+      setCode(value)
+      setCreateOpen(true)
+      setNotice(`לא נמצא נכס עם ברקוד ${value} — אפשר להוסיף אותו עכשיו.`)
+    },
+    [assets, scanTarget],
+  )
+
+  useEffect(() => {
+    if (!highlightId) return
+    const timer = window.setTimeout(() => setHighlightId(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [highlightId])
+
   return (
     <div className="flex flex-col gap-4">
       {error ? <ErrorState title="שגיאה" description={error} /> : null}
@@ -225,7 +272,7 @@ export function AssetsAdmin({
           <SearchField
             value={q}
             onValueChange={setQ}
-            placeholder="חיפוש לפי שם · סידורי · סניף"
+            placeholder="חיפוש לפי שם · סידורי · ברקוד · סניף"
             autoFocusKey="/"
             className="w-full sm:min-w-[16rem] sm:flex-1"
           />
@@ -260,17 +307,29 @@ export function AssetsAdmin({
             </Select>
           </Field>
         </div>
-        <Button
-          type="button"
-          variant="primary"
-          size="touch"
-          className="md:h-9 md:px-3.5"
-          onClick={() => setCreateOpen(true)}
-          disabled={!stores.length}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          הוספת נכס
-        </Button>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Button
+            type="button"
+            variant="secondary"
+            size="touch"
+            className="md:h-9 md:px-3.5"
+            onClick={() => openScanner('lookup')}
+          >
+            <ScanBarcode className="h-4 w-4" aria-hidden />
+            סריקת ברקוד
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="touch"
+            className="md:h-9 md:px-3.5"
+            onClick={() => setCreateOpen(true)}
+            disabled={!stores.length}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            הוספת נכס
+          </Button>
+        </div>
       </div>
 
       <p className="t-meta t-num text-ink-3">{filtered.length} נכסים</p>
@@ -289,7 +348,14 @@ export function AssetsAdmin({
             {/* Mobile cards */}
             <div className="divide-y divide-border md:hidden">
               {filtered.map(({ asset: a, status, last, treated, open }) => (
-                <article key={a.id} className="flex flex-col gap-2 px-4 py-3.5">
+                <article
+                  key={a.id}
+                  data-asset-id={a.id}
+                  className={cn(
+                    'flex flex-col gap-2 px-4 py-3.5 transition-colors',
+                    highlightId === a.id && 'bg-[var(--tenant-soft)]',
+                  )}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="t-caption t-num text-ink-3">
@@ -375,7 +441,12 @@ export function AssetsAdmin({
                 </THead>
                 <TBody>
                   {filtered.map(({ asset: a, status, last, treated, open }) => (
-                    <TR key={a.id}>
+                    <TR
+                      key={a.id}
+                      className={cn(
+                        highlightId === a.id && 'bg-[var(--tenant-soft)]',
+                      )}
+                    >
                       <TD>
                         <span className="t-body-strong text-ink">{a.name}</span>
                         <span className="t-caption mt-0.5 block text-ink-3">
@@ -489,15 +560,29 @@ export function AssetsAdmin({
               ))}
             </Select>
           </Field>
-          <Field label="קוד / סידורי" htmlFor="asset-code">
-            <Input
-              id="asset-code"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="AC-04"
-              dir="ltr"
-            />
+          <Field label="קוד / ברקוד / סידורי" htmlFor="asset-code">
+            <div className="flex gap-2">
+              <Input
+                id="asset-code"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="AC-04 או ברקוד מוצר"
+                dir="ltr"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                aria-label="סריקת ברקוד לשדה הקוד"
+                onClick={() => openScanner('create')}
+              >
+                <ScanBarcode className="h-4 w-4" aria-hidden />
+                סריקה
+              </Button>
+            </div>
           </Field>
           <Field label="שם" htmlFor="asset-name">
             <Input
@@ -589,6 +674,20 @@ export function AssetsAdmin({
           </div>
         ) : null}
       </Modal>
+
+      <BarcodeScannerModal
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onScan={onBarcodeScan}
+        title={
+          scanTarget === 'create' ? 'סריקת ברקוד לנכס חדש' : 'סריקת ברקוד מוצר'
+        }
+        description={
+          scanTarget === 'create'
+            ? 'הברקוד ייכנס לשדה הקוד של הנכס.'
+            : 'חיפוש נכס קיים לפי ברקוד — אם לא נמצא, נפתח טופס הוספה.'
+        }
+      />
     </div>
   )
 }

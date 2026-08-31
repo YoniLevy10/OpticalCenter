@@ -28,6 +28,7 @@ import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
 import type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'
 import { isHumanPauseActive } from './human-pause'
+import { isNonIssueAck } from './non-issue'
 
 type CountryRow = {
   id: string
@@ -975,6 +976,26 @@ export async function processInboundMessage(
       })
     }
 
+    // After a ticket: thanks / OK / short ack must not reopen intake or create a ticket.
+    if (
+      session.state === 'done' &&
+      text &&
+      isNonIssueAck(text) &&
+      !storeCodeFromText &&
+      !message.mediaUrl
+    ) {
+      logEvent('whatsapp:intake', 'info', 'non_issue_ack_skip', {
+        waId: message.waId,
+        textPreview: text.slice(0, 40),
+      })
+      const reply = await craftIntakeReply(
+        WA_COPY.nonIssueAck,
+        'intake_non_issue_ack',
+      )
+      await sendReply(supabase, message, country, reply, null, options, session)
+      return { ok: true, reply, state: 'done' }
+    }
+
     // Explicit new STORE_ after a completed ticket → start a fresh intake.
     if (session.state === 'done' && storeCodeFromText) {
       await updateSession(supabase, session, {
@@ -1257,6 +1278,35 @@ async function analyzeAndFinalize(params: {
     options,
     forceCreate,
   } = params
+
+  // Defense: never open a ticket from gratitude / short ack alone.
+  // Keep pending media — a photo waiting for description is not "thanks".
+  if (
+    !forceCreate &&
+    isNonIssueAck(description) &&
+    !message.mediaUrl &&
+    !session.pending_media_url
+  ) {
+    logEvent('whatsapp:intake', 'info', 'non_issue_ack_skip_finalize', {
+      waId: message.waId,
+      textPreview: description.slice(0, 40),
+    })
+    await updateSession(supabase, session, {
+      state: 'done',
+      pending_description: null,
+      draft_payload: null,
+      clarification_count: 0,
+    })
+    const reply = await craftIntakeReply(
+      WA_COPY.nonIssueAck,
+      'intake_non_issue_ack',
+    )
+    await sendReply(supabase, message, country, reply, null, options, {
+      ...session,
+      state: 'done',
+    })
+    return { ok: true, reply, state: 'done' }
+  }
 
   const decision = await runIntakeAgent({
     text: description,

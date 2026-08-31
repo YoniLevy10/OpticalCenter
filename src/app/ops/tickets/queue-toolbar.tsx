@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useEffect, useState, useTransition } from 'react'
-import { Plus, SlidersHorizontal, X } from 'lucide-react'
+import { Suspense, useEffect, useState, useTransition } from 'react'
+import { SlidersHorizontal, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SearchField, Select, Field } from '@/components/ui/input'
 import { BottomSheet } from '@/components/ui/overlay'
 import { SegmentedLinks } from '@/components/ui/segmented'
+import { CreateTicketDialog } from '@/components/ops/create-ticket-dialog'
 import {
   QUEUE_SORTS,
   queueHref,
@@ -127,13 +128,9 @@ export function QueueToolbar({
             </span>
           ) : null}
         </Button>
-        <Button asChild variant="primary" className="shrink-0">
-          <Link href="/ops/tickets?new=1">
-            <Plus className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">תקלה חדשה</span>
-            <span className="sm:hidden">חדשה</span>
-          </Link>
-        </Button>
+        <Suspense fallback={null}>
+          <CreateTicketDialog stores={stores} trigger="toolbar" />
+        </Suspense>
       </div>
 
       <div className="flex min-w-0 items-center justify-between gap-3">

@@ -17,6 +17,7 @@ export type WhatsAppAiSituation =
   | 'intake_need_description'
   | 'intake_confirmed'
   | 'intake_media_not_saved'
+  | 'intake_non_issue_ack'
   | 'intake_country_missing'
   | 'intake_generic_error'
   | 'lifecycle_assigned'
@@ -44,6 +45,8 @@ const SITUATION_HINT: Partial<Record<WhatsAppAiSituation, string>> = {
   intake_need_description: 'חסר תיאור תקלה',
   intake_confirmed: 'תקלה נפתחה בהצלחה — אישור לדיווח',
   intake_media_not_saved: 'התמונה לא נשמרה אך התקלה נקלטה',
+  intake_non_issue_ack:
+    'הלקוח שלח תודה/אישור אחרי דיווח — אל תפתח תקלה; אשר בקצרה שאפשר לדווח תקלה נוספת אם צריך',
   intake_country_missing: 'שגיאת הגדרות — לא זוהתה מדינה למספר WhatsApp',
   intake_generic_error: 'שגיאה זמנית בקליטת דיווח',
   lifecycle_assigned: 'עדכון לעובד החנות — טכנאי שויך לתקלה',
