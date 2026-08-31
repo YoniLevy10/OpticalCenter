@@ -9,6 +9,7 @@ import {
   type WhatsAppAiSituation,
 } from '@/modules/whatsapp/ai'
 import type { OutboundPurpose } from '@/modules/whatsapp/cost-policy'
+import { normalizePhoneDigits } from '@/lib/phone'
 import {
   isLifecycleEvent,
   lifecycleTemplate,
@@ -75,7 +76,9 @@ export async function notifyReporter(
       return { sent: false, skipped: 'not_lifecycle_event' }
     }
 
-    const phone = ticket.reporter_phone?.replace(/\D/g, '') || null
+    const phone = ticket.reporter_phone
+      ? normalizePhoneDigits(ticket.reporter_phone)
+      : null
     if (!phone) {
       logEvent('lifecycle:notify', 'info', 'no_reporter_phone', {
         ticketId: ticket.id,
@@ -131,7 +134,7 @@ export async function notifyTechnicianAssigned(
   tech: { id: string; full_name?: string | null; phone?: string | null } | null,
 ): Promise<{ sent: boolean; skipped?: string }> {
   try {
-    const phone = tech?.phone?.replace(/\D/g, '') || null
+    const phone = tech?.phone ? normalizePhoneDigits(tech.phone) : null
     if (!phone) {
       logEvent('lifecycle:tech_notify', 'info', 'no_tech_phone', {
         ticketId: ticket.id,

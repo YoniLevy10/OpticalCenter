@@ -29,6 +29,7 @@ type UserRow = {
   id: string
   email: string | null
   full_name: string | null
+  phone?: string | null
   memberships: Membership[]
   last_login_at?: string | null
   active?: boolean
@@ -75,10 +76,12 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<MemberRole>('internal_technician')
   const [countryId, setCountryId] = useState<string>(IL_COUNTRY)
   const [storeId, setStoreId] = useState<string>('')
+  const [phoneDrafts, setPhoneDrafts] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -108,7 +111,8 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       if (statusFilter === 'active' && !active) return false
       if (statusFilter === 'inactive' && active) return false
       if (!needle) return true
-      const hay = `${u.full_name ?? ''} ${u.email ?? ''}`.toLowerCase()
+      const hay =
+        `${u.full_name ?? ''} ${u.email ?? ''} ${u.phone ?? ''}`.toLowerCase()
       return hay.includes(needle)
     })
   }, [users, roleFilter, statusFilter, q])
@@ -122,6 +126,9 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       if (role === 'store_employee' && !storeId) {
         throw new Error('עובד חנות חייב להיות משויך לסניף')
       }
+      if (role === 'internal_technician' && !phone.trim()) {
+        throw new Error('לטכנאי חובה להזין מספר טלפון להודעות שיוך')
+      }
       if (!password.trim() || password.trim().length < 6) {
         throw new Error('יש להגדיר סיסמה (לפחות 6 תווים) להתחברות')
       }
@@ -133,6 +140,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
           email: email.trim(),
           password: password.trim(),
           role,
+          phone: phone.trim() || null,
           country_id: countryId || null,
           store_id: storeId || null,
         }),
@@ -141,11 +149,16 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       if (!res.ok) throw new Error(json.error || 'יצירה נכשלה')
       setName('')
       setEmail('')
+      setPhone('')
       setPassword('')
       setRole('internal_technician')
       setStoreId('')
       setCreateOpen(false)
-      setNotice('המשתמש נוסף — יכול להתחבר עם המייל והסיסמה שסופקו')
+      setNotice(
+        role === 'internal_technician' && phone.trim()
+          ? 'המשתמש נוסף — הודעות שיוך יישלחו למספר שהוגדר'
+          : 'המשתמש נוסף — יכול להתחבר עם המייל והסיסמה שסופקו',
+      )
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'יצירה נכשלה')
@@ -203,6 +216,43 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     }
   }
 
+  async function savePhone(user: UserRow, nextPhone: string) {
+    const current = (user.phone ?? '').trim()
+    const next = nextPhone.trim()
+    if (next === current) return
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: next || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'עדכון טלפון נכשל')
+      setNotice(
+        next
+          ? 'מספר הטלפון נשמר — הודעות שיוך יישלחו אליו'
+          : 'מספר הטלפון הוסר',
+      )
+      setPhoneDrafts((d) => {
+        const copy = { ...d }
+        delete copy[user.id]
+        return copy
+      })
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'עדכון טלפון נכשל')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function phoneValue(u: UserRow) {
+    return phoneDrafts[u.id] ?? u.phone ?? ''
+  }
+
   function scopeLabel(m?: Membership) {
     if (!m) return '—'
     const parts: string[] = []
@@ -231,7 +281,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
         <SearchField
           value={q}
           onValueChange={setQ}
-          placeholder="חיפוש לפי שם או אימייל…"
+          placeholder="חיפוש לפי שם, אימייל או טלפון…"
           className="min-w-0 flex-1"
         />
         <Select
@@ -291,13 +341,41 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                     title={u.full_name || '—'}
                     subtitle={u.email || '—'}
                     footer={
-                      <span className="t-caption text-ink-3">
-                        {ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
-                          m?.role}{' '}
-                        · {branchLabel(m)} ·{' '}
-                        {active ? 'פעיל' : 'לא פעיל'} ·{' '}
-                        {formatLastLogin(u.last_login_at)}
-                      </span>
+                      <div className="flex flex-col gap-2">
+                        <span className="t-caption text-ink-3">
+                          {ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
+                            m?.role}{' '}
+                          · {branchLabel(m)} ·{' '}
+                          {active ? 'פעיל' : 'לא פעיל'} ·{' '}
+                          {formatLastLogin(u.last_login_at)}
+                        </span>
+                        <label className="flex flex-col gap-1">
+                          <span className="t-caption text-ink-3">
+                            טלפון להודעות שיוך
+                          </span>
+                          <Input
+                            dir="ltr"
+                            inputMode="tel"
+                            className="t-num max-w-[14rem]"
+                            placeholder="05… / 9725…"
+                            value={phoneValue(u)}
+                            disabled={busy}
+                            aria-label={`טלפון של ${u.full_name || u.email || u.id}`}
+                            onChange={(e) =>
+                              setPhoneDrafts((d) => ({
+                                ...d,
+                                [u.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() => void savePhone(u, phoneValue(u))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur()
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
                     }
                   />
                 )
@@ -308,6 +386,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                 <THead>
                   <TH>שם</TH>
                   <TH>תפקיד</TH>
+                  <TH>טלפון</TH>
                   <TH>סניף</TH>
                   <TH>סטטוס</TH>
                   <TH>התחברות אחרונה</TH>
@@ -360,6 +439,30 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                             {ROLE_HELP[m?.role ?? ''] ??
                               (m?.role ? roleLabelHe(m.role) : scopeLabel(m))}
                           </p>
+                        </TD>
+                        <TD>
+                          <Input
+                            dir="ltr"
+                            inputMode="tel"
+                            className="t-num h-8 max-w-[9.5rem] px-2"
+                            placeholder="05… / 9725…"
+                            value={phoneValue(u)}
+                            disabled={busy}
+                            aria-label={`טלפון של ${u.full_name || u.email || u.id}`}
+                            title="מספר לטלפון/WhatsApp — הודעות שיוך לתקלה"
+                            onChange={(e) =>
+                              setPhoneDrafts((d) => ({
+                                ...d,
+                                [u.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() => void savePhone(u, phoneValue(u))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur()
+                              }
+                            }}
+                          />
                         </TD>
                         <TD>
                           <select
@@ -438,6 +541,25 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             />
           </Field>
           <Field
+            label="טלפון נייד"
+            htmlFor="user-phone"
+            hint={
+              role === 'internal_technician'
+                ? 'חובה לטכנאי — לכאן יישלחו הודעות שיוך תקלה (WhatsApp למספר).'
+                : 'אופציונלי. לטכנאים משמש לשליחת הודעת שיוך.'
+            }
+          >
+            <Input
+              id="user-phone"
+              dir="ltr"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="05… או 9725…"
+              required={role === 'internal_technician'}
+            />
+          </Field>
+          <Field
             label="סיסמה ראשונית"
             htmlFor="user-password"
             hint="המשתמש יתחבר עם המייל והסיסמה האלה (או Google אם המייל מאושר)."
@@ -507,7 +629,11 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
               type="submit"
               variant="primary"
               disabled={
-                busy || !name.trim() || !email.trim() || password.trim().length < 6
+                busy ||
+                !name.trim() ||
+                !email.trim() ||
+                password.trim().length < 6 ||
+                (role === 'internal_technician' && !phone.trim())
               }
             >
               {busy ? 'שומר…' : 'יצירה'}
