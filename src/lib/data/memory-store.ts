@@ -251,6 +251,8 @@ export type MemAsset = {
   code: string
   name: string
   asset_type: string
+  /** Product barcode (EAN/UPC/Code128) — distinct from internal code. */
+  barcode?: string | null
   /** Optional client/memory status when no DB column exists. */
   status?: MemAssetStatus
   created_at: string
@@ -381,6 +383,7 @@ function seedDemoAssets(mem: GlobalMem) {
     code: 'AC-04',
     name: 'יחידת מיזוג ראשית',
     asset_type: 'hvac',
+    barcode: '7290000000001',
     status: 'ok',
     created_at: now,
   })
@@ -390,6 +393,7 @@ function seedDemoAssets(mem: GlobalMem) {
     code: 'AC-05',
     name: 'מזגן מחסן',
     asset_type: 'hvac',
+    barcode: '7290000000002',
     status: 'in_service',
     created_at: now,
   })
@@ -399,6 +403,7 @@ function seedDemoAssets(mem: GlobalMem) {
     code: 'OPT-01',
     name: 'מכשיר מדידה',
     asset_type: 'optical',
+    barcode: null,
     status: 'disabled',
     created_at: now,
   })
@@ -959,6 +964,7 @@ export function memCreateAsset(input: {
   code: string
   name: string
   asset_type?: string
+  barcode?: string | null
   status?: MemAssetStatus
 }): MemAsset {
   const code = input.code.trim().toUpperCase()
@@ -967,12 +973,24 @@ export function memCreateAsset(input: {
   )) {
     throw new Error('קוד נכס כבר קיים בחנות זו')
   }
+  const barcode = input.barcode?.trim()
+    ? input.barcode.trim().toUpperCase()
+    : null
+  if (
+    barcode &&
+    [...store().assets.values()].some(
+      (a) => a.store_id === input.store_id && a.barcode === barcode,
+    )
+  ) {
+    throw new Error('ברקוד כבר קיים בחנות זו')
+  }
   const row: MemAsset = {
     id: `asset-${crypto.randomUUID()}`,
     store_id: input.store_id,
     code,
     name: input.name.trim(),
     asset_type: input.asset_type?.trim() || 'other',
+    barcode,
     status: input.status ?? 'ok',
     created_at: new Date().toISOString(),
   }
@@ -982,7 +1000,9 @@ export function memCreateAsset(input: {
 
 export function memUpdateAsset(
   id: string,
-  patch: Partial<Pick<MemAsset, 'name' | 'code' | 'asset_type' | 'status'>>,
+  patch: Partial<
+    Pick<MemAsset, 'name' | 'code' | 'asset_type' | 'barcode' | 'status'>
+  >,
 ): MemAsset {
   const row = store().assets.get(id)
   if (!row) throw new Error('נכס לא נמצא')
@@ -994,6 +1014,21 @@ export function memUpdateAsset(
       throw new Error('קוד נכס כבר קיים בחנות זו')
     }
     row.code = code
+  }
+  if (patch.barcode !== undefined) {
+    const barcode = patch.barcode?.trim()
+      ? patch.barcode.trim().toUpperCase()
+      : null
+    if (
+      barcode &&
+      [...store().assets.values()].some(
+        (a) =>
+          a.store_id === row.store_id && a.barcode === barcode && a.id !== id,
+      )
+    ) {
+      throw new Error('ברקוד כבר קיים בחנות זו')
+    }
+    row.barcode = barcode
   }
   if (patch.name != null) row.name = patch.name.trim()
   if (patch.asset_type != null) row.asset_type = patch.asset_type.trim() || 'other'

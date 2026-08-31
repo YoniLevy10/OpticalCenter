@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import {
   memCreateAsset,
   memDeleteAsset,
@@ -8,10 +9,22 @@ import {
   type MemAsset,
 } from '@/lib/data/memory-store'
 import { fetchStores } from '@/modules/stores/data'
+import { normalizeBarcode } from '@/modules/assets/barcode'
+
+const ASSET_SELECT =
+  'id, store_id, code, name, asset_type, barcode, created_at'
+const ASSET_SELECT_LEGACY = 'id, store_id, code, name, asset_type, created_at'
 
 export type AssetRow = MemAsset & {
   store_code?: string
   store_name?: string
+}
+
+function normalizeOptionalBarcode(value?: string | null): string | null {
+  if (value == null) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return normalizeBarcode(trimmed)
 }
 
 export async function listAssets(opts?: {
@@ -22,18 +35,24 @@ export async function listAssets(opts?: {
 
   if (await supabaseReady()) {
     const supabase = createSystemClient('assets_list')
-    let q = supabase
-      .from('assets')
-      .select('id, store_id, code, name, asset_type, created_at')
-      .order('code')
+    let q = supabase.from('assets').select(ASSET_SELECT).order('code')
     if (opts?.storeId) q = q.eq('store_id', opts.storeId)
-    const { data, error } = await q
+    let { data, error } = await q
+
+    if (error && isSupabaseSchemaError(error)) {
+      let legacy = supabase.from('assets').select(ASSET_SELECT_LEGACY).order('code')
+      if (opts?.storeId) legacy = legacy.eq('store_id', opts.storeId)
+      const retry = await legacy
+      data = (retry.data ?? []).map((a) => ({ ...a, barcode: null }))
+      error = retry.error
+    }
+
     if (!error && data) {
       return {
         backend: 'supabase',
         assets: data.map((a) => ({
           ...(a as MemAsset),
-          // DB has no status column — UI derives / defaults to ok.
+          barcode: (a as MemAsset).barcode ?? null,
           status: (a as MemAsset).status ?? 'ok',
           store_code: storeMap.get(a.store_id)?.code,
           store_name: storeMap.get(a.store_id)?.name,
@@ -57,23 +76,46 @@ export async function createAsset(input: {
   code: string
   name: string
   asset_type?: string
+  barcode?: string | null
 }): Promise<AssetRow> {
+  const barcode = normalizeOptionalBarcode(input.barcode)
   if (await supabaseReady()) {
     const supabase = createSystemClient('assets_create')
-    const { data, error } = await supabase
+    const payload = {
+      store_id: input.store_id,
+      code: input.code.trim().toUpperCase(),
+      name: input.name.trim(),
+      asset_type: input.asset_type?.trim() || 'other',
+      barcode,
+    }
+    let { data, error } = await supabase
       .from('assets')
-      .insert({
-        store_id: input.store_id,
-        code: input.code.trim().toUpperCase(),
-        name: input.name.trim(),
-        asset_type: input.asset_type?.trim() || 'other',
-      })
-      .select('id, store_id, code, name, asset_type, created_at')
+      .insert(payload)
+      .select(ASSET_SELECT)
       .single()
+
+    if (error && isSupabaseSchemaError(error)) {
+      const legacyPayload = {
+        store_id: payload.store_id,
+        code: payload.code,
+        name: payload.name,
+        asset_type: payload.asset_type,
+      }
+      const retry = await supabase
+        .from('assets')
+        .insert(legacyPayload)
+        .select(ASSET_SELECT_LEGACY)
+        .single()
+      data = retry.data
+        ? { ...retry.data, barcode: null }
+        : null
+      error = retry.error
+    }
+
     if (error || !data) throw new Error(error?.message || 'יצירת נכס נכשלה')
     return data as MemAsset
   }
-  return memCreateAsset(input)
+  return memCreateAsset({ ...input, barcode })
 }
 
 export async function updateAsset(
@@ -82,26 +124,50 @@ export async function updateAsset(
     name?: string
     code?: string
     asset_type?: string
+    barcode?: string | null
     status?: MemAsset['status']
   },
 ): Promise<AssetRow> {
   if (await supabaseReady()) {
     const supabase = createSystemClient('assets_update')
-    const body: Record<string, string> = {}
+    const body: Record<string, string | null> = {}
     if (patch.name != null) body.name = patch.name.trim()
     if (patch.code != null) body.code = patch.code.trim().toUpperCase()
     if (patch.asset_type != null) body.asset_type = patch.asset_type.trim() || 'other'
-    // status is memory-only until a DB column exists
-    const { data, error } = await supabase
+    if (patch.barcode !== undefined) {
+      body.barcode = normalizeOptionalBarcode(patch.barcode)
+    }
+
+    let { data, error } = await supabase
       .from('assets')
       .update(body)
       .eq('id', id)
-      .select('id, store_id, code, name, asset_type, created_at')
+      .select(ASSET_SELECT)
       .single()
+
+    if (error && isSupabaseSchemaError(error)) {
+      const legacyBody = { ...body }
+      delete legacyBody.barcode
+      const retry = await supabase
+        .from('assets')
+        .update(legacyBody)
+        .eq('id', id)
+        .select(ASSET_SELECT_LEGACY)
+        .single()
+      data = retry.data ? { ...retry.data, barcode: null } : null
+      error = retry.error
+    }
+
     if (error || !data) throw new Error(error?.message || 'עדכון נכס נכשל')
     return { ...(data as MemAsset), status: patch.status ?? 'ok' }
   }
-  return memUpdateAsset(id, patch)
+  return memUpdateAsset(id, {
+    ...patch,
+    barcode:
+      patch.barcode === undefined
+        ? undefined
+        : normalizeOptionalBarcode(patch.barcode),
+  })
 }
 
 export async function deleteAsset(id: string): Promise<void> {

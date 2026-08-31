@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/primitives'
 import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 import { BarcodeScannerModal } from '@/components/assets/barcode-scanner'
-import { normalizeBarcode } from '@/modules/assets/barcode'
+import { findAssetByCode } from '@/modules/assets/barcode'
 import { assetWhatsAppPrefill } from '@/modules/assets/service'
 
 type AssetRow = {
@@ -21,6 +21,7 @@ type AssetRow = {
   code: string
   name: string
   asset_type: string
+  barcode?: string | null
 }
 
 export function StoreAssetsPanel({
@@ -36,9 +37,11 @@ export function StoreAssetsPanel({
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [code, setCode] = useState('')
+  const [barcode, setBarcode] = useState('')
   const [name, setName] = useState('')
   const [assetType, setAssetType] = useState('hvac')
   const [scanOpen, setScanOpen] = useState(false)
+  const [scanTarget, setScanTarget] = useState<'lookup' | 'create'>('lookup')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -73,11 +76,13 @@ export function StoreAssetsPanel({
           code,
           name,
           asset_type: assetType,
+          barcode: barcode.trim() || null,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'יצירה נכשלה')
       setCode('')
+      setBarcode('')
       setName('')
       setNotice('הנכס נוסף')
       await load()
@@ -105,6 +110,27 @@ export function StoreAssetsPanel({
     }
   }
 
+  function onScan(raw: string) {
+    if (!raw.trim()) return
+
+    if (scanTarget === 'create') {
+      setBarcode(raw)
+      if (!code.trim()) setCode(raw.slice(0, 32))
+      setNotice(`ברקוד נסרק · ${raw}`)
+      return
+    }
+
+    const match = findAssetByCode(assets, raw)
+    if (match) {
+      setNotice(`נמצא · ${match.code} — ${match.name}`)
+      return
+    }
+
+    setBarcode(raw)
+    setCode(raw.slice(0, 32))
+    setNotice(`לא נמצא — הברקוד מולא בטופס הוספה`)
+  }
+
   return (
     <Panel flush className="overflow-hidden">
       <PanelHeader title="נכסים בחנות" meta={`#${storeCode}`} />
@@ -112,15 +138,39 @@ export function StoreAssetsPanel({
         {error ? <ErrorState title="שגיאה" description={error} /> : null}
         {notice ? <Notice tone="progress">{notice}</Notice> : null}
 
-        <form onSubmit={onCreate} className="grid gap-3 md:grid-cols-3">
-          <Field label="קוד / ברקוד" htmlFor="asset-code">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setScanTarget('lookup')
+              setScanOpen(true)
+            }}
+          >
+            <ScanBarcode className="h-4 w-4" aria-hidden />
+            סריקת ברקוד
+          </Button>
+        </div>
+
+        <form onSubmit={onCreate} className="grid gap-3 md:grid-cols-2">
+          <Field label="קוד פנימי" htmlFor="asset-code">
+            <Input
+              id="asset-code"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="HVAC-1"
+              dir="ltr"
+            />
+          </Field>
+          <Field label="ברקוד מוצר" htmlFor="asset-barcode">
             <div className="flex gap-2">
               <Input
-                id="asset-code"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="HVAC-1"
+                id="asset-barcode"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="EAN / Code128"
                 dir="ltr"
                 className="flex-1"
               />
@@ -130,7 +180,10 @@ export function StoreAssetsPanel({
                 size="sm"
                 className="shrink-0"
                 aria-label="סריקת ברקוד"
-                onClick={() => setScanOpen(true)}
+                onClick={() => {
+                  setScanTarget('create')
+                  setScanOpen(true)
+                }}
               >
                 <ScanBarcode className="h-4 w-4" aria-hidden />
               </Button>
@@ -157,7 +210,7 @@ export function StoreAssetsPanel({
               <option value="other">אחר</option>
             </Select>
           </Field>
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <Button type="submit" variant="secondary" size="sm" disabled={busy}>
               {busy ? 'שומר…' : 'הוספת נכס'}
             </Button>
@@ -175,7 +228,11 @@ export function StoreAssetsPanel({
                 <AdminRow
                   key={a.id}
                   title={`${a.code} · ${a.name}`}
-                  subtitle={assetWhatsAppPrefill(storeCode, a.code)}
+                  subtitle={
+                    a.barcode
+                      ? `${a.barcode} · ${assetWhatsAppPrefill(storeCode, a.code)}`
+                      : assetWhatsAppPrefill(storeCode, a.code)
+                  }
                   trailing={
                     <Button
                       type="button"
@@ -196,6 +253,11 @@ export function StoreAssetsPanel({
                   <div>
                     <span className="t-body-strong t-num text-ink">{a.code}</span>
                     <span className="t-body ms-2 text-ink-2">{a.name}</span>
+                    {a.barcode ? (
+                      <p className="t-caption t-num text-ink-3" dir="ltr">
+                        barcode {a.barcode}
+                      </p>
+                    ) : null}
                     <p className="t-caption t-num text-ink-3" dir="ltr">
                       {assetWhatsAppPrefill(storeCode, a.code)}
                     </p>
@@ -219,14 +281,15 @@ export function StoreAssetsPanel({
       <BarcodeScannerModal
         open={scanOpen}
         onOpenChange={setScanOpen}
-        onScan={(raw) => {
-          const value = normalizeBarcode(raw)
-          if (!value) return
-          setCode(value)
-          setNotice(`ברקוד נסרק · ${value}`)
-        }}
-        title="סריקת ברקוד לנכס"
-        description="הברקוד ייכנס לשדה הקוד."
+        onScan={onScan}
+        title={
+          scanTarget === 'create' ? 'סריקת ברקוד לנכס חדש' : 'סריקת ברקוד בחנות'
+        }
+        description={
+          scanTarget === 'create'
+            ? 'הברקוד ייכנס לשדה ברקוד המוצר.'
+            : 'חיפוש נכס קיים בחנות לפי ברקוד / קוד.'
+        }
       />
     </Panel>
   )

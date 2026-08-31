@@ -12,6 +12,7 @@ const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   code: z.string().min(1).max(32).optional(),
   asset_type: z.string().max(64).optional(),
+  barcode: z.string().max(64).nullable().optional(),
 })
 
 export async function PATCH(

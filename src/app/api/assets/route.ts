@@ -13,6 +13,7 @@ const createSchema = z.object({
   code: z.string().min(1).max(32),
   name: z.string().min(1).max(120),
   asset_type: z.string().max(64).optional(),
+  barcode: z.string().max(64).nullable().optional(),
 })
 
 export async function GET(request: Request) {
