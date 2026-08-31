@@ -138,6 +138,11 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                 ניהול הרשאות מתבצע במסך המשתמשים — בשפה עסקית לפי תפקיד (מנהל
                 סניף, טכנאי, מנהל מערכת).
               </p>
+              <Notice tone="progress">
+                לטכנאים יש להגדיר{' '}
+                <strong>מספר טלפון נייד</strong> במסך המשתמשים — אליו נשלחת
+                הודעת השיוך כשמשייכים תקלה (WhatsApp למספר).
+              </Notice>
               <Button asChild variant="secondary">
                 <Link href="/ops/users">מעבר למשתמשים והרשאות</Link>
               </Button>

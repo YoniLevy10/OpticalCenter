@@ -46,12 +46,14 @@ function ensureProfile(
   id: string,
   full_name: string,
   email?: string | null,
+  phone?: string | null,
 ) {
   if (!mem.profiles.has(id)) {
     mem.profiles.set(id, {
       id,
       full_name,
       email: email ?? null,
+      phone: phone ?? null,
       locale: 'he',
     })
   }
@@ -74,8 +76,8 @@ function m(
 }
 
 function seedDefaultMemberships(mem: GlobalAuthMem) {
-  ensureProfile(mem, DEMO_TECH_ID, 'טכנאי דמו א׳', 'tech-a@demo.local')
-  ensureProfile(mem, OTHER_TECH, 'טכנאי דמו ב׳', 'tech-b@demo.local')
+  ensureProfile(mem, DEMO_TECH_ID, 'טכנאי דמו א׳', 'tech-a@demo.local', '+972501000001')
+  ensureProfile(mem, OTHER_TECH, 'טכנאי דמו ב׳', 'tech-b@demo.local', '+972501000002')
   ensureProfile(mem, HQ_GLOBAL, PILOT_OWNER.fullName, PILOT_OWNER.email)
   ensureProfile(mem, HQ_COUNTRY_IL, 'מנהל מדינה IL', 'country-il@demo.local')
   ensureProfile(mem, HQ_REGION_JLM, 'מנהל אזור ירושלים', 'region-jlm@demo.local')

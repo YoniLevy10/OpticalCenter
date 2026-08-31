@@ -22,6 +22,7 @@ const patchSchema = z.object({
   country_id: z.string().uuid().nullable().optional(),
   region_id: z.string().nullable().optional(),
   store_id: z.string().nullable().optional(),
+  phone: z.string().max(32).nullable().optional(),
 })
 
 export async function PATCH(
