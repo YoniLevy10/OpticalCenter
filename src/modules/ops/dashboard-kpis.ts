@@ -174,7 +174,8 @@ export function computeDashboardKpis(
     const breachedNow = isBreached(t, now)
     if (breachedNow) breached += 1
     if (!t.assigned_to) unassigned += 1
-    if (breachedNow || !t.assigned_to) exceptionCandidates.push(t)
+    const waitingParts = t.status === 'waiting_parts'
+    if (breachedNow || !t.assigned_to || waitingParts) exceptionCandidates.push(t)
     if (isUrgent(t, now)) urgentCandidates.push(t)
 
     const cat = t.category?.trim() || 'other'
@@ -215,6 +216,12 @@ export function computeDashboardKpis(
       const aBreach = isBreached(a, now) ? 0 : 1
       const bBreach = isBreached(b, now) ? 0 : 1
       if (aBreach !== bBreach) return aBreach - bBreach
+      const aWait = a.status === 'waiting_parts' ? 0 : 1
+      const bWait = b.status === 'waiting_parts' ? 0 : 1
+      if (aWait !== bWait) return aWait - bWait
+      const aUnassigned = !a.assigned_to ? 0 : 1
+      const bUnassigned = !b.assigned_to ? 0 : 1
+      if (aUnassigned !== bUnassigned) return aUnassigned - bUnassigned
       const aPri = PRIORITY_RANK[a.priority ?? ''] ?? 9
       const bPri = PRIORITY_RANK[b.priority ?? ''] ?? 9
       if (aPri !== bPri) return aPri - bPri

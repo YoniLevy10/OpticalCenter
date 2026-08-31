@@ -1,6 +1,13 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Inbox, PackageOpen, Wrench } from 'lucide-react'
+import {
+  AlertTriangle,
+  Inbox,
+  MessageSquare,
+  PackageOpen,
+  Wrench,
+} from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   Panel,
@@ -11,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { LiveSla } from '@/components/ui/time'
 import { StatusLabel, priorityEdgeClass } from '@/components/ui/signal'
+import { CreateTicketDialog } from '@/components/ops/create-ticket-dialog'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -18,6 +26,9 @@ import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { isBreached, queueHref } from '@/modules/tickets/queue'
+import { listInboxSessions } from '@/modules/inbox/service'
+import { fetchStores } from '@/modules/stores/data'
+import { DashboardSoftRefresh } from './dashboard-soft-refresh'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -26,16 +37,23 @@ function ticketNumber(t: QueueTicket): string {
   return t.display_number ?? (t.number != null ? `OC-${t.number}` : '—')
 }
 
+function greetingHe(now = new Date()): string {
+  const hour = now.getHours()
+  if (hour < 12) return 'בוקר טוב'
+  if (hour < 17) return 'צהריים טובים'
+  return 'ערב טוב'
+}
+
 function StatStrip({
   open,
   breached,
   unassigned,
-  resolved,
+  waiting,
 }: {
   open: number
   breached: number
   unassigned: number
-  resolved: number
+  waiting: number
 }) {
   const items = [
     {
@@ -57,10 +75,10 @@ function StatStrip({
       tone: 'warn' as const,
     },
     {
-      label: 'נפתרו',
-      value: resolved,
-      href: queueHref({ view: 'resolved', sort: 'newest' }),
-      tone: 'default' as const,
+      label: 'ממתינות לחלקים',
+      value: waiting,
+      href: queueHref({ view: 'open', sort: 'urgency', status: 'waiting_parts' }),
+      tone: 'warn' as const,
     },
   ]
 
@@ -126,7 +144,7 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
     return (
       <EmptyState
         title="אין חריגים כרגע"
-        description="כשתופיע חריגת SLA או תקלה לא משויכת — היא תופיע כאן."
+        description="כשתופיע חריגת SLA, תקלה לא משויכת או המתנה לחלקים — היא תופיע כאן."
         icon={Inbox}
         className="py-12"
       />
@@ -152,6 +170,10 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--signal-critical)]">
                       <AlertTriangle className="h-3 w-3" aria-hidden />
                       חריגה
+                    </span>
+                  ) : t.status === 'waiting_parts' ? (
+                    <span className="t-caption text-[var(--signal-warning)]">
+                      ממתינה לחלקים
                     </span>
                   ) : !t.assigned_to ? (
                     <span className="t-caption text-[var(--signal-warning)]">
@@ -180,15 +202,63 @@ function ExceptionList({ tickets }: { tickets: QueueTicket[] }) {
   )
 }
 
+type WaAttention = {
+  wa_id: string
+  display_name: string
+  store_label: string | null
+  last_message: string | null
+}
+
+function WhatsAppAttention({ items }: { items: WaAttention[] }) {
+  if (items.length === 0) return null
+
+  return (
+    <Panel flush elevated className="overflow-hidden">
+      <PanelHeader
+        title="WhatsApp — דורש מענה"
+        meta={`${items.length}`}
+        action={
+          <Link href="/ops/inbox" className="t-caption text-ink-3 hover:text-ink">
+            לתיבה
+          </Link>
+        }
+      />
+      <ul className="divide-y divide-border">
+        {items.map((s) => (
+          <li key={s.wa_id}>
+            <Link
+              href={`/ops/inbox?wa=${encodeURIComponent(s.wa_id)}`}
+              className="flex min-h-[52px] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
+            >
+              <MessageSquare
+                className="h-4 w-4 shrink-0 text-[var(--signal-warning)]"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="t-body truncate text-ink">{s.display_name}</p>
+                <p className="t-meta mt-0.5 truncate text-ink-2">
+                  {s.store_label ?? s.last_message ?? 'שיחה ממתינה'}
+                </p>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  )
+}
+
 export default async function OpsDashboardPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
 
-  const [ticketResult, techRows] = await Promise.all([
+  const [ticketResult, techRows, inboxResult, storeResult] = await Promise.all([
     listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
+    listInboxSessions().catch(() => ({ sessions: [], backend: 'memory' as const })),
+    fetchStores().catch(() => ({ stores: [], fromDb: false })),
   ])
 
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
@@ -199,20 +269,61 @@ export default async function OpsDashboardPage() {
   }))
   const kpis = computeDashboardKpis(all, technicians)
 
+  const waWaiting = inboxResult.sessions
+    .filter((s) => s.inbox_status === 'waiting' || s.unread)
+    .slice(0, 5)
+    .map((s) => ({
+      wa_id: s.wa_id,
+      display_name: s.display_name || s.wa_id,
+      store_label: s.store_name
+        ? s.store_code
+          ? `${s.store_name} · #${s.store_code}`
+          : s.store_name
+        : s.store_code
+          ? `סניף #${s.store_code}`
+          : null,
+      last_message: s.last_message,
+    }))
+
+  const stores = storeResult.stores.map((s) => ({
+    code: s.code,
+    name: s.name,
+    id: s.id,
+  }))
+
+  const actorName =
+    actor?.full_name?.trim() ||
+    actor?.email?.split('@')[0] ||
+    null
+  const greet = greetingHe()
+  const title = actorName ? `${greet}, ${actorName}` : greet
+
+  const attentionBits: string[] = []
+  if (kpis.breached > 0) attentionBits.push(`${kpis.breached} חריגות SLA`)
+  if (waWaiting.length > 0) attentionBits.push(`${waWaiting.length} שיחות WhatsApp`)
+  if (kpis.unassigned > 0) attentionBits.push(`${kpis.unassigned} ללא אחראי`)
+  if (kpis.waiting > 0) attentionBits.push(`${kpis.waiting} ממתינות לחלקים`)
+
   return (
     <OpsAppShell>
+      <DashboardSoftRefresh />
       <div className="flex flex-col gap-5 stagger">
         <PageHeader
-          className="hidden md:flex"
-          title="לוח בקרה"
+          title={title}
+          description="מה דורש טיפול עכשיו — והפעולה הבאה."
           actions={
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/tickets">לתור התקלות</Link>
-            </Button>
+            <div className="hidden items-center gap-2 md:flex">
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/ops/tickets">לתור התקלות</Link>
+              </Button>
+              <Suspense fallback={null}>
+                <CreateTicketDialog stores={stores} trigger="header" />
+              </Suspense>
+            </div>
           }
         />
 
-        <div className="md:hidden">
+        <div className="flex flex-col gap-2 md:hidden">
           <Button asChild variant="secondary" size="touch" className="w-full">
             <Link href="/ops/tickets">לתור התקלות</Link>
           </Button>
@@ -221,22 +332,24 @@ export default async function OpsDashboardPage() {
         <p
           className={cn(
             't-body border-b border-border pb-3',
-            kpis.breached > 0
+            kpis.breached > 0 || waWaiting.length > 0
               ? 'text-[var(--signal-critical)]'
               : 'text-ink-2',
           )}
         >
-          {kpis.breached > 0
-            ? `${kpis.breached} תקלות בחריגת SLA — דרוש טיפול מיידי`
-            : 'אין חריגות SLA'}
+          {attentionBits.length > 0
+            ? `${attentionBits.join(' · ')} — דרוש טיפול`
+            : 'אין חריגות כרגע — המערכת רגועה'}
         </p>
 
         <StatStrip
           open={kpis.open}
           breached={kpis.breached}
           unassigned={kpis.unassigned}
-          resolved={kpis.resolvedCount}
+          waiting={kpis.waiting}
         />
+
+        <WhatsAppAttention items={waWaiting} />
 
         <Panel flush elevated className="overflow-hidden">
           <PanelHeader
@@ -279,6 +392,10 @@ export default async function OpsDashboardPage() {
           </Panel>
         </div>
       </div>
+
+      <Suspense fallback={null}>
+        <CreateTicketDialog stores={stores} fab />
+      </Suspense>
     </OpsAppShell>
   )
 }
