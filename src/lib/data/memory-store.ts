@@ -232,8 +232,10 @@ export type MemSession = {
   active_ticket_id?: string | null
   expires_at: string
   updated_at: string
-  /** HQ human takeover — bot pauses replies while true. */
+  /** Private ops window for this wa_id only (bot stays on elsewhere). */
   human_takeover?: boolean
+  /** Absolute end of the private ops window for this wa_id. */
+  human_takeover_until?: string | null
   last_inbound?: string | null
 }
 
@@ -804,6 +806,7 @@ export function memUpsertSession(
     updated_at?: string
     expires_at?: string
     human_takeover?: boolean
+    human_takeover_until?: string | null
     last_inbound?: string | null
     clarification_count?: number
     draft_payload?: Record<string, unknown> | null
@@ -834,6 +837,10 @@ export function memUpsertSession(
       new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     updated_at: session.updated_at ?? now,
     human_takeover: session.human_takeover ?? existing?.human_takeover ?? false,
+    human_takeover_until:
+      session.human_takeover_until !== undefined
+        ? session.human_takeover_until
+        : (existing?.human_takeover_until ?? null),
     last_inbound: session.last_inbound ?? existing?.last_inbound ?? null,
   }
   store().sessions.set(full.wa_id, full)
@@ -857,11 +864,19 @@ export function memListSessions(): MemSession[] {
 export function memSetSessionTakeover(
   waId: string,
   human_takeover: boolean,
-  opts?: { state?: MemSession['state'] },
+  opts?: {
+    state?: MemSession['state']
+    human_takeover_until?: string | null
+  },
 ) {
   const s = store().sessions.get(waId)
   if (!s) throw new Error('שיחה לא נמצאה')
   s.human_takeover = human_takeover
+  if (opts && 'human_takeover_until' in opts) {
+    s.human_takeover_until = opts.human_takeover_until ?? null
+  } else if (!human_takeover) {
+    s.human_takeover_until = null
+  }
   if (opts?.state) s.state = opts.state
   s.updated_at = new Date().toISOString()
   return s

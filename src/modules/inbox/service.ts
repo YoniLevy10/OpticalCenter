@@ -21,6 +21,10 @@ import { resolveWhatsAppPhoneNumberId } from '@/modules/whatsapp/phone-number-id
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { DEMO_STORES } from '@/modules/stores/data'
 import { dedupeThreadMessages } from './dedupe-messages'
+import {
+  humanPauseUntilIso,
+  isHumanPauseActive,
+} from '@/modules/whatsapp/human-pause'
 
 const CUSTOMER_CARE_WINDOW_MS = 24 * 60 * 60 * 1000
 
@@ -41,7 +45,7 @@ function sanitizeOptionalUuid(
 }
 
 const SESSION_SELECT_FULL =
-  'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound'
+  'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, human_takeover_until, last_inbound'
 const SESSION_SELECT_LEGACY =
   'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at'
 
@@ -54,7 +58,11 @@ const PRIORITY_RANK: Record<string, number> = {
 
 function mapSessionRow(
   row: Record<string, unknown>,
-  opts?: { human_takeover?: boolean; last_inbound?: string | null },
+  opts?: {
+    human_takeover?: boolean
+    human_takeover_until?: string | null
+    last_inbound?: string | null
+  },
 ): InboxSession {
   const rawCountry = row.country_id
   const countryId =
@@ -76,6 +84,10 @@ function mapSessionRow(
     expires_at: String(row.expires_at ?? ''),
     updated_at: String(row.updated_at ?? ''),
     human_takeover: opts?.human_takeover ?? Boolean(row.human_takeover),
+    human_takeover_until:
+      opts?.human_takeover_until !== undefined
+        ? opts.human_takeover_until
+        : ((row.human_takeover_until as string | null | undefined) ?? null),
     last_inbound:
       opts?.last_inbound !== undefined
         ? opts.last_inbound
@@ -104,6 +116,7 @@ function seedDemoInboxIfEmpty() {
       state: 'awaiting_description',
       pending_description: null,
       human_takeover: true,
+      human_takeover_until: humanPauseUntilIso(),
       last_inbound: 'דלת הכניסה לא ננעלת',
     })
     memUpsertSession({
@@ -184,20 +197,26 @@ function enrichSession(
     storeLabel ||
     formatWaDisplay(session.wa_id)
 
+  const paused = isHumanPauseActive(session)
+
   const unread =
-    Boolean(session.human_takeover) ||
+    paused ||
     session.state === 'awaiting_description' ||
     ctx.lastDirection === 'inbound'
 
   return {
     ...session,
+    // Expose effective pause only (legacy permanent flags look "off").
+    human_takeover: paused,
+    human_takeover_until: paused ? (session.human_takeover_until ?? null) : null,
     store_name: ctx.storeName,
     customer_name: ctx.customerName,
     display_name,
     last_message: ctx.lastMessage ?? session.last_inbound ?? null,
     unread,
     priority: pickHighestPriority(ctx.openPriorities),
-    inbox_status: session.human_takeover ? 'waiting' : 'handled',
+    /** waiting = private ops window active for this chat only */
+    inbox_status: paused ? 'waiting' : 'handled',
   }
 }
 
@@ -210,7 +229,7 @@ export type InboxSessionView = InboxSession & {
   last_message: string | null
   unread: boolean
   priority: string | null
-  /** Derived: waiting = human takeover, handled = bot/closed. */
+  /** Derived: waiting = private ops window active; handled = bot on. */
   inbox_status: 'waiting' | 'handled'
 }
 
@@ -420,12 +439,21 @@ export async function setSessionTakeover(
   humanTakeover: boolean,
   opts?: { state?: InboxSession['state'] },
 ): Promise<InboxSession> {
+  const until = humanTakeover ? humanPauseUntilIso() : null
+
   if (!(await supabaseReady())) {
-    return memSetSessionTakeover(waId, humanTakeover, opts)
+    return memSetSessionTakeover(waId, humanTakeover, {
+      ...opts,
+      human_takeover_until: until,
+    })
   }
 
   const supabase = createSystemClient('inbox_takeover')
-  const payload: Record<string, unknown> = { human_takeover: humanTakeover }
+  const payload: Record<string, unknown> = {
+    human_takeover: humanTakeover,
+    human_takeover_until: until,
+    updated_at: new Date().toISOString(),
+  }
   if (opts?.state) payload.state = opts.state
 
   const { data, error } = await supabase
@@ -436,6 +464,34 @@ export async function setSessionTakeover(
     .single()
 
   if (error) {
+    if (isMissingColumnError(error, 'human_takeover_until')) {
+      // Pre-migration: still flip the flag; window expiry needs the column.
+      const { data: legacy, error: legacyError } = await supabase
+        .from('intake_sessions')
+        .update({
+          human_takeover: humanTakeover,
+          updated_at: new Date().toISOString(),
+          ...(opts?.state ? { state: opts.state } : {}),
+        })
+        .eq('wa_id', waId)
+        .select(
+          'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound',
+        )
+        .single()
+      if (legacyError) {
+        if (isSupabaseSchemaError(legacyError)) {
+          return memSetSessionTakeover(waId, humanTakeover, {
+            ...opts,
+            human_takeover_until: until,
+          })
+        }
+        throw new Error(legacyError.message)
+      }
+      return mapSessionRow(legacy as Record<string, unknown>, {
+        human_takeover: humanTakeover,
+        human_takeover_until: until,
+      })
+    }
     if (isMissingColumnError(error, 'human_takeover')) {
       const { data: legacy, error: legacyError } = await supabase
         .from('intake_sessions')
@@ -444,16 +500,23 @@ export async function setSessionTakeover(
         .single()
       if (legacyError) {
         if (isSupabaseSchemaError(legacyError)) {
-          return memSetSessionTakeover(waId, humanTakeover, opts)
+          return memSetSessionTakeover(waId, humanTakeover, {
+            ...opts,
+            human_takeover_until: until,
+          })
         }
         throw new Error(legacyError.message)
       }
       return mapSessionRow(legacy as Record<string, unknown>, {
         human_takeover: humanTakeover,
+        human_takeover_until: until,
       })
     }
     if (isSupabaseSchemaError(error)) {
-      return memSetSessionTakeover(waId, humanTakeover, opts)
+      return memSetSessionTakeover(waId, humanTakeover, {
+        ...opts,
+        human_takeover_until: until,
+      })
     }
     throw new Error(error.message)
   }
@@ -461,9 +524,9 @@ export async function setSessionTakeover(
 }
 
 /**
- * Mark conversation handled (bot resumes / closed) or waiting (human takeover).
- * handled → human_takeover false + state done
- * waiting → human_takeover true
+ * Private ops window for one chat only (bot stays on elsewhere).
+ * waiting → open/extend 30m pause for this wa_id
+ * handled → clear pause immediately (bot resumes on this number)
  */
 export async function markSessionInboxStatus(
   waId: string,
@@ -472,7 +535,7 @@ export async function markSessionInboxStatus(
   if (status === 'waiting') {
     return setSessionTakeover(waId, true)
   }
-  return setSessionTakeover(waId, false, { state: 'done' })
+  return setSessionTakeover(waId, false)
 }
 
 export async function listSessionMessages(waId: string): Promise<{
@@ -669,6 +732,12 @@ export async function replyToSession(input: {
   void input.countryId
 
   if (!(await supabaseReady())) {
+    const existing = memListSessions().find((s) => s.wa_id === waId)
+    if (existing) {
+      memSetSessionTakeover(waId, true, {
+        human_takeover_until: humanPauseUntilIso(),
+      })
+    }
     const message = memAddInboxMessage({
       wa_id: waId,
       direction: 'outbound',
@@ -740,12 +809,28 @@ export async function replyToSession(input: {
     }
   }
 
-  // Ops reply pauses the bot for this thread until ops clicks «החזר לבוט»
-  // (or the customer starts a new ticket after state=done).
-  await supabase
-    .from('intake_sessions')
-    .update({ human_takeover: true, updated_at: new Date().toISOString() })
-    .eq('wa_id', waId)
+  // Open / extend a short private window for THIS chat only.
+  // Bot keeps running on every other number.
+  const pauseUntil = humanPauseUntilIso()
+  {
+    const { error: pauseError } = await supabase
+      .from('intake_sessions')
+      .update({
+        human_takeover: true,
+        human_takeover_until: pauseUntil,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('wa_id', waId)
+    if (pauseError && isMissingColumnError(pauseError, 'human_takeover_until')) {
+      await supabase
+        .from('intake_sessions')
+        .update({
+          human_takeover: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('wa_id', waId)
+    }
+  }
 
   const send = await sendWhatsAppText({
     toWaId: waId,

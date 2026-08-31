@@ -299,7 +299,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(r.ticketId).toBeFalsy()
   })
 
-  it('WA-13 human_takeover silences bot', async () => {
+  it('WA-13 active private window silences bot for that chat only', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
@@ -311,6 +311,7 @@ describe('WhatsApp intake matrix (memory)', () => {
       state: 'awaiting_description',
       pending_description: null,
       human_takeover: true,
+      human_takeover_until: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     })
     const before = memListTickets().length
     const r = await processInboundMessage(
@@ -323,7 +324,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(memListTickets().length).toBe(before)
   })
 
-  it('WA-13b human_takeover auto-resumes after done + new text', async () => {
+  it('WA-13b expired / legacy private window auto-resumes bot', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
@@ -334,7 +335,9 @@ describe('WhatsApp intake matrix (memory)', () => {
       store_code: '172',
       state: 'done',
       pending_description: null,
+      // Legacy permanent mute (no until) must not block forever.
       human_takeover: true,
+      human_takeover_until: null,
       active_ticket_id: 'ticket-old',
     })
     const before = memListTickets().length
@@ -348,6 +351,31 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(r.ok).toBe(true)
     expect(r.reply).toBeTruthy()
     expect(memListTickets().length).toBeGreaterThan(before)
+    const session = memGetSession(waId)
+    expect(session?.human_takeover).toBe(false)
+    expect(session?.human_takeover_until ?? null).toBeNull()
+  })
+
+  it('WA-13c expired until timestamp resumes bot on that number', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    memUpsertSession({
+      wa_id: waId,
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'il-store-172',
+      store_code: '172',
+      state: 'awaiting_description',
+      pending_description: null,
+      human_takeover: true,
+      human_takeover_until: new Date(Date.now() - 60_000).toISOString(),
+    })
+    const r = await processInboundMessage(
+      msg({ waId, text: 'STORE_172' }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(true)
+    expect(r.reply).toBeTruthy()
     const session = memGetSession(waId)
     expect(session?.human_takeover).toBe(false)
   })
