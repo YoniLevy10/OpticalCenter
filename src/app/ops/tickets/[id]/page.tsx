@@ -164,7 +164,7 @@ export default async function TicketDetailPage({
     </Panel>
   )
 
-  const actionsPanel = (
+  const actionsPanel = (assigneeFieldId: string) => (
     <Panel className="mb-3 md:mb-0">
       <h2 className="t-section mb-3 text-ink">פעולות</h2>
       <TicketActions
@@ -172,6 +172,7 @@ export default async function TicketDetailPage({
         status={ticket.status as TicketStatus}
         assignedTo={ticket.assigned_to}
         technicians={technicians}
+        assigneeFieldId={assigneeFieldId}
       />
       <div className="mt-3 border-t border-border pt-3">
         <TicketShareBar
@@ -251,7 +252,7 @@ export default async function TicketDetailPage({
             ) : null}
 
             {/* Actions in document flow on mobile — no fixed overlay */}
-            <div className="md:hidden">{actionsPanel}</div>
+            <div className="md:hidden">{actionsPanel('ticket-assignee-mobile')}</div>
             <div className="md:hidden">{contextPanel}</div>
             <div className="md:hidden">{slaDatesPanel}</div>
 
@@ -262,7 +263,7 @@ export default async function TicketDetailPage({
           </div>
 
           <div className="hidden space-y-4 md:block lg:sticky lg:top-4 lg:self-start">
-            {actionsPanel}
+            {actionsPanel('ticket-assignee')}
             {contextPanel}
             {slaDatesPanel}
 
