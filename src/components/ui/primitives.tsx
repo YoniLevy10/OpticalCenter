@@ -17,13 +17,13 @@ export function Panel({
   className?: string
   /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
-  /** Soft Bamakor-style lift for hero / primary surfaces. */
+  /** Soft lift — reserved; prefer border-only cards in Optical Clean V2. */
   elevated?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
         elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
@@ -45,9 +45,9 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/35 px-4">
+    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex items-baseline gap-2">
-        <h2 className="t-section text-ink">{title}</h2>
+        <h2 className="t-lead text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
       </div>
       {action}
@@ -72,7 +72,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-start justify-between gap-x-4 gap-y-2 pb-1',
+        'flex flex-wrap items-start justify-between gap-x-4 gap-y-3 pb-2',
         className,
       )}
     >
@@ -82,7 +82,7 @@ export function PageHeader({
           {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
         </div>
         {description ? (
-          <p className="t-body mt-1 max-w-2xl text-ink-2">{description}</p>
+          <p className="t-body mt-1.5 max-w-2xl text-ink-2">{description}</p>
         ) : null}
       </div>
       {actions ? (

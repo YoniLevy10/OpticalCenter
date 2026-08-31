@@ -1,210 +1,128 @@
-# MaintainOS — Operational Quiet + Bamakor Pulse
+# Optical Clean V2 — Design System
 
-**Status:** Normative. Single source of truth for presentation.
-**Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
-**Applies to:** every surface in `src/app/**`.
-**Pulse reference:** live Bamakor CSS (`#f9f9fb` / `#1a1a2e` / `#e8e8ed`) — adapted;
-**never** copy Bamakor product blue `#0066FF`.
-
----
-
-## 0. Principle
-
-> **Color is a signal, not a surface — but quiet still needs a pulse.**
-
-Ink and space carry hierarchy. Color is spent where a decision is required.
-Pulse = luminous canvas, navy ink, soft elevation, tenant-soft active chrome.
-
-Two supporting rules:
-
-1. **Differentiate by form, not by hue.** Priority, status and SLA are three orthogonal
-   dimensions. They must never share a visual shape.
-2. **Containers are the last resort.** Type and space first, then a divider, then a
-   border, and only then a card — with `elevated` for hero surfaces.
-
-### Restraint + Pulse
-
-**Allowed “wow” moments:**
-
-1. **Login** — raised brand tile + soft tenant glow + `--shadow-pop`
-2. **Elevated panels** — `Panel elevated`, stat strip, exception hero (`--shadow-1`)
-3. **Modal** — `animate-scale-in` entrance
-
-Everywhere else: color transitions, no bounce/scale on nav or queue rows, no list
-stagger on daily queues. `.stagger` is reserved for dashboard first-impression lists.
+**Status:** Normative. Single source of truth for presentation.  
+**Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.  
+**Applies to:** every surface in `src/app/**`.  
+**Reference:** Bamakor for restraint and finish quality — never copy Bamakor blue `#0066FF`.
 
 ---
 
-## 0b. Ops console structure
+## Principle
 
-### Dashboard — action console
+> Quiet. Fast. Precise. Premium. Obvious.
 
-1. Compact `PageHeader` (hidden on mobile when AppShell already titles the page)
-2. **Stat strip** — peer metrics in one elevated band; click → existing `queueHref`
-3. Thin SLA banner (single line)
-4. **Exception list** (hero, elevated) — up to 8 tickets; row → ticket detail
-5. Secondary panels: category · technician load
-6. Chart / load **bars use `--signal-progress` or ink** — never `--tenant`
+- Few visual decisions.
+- Clear hierarchy.
+- Generous whitespace.
+- Almost no decoration.
+- Color only when it means something.
+- One language on every screen.
 
-### Queue — dense Linear-like chrome
+If choosing between “more interesting” and “cleaner” → **cleaner**.  
+If unsure whether something needs color → **no**.  
+If unsure whether to add a Card → **no**.
 
-- Mobile: hide page `PageHeader` (`hidden md:flex`)
-- Attention counts live in the toolbar band
-- Desktop filters visible; BottomSheet mobile-only
-- Sticky table header; compact empty state; dense pagination footer
+---
 
-### Panel elevation
+## Tokens
 
-`Panel` defaults to **border only**. Pass `elevated` for hero surfaces (dashboard,
-queue table, stores table). Login brand / modal keep `--shadow-pop`.
-
-## 1. Token architecture — three layers
-
-### Layer 1 — Substrate (never tenant-themable)
+### Canvas & surfaces
 
 | Token | Value | Use |
 |---|---|---|
-| `--canvas` | `#f5f6fa` | app background (Bamakor luminous family) |
-| `--surface` | `#ffffff` | panels, rows, sheets |
-| `--surface-sunken` | `#eef0f5` | table headers, inert fills |
-| `--surface-raised` | `#ffffff` | floating surfaces (popover / dropdown) |
-| `--border` | `#e8e8ed` | Bamakor hairline |
-| `--border-strong` | `#d2d4dc` | emphasis |
-| `--ink` | `#1a1a2e` | primary text (Bamakor navy) |
-| `--ink-2` | `#5c6070` | secondary text |
-| `--ink-3` | `#556870` | tertiary / metadata |
+| `--canvas` | `#F9F9FB` | App background |
+| `--surface` | `#FFFFFF` | Cards, tables, sidebar, modals |
+| `--surface-sunken` | `#F5F5F7` | Table headers, inert fills, hover |
+| `--border` | `#E5E5EA` | Hairlines |
+| `--border-strong` | `#D2D2D7` | Emphasis borders |
+| `--ink` | `#1D1D1F` | Primary text |
+| `--ink-2` | `#6E6E73` | Secondary text |
+| `--ink-3` | `#8E8E93` | Caption / meta |
 
-### Layer 2 — Signal (identical for every tenant)
-
-| Signal | Base | Soft | Meaning |
-|---|---|---|---|
-| `critical` | `#c01e1e` | `#fef0f0` | breach, critical priority, destructive |
-| `warning` | `#8a5a12` | `#fdf5e6` | approaching breach, blocked |
-| `progress` | `#3b6cb8` | `#eaf1fa` | actively being worked |
-| `resolved` | `#187348` | `#e8f6ee` | done |
-| `idle` | `#8b90a0` | `#f5f6fa` | no attention required |
-
-### Layer 3 — Tenant
+### Primary — Optical Wine
 
 | Token | Value |
 |---|---|
-| `--tenant` | `#0d7a72` |
-| `--tenant-hover` | `#0a6660` |
-| `--tenant-soft` | `#e3f6f3` |
-| `--tenant-line` | `#b8e5df` |
-| `--tenant-contrast` | `#ffffff` |
+| `--tenant` | `#8B1E2D` |
+| `--tenant-hover` | `#741824` |
+| `--tenant-soft` | `#F8ECEF` |
+| `--tenant-contrast` | `#FFFFFF` |
 
-Permitted: logo mark · primary action fill · active nav (soft fill + indicator).
-**Forbidden** on ticket status, priority, SLA, data rows, charts. Never Bamakor blue.
+**Only** for: primary CTA, active nav, focus, important links, selected, progress tint, highlights.
 
-### Elevation & motion
+### Semantic (state only — never full card fills)
 
-| Token | Intent |
+| Signal | Base |
 |---|---|
-| `--shadow-1` | elevated panels / sidebar edge / active segment |
-| `--shadow-2` | rare intermediate |
-| `--shadow-hover` | intentional elevated hover only |
-| `--shadow-pop` | modal / login mark / toast |
-| `--bottomnav-h` | `64px` (Bamakor mobile nav) |
-| `--dur-1` | `150ms` state |
-| `--dur-2` | `280ms` surfaces |
-| `--dur-3` | `400ms` rare long motion |
-| `--ease` | `cubic-bezier(0.16, 1, 0.3, 1)` |
-| `--radius-sm/md/lg/xl` | `6 / 8 / 12 / 16` |
+| Success | green |
+| Warning | orange |
+| Critical | red |
+
+Less than **10%** of any screen should be chromatic.
+
+### Radius
+
+| Level | Value | Use |
+|---|---|---|
+| Controls | `8px` (`--radius-md`) | Buttons, inputs |
+| Cards | `12px` (`--radius-lg`) | Panels, tables |
+| Modals | `16px` (`--radius-xl`) | Sheets, dialogs |
+
+Pills only for badge / filter chip / avatar.
+
+### Shadow
+
+Default cards: **none** (border only).  
+Optional hairline: `0 1px 2px rgba(0,0,0,.03)`.  
+Meaningful shadow reserved for modal / popover / drawer.
+
+### Spacing (4px grid)
+
+`4 · 8 · 12 · 16 · 24 · 32 · 48`  
+Desktop page padding: `32px` · Mobile: `16px` · Section gap: `32px`
 
 ---
 
-## 2. Typography
+## Typography (Heebo)
 
-Semantic roles only — **no arbitrary `text-[Npx]` in application code.**
-
-| Role | Size / line | Weight | Use |
-|---|---|---|---|
-| `.t-display` | 26 / 1.2, `-0.025em` | 650 | one per screen max; KPI values |
-| `.t-title` | 20 / 1.25, `-0.02em` | 600 | page title |
-| `.t-section` | 14 / 1.4 | 600 | panel heading |
-| `.t-lead` | 15 / 1.35 | 500 | mobile row primary line |
-| `.t-body` | 13.5 / 1.5 | 400 | operational body |
-| `.t-body-strong` | 13.5 / 1.5 | 550 | emphasis |
-| `.t-meta` | 12 / 1.4 | 400 | secondary metadata |
-| `.t-caption` | 11 / 1.35, `0.01em` | 500 | labels |
-| `.t-control` | 13.5 / 1 | 500 | buttons, tabs |
-| `.t-control-lg` | 15 / 1 | 500 | touch / block actions |
-
-`.t-num` = tabular nums + slashed zero. Mandatory on ticket numbers, store codes,
-SLA, age, counts, phones.
-
----
-
-## 3. Spacing
-
-Strict 4px grid. Layout tokens: `--row-h: 44px`, `--nav-w: 216px`,
-`--topbar-h: 52px`, `--bottomnav-h: 56px`, `--tap: 44px`.
-
-Content max width: `1280px`. Desktop content padding: `md:px-8`.
-
----
-
-## 4. Signal encoding
-
-### Priority → leading edge (3px inline-start)
-
-| Priority | Treatment |
+| Role | Size / Weight |
 |---|---|
-| `critical` | solid `--signal-critical` + critical row rest |
-| `high` | critical at 45% opacity |
-| `medium` | `--border-strong` |
-| `low` | none |
+| Page title | 28px / 600 (mobile 22px) |
+| Section | 18px / 600 |
+| Card title | 15px / 600 |
+| Body | 14px / 400 |
+| Secondary | 13px / 400 |
+| Caption | 12px / 500 |
+| KPI number | 30–32px / 600 |
 
-No priority badges except the optional critical chip on mobile rows.
-
-### Status → typography
-
-Plain `--ink-2`. Markers only for blocked / resolved states.
-
-### SLA → live tabular number
-
-Time remaining, right-aligned. Warning ≤20% window; critical when breached.
+One **H1** per page. No decorative eyebrows / “OPERATIONS OS” banners.
 
 ---
 
-## 5. Navigation
+## Shell
 
-Desktop: **surface** sidebar with soft `--shadow-1` edge.
-Active nav: `--tenant-soft` fill + tenant ink + 2px tenant indicator.
+- **Light sidebar** (`#FFFFFF`, 220–232px), border `#E5E5EA`.
+- Active item: soft wine tint `#F8ECEF`, wine text/icon — no glow, no leading bar.
+- Mobile bottom nav (5): סקירה · תקלות · WhatsApp · חנויות · עוד.
 
-Mobile: blur top bar with page title; bottom nav height `--bottomnav-h: 64px`;
-active = **tenant color**.
+### Nav hierarchy
 
-Primary: Dashboard · Tickets · Stores. Tools (settings, users, simulator, tech)
-live in sidebar footer / More sheet.
-
-Technicians: TechShell only — no HQ chrome.
-
----
-
-## 6. Component rules
-
-One system in `src/components/ui/`. Storybook for changed primitives.
-
-Rules:
-
-- No screen invents its own button, status pill, or form control.
-- Visible `:focus-visible` (tenant halo + soft ring).
-- Mobile controls ≥ `--tap` (44px); inputs 16px on mobile.
-- Motion communicates; daily queues do not stagger or bounce.
-- Toast may use `animate-slide-up`; modal uses `animate-scale-in`; sheets use
-  `animate-slide-up`.
+**Primary:** סקירה · תקלות · WhatsApp · חנויות · דוחות  
+**Secondary:** נכסים · ספקים · משתמשים  
+**System:** הגדרות · סטטוס מערכת · מעבדה (+ tools under More)
 
 ---
 
-## 7. Non-happy path
+## Dark mode
 
-Every route: `loading` (skeleton), empty, error. Offline honesty on tech surfaces.
+Light mode is the source of truth for Optical Clean V2.  
+Do not maintain a parallel visual language during this redesign wave.
 
 ---
 
-## 8. RTL
+## Build order
 
-Logical properties only (`ms/me`, `ps/pe`, `start/end`). Priority edge uses
-`inline-start`. Latin IDs / phones / URLs: `dir="ltr"`.
+1. Foundation (tokens, shell, primitives)  
+2. Dashboard · Tickets · Ticket detail  
+3. Inbox · Stores · Reports  
+4. Assets · Vendors · Users · Settings · Tech/Store portals

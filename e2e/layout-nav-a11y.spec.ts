@@ -37,7 +37,7 @@ test.describe('Navigation & layout', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
-    await expect(bottomNav.getByText('לוח בקרה')).toBeVisible()
+    await expect(bottomNav.getByText('סקירה')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
     await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
