@@ -21,7 +21,9 @@ test.describe('Navigation & layout', () => {
     // /ops redirects to dashboard
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
-    await expect(page.getByRole('heading', { name: 'לוח בקרה' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב|לוח בקרה/ }),
+    ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
