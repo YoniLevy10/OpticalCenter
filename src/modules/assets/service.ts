@@ -95,7 +95,12 @@ export async function createAsset(input: {
       .single()
 
     if (error && isSupabaseSchemaError(error)) {
-      const { barcode: _ignored, ...legacyPayload } = payload
+      const legacyPayload = {
+        store_id: payload.store_id,
+        code: payload.code,
+        name: payload.name,
+        asset_type: payload.asset_type,
+      }
       const retry = await supabase
         .from('assets')
         .insert(legacyPayload)
@@ -141,7 +146,8 @@ export async function updateAsset(
       .single()
 
     if (error && isSupabaseSchemaError(error)) {
-      const { barcode: _ignored, ...legacyBody } = body
+      const legacyBody = { ...body }
+      delete legacyBody.barcode
       const retry = await supabase
         .from('assets')
         .update(legacyBody)
