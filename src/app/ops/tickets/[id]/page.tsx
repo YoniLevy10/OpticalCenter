@@ -30,7 +30,6 @@ import {
 import { listAssets } from '@/modules/assets/service'
 import { TicketActions } from './ticket-actions'
 import { TicketShareBar } from '@/components/ops/ticket-share-bar'
-import { TicketNextStep } from '@/components/ops/ticket-next-step'
 import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -121,7 +120,7 @@ export default async function TicketDetailPage({
           <KeyValue label="כתובת">{ticket.stores.address}</KeyValue>
         ) : null}
         {linkedAsset || ticket.asset_id ? (
-          <KeyValue label="ציוד">
+          <KeyValue label="נכס">
             {linkedAsset
               ? `${linkedAsset.name}${linkedAsset.code ? ` · ${linkedAsset.code}` : ''}`
               : ticket.asset_id!.slice(0, 8)}
@@ -140,50 +139,34 @@ export default async function TicketDetailPage({
   )
 
   const slaDatesPanel = (
-    <details className="group rounded-[var(--radius-lg)] border border-border/80 bg-surface">
-      <summary className="t-section cursor-pointer list-none px-5 py-4 text-ink marker:content-none [&::-webkit-details-marker]:hidden">
-        פרטים נוספים
-        <span className="t-caption ms-2 font-normal text-ink-3">
-          זמנים · מקור · קטגוריה
-        </span>
-      </summary>
-      <div className="border-t border-border px-5 pb-4">
-        <dl className="divide-y divide-border">
-          <KeyValue label="זמן טיפול">
-            <SlaBlock view={slaView} />
-          </KeyValue>
-          <KeyValue label="נפתחה">{formatDateTimeHe(ticket.created_at)}</KeyValue>
-          <KeyValue label="גיל">
-            <LiveAge createdAt={ticket.created_at} />
-          </KeyValue>
-          <KeyValue label="עודכנה">{formatDateTimeHe(ticket.updated_at)}</KeyValue>
-          {ticket.resolved_at ? (
-            <KeyValue label="הסתיימה">{formatDateTimeHe(ticket.resolved_at)}</KeyValue>
-          ) : null}
-          <KeyValue label="סוג">
-            {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
-          </KeyValue>
-          <KeyValue label="מאיפה הגיעה">
-            {TICKET_SOURCE_LABELS_HE[ticket.source as TicketSourceLabel] ??
-              ticket.source}
-          </KeyValue>
-        </dl>
-      </div>
-    </details>
+    <Panel>
+      <h2 className="t-section mb-1 text-ink">SLA ותאריכים</h2>
+      <dl className="divide-y divide-border">
+        <KeyValue label="SLA">
+          <SlaBlock view={slaView} />
+        </KeyValue>
+        <KeyValue label="נפתחה">{formatDateTimeHe(ticket.created_at)}</KeyValue>
+        <KeyValue label="גיל">
+          <LiveAge createdAt={ticket.created_at} />
+        </KeyValue>
+        <KeyValue label="עודכנה">{formatDateTimeHe(ticket.updated_at)}</KeyValue>
+        {ticket.resolved_at ? (
+          <KeyValue label="נפתרה">{formatDateTimeHe(ticket.resolved_at)}</KeyValue>
+        ) : null}
+        <KeyValue label="קטגוריה">
+          {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
+        </KeyValue>
+        <KeyValue label="מקור">
+          {TICKET_SOURCE_LABELS_HE[ticket.source as TicketSourceLabel] ??
+            ticket.source}
+        </KeyValue>
+      </dl>
+    </Panel>
   )
 
   const actionsPanel = (assigneeFieldId: string) => (
     <Panel className="mb-3 md:mb-0">
-      <h2 className="t-section mb-3 text-ink">מה אפשר לעשות</h2>
-      <TicketNextStep
-        status={ticket.status as TicketStatus}
-        assignedTo={ticket.assigned_to}
-        slaRespondBy={ticket.sla_respond_by}
-        slaResolveBy={ticket.sla_resolve_by}
-        firstResponseAt={ticket.first_response_at}
-        resolvedAt={ticket.resolved_at}
-        className="mb-4"
-      />
+      <h2 className="t-section mb-3 text-ink">פעולות</h2>
       <TicketActions
         ticketId={ticket.id}
         status={ticket.status as TicketStatus}
@@ -243,7 +226,7 @@ export default async function TicketDetailPage({
             <StatusLabel status={ticket.status as TicketStatus} />
             <PriorityText priority={ticket.priority as TicketPriority} />
             <span className="t-body text-ink-2">
-              {assignee?.full_name || assignee?.email || 'עדיין לא נבחר טכנאי'}
+              {assignee?.full_name || assignee?.email || 'לא משויך'}
             </span>
           </div>
         </header>

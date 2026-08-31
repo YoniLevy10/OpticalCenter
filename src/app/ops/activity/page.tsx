@@ -19,8 +19,7 @@ export default async function ActivityPage() {
     <OpsAppShell>
       <div className="flex flex-col gap-4">
         <PageToolbar backHref="/ops/dashboard" backLabel="חזרה" showRefresh />
-        <PageHeader className="hidden md:flex" title="מה קרה במערכת"
-          description="יומן קצר של פעולות אחרונות" />
+        <PageHeader className="hidden md:flex" title="יומן פעילות" />
         <ActivityLog events={events} />
       </div>
     </OpsAppShell>

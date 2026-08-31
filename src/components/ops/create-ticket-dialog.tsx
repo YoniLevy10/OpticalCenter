@@ -71,23 +71,23 @@ export function CreateTicketDialog({
     />
   )
 
-  const title = 'פתח תקלה'
-  const description = 'בלי WhatsApp — פשוט ממלאים כאן'
+  const title = 'תקלה חדשה'
+  const description = 'פתיחה ידנית ממרכז התפעול'
 
   return (
     <>
       {trigger === 'toolbar' ? (
         <Button type="button" variant="primary" className="shrink-0" onClick={openDialog}>
           <Plus className="h-4 w-4" aria-hidden />
-          <span className="hidden sm:inline">פתח תקלה</span>
-          <span className="sm:hidden">פתח</span>
+          <span className="hidden sm:inline">תקלה חדשה</span>
+          <span className="sm:hidden">חדשה</span>
         </Button>
       ) : null}
 
       {trigger === 'header' ? (
         <Button type="button" variant="primary" size="sm" onClick={openDialog}>
           <Plus className="h-4 w-4" aria-hidden />
-          פתח תקלה
+          תקלה חדשה
         </Button>
       ) : null}
 
@@ -96,7 +96,7 @@ export function CreateTicketDialog({
           type="button"
           variant="primary"
           onClick={openDialog}
-          aria-label="פתח תקלה"
+          aria-label="תקלה חדשה"
           className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] end-4 z-30 h-14 w-14 rounded-full p-0 shadow-[var(--shadow-pop)] md:hidden"
         >
           <Plus className="h-6 w-6" aria-hidden />

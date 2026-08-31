@@ -22,12 +22,12 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
     await expect(
-      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב|ראשי/ }),
+      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב|לוח בקרה/ }),
     ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     await gotoStable(page, '/ops/stores')
-    await expect(page.getByRole('heading', { name: 'סניפים' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
     await gotoStable(page, '/ops/reports')
     await expect(page.getByRole('heading', { name: 'דוחות', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /ייצוא CSV/ }).first()).toBeVisible()
@@ -39,10 +39,9 @@ test.describe('Navigation & layout', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
-    await expect(bottomNav.getByText('ראשי')).toBeVisible()
+    await expect(bottomNav.getByText('לוח בקרה')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
-    await expect(bottomNav.getByText('סניפים')).toBeVisible()
-    await expect(bottomNav.getByText('הודעות')).toBeVisible()
+    await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
     await expect(page.getByRole('dialog').getByRole('link', { name: 'הגדרות' })).toBeVisible()
   })
@@ -165,7 +164,7 @@ test.describe('Offline honesty', () => {
     await gotoStable(page, `/tech/${ticketId}?techId=${DEMO_TECH_ID}`)
 
     await context.route('**/api/tech/tickets/**', (route) => route.abort())
-    const resolveBtn = page.getByRole('button', { name: /סמן כטופל|סיום|resolved|הסתיים|נפתר/i })
+    const resolveBtn = page.getByRole('button', { name: /סיום|resolved|נפתר/i })
     if ((await resolveBtn.count()) > 0) {
       await resolveBtn.first().click()
       await expect(page.getByText(/שגיאה|נכשל|רשת/i).first()).toBeVisible({

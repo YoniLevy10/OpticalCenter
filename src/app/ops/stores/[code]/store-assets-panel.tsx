@@ -133,7 +133,7 @@ export function StoreAssetsPanel({
 
   return (
     <Panel flush className="overflow-hidden">
-      <PanelHeader title="ציוד בסניף" meta={`#${storeCode}`} />
+      <PanelHeader title="נכסים בחנות" meta={`#${storeCode}`} />
       <div className="space-y-4 p-4">
         {error ? <ErrorState title="שגיאה" description={error} /> : null}
         {notice ? <Notice tone="progress">{notice}</Notice> : null}
@@ -220,7 +220,7 @@ export function StoreAssetsPanel({
         {loading ? (
           <p className="t-body text-ink-2">טוען…</p>
         ) : assets.length === 0 ? (
-          <EmptyState title="עדיין אין ציוד בסניף הזה" description="הוסיפו ציוד לחנות — יופיע בטופס דיווח." />
+          <EmptyState title="אין נכסים" description="הוסיפו ציוד לחנות — יופיע בטופס דיווח." />
         ) : (
           <>
             <AdminRowList className="md:hidden">
