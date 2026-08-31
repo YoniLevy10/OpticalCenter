@@ -6,7 +6,7 @@
 |------|--------|--------|
 | דוחות | CSV + Excel + PDF + dashboard מספיק; PDF לא חובה נפרד | `/api/reports/export?format=csv\|xlsx\|pdf` |
 | היסטוריה | דוחות חודשיים נשמרים ידנית | `/ops/reports/history` + `report_snapshots` |
-| התראות טכנאי | WhatsApp + קישור `/tech` — לא Web Push בפיילוט | Push UI «בקרוב» |
+| התראות טכנאי | SMS (019) בשיוך + WhatsApp עם קישור `/tech` — כמו Bamakor; לא Web Push בפיילוט | Push UI «בקרוב» |
 | Inbox reply | HQ יכול לשלוח WA (UI קיים); policy: takeover + ticket ops | ללא שינוי policy ב-wave זה |
 | Auth | Google (Gmail מאושר) או מייל+סיסמה שסופקו ע״י מנהל; ללא כניסה פתוחה | `/login` + allowlist + Users admin |
 | תפקידים | 4 בלבד: מנהל מערכת, תפעול, חנות, טכנאי | `docs/ROLES_AND_ACCESS.md` |

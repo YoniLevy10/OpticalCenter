@@ -2,6 +2,7 @@ import 'server-only'
 
 import { logEvent } from '@/lib/logging'
 import { memAddMessage, supabaseReady } from '@/lib/data/memory-store'
+import { send019Sms } from '@/lib/sms/019'
 import { createSystemClient } from '@/lib/supabase/system'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
 import {
@@ -127,12 +128,18 @@ export async function notifyReporter(
 }
 
 /**
- * Notify assigned technician via WhatsApp with a deep link to the tech job.
+ * Notify assigned technician — Bamakor-style SMS first (019), then WhatsApp
+ * with a deep link to `/tech/{ticketId}`.
  */
 export async function notifyTechnicianAssigned(
   ticket: LifecycleTicket & { assigned_to?: string | null },
   tech: { id: string; full_name?: string | null; phone?: string | null } | null,
-): Promise<{ sent: boolean; skipped?: string }> {
+): Promise<{
+  sent: boolean
+  skipped?: string
+  smsSent?: boolean
+  whatsappSent?: boolean
+}> {
   try {
     const phone = tech?.phone ? normalizePhoneDigits(tech.phone) : null
     if (!phone) {
@@ -153,6 +160,45 @@ export async function notifyTechnicianAssigned(
       (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
     const storeName = ticket.stores?.name?.trim() || 'חנות'
     const link = `${appUrl}/tech/${ticket.id}`
+
+    // SMS: short Bamakor-style assign ping (primary for field techs).
+    const smsText = `שויכת לתקלה ${display}\n${link}`
+    const sms = await send019Sms({
+      to: phone,
+      message: smsText,
+      meta: {
+        ticketId: ticket.id,
+        techId: tech?.id ?? ticket.assigned_to ?? null,
+        event: 'tech_assigned',
+      },
+    })
+
+    if (sms.ok && (await supabaseReady())) {
+      const smsClient = createSystemClient('tech_assign_sms')
+      await smsClient.from('ticket_messages').insert({
+        ticket_id: ticket.id,
+        channel: 'sms',
+        direction: 'outbound',
+        body: smsText,
+        raw: {
+          event: 'tech_assigned',
+          provider: '019',
+          dryRun: sms.dryRun ?? false,
+          status: sms.status ?? null,
+        },
+      })
+    } else if (sms.ok) {
+      try {
+        memAddMessage(ticket.id, {
+          channel: 'sms',
+          direction: 'outbound',
+          body: smsText,
+        })
+      } catch {
+        // Ticket may not exist in memory store during partial tests
+      }
+    }
+
     const baseText = `שיוכת לתקלה ${display} בחנות ${storeName}.\nלפתיחה: ${link}`
     const text = await enhanceWhatsAppMessage(baseText, {
       situation: 'lifecycle_tech_assigned',
@@ -170,19 +216,43 @@ export async function notifyTechnicianAssigned(
       purpose: 'status_update',
     })
 
-    if (result.skippedByPolicy) {
-      return { sent: false, skipped: 'cost_policy' }
-    }
-
     if (!ready || !supabase) {
       await persistOutbound(ticket.id, text, result.waMessageId, {
         event: 'tech_assigned',
         dryRun: result.dryRun,
         ok: result.ok,
+        smsOk: sms.ok,
+        smsSkipped: sms.skipped ?? null,
       })
     }
 
-    return { sent: result.ok }
+    const whatsappSent = result.ok && !result.skippedByPolicy
+    const sent = sms.ok || whatsappSent
+
+    logEvent('lifecycle:tech_notify', 'info', 'assign_notify_done', {
+      ticketId: ticket.id,
+      smsOk: sms.ok,
+      smsSkipped: sms.skipped ?? null,
+      whatsappOk: whatsappSent,
+      waSkippedByPolicy: result.skippedByPolicy ?? false,
+    })
+
+    if (!sent) {
+      const skipped =
+        sms.skipped && sms.skipped !== 'not_configured'
+          ? sms.skipped
+          : result.skippedByPolicy
+            ? 'cost_policy'
+            : sms.skipped || 'send_failed'
+      return {
+        sent: false,
+        skipped,
+        smsSent: false,
+        whatsappSent: false,
+      }
+    }
+
+    return { sent, smsSent: sms.ok, whatsappSent }
   } catch (e) {
     logEvent('lifecycle:tech_notify', 'error', 'notify_failed', {
       ticketId: ticket.id,
