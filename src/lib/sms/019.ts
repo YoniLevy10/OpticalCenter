@@ -53,7 +53,8 @@ export function is019SmsConfigured(): boolean {
  *
  * Env:
  * - SMS_019_USERNAME (required)
- * - SMS_019_SENDER (required, max 11 alphanumeric)
+ * - SMS_019_SENDER (required, max 11 alphanumeric; Optical uses approved
+ *   local form of the WA line, e.g. 0552819086 — not E.164 972…)
  * - SMS_019_TOKEN or SMS_019_BEARER_TOKEN (preferred) — Authorization: Bearer
  * - SMS_019_PASSWORD (legacy) — included in JSON user object when no token
  * - SMS_019_TEST=1 — use /api/test (no real send)

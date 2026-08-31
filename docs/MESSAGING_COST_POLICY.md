@@ -21,5 +21,5 @@ Goal: keep WhatsApp spend near-zero for fault reporting.
 
 ## Providers
 - Default WhatsApp: **Meta Cloud API direct**
-- Technician assign SMS: **019SMS** (`SMS_019_*` env) — short “שויכת לתקלה … + link”
+- Technician assign SMS: **019SMS** (`SMS_019_*` env) — short “שויכת לתקלה … + link”. Optical sender is the same line as WhatsApp (`+972 55-281-9086`), registered in 019 as local `SMS_019_SENDER=0552819086` (not Meta Graph — separate API).
 - Aggregators (e.g. Sent.dm) do **not** remove Meta conversation fees; evaluate later for broader SMS/RCS
