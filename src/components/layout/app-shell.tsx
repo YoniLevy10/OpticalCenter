@@ -53,6 +53,12 @@ const PRIMARY: NavItem[] = [
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
+  {
+    href: '/ops/inbox',
+    label: 'WhatsApp',
+    icon: MessageSquare,
+    match: '/ops/inbox',
+  },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
@@ -60,12 +66,6 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'תפעול',
     items: [
-      {
-        href: '/ops/inbox',
-        label: 'הודעות',
-        icon: MessageSquare,
-        match: '/ops/inbox',
-      },
       { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
@@ -192,7 +192,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
   if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
   if (pathname.startsWith('/ops/status')) return 'מצב המערכת'
-  if (pathname.startsWith('/ops/inbox')) return 'הודעות'
+  if (pathname.startsWith('/ops/inbox')) return 'WhatsApp'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'

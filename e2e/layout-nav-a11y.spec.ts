@@ -41,6 +41,7 @@ test.describe('Navigation & layout', () => {
     const bottomNav = page.locator('nav.fixed')
     await expect(bottomNav.getByText('ראשי')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
+    await expect(bottomNav.getByText('WhatsApp')).toBeVisible()
     await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
     await expect(page.getByRole('dialog').getByRole('link', { name: 'הגדרות' })).toBeVisible()
