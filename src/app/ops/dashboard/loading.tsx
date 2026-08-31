@@ -5,15 +5,12 @@ import { Panel, Skeleton } from '@/components/ui/primitives'
 export default function DashboardLoading() {
   return (
     <AppShell>
-      <div className="flex flex-col gap-4">
-        <BrandSplash label="טוען לוח בקרה…" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Skeleton className="h-24 rounded-[var(--radius-lg)]" />
-          <Skeleton className="h-24 rounded-[var(--radius-lg)]" />
-          <Skeleton className="h-24 rounded-[var(--radius-lg)]" />
-        </div>
+      <div className="flex flex-col gap-5">
+        <BrandSplash label="טוען…" />
+        <Skeleton className="h-8 w-56 rounded-[var(--radius-md)]" />
+        <Skeleton className="h-36 w-full rounded-[var(--radius-lg)]" />
         <Panel className="flex flex-col gap-3">
-          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-48" />
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </Panel>

@@ -41,13 +41,13 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     await page.goto('/ops/tickets?view=open', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
     if (display) {
-      await expect(page.locator('table').getByText(display).first()).toBeVisible()
+      await expect(page.getByText(display).first()).toBeVisible()
     }
-    await expect(page.locator('table').getByText(/אבן גבירול|172/).first()).toBeVisible()
+    await expect(page.getByText(/אבן גבירול|172/).first()).toBeVisible()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(/מזגן הראשי/).first()).toBeVisible()
-    await expect(page.getByText(/כרונולוגיה|פעילות/).first()).toBeVisible()
+    await expect(page.getByText(/מה קרה עד עכשיו|נפתחה על ידי/).first()).toBeVisible()
 
     const assign = await patchTicket(request, ticketId, {
       assignedTo: DEMO_TECH_ID,
@@ -90,7 +90,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     expect(done.json.ticket.resolved_at || done.json.ticket.events).toBeTruthy()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
-    await expect(page.getByText(/resolved|נפתר|הושלם/i).first()).toBeVisible({
+    await expect(page.getByText(/resolved|נפתר|הושלם|הסתיימ/i).first()).toBeVisible({
       timeout: 20_000,
     })
   })

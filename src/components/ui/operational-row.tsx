@@ -49,7 +49,7 @@ export function OperationalRow({
       {priority === 'critical' ? (
         <span className="flex items-center gap-1 text-[var(--signal-critical)]">
           <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />
-          <span className="t-caption font-medium">קריטי</span>
+          <span className="t-caption font-medium">דחוף</span>
         </span>
       ) : null}
 

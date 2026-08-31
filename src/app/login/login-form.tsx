@@ -36,8 +36,8 @@ const VALUE_PROPS = [
   },
   {
     icon: ShieldCheck,
-    title: 'SLA בזמן אמת',
-    desc: 'חריגות, שיוכים ועומס טכנאים — במקום אחד.',
+    title: 'מצב המערכת בזמן אמת',
+    desc: 'תקלות דחופות, שיוכים ועומס טכנאים — במקום אחד.',
   },
   {
     icon: Wrench,
@@ -164,7 +164,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             תחזוקה חכמה לרשתות קמעונאיות
           </h1>
           <p className="t-lead mt-3 max-w-md text-ink-2">
-            מרכז פיקוד שקט — דיווחים מהשטח, SLA חי, וטכנאים שמסיימים עבודה מהנייד.
+            מרכז פיקוד שקט — דיווחים מהשטח, מעקב חי, וטכנאים שמסיימים עבודה מהנייד.
           </p>
         </div>
 
@@ -274,6 +274,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     minLength={6}
+                    placeholder="••••••••"
                   />
                 </Field>
                 <Button type="submit" variant="primary" size="block" disabled={busy}>
@@ -282,7 +283,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               </form>
             ) : null}
 
-            {!googleOAuthReady ? (
+            {!googleOAuthReady && process.env.NODE_ENV === 'development' ? (
               <p className="t-caption mt-3 text-center text-ink-3">
                 חשבון פיילוט: {PILOT_DEMO_EMAIL} · הסיסמה מוגדרת ב־PILOT_LOGIN_PASSWORD
               </p>
@@ -321,16 +322,18 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             ) : null}
           </div>
 
-          <details className="mt-6 group">
-            <summary className="t-caption flex min-h-[var(--tap)] cursor-pointer list-none items-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
-              עזרה בהתחברות
-            </summary>
-            <p className="t-caption mt-2 text-ink-3">
-              אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
-              «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
-              יעבוד.
-            </p>
-          </details>
+          {process.env.NODE_ENV === 'development' ? (
+            <details className="mt-6 group">
+              <summary className="t-caption flex min-h-[var(--tap)] cursor-pointer list-none items-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
+                עזרה בהתחברות
+              </summary>
+              <p className="t-caption mt-2 text-ink-3">
+                אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
+                «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
+                יעבוד.
+              </p>
+            </details>
+          ) : null}
         </div>
       </main>
     </div>

@@ -3,61 +3,19 @@
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { useOnline } from '@/hooks/use-online'
-import { Camera, Check, Pause, Play } from 'lucide-react'
+import { Check, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, Field } from '@/components/ui/input'
+import { Textarea, Field } from '@/components/ui/input'
 import { BottomSheet } from '@/components/ui/overlay'
 import { ErrorState } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { nextStatusActions } from '@/modules/tickets/tech'
-import type { TicketStatus } from '@/modules/tickets/constants'
-import { fileToCompressedDataUrl } from '@/lib/media/compress-image'
 
 /**
- * The technician gets ONE obvious next action, at the thumb.
- *
- * assigned      → התחלת טיפול
- * in_progress   → סיום העבודה   (+ ממתין לחלקים as a lesser move)
- * waiting_parts → חזרה לטיפול   (+ סיום)
- *
- * Resolution requires a note, so the sheet gates the destructive-ish final move
- * rather than letting a stray tap close a job with no record.
+ * One primary action for field techs:
+ * waiting → התחל טיפול
+ * in progress → סיימתי (note + confirm)
  */
-
-type ActionSpec = {
-  status: TicketStatus
-  label: string
-  variant: 'primary' | 'secondary' | 'resolve'
-  icon: typeof Play
-  requiresNote?: boolean
-}
-
-function specFor(status: string, to: TicketStatus): ActionSpec {
-  if (to === 'in_progress') {
-    return {
-      status: to,
-      label: status === 'waiting_parts' ? 'חזרה לטיפול' : 'התחלת טיפול',
-      variant: 'primary',
-      icon: Play,
-    }
-  }
-  if (to === 'waiting_parts') {
-    return {
-      status: to,
-      label: 'ממתין לחלקים',
-      variant: 'secondary',
-      icon: Pause,
-    }
-  }
-  return {
-    status: to,
-    label: 'סיום העבודה',
-    variant: 'resolve',
-    icon: Check,
-    requiresNote: true,
-  }
-}
-
 export function TechTicketActions({
   ticketId,
   techId,
@@ -75,20 +33,15 @@ export function TechTicketActions({
   const [, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const [sheet, setSheet] = useState<null | 'resolve' | 'evidence'>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [note, setNote] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoBusy, setPhotoBusy] = useState(false)
 
   const isUnassigned = !assignedTo
   const isMine = Boolean(techId && assignedTo === techId)
   const canAct = Boolean(techId) && (isMine || isUnassigned)
-  const actions = nextStatusActions(status).map((s) => specFor(status, s))
-
-  const primary = actions.find((a) => a.variant !== 'secondary')
-  const secondary = actions.filter((a) => a.variant === 'secondary')
+  const actions = nextStatusActions(status)
+  const canStart = actions.includes('in_progress')
+  const canResolve = actions.includes('resolved')
 
   async function submit(body: Record<string, unknown>, success: string) {
     if (!online) {
@@ -106,7 +59,6 @@ export function TechTicketActions({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        // Session/cookie is source of truth — do not send techId in the body.
         body: JSON.stringify({
           claim: isUnassigned ? true : undefined,
           ...body,
@@ -120,9 +72,7 @@ export function TechTicketActions({
       }
       toast.push({ title: success, tone: 'success' })
       setNote('')
-      setPhotoUrl('')
-      setPhotoPreview(null)
-      setSheet(null)
+      setSheetOpen(false)
       startTransition(() => router.refresh())
     } catch {
       setError('אין חיבור — נסו שוב כשהרשת חוזרת')
@@ -132,126 +82,11 @@ export function TechTicketActions({
     }
   }
 
-  async function onPickMedia(file: File | null) {
-    if (!file) return
-    setPhotoBusy(true)
-    setError(null)
-    try {
-      const isVideo = file.type.startsWith('video/')
-      if (isVideo) {
-        const form = new FormData()
-        form.append('files', file)
-        const res = await fetch(`/api/tickets/${ticketId}/attachments`, {
-          method: 'POST',
-          body: form,
-        })
-        const json = await res.json()
-        if (!res.ok) throw new Error(json.error || 'העלאת וידאו נכשלה')
-        const url = (json.urls as string[] | undefined)?.[0]
-        if (!url) throw new Error('העלאה נכשלה')
-        setPhotoUrl(url)
-        setPhotoPreview(url)
-        return
-      }
-      const dataUrl = await fileToCompressedDataUrl(file)
-      setPhotoUrl(dataUrl)
-      setPhotoPreview(dataUrl)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'עיבוד קובץ נכשל')
-    } finally {
-      setPhotoBusy(false)
-    }
-  }
-
-  function MediaFields({ idPrefix }: { idPrefix: string }) {
-    const inputId = `${idPrefix}-file`
-    return (
-      <div className="space-y-3">
-        <input
-          type="file"
-          accept="image/*,video/mp4,video/webm"
-          capture="environment"
-          className="sr-only"
-          id={inputId}
-          onChange={(e) => void onPickMedia(e.target.files?.[0] ?? null)}
-        />
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="touch"
-            disabled={busy || photoBusy}
-            onClick={() => document.getElementById(inputId)?.click()}
-          >
-            <Camera className="h-4 w-4" aria-hidden />
-            {photoBusy ? 'מעבד…' : 'צילום / וידאו'}
-          </Button>
-          {photoPreview ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy}
-              onClick={() => {
-                setPhotoUrl('')
-                setPhotoPreview(null)
-              }}
-            >
-              הסרת תמונה
-            </Button>
-          ) : null}
-        </div>
-        {photoPreview ? (
-          photoPreview.startsWith('data:') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(photoPreview) ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={photoPreview}
-              alt="תצוגה מקדימה"
-              className="max-h-40 w-full rounded-[var(--radius-md)] border border-border object-cover"
-            />
-          ) : (
-            <video
-              src={photoPreview}
-              controls
-              className="max-h-40 w-full rounded-[var(--radius-md)] border border-border"
-            />
-          )
-        ) : null}
-        <Field
-          label="או קישור לתמונה"
-          htmlFor={`${idPrefix}-url`}
-          hint="אופציונלי אם כבר יש כתובת חיצונית"
-        >
-          <Input
-            id={`${idPrefix}-url`}
-            type="url"
-            dir="ltr"
-            value={photoUrl.startsWith('data:') ? '' : photoUrl}
-            onChange={(e) => {
-              setPhotoUrl(e.target.value)
-              setPhotoPreview(null)
-            }}
-            placeholder="https://…"
-          />
-        </Field>
-      </div>
-    )
-  }
-
-  function onPrimary() {
-    if (!primary) return
-    if (primary.requiresNote) {
-      setSheet('resolve')
-      return
-    }
-    void submit({ status: primary.status }, `${primary.label} — נשמר`)
-  }
-
   if (status === 'resolved' || status === 'closed') {
     return (
       <div className="t-body flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--signal-resolved)]/25 bg-[var(--signal-resolved-soft)] px-4 py-3 text-[var(--signal-resolved)]">
         <Check className="h-4 w-4" aria-hidden />
-        העבודה הושלמה
+        העבודה הושלמה ✓
       </div>
     )
   }
@@ -261,7 +96,10 @@ export function TechTicketActions({
       {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}
 
       {!online ? (
-        <p className="t-body rounded-[var(--radius-md)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2 text-[var(--signal-warning)]" role="alert">
+        <p
+          className="t-body rounded-[var(--radius-md)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2 text-[var(--signal-warning)]"
+          role="alert"
+        >
           אין חיבור לרשת — פעולות מושבתות עד לחזרת החיבור
         </p>
       ) : null}
@@ -270,130 +108,65 @@ export function TechTicketActions({
         <p className="t-body rounded-[var(--radius-md)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2 text-[var(--signal-warning)]">
           העבודה משויכת לטכנאי אחר
         </p>
-      ) : (
-        <>
-          {primary ? (
-            <Button
-              type="button"
-              variant={primary.variant === 'resolve' ? 'resolve' : 'primary'}
-              size="block"
-              disabled={busy || !online}
-              onClick={onPrimary}
-            >
-              <primary.icon className="h-4 w-4" aria-hidden />
-              {isUnassigned ? `תפיסה · ${primary.label}` : primary.label}
-            </Button>
-          ) : null}
+      ) : canStart ? (
+        <Button
+          type="button"
+          variant="primary"
+          size="block"
+          disabled={busy || !online}
+          onClick={() =>
+            void submit({ status: 'in_progress' }, 'הטיפול התחיל')
+          }
+        >
+          <Play className="h-4 w-4" aria-hidden />
+          התחל טיפול
+        </Button>
+      ) : canResolve ? (
+        <Button
+          type="button"
+          variant="primary"
+          size="block"
+          disabled={busy || !online}
+          onClick={() => setSheetOpen(true)}
+        >
+          <Check className="h-4 w-4" aria-hidden />
+          סיימתי
+        </Button>
+      ) : null}
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="touch"
-              className="flex-1"
-              disabled={busy || !online}
-              onClick={() => setSheet('evidence')}
-            >
-              <Camera className="h-4 w-4" aria-hidden />
-              תיעוד
-            </Button>
-            {secondary.map((a) => (
-              <Button
-                key={a.status}
-                type="button"
-                variant="secondary"
-                size="touch"
-                className="flex-1"
-                disabled={busy || !online}
-                onClick={() => void submit({ status: a.status }, `${a.label} — נשמר`)}
-              >
-                <a.icon className="h-4 w-4" aria-hidden />
-                {a.label}
-              </Button>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* ---------- Resolve sheet: note is mandatory ---------- */}
       <BottomSheet
-        open={sheet === 'resolve'}
-        onOpenChange={(v) => !v && setSheet(null)}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
         title="סיום העבודה"
-        description="תארו בקצרה מה בוצע בשטח"
+        description="כתבו בקצרה מה בוצע"
       >
         <div className="space-y-4">
-          <Field label="הערת פתרון" htmlFor="tech-resolve-note">
+          <Field label="הערה" htmlFor="tech-resolve-note">
             <Textarea
               id="tech-resolve-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={4}
-              placeholder="לדוגמה: הוחלף קבל במעבה, נבדקה קירור תקינה"
+              placeholder="לדוגמה: הוחלף חלק, נבדק שהכל תקין"
             />
           </Field>
-          <MediaFields idPrefix="tech-resolve" />
           <Button
             type="button"
             variant="resolve"
             size="block"
-            disabled={busy || photoBusy || !note.trim()}
+            disabled={busy || !note.trim()}
             onClick={() =>
               void submit(
                 {
                   status: 'resolved',
                   note: note.trim(),
                   resolution_note: note.trim(),
-                  photoUrl: photoUrl.trim() || undefined,
                 },
                 'העבודה הושלמה',
               )
             }
           >
-            סיום העבודה
-          </Button>
-          {!note.trim() ? (
-            <p className="t-caption text-center text-ink-3">
-              נדרשת הערת פתרון כדי לסיים
-            </p>
-          ) : null}
-        </div>
-      </BottomSheet>
-
-      {/* ---------- Evidence sheet ---------- */}
-      <BottomSheet
-        open={sheet === 'evidence'}
-        onOpenChange={(v) => !v && setSheet(null)}
-        title="הוספת תיעוד"
-        description="הערה או תמונה — נשמר ביומן התקלה"
-      >
-        <div className="space-y-4">
-          <Field label="הערת שטח" htmlFor="tech-note">
-            <Textarea
-              id="tech-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              placeholder="מה נמצא בשטח…"
-            />
-          </Field>
-          <MediaFields idPrefix="tech-evidence" />
-          <Button
-            type="button"
-            variant="primary"
-            size="block"
-            disabled={busy || photoBusy || (!note.trim() && !photoUrl.trim())}
-            onClick={() =>
-              void submit(
-                {
-                  note: note.trim() || undefined,
-                  photoUrl: photoUrl.trim() || undefined,
-                },
-                'התיעוד נשמר',
-              )
-            }
-          >
-            שמירה
+            אישור
           </Button>
         </div>
       </BottomSheet>

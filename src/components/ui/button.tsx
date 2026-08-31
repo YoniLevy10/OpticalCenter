@@ -26,8 +26,8 @@ const buttonVariants = cva(
       size: {
         sm: 'h-8 px-2.5',
         md: 'h-9 px-3.5',
-        /** Touch target floor for mobile and technician surfaces. */
-        touch: 'h-11 px-4 t-control-lg',
+        /** Touch target floor for mobile and technician surfaces (48px). */
+        touch: 'h-12 px-4 t-control-lg',
         block: 'h-12 w-full px-4 t-control-lg',
       },
     },

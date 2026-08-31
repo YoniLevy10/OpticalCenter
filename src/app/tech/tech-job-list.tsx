@@ -1,47 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import {
-  CheckCircle2,
-  ClipboardList,
-  PlayCircle,
-  type LucideIcon,
-} from 'lucide-react'
+import { ClipboardList } from 'lucide-react'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { SegmentedButtons } from '@/components/ui/segmented'
 import { EmptyState } from '@/components/ui/primitives'
 import { StatusLabel } from '@/components/ui/signal'
-import { LiveSla } from '@/components/ui/time'
 import { techHref } from '@/lib/tech-href'
-import {
-  TECH_TAB_LABELS_HE,
-  filterTicketsByTab,
-  type TechTab,
-  type TechTicketRow,
-} from '@/modules/tickets/tech'
-
-const TABS: TechTab[] = ['new_assigned', 'in_progress', 'done']
-
-const EMPTY_COPY: Record<
-  TechTab,
-  { title: string; description: string; icon: LucideIcon }
-> = {
-  new_assigned: {
-    title: 'אין עבודות חדשות',
-    description: 'כשמשייכים לך תקלה היא תופיע כאן.',
-    icon: ClipboardList,
-  },
-  in_progress: {
-    title: 'אין עבודות בטיפול',
-    description: 'התחילו עבודה מהרשימה כדי שתופיע כאן.',
-    icon: PlayCircle,
-  },
-  done: {
-    title: 'אין עבודות שהושלמו',
-    description: 'עבודות שתסיימו יופיעו כאן.',
-    icon: CheckCircle2,
-  },
-}
+import type { TechTicketRow } from '@/modules/tickets/tech'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
+import { storeLabel } from '@/components/ops/plain-labels'
 
 export function TechJobList({
   tickets,
@@ -50,70 +16,50 @@ export function TechJobList({
   tickets: TechTicketRow[]
   techId: string | null
 }) {
-  const [tab, setTab] = useState<TechTab>('new_assigned')
-
-  const filtered = useMemo(() => filterTicketsByTab(tickets, tab), [tickets, tab])
-  const counts = useMemo(
-    () =>
-      Object.fromEntries(
-        TABS.map((t) => [t, filterTicketsByTab(tickets, t).length]),
-      ) as Record<TechTab, number>,
-    [tickets],
+  // One list, newest first — no tabs/filters/search.
+  const sorted = [...tickets].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
 
-  return (
-    <div className="space-y-3">
-      <SegmentedButtons
-        fill
-        activeKey={tab}
-        onChange={(k) => setTab(k as TechTab)}
-        segments={TABS.map((t) => ({
-          key: t,
-          label: TECH_TAB_LABELS_HE[t],
-          count: counts[t],
-        }))}
-      />
+  if (sorted.length === 0) {
+    return (
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface">
+        <EmptyState
+          title="אין עבודות כרגע 🎉"
+          description="כשמשייכים לך תקלה — היא תופיע כאן."
+          icon={ClipboardList}
+        />
+      </div>
+    )
+  }
 
-      {filtered.length === 0 ? (
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface">
-          <EmptyState
-            title={EMPTY_COPY[tab].title}
-            description={EMPTY_COPY[tab].description}
-            icon={EMPTY_COPY[tab].icon}
-          />
-        </div>
-      ) : (
-        /* Full-bleed rows, edge-to-edge on the phone — cards would waste ~32px
-           of horizontal space per job and cut visible work by a third. */
-        <div className="-mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border">
-          <RowList>
-            {filtered.map((t) => (
-              <OperationalRow
-                key={t.id}
-                href={techHref(`/tech/${t.id}`, techId)}
-                priority={t.priority}
-                leading={t.display_number ?? `OC-${t.number}`}
-                trailing={<LiveSla ticket={t} />}
-                title={t.stores?.name ?? 'חנות'}
-                subtitle={t.description || t.title || ''}
-                footer={
-                  <>
-                    <StatusLabel status={t.status} />
-                    {t.stores?.city ? (
-                      <>
-                        <Dot />
-                        <span className="t-meta truncate text-ink-2">
-                          {t.stores.city}
-                        </span>
-                      </>
-                    ) : null}
-                  </>
-                }
-              />
-            ))}
-          </RowList>
-        </div>
-      )}
+  return (
+    <div className="-mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border">
+      <RowList>
+        {sorted.map((t) => {
+          const waiting = OPEN_TICKET_STATUSES.includes(t.status as never) &&
+            t.status !== 'in_progress'
+          return (
+            <OperationalRow
+              key={t.id}
+              href={techHref(`/tech/${t.id}`, techId)}
+              priority={t.priority}
+              leading={storeLabel(t.stores)}
+              title={t.description || t.title || 'תקלה'}
+              footer={
+                <>
+                  <StatusLabel status={t.status} />
+                  <Dot />
+                  <span className="t-meta text-ink-2">
+                    {waiting ? 'ממתינה' : t.status === 'in_progress' ? 'בטיפול' : 'הסתיימה'}
+                  </span>
+                </>
+              }
+            />
+          )
+        })}
+      </RowList>
     </div>
   )
 }

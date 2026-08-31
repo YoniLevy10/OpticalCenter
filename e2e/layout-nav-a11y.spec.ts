@@ -22,7 +22,7 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
     await expect(
-      page.getByRole('heading', { name: /בוקר טוב|צהריים טובים|ערב טוב|לוח בקרה/ }),
+      page.getByRole('heading', { name: /מה קורה עכשיו|ראשי|בוקר טוב|צהריים טובים|ערב טוב/ }),
     ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' })).toBeVisible()
@@ -39,7 +39,7 @@ test.describe('Navigation & layout', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
-    await expect(bottomNav.getByText('לוח בקרה')).toBeVisible()
+    await expect(bottomNav.getByText('ראשי')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
     await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
@@ -164,7 +164,7 @@ test.describe('Offline honesty', () => {
     await gotoStable(page, `/tech/${ticketId}?techId=${DEMO_TECH_ID}`)
 
     await context.route('**/api/tech/tickets/**', (route) => route.abort())
-    const resolveBtn = page.getByRole('button', { name: /סיום|resolved|נפתר/i })
+    const resolveBtn = page.getByRole('button', { name: /סיימתי|סיום|resolved|נפתר/i })
     if ((await resolveBtn.count()) > 0) {
       await resolveBtn.first().click()
       await expect(page.getByText(/שגיאה|נכשל|רשת/i).first()).toBeVisible({

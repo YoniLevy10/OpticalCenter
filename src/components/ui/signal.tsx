@@ -1,10 +1,6 @@
-import {
-  TICKET_PRIORITY_LABELS_HE,
-  TICKET_STATUS_LABELS_HE,
-  type TicketPriority,
-  type TicketStatus,
-} from '@/modules/tickets/constants'
+import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import type { SlaTone, SlaView } from '@/modules/tickets/sla-display'
+import { plainStatus, plainUrgency } from '@/components/ops/plain-labels'
 import { cn } from '@/lib/utils'
 
 /**
@@ -44,8 +40,8 @@ export function PriorityText({
   priority: TicketPriority | string
   className?: string
 }) {
-  const label = TICKET_PRIORITY_LABELS_HE[priority as TicketPriority] ?? priority
-  const strong = priority === 'critical'
+  const label = plainUrgency(priority)
+  const strong = priority === 'critical' || priority === 'high'
   return (
     <span
       className={cn(
@@ -81,22 +77,27 @@ type StatusTreatment = {
 
 function statusTreatment(status: string): StatusTreatment {
   switch (status) {
+    case 'new':
+      return {
+        className: 'text-[var(--signal-critical)]',
+        marker: 'bg-[var(--signal-critical)]',
+      }
     case 'waiting_parts':
-      // Blocked. Someone must act. This one earns colour.
+    case 'assigned':
+    case 'triaged':
+    case 'in_progress':
       return {
         className: 'text-[var(--signal-warning)]',
         marker: 'bg-[var(--signal-warning)]',
       }
     case 'resolved':
+    case 'closed':
       return {
         className: 'text-[var(--signal-resolved)]',
         marker: 'bg-[var(--signal-resolved)]',
       }
-    case 'closed':
     case 'cancelled':
       return { className: 'text-ink-3', marker: null }
-    case 'in_progress':
-      return { className: 'text-ink', marker: null }
     default:
       return { className: 'text-ink-2', marker: null }
   }
@@ -109,7 +110,7 @@ export function StatusLabel({
   status: TicketStatus | string
   className?: string
 }) {
-  const label = TICKET_STATUS_LABELS_HE[status as TicketStatus] ?? status
+  const label = plainStatus(status)
   const { className: tone, marker } = statusTreatment(status)
   return (
     <span className={cn('t-body inline-flex items-center gap-1.5', tone, className)}>

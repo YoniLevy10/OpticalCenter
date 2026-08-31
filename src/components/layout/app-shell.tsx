@@ -48,12 +48,11 @@ type NavItem = {
 const PRIMARY: NavItem[] = [
   {
     href: '/ops/dashboard',
-    label: 'לוח בקרה',
+    label: 'ראשי',
     icon: LayoutDashboard,
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
-  { href: '/ops/inbox', label: 'WhatsApp', icon: MessageSquare, match: '/ops/inbox' },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
@@ -63,11 +62,11 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       {
         href: '/ops/inbox',
-        label: 'תיבת WhatsApp',
+        label: 'הודעות',
         icon: MessageSquare,
         match: '/ops/inbox',
       },
-      { href: '/ops/assets', label: 'נכסים', icon: Box, match: '/ops/assets' },
+      { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
         label: 'ספקים',
@@ -93,7 +92,7 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       {
         href: '/ops/status',
-        label: 'סטטוס מערכת',
+        label: 'מצב המערכת',
         icon: Server,
         match: '/ops/status',
       },
@@ -185,15 +184,15 @@ function SidebarNavLink({
 }
 
 function pageTitle(pathname: string): string {
-  if (pathname.startsWith('/ops/dashboard')) return 'לוח בקרה'
+  if (pathname.startsWith('/ops/dashboard')) return 'ראשי'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
   if (pathname.startsWith('/ops/stores/print-qr')) return 'הדפסת QR'
   if (pathname.startsWith('/ops/stores')) return 'חנויות'
-  if (pathname.startsWith('/ops/assets')) return 'נכסים'
+  if (pathname.startsWith('/ops/assets')) return 'ציוד'
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
   if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
-  if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
-  if (pathname.startsWith('/ops/inbox')) return 'תיבת WhatsApp'
+  if (pathname.startsWith('/ops/status')) return 'מצב המערכת'
+  if (pathname.startsWith('/ops/inbox')) return 'הודעות'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
@@ -205,8 +204,8 @@ function pageTitle(pathname: string): string {
 function TenantMark() {
   return (
     <BrandMark
-      size={32}
-      className="rounded-[var(--radius-md)] ring-1 ring-white/15"
+      size={36}
+      className="h-9 w-9 rounded-[var(--radius-md)] ring-1 ring-white/15"
       alt=""
     />
   )
@@ -408,6 +407,7 @@ export function AppShell({
         <p className="t-caption mt-4 text-ink-3">
           Optical Center · פיילוט ישראל
         </p>
+        <p className="t-caption mt-1 text-ink-3">מצב הדגמה</p>
       </BottomSheet>
     </div>
   )

@@ -1,37 +1,21 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
+import { Check, UserPlus } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
-import { TICKET_STATUS_LABELS_HE } from '@/modules/tickets/constants'
-import { nextStatuses } from '@/modules/tickets/transitions'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { Button } from '@/components/ui/button'
-import { Select, Field } from '@/components/ui/input'
+import { BottomSheet } from '@/components/ui/overlay'
 import { ErrorState } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
+import { isTicketResolved } from '@/components/ops/plain-labels'
 
-type Technician = { id: string; full_name: string | null; email: string | null }
-
-/**
- * Action hierarchy matters: the forward move is primary, lateral moves are
- * secondary, and cancellation is a signal-coloured last resort. Previously all
- * transitions rendered as identical buttons, giving "cancel" the same weight
- * as "assign".
- */
-function classifyTransition(to: TicketStatus): 'primary' | 'secondary' | 'critical' {
-  if (to === 'cancelled') return 'critical'
-  if (to === 'assigned' || to === 'in_progress' || to === 'resolved')
-    return 'primary'
-  return 'secondary'
-}
-
-function transitionLabel(from: TicketStatus, to: TicketStatus): string {
-  if (to === 'assigned') return 'שיוך לטיפול'
-  if (to === 'in_progress') return from === 'resolved' ? 'פתיחה מחדש' : 'התחלת טיפול'
-  if (to === 'resolved') return 'סימון כנפתר'
-  if (to === 'closed') return 'סגירה'
-  if (to === 'cancelled') return 'ביטול תקלה'
-  return TICKET_STATUS_LABELS_HE[to] ?? to
+type Technician = {
+  id: string
+  full_name: string | null
+  email: string | null
+  openCount?: number
 }
 
 export function TicketActions({
@@ -39,13 +23,12 @@ export function TicketActions({
   status,
   assignedTo,
   technicians,
-  assigneeFieldId = 'ticket-assignee',
 }: {
   ticketId: string
   status: TicketStatus
   assignedTo: string | null
   technicians: Technician[]
-  /** Unique when the panel is rendered twice (mobile + desktop). */
+  /** Kept for call-site compatibility; unused in the simplified UI. */
   assigneeFieldId?: string
 }) {
   const router = useRouter()
@@ -53,12 +36,19 @@ export function TicketActions({
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [profileId, setProfileId] = useState(assignedTo ?? '')
+  const [assignOpen, setAssignOpen] = useState(false)
 
-  const allowed = nextStatuses(status)
-  const primary = allowed.filter((s) => classifyTransition(s) === 'primary')
-  const secondary = allowed.filter((s) => classifyTransition(s) === 'secondary')
-  const destructive = allowed.filter((s) => classifyTransition(s) === 'critical')
+  const resolved = isTicketResolved(status) || status === 'cancelled'
+  const open = OPEN_TICKET_STATUSES.includes(status)
+  const unassigned = !assignedTo
+
+  const sortedTechs = useMemo(
+    () =>
+      [...technicians].sort(
+        (a, b) => (a.openCount ?? 0) - (b.openCount ?? 0),
+      ),
+    [technicians],
+  )
 
   async function patch(body: Record<string, unknown>, successText: string) {
     setError(null)
@@ -74,110 +64,103 @@ export function TicketActions({
       if (!res.ok) {
         setError(data.error ?? 'העדכון נכשל')
         toast.push({ title: 'העדכון נכשל', tone: 'critical' })
-        return
+        return false
       }
       toast.push({ title: successText, tone: 'success' })
       startTransition(() => router.refresh())
+      return true
     } catch {
       setError('שגיאת רשת — בדקו את החיבור ונסו שוב')
       toast.push({ title: 'שגיאת רשת', tone: 'critical' })
+      return false
     } finally {
       setBusy(false)
     }
   }
 
   const disabled = busy || pending
-  const hasTechnicians = technicians.length > 0
+
+  if (resolved) {
+    return (
+      <div className="t-body flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)] px-4 py-3 text-[var(--signal-resolved)]">
+        <Check className="h-4 w-4" aria-hidden />
+        התקלה הסתיימה ✓
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-5">
-      <Field label="טכנאי מטפל" htmlFor={assigneeFieldId}>
-        {hasTechnicians ? (
-          <div className="flex gap-2">
-            <Select
-              id={assigneeFieldId}
-              aria-label="טכנאי מטפל"
-              value={profileId}
-              disabled={disabled}
-              onChange={(e) => {
-                const next = e.target.value
-                setProfileId(next)
-                if (next) void patch({ assignedTo: next }, 'הטכנאי שויך')
-              }}
-            >
-              <option value="">— ללא שיוך —</option>
-              {technicians.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.full_name || t.email || t.id.slice(0, 8)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        ) : (
-          <p className="t-body rounded-[var(--radius-md)] border border-border bg-canvas px-3 py-2 text-ink-2">
-            אין טכנאים זמינים לשיוך. הוסיפו טכנאים במסד הנתונים כדי לשייך תקלות.
-          </p>
-        )}
-      </Field>
+    <div className="space-y-3">
+      {unassigned ? (
+        <Button
+          type="button"
+          variant="primary"
+          size="touch"
+          className="w-full"
+          disabled={disabled || sortedTechs.length === 0}
+          onClick={() => setAssignOpen(true)}
+        >
+          <UserPlus className="h-4 w-4" aria-hidden />
+          שייך טכנאי
+        </Button>
+      ) : null}
 
-      {allowed.length === 0 ? (
-        <p className="t-body text-ink-2">התקלה הגיעה למצב סופי.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {primary.map((s) => (
-            <Button
-              key={s}
-              type="button"
-              variant={s === 'resolved' ? 'resolve' : 'primary'}
-              size="block"
-              disabled={disabled}
-              onClick={() =>
-                void patch({ status: s }, `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`)
-              }
-            >
-              {transitionLabel(status, s)}
-            </Button>
-          ))}
+      {!unassigned && open ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="touch"
+          className="w-full"
+          disabled={disabled}
+          onClick={() => void patch({ status: 'resolved' }, 'התקלה הסתיימה')}
+        >
+          סגור תקלה
+        </Button>
+      ) : null}
 
-          {secondary.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {secondary.map((s) => (
-                <Button
-                  key={s}
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={disabled}
-                  onClick={() =>
-                    void patch(
-                      { status: s },
-                      `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`,
-                    )
-                  }
-                >
-                  {transitionLabel(status, s)}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-
-          {destructive.map((s) => (
-            <Button
-              key={s}
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={disabled}
-              className="text-[var(--signal-critical)] hover:bg-[var(--signal-critical-soft)]"
-              onClick={() => void patch({ status: s }, 'התקלה בוטלה')}
-            >
-              {transitionLabel(status, s)}
-            </Button>
-          ))}
-        </div>
-      )}
+      {sortedTechs.length === 0 && unassigned ? (
+        <p className="t-body text-ink-2">
+          אין טכנאים זמינים. הוסיפו טכנאים במסך המשתמשים.
+        </p>
+      ) : null}
 
       {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}
+
+      <BottomSheet
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        title="שייך טכנאי"
+      >
+        <ul className="divide-y divide-border">
+          {sortedTechs.map((t) => (
+            <li key={t.id}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  void (async () => {
+                    const ok = await patch(
+                      { assignedTo: t.id },
+                      'הטכנאי שויך',
+                    )
+                    if (ok) setAssignOpen(false)
+                  })()
+                }}
+                className="flex w-full min-h-[var(--tap)] items-center gap-3 px-1 py-3 text-start transition-colors hover:bg-surface-sunken/40"
+              >
+                <span className="t-body-strong">
+                  {t.full_name || t.email || t.id.slice(0, 8)}
+                </span>
+                <span className="t-meta ms-auto text-ink-3">
+                  {(t.openCount ?? 0) === 0
+                    ? 'אין תקלות פתוחות'
+                    : `${t.openCount} תקלות פתוחות`}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </BottomSheet>
     </div>
   )
 }
