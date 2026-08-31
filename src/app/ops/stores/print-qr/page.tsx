@@ -26,18 +26,12 @@ export default async function PrintQrBatchPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4 print:p-0">
-        <PageToolbar
-          backHref="/ops/stores"
-          backLabel="חזרה לחנויות"
-          title="הדפסת QR"
-          meta={`${active.length} חנויות`}
-        />
+        <PageToolbar backHref="/ops/stores" backLabel="חזרה" />
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <PageHeader
-            title="הדפסת QR"
-            description="מדבקות QR לכל הסניפים — סריקה פותחת WhatsApp עם קוד החנות."
-            meta={`${active.length} חנויות`}
             className="hidden md:flex"
+            title="הדפסת QR"
+            meta={<span className="t-num">{active.length}</span>}
           />
           {phoneReady ? <PrintQrClient /> : null}
         </div>

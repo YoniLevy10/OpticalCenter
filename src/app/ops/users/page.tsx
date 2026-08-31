@@ -17,19 +17,8 @@ export default async function UsersPage() {
   return (
     <OpsAppShell>
       <div className="flex max-w-5xl flex-col gap-4">
-        <PageToolbar
-          backHref="/ops/settings"
-          backLabel="חזרה להגדרות"
-          title="משתמשים"
-          meta="ניהול פרופילים והרשאות"
-          showRefresh
-        />
-        <PageHeader
-          title="משתמשים"
-          description="טבלת משתמשים עם תפקיד, סניף, סטטוס והתחברות אחרונה — הרשאות בשפה עסקית."
-          meta="ניהול פרופילים והרשאות"
-          className="hidden md:flex"
-        />
+        <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
+        <PageHeader className="hidden md:flex" title="משתמשים" />
         <UsersAdmin
           stores={stores.map((s) => ({
             id: s.id,

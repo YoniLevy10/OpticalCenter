@@ -31,6 +31,7 @@ export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
   { id: 'users', href: '/ops/users', label: 'משתמשים' },
   { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
+  { id: 'lab', href: '/ops/lab', label: 'מעבדה' },
   { id: 'simulator', href: '/ops/simulator', label: 'סימולטור WhatsApp' },
 ]
 
@@ -69,6 +70,10 @@ export function canAccessSimulator(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
+export function canAccessLab(actor: Actor | null): boolean {
+  return canAccessSimulator(actor)
+}
+
 export function canAccessInbox(actor: Actor | null): boolean {
   if (!actor) return true
   return hasHq(actor)
@@ -94,6 +99,7 @@ const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   settings: canAccessSettings,
   users: canAccessUsers,
   'print-qr': canAccessPrintQr,
+  lab: canAccessLab,
   simulator: canAccessSimulator,
 }
 
