@@ -11,12 +11,15 @@ test.describe('Pilot scenarios (memory backend)', () => {
 
   test('3 — HQ assigns technician', async ({ page, request }) => {
     const { ticketId } = await createStore172Ticket(request)
+    await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading').first()).toBeVisible()
-    const assignSelect = page.locator('select').filter({ hasText: /טכנאי|משויך/i }).first()
-    if ((await assignSelect.count()) > 0) {
-      await assignSelect.selectOption({ index: 1 })
-    }
+    const assignSelect = page.locator('#ticket-assignee')
+    await expect(assignSelect).toBeVisible({ timeout: 15_000 })
+    await assignSelect.selectOption({ index: 1 })
+    await expect(page.getByText(/הטכנאי שויך|יוסי|מיכל|טכנאי/i).first()).toBeVisible({
+      timeout: 15_000,
+    })
   })
 
   test('4 — tech resolves assigned job', async ({ page, request }) => {

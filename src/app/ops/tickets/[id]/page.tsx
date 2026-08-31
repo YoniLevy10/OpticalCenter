@@ -164,7 +164,7 @@ export default async function TicketDetailPage({
     </Panel>
   )
 
-  const actionsPanel = (
+  const actionsPanel = (assigneeFieldId: string) => (
     <Panel className="mb-3 md:mb-0">
       <h2 className="t-section mb-3 text-ink">פעולות</h2>
       <TicketActions
@@ -172,6 +172,7 @@ export default async function TicketDetailPage({
         status={ticket.status as TicketStatus}
         assignedTo={ticket.assigned_to}
         technicians={technicians}
+        assigneeFieldId={assigneeFieldId}
       />
       <div className="mt-3 border-t border-border pt-3">
         <TicketShareBar
@@ -259,7 +260,7 @@ export default async function TicketDetailPage({
           </div>
 
           <div className="hidden space-y-4 md:block lg:sticky lg:top-4 lg:self-start">
-            {actionsPanel}
+            {actionsPanel('ticket-assignee')}
             {contextPanel}
             {slaDatesPanel}
 
@@ -274,7 +275,7 @@ export default async function TicketDetailPage({
         {/* Mobile sticky action dock above bottom nav */}
         <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:hidden">
           <div className="mx-auto max-h-[min(40vh,var(--hq-actions-dock-h))] overflow-y-auto">
-            {actionsPanel}
+            {actionsPanel('ticket-assignee-mobile')}
           </div>
         </div>
       </div>
