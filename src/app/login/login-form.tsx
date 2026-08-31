@@ -5,6 +5,7 @@ import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
 import { SkipLink } from '@/components/layout/skip-link'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState } from '@/components/ui/primitives'
@@ -135,8 +136,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   }
 
   return (
-    <div className="login-shell dvh-screen safe-pt safe-pb grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+    <div className="login-shell dvh-screen safe-pt safe-pb relative grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       <SkipLink />
+      <div className="absolute end-3 top-3 z-20 md:end-5 md:top-5">
+        <ThemeToggle compact />
+      </div>
       {/* Brand story — desktop hero */}
       <aside
         className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
@@ -148,7 +152,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-white opacity-30 blur-3xl"
+          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-surface opacity-40 blur-3xl"
         />
 
         <div className="relative">
@@ -178,7 +182,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             return (
               <li key={item.title} className="flex gap-3">
                 <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-white/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
                   aria-hidden
                 >
                   <Icon className="h-5 w-5" strokeWidth={1.75} />

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogoutButton } from '@/components/auth/logout-button'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { cn } from '@/lib/utils'
 
 export function StoreShell({
@@ -34,7 +35,10 @@ export function StoreShell({
               </p>
             ) : null}
           </div>
-          <LogoutButton size="sm" variant="secondary" />
+          <div className="flex shrink-0 items-center gap-1">
+            <ThemeToggle compact />
+            <LogoutButton size="sm" variant="secondary" />
+          </div>
         </div>
         <nav className="flex border-t border-border">
           {links.map((item) => {

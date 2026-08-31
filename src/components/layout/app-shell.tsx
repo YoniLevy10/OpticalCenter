@@ -27,6 +27,7 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
+import { ThemeToggle, ThemeToggleOnDark } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
@@ -221,11 +222,11 @@ export function AppShell({
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label="תפריט צד"
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-[var(--ink)] text-white shadow-[var(--shadow-pop)] start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-[var(--panel-dark)] text-[var(--panel-dark-fg)] shadow-[var(--shadow-pop)] start-0 border-e md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="border-b border-white/10 bg-[var(--ink)] px-5"
+          className="border-b border-white/10 bg-[var(--panel-dark)] px-5"
           style={{ height: 'var(--topbar-h)' }}
         >
           <div className="flex h-full items-center gap-2.5">
@@ -262,6 +263,10 @@ export function AppShell({
         </nav>
 
         <div className="border-t border-white/10 p-3">
+          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
+            <span className="t-caption text-white/50">ערכת נושא</span>
+            <ThemeToggleOnDark />
+          </div>
           <div className="px-2.5">
             <LogoutButton className="w-full justify-start px-0 text-white/80 hover:text-white" />
           </div>
@@ -287,6 +292,7 @@ export function AppShell({
           <div className="min-w-0 flex-1">
             <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
           </div>
+          <ThemeToggle compact className="shrink-0" />
           <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
         </div>
       </header>

@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Heebo } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
+import { THEME_BOOT_SCRIPT } from '@/lib/theme'
 import './globals.css'
 
 const heebo = Heebo({
@@ -23,8 +26,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  /* Status-bar chrome; splash/canvas uses Pulse #f5f6fa via manifests. */
-  themeColor: '#ffffff',
+  /* Status-bar chrome; ThemeProvider updates meta theme-color at runtime. */
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#eef4f6' },
+    { media: '(prefers-color-scheme: dark)', color: '#0e1619' },
+  ],
   width: 'device-width',
   initialScale: 1,
   /* Required for safe-area insets to resolve in standalone PWA mode. */
@@ -36,9 +42,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" suppressHydrationWarning>
       <body className={`${heebo.variable} font-sans antialiased`}>
-        <ToastProvider>{children}</ToastProvider>
+        <Script
+          id="maintainos-theme-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
+        />
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}`,

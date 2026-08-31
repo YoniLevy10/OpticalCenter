@@ -55,6 +55,10 @@
   --shadow-hover: 0 6px 18px rgba(26, 26, 46, 0.08), 0 2px 4px rgba(26, 26, 46, 0.04);
   --shadow-pop: 0 14px 40px rgba(26, 26, 46, 0.12), 0 4px 12px rgba(26, 26, 46, 0.06);
 
+  /* Intentional dark chrome (sidebar / OS heroes) — stays dark in both themes */
+  --panel-dark: #102b35;
+  --panel-dark-fg: #ffffff;
+
   /* ---------- Motion — smoother, iOS-like ---------- */
   --dur-1: 150ms;
   --dur-2: 280ms;
@@ -71,6 +75,54 @@
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  color-scheme: light;
+}
+
+/* ---------- Dark theme (token remap — not crude invert) ---------- */
+html.dark {
+  color-scheme: dark;
+
+  --canvas: #0e1619;
+  --surface: #152025;
+  --surface-sunken: #0a1012;
+  --surface-raised: #1c2a30;
+  --border: #2a3c42;
+  --border-strong: #3d545c;
+  --ink: #e8f0f2;
+  --ink-2: #a9bec4;
+  /* ≥4.5:1 on --canvas (#0e1619) */
+  --ink-3: #8aa0a7;
+
+  --signal-critical: #f07171;
+  --signal-critical-soft: #3a1818;
+  --signal-critical-line: #6b2e2e;
+  --signal-warning: #e0b35a;
+  --signal-warning-soft: #3a2e14;
+  --signal-warning-line: #6b5528;
+  --signal-progress: #7eabeb;
+  --signal-progress-soft: #182636;
+  --signal-resolved: #5dcc8f;
+  --signal-resolved-soft: #143024;
+  --signal-idle: #8b90a0;
+  --signal-idle-soft: #1a1e28;
+
+  --tenant: #2bb8ad;
+  --tenant-hover: #3ec9be;
+  --tenant-soft: #12332f;
+  --tenant-line: #1f5c55;
+  --signal-accent: #f4b860;
+  --tenant-contrast: #06201d;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+  --panel-dark: #080e11;
+  --panel-dark-fg: #e8f0f2;
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -329,7 +381,7 @@ textarea:focus-visible,
   background:
     radial-gradient(
       ellipse 90% 70% at 100% 0%,
-      color-mix(in srgb, var(--tenant-soft) 85%, white),
+      color-mix(in srgb, var(--tenant-soft) 85%, var(--surface)),
       transparent 58%
     ),
   linear-gradient(

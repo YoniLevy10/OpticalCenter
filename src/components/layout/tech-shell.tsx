@@ -1,6 +1,7 @@
 import { BackButton } from '@/components/layout/back-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { cn } from '@/lib/utils'
 import { LogoutButton } from '@/components/auth/logout-button'
 
@@ -61,6 +62,7 @@ export function TechShell({
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {headerActions}
+            <ThemeToggle compact />
             <LogoutButton size="touch" className="shrink-0" />
           </div>
         </div>
