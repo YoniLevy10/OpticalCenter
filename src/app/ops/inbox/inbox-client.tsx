@@ -456,7 +456,7 @@ export function InboxClient() {
       className="flex min-h-[min(72vh,640px)] flex-col overflow-hidden lg:min-h-0"
     >
       {!active ? (
-        <div className="flex flex-1 items-center justify-center bg-[#efeae2]">
+        <div className="flex flex-1 items-center justify-center wa-empty-stage">
           <EmptyState
             title="בחרו שיחה"
             description="מהרשימה מימין — התצוגה תיראה כמו WhatsApp"
@@ -524,8 +524,8 @@ export function InboxClient() {
           </header>
 
           {linkedTickets.length > 0 ? (
-            <div className="border-b border-black/5 bg-[#f7f5f3] px-3 py-1.5">
-              <p className="t-caption text-ink-3">
+            <div className="wa-ticket-strip border-b px-3 py-1.5">
+              <p className="t-caption">
                 מקושר לתקלה:{' '}
                 {linkedTickets.map((t, i) => (
                   <span key={t.id}>
@@ -552,7 +552,7 @@ export function InboxClient() {
                 {threadItems.map((item) =>
                   item.kind === 'day' ? (
                     <div key={item.key} className="my-2 flex justify-center">
-                      <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium text-ink-2 shadow-sm">
+                      <span className="wa-day-pill rounded-full px-3 py-1 text-[11px] font-medium shadow-sm">
                         {item.label}
                       </span>
                     </div>
@@ -569,10 +569,10 @@ export function InboxClient() {
                     >
                       <div
                         className={cn(
-                          'relative max-w-[min(85%,28rem)] px-2.5 pb-1.5 pt-1.5 text-[14.5px] leading-snug text-ink shadow-sm',
+                          'wa-bubble relative max-w-[min(85%,28rem)] px-2.5 pb-1.5 pt-1.5 text-[14.5px] leading-snug shadow-sm',
                           item.message.direction === 'outbound'
-                            ? 'rounded-2xl rounded-ee-md bg-[#d9fdd3]'
-                            : 'rounded-2xl rounded-es-md bg-white',
+                            ? 'wa-bubble-out rounded-2xl rounded-ee-md'
+                            : 'wa-bubble-in rounded-2xl rounded-es-md',
                         )}
                       >
                         <p className="whitespace-pre-wrap break-words pe-12">
@@ -587,7 +587,7 @@ export function InboxClient() {
                               תקלה {item.message.ticket_id.slice(0, 8)}…
                             </Link>
                           ) : null}
-                          <time className="text-[10px] tabular-nums text-ink-3">
+                          <time className="wa-bubble-meta text-[10px] tabular-nums">
                             {formatBubbleTime(item.message.created_at)}
                           </time>
                           {item.message.direction === 'outbound' ? (
@@ -606,7 +606,7 @@ export function InboxClient() {
             )}
           </div>
 
-          <div className="flex items-end gap-2 bg-[#f0f2f5] px-2 py-2 sm:px-3">
+          <div className="wa-composer-bar flex items-end gap-2 px-2 py-2 sm:px-3">
             <label className="sr-only" htmlFor="inbox-reply">
               הודעה ללקוח
             </label>
@@ -624,7 +624,7 @@ export function InboxClient() {
               }}
               placeholder="כתבו הודעה ללקוח…"
               disabled={busy}
-              className="max-h-32 min-h-[42px] flex-1 resize-none rounded-[22px] border-0 bg-white px-4 py-2.5 shadow-sm focus:ring-1 focus:ring-[color-mix(in_srgb,var(--tenant)_35%,transparent)]"
+              className="wa-composer-input max-h-32 min-h-[42px] flex-1 resize-none rounded-[22px] border-0 px-4 py-2.5 shadow-sm focus:ring-1 focus:ring-[color-mix(in_srgb,var(--tenant)_35%,transparent)]"
             />
             <button
               type="button"

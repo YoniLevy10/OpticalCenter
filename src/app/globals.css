@@ -568,6 +568,98 @@ main {
   background-size: 22px 22px, 28px 28px, auto;
 }
 
+html.dark .wa-chat-wallpaper {
+  background-color: #0b141a;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(233 237 239 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(233 237 239 / 3%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 40%, #0b141a) 0%,
+      #0b141a 32%,
+      #111b21 100%
+    );
+}
+
+/* Bubble ink must stay readable — never inherit theme --ink on light surfaces */
+.wa-bubble {
+  color: #111b21;
+}
+.wa-bubble-in {
+  background-color: #ffffff;
+}
+.wa-bubble-out {
+  background-color: #d9fdd3;
+}
+.wa-bubble-meta {
+  color: #667781;
+}
+.wa-day-pill {
+  background-color: rgb(255 255 255 / 0.92);
+  color: #54656f;
+}
+.wa-ticket-strip {
+  background-color: #f7f5f3;
+  border-color: rgb(0 0 0 / 0.05);
+  color: #667781;
+}
+.wa-composer-bar {
+  background-color: #f0f2f5;
+}
+.wa-composer-input {
+  background-color: #ffffff !important;
+  color: #111b21 !important;
+}
+.wa-composer-input::placeholder {
+  color: #667781 !important;
+}
+.wa-empty-stage {
+  background-color: #efeae2;
+}
+
+html.dark .wa-bubble {
+  color: #e9edef;
+}
+html.dark .wa-bubble-in {
+  background-color: #202c33;
+}
+html.dark .wa-bubble-out {
+  background-color: #005c4b;
+}
+html.dark .wa-bubble-meta {
+  color: #8696a0;
+}
+html.dark .wa-day-pill {
+  background-color: #182229;
+  color: #8696a0;
+}
+html.dark .wa-ticket-strip {
+  background-color: #111b21;
+  border-color: rgb(255 255 255 / 0.06);
+  color: #8696a0;
+}
+html.dark .wa-composer-bar {
+  background-color: #1d1f24;
+}
+html.dark .wa-composer-input {
+  background-color: #2a2f32 !important;
+  color: #e9edef !important;
+}
+html.dark .wa-composer-input::placeholder {
+  color: #8696a0 !important;
+}
+html.dark .wa-empty-stage {
+  background-color: #0b141a;
+}
+
 /* Screen-reader only — skip link */
 .sr-only {
   position: absolute;
