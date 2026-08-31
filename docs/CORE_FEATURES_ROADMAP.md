@@ -9,7 +9,7 @@
 2. פיצ׳רים רק אם סוגרים מחזור: דיווח → שיוך → טיפול → עדכון.
 3. Phase D (Push, i18n FR, OAuth domain) נשאר אחרי go-live IL.
 
-## גל 1 — ליבה (בגל הזה)
+## גל 1 — ליבה
 
 | פריט | למה | סטטוס |
 |------|-----|--------|
@@ -19,16 +19,16 @@
 | דשבורד: ממתינות לחלקים בחריגים | נראות ל־`waiting_parts` | ✅ |
 | רענון רך לדשבורד | מסך עבודה חי בלי realtime מלא | ✅ |
 
-## גל 2 — פיצ׳רים תפעוליים (אחרי גל 1)
+## גל 2 — פיצ׳רים תפעוליים
 
-| פריט | הערה |
-|------|------|
-| Persist של partner dispatch ל־Supabase | היום memory בלבד |
-| דוח חודשי מתוזמן + email | Phase D; ידני כבר קיים |
-| PDF batch ל־QR | חלקי ב־ACTION_PLAN |
-| התראת email ל־unassigned timeout | אם מנהל לא ב־WA |
+| פריט | הערה | סטטוס |
+|------|------|--------|
+| Persist של partner dispatch ל־Supabase | `vendor_dispatches` + fallback memory | ✅ |
+| דוח חודשי מתוזמן + email | cron `0 6 1 * *` + snapshot + PDF | ✅ |
+| PDF batch ל־QR | `/api/stores/qr-batch?format=pdf` | ✅ |
+| התראת email ל־unassigned timeout | cron כל 15ד׳ · `UNASSIGNED_TIMEOUT_HOURS` | ✅ |
 
-## מחוץ להיקף (כרגע)
+## מחוץ להיקף (נשאר אחרי go-live)
 
 - Zapier / Make / n8n
 - Web Push production

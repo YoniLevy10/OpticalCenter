@@ -12,8 +12,6 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { WhatsAppShareButton } from '@/components/ui/whatsapp-share-button'
-import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
-
 type Snapshot = {
   id: string
   label: string
@@ -132,9 +130,9 @@ export function ReportsHistoryClient() {
               {busy ? 'יוצר…' : 'יצירה ושמירה'}
             </Button>
           </div>
-          <p className="t-caption mt-3 flex flex-wrap items-center gap-2 text-ink-3">
-            <ComingSoonBadge />
-            <span>שליחה אוטומטית ב-1 לחודש · email</span>
+          <p className="t-caption mt-3 text-ink-3">
+            שליחה אוטומטית ב־1 לחודש (06:00 UTC) למייל ההתראות בהגדרות — כולל
+            שמירת snapshot ו־PDF.
           </p>
         </Panel>
 

@@ -3,6 +3,8 @@ import QRCode from 'qrcode'
 import { fetchStores } from '@/modules/stores/data'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
+import { buildStoresQrPdf } from '@/modules/stores/qr-pdf'
+import { captureError } from '@/lib/monitoring'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -23,6 +25,30 @@ export async function GET(request: Request) {
 
   const { stores } = await fetchStores()
   const active = stores.filter((s) => s.is_active !== false)
+
+  if (format === 'pdf') {
+    try {
+      const pdf = await buildStoresQrPdf(
+        active.map((s) => ({ code: s.code, name: s.name })),
+        businessPhone,
+      )
+      return new NextResponse(new Uint8Array(pdf), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition':
+            'attachment; filename="maintainos-qr-batch.pdf"',
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      captureError(err, { route: 'GET /api/stores/qr-batch?format=pdf' })
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : 'יצירת PDF נכשלה' },
+        { status: 500 },
+      )
+    }
+  }
 
   const cards = await Promise.all(
     active.map(async (s) => {
