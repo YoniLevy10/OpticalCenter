@@ -82,7 +82,10 @@ export default async function TicketDetailPage({
   }))
 
   const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
-  const assignee = technicians.find((t) => t.id === ticket.assigned_to)
+  const assignee =
+    ticket.assignee ??
+    technicians.find((t) => t.id === ticket.assigned_to) ??
+    null
   const openFor = plainOpenForHe(ticket.created_at, ticket)
   const storeHeading = storeLabel(ticket.stores)
   const whatsBroken = ticket.description || ticket.title || 'ללא תיאור'
@@ -168,6 +171,9 @@ export default async function TicketDetailPage({
             ticketId={ticket.id}
             status={ticket.status as TicketStatus}
             assignedTo={ticket.assigned_to}
+            assigneeName={
+              assignee?.full_name || assignee?.email || null
+            }
             technicians={techOptions}
           />
         </div>
@@ -178,6 +184,9 @@ export default async function TicketDetailPage({
             ticketId={ticket.id}
             status={ticket.status as TicketStatus}
             assignedTo={ticket.assigned_to}
+            assigneeName={
+              assignee?.full_name || assignee?.email || null
+            }
             technicians={techOptions}
           />
         </div>

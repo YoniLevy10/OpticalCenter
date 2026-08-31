@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
-import { Check, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import { Check, UserPlus, UserRoundPen } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { Button } from '@/components/ui/button'
@@ -22,11 +22,13 @@ export function TicketActions({
   ticketId,
   status,
   assignedTo,
+  assigneeName,
   technicians,
 }: {
   ticketId: string
   status: TicketStatus
   assignedTo: string | null
+  assigneeName?: string | null
   technicians: Technician[]
   /** Kept for call-site compatibility; unused in the simplified UI. */
   assigneeFieldId?: string
@@ -37,10 +39,27 @@ export function TicketActions({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [localAssignedTo, setLocalAssignedTo] = useState(assignedTo)
+  const [localAssigneeName, setLocalAssigneeName] = useState(
+    assigneeName ?? null,
+  )
+  const [localStatus, setLocalStatus] = useState(status)
 
-  const resolved = isTicketResolved(status) || status === 'cancelled'
-  const open = OPEN_TICKET_STATUSES.includes(status)
-  const unassigned = !assignedTo
+  useEffect(() => {
+    setLocalAssignedTo(assignedTo)
+  }, [assignedTo])
+
+  useEffect(() => {
+    setLocalAssigneeName(assigneeName ?? null)
+  }, [assigneeName])
+
+  useEffect(() => {
+    setLocalStatus(status)
+  }, [status])
+
+  const resolved = isTicketResolved(localStatus) || localStatus === 'cancelled'
+  const open = OPEN_TICKET_STATUSES.includes(localStatus)
+  const unassigned = !localAssignedTo
 
   const sortedTechs = useMemo(
     () =>
@@ -49,6 +68,12 @@ export function TicketActions({
       ),
     [technicians],
   )
+
+  const shownAssignee =
+    localAssigneeName ||
+    sortedTechs.find((t) => t.id === localAssignedTo)?.full_name ||
+    sortedTechs.find((t) => t.id === localAssignedTo)?.email ||
+    null
 
   async function patch(body: Record<string, unknown>, successText: string) {
     setError(null)
@@ -91,6 +116,12 @@ export function TicketActions({
 
   return (
     <div className="space-y-3">
+      {!unassigned && shownAssignee ? (
+        <p className="t-body rounded-[var(--radius-md)] bg-surface-sunken px-3 py-2 text-ink">
+          משויך ל: <span className="t-body-strong">{shownAssignee}</span>
+        </p>
+      ) : null}
+
       {unassigned ? (
         <Button
           type="button"
@@ -111,8 +142,27 @@ export function TicketActions({
           variant="secondary"
           size="touch"
           className="w-full"
+          disabled={disabled || sortedTechs.length === 0}
+          onClick={() => setAssignOpen(true)}
+        >
+          <UserRoundPen className="h-4 w-4" aria-hidden />
+          החלף טכנאי
+        </Button>
+      ) : null}
+
+      {!unassigned && open ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="touch"
+          className="w-full"
           disabled={disabled}
-          onClick={() => void patch({ status: 'resolved' }, 'התקלה הסתיימה')}
+          onClick={() =>
+            void (async () => {
+              const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
+              if (ok) setLocalStatus('resolved')
+            })()
+          }
         >
           סגור תקלה
         </Button>
@@ -129,36 +179,46 @@ export function TicketActions({
       <BottomSheet
         open={assignOpen}
         onOpenChange={setAssignOpen}
-        title="שייך טכנאי"
+        title={unassigned ? 'שייך טכנאי' : 'החלף טכנאי'}
       >
         <ul className="divide-y divide-border">
-          {sortedTechs.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => {
-                  void (async () => {
-                    const ok = await patch(
-                      { assignedTo: t.id },
-                      'הטכנאי שויך',
-                    )
-                    if (ok) setAssignOpen(false)
-                  })()
-                }}
-                className="flex w-full min-h-[var(--tap)] items-center gap-3 px-1 py-3 text-start transition-colors hover:bg-surface-sunken/40"
-              >
-                <span className="t-body-strong">
-                  {t.full_name || t.email || t.id.slice(0, 8)}
-                </span>
-                <span className="t-meta ms-auto text-ink-3">
-                  {(t.openCount ?? 0) === 0
-                    ? 'אין תקלות פתוחות'
-                    : `${t.openCount} תקלות פתוחות`}
-                </span>
-              </button>
-            </li>
-          ))}
+          {sortedTechs.map((t) => {
+            const label = t.full_name || t.email || t.id.slice(0, 8)
+            const selected = t.id === localAssignedTo
+            return (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  disabled={disabled || selected}
+                  onClick={() => {
+                    void (async () => {
+                      const ok = await patch(
+                        { assignedTo: t.id },
+                        'הטכנאי שויך',
+                      )
+                      if (ok) {
+                        setLocalAssignedTo(t.id)
+                        setLocalAssigneeName(label)
+                        setLocalStatus('assigned')
+                        setAssignOpen(false)
+                      }
+                    })()
+                  }}
+                  className="flex w-full min-h-[var(--tap)] items-center gap-3 px-1 py-3 text-start transition-colors hover:bg-surface-sunken/40 disabled:opacity-60"
+                >
+                  <span className="t-body-strong">
+                    {label}
+                    {selected ? ' · נוכחי' : ''}
+                  </span>
+                  <span className="t-meta ms-auto text-ink-3">
+                    {(t.openCount ?? 0) === 0
+                      ? 'אין תקלות פתוחות'
+                      : `${t.openCount} תקלות פתוחות`}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       </BottomSheet>
     </div>
