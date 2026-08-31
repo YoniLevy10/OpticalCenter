@@ -32,7 +32,6 @@ export default async function PrintQrBatchPage() {
           <PageHeader
             className="hidden md:flex"
             title="הדפסת QR"
-            meta={<span className="t-num">{active.length}</span>}
           />
           {phoneReady ? <PrintQrClient /> : null}
         </div>

@@ -154,9 +154,7 @@ export default async function TicketsPage({
         />
 
         <PageHeader
-          className="hidden md:flex"
           title="תקלות"
-          meta={<span className="t-num">{filtered.length}</span>}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (
               <PurgeDemoButton />

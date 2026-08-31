@@ -146,14 +146,6 @@ export default async function StoreDetailPage({
         <PageHeader
           className="hidden md:flex"
           title={store.name}
-          meta={
-            <>
-              <span className="t-num" dir="ltr">
-                #{store.code}
-              </span>
-              {store.is_active === false ? ' · מושבת' : null}
-            </>
-          }
           actions={
             <StoreSecondaryActions
               code={store.code}

@@ -17,13 +17,13 @@ export function Panel({
   className?: string
   /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
-  /** Soft Bamakor-style lift for hero / primary surfaces. */
+  /** Soft lift — reserved; prefer border-only cards in Optical Clean V2. */
   elevated?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
         elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
@@ -45,9 +45,9 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/35 px-4">
+    <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex items-baseline gap-2">
-        <h2 className="t-section text-ink">{title}</h2>
+        <h2 className="t-lead text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
       </div>
       {action}
@@ -57,14 +57,16 @@ export function PanelHeader({
 
 export function PageHeader({
   title,
-  description,
-  meta,
   actions,
   className,
 }: {
   title: string
-  /** Short supporting line under the title. */
+  /**
+   * @deprecated Optical Clean titles are the black plate only —
+   * captions / meta are not rendered.
+   */
   description?: React.ReactNode
+  /** @deprecated Not rendered — title plate only. */
   meta?: React.ReactNode
   actions?: React.ReactNode
   className?: string
@@ -72,19 +74,13 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-start justify-between gap-x-4 gap-y-2 pb-1',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-3 pb-2',
         className,
       )}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-3">
-          <h1 className="t-title text-ink">{title}</h1>
-          {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
-        </div>
-        {description ? (
-          <p className="t-body mt-1 max-w-2xl text-ink-2">{description}</p>
-        ) : null}
-      </div>
+      <h1 className="inline-flex max-w-full items-center rounded-[var(--radius-lg)] bg-[var(--ink)] px-3.5 py-2 text-[18px] font-semibold leading-none tracking-[-0.02em] text-white md:px-4 md:py-2.5 md:text-[20px]">
+        {title}
+      </h1>
       {actions ? (
         <div className="flex items-center gap-2">{actions}</div>
       ) : null}

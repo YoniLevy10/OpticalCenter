@@ -4,29 +4,28 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * The only button in MaintainOS.
- * `primary` is the sole place tenant colour may fill a control.
- * `critical` is a SIGNAL colour and never a tenant colour.
+ * Optical Clean V2 — three button types.
+ * `primary` is the sole place tenant wine may fill a control.
+ * `critical` / `resolve` are signal exceptions only.
  */
 const buttonVariants = cva(
-  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity,box-shadow] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
+  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
   {
     variants: {
       variant: {
         primary:
-          'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)] hover:bg-[var(--tenant-hover)]',
+          'bg-[var(--tenant)] text-[var(--tenant-contrast)] hover:bg-[var(--tenant-hover)]',
         secondary:
-          'border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken/50',
+          'border border-border bg-surface text-ink hover:bg-surface-sunken',
         ghost: 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
         critical:
           'border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)] hover:bg-[color-mix(in_srgb,var(--signal-critical)_10%,white)]',
         resolve:
-          'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
+          'bg-[var(--signal-resolved)] text-white hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
       },
       size: {
         sm: 'h-8 px-2.5',
         md: 'h-9 px-3.5',
-        /** Touch target floor for mobile and technician surfaces. */
         touch: 'h-11 px-4 t-control-lg',
         block: 'h-12 w-full px-4 t-control-lg',
       },

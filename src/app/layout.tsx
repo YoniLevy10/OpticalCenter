@@ -43,8 +43,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   /* Status-bar chrome; ThemeProvider updates meta theme-color at runtime. */
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#eef4f6' },
-    { media: '(prefers-color-scheme: dark)', color: '#0e1619' },
+    { media: '(prefers-color-scheme: light)', color: '#f9f9fb' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f0f10' },
   ],
   width: 'device-width',
   initialScale: 1,

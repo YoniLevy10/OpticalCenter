@@ -18,8 +18,7 @@ type Story = StoryObj<typeof meta>
 export const PageHeaderDefault: Story = {
   render: () => (
     <PageHeader
-      title="תור תקלות"
-      meta="14 פתוחות"
+      title="תקלות"
       actions={<Button variant="primary">תקלה חדשה</Button>}
     />
   ),

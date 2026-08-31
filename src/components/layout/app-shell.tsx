@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   MessageSquare,
   QrCode,
-  ScrollText,
   Server,
   Settings,
   Smartphone,
@@ -28,14 +27,11 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
-import { ThemeToggle, ThemeToggleOnDark } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
 /**
- * Optical Precision shell
- * Optical Center is the tenant identity; MaintainOS remains the quiet platform layer.
- * Desktop keeps navigation calm and persistent; mobile prioritizes the daily operating loop.
+ * Optical Clean V2 shell — light sidebar, wine accent, restrained chrome.
  */
 
 type NavItem = {
@@ -45,28 +41,31 @@ type NavItem = {
   match: string
 }
 
+/** Desktop primary + mobile bottom (first 4 + More). */
 const PRIMARY: NavItem[] = [
   {
     href: '/ops/dashboard',
-    label: 'לוח בקרה',
+    label: 'סקירה',
     icon: LayoutDashboard,
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
   { href: '/ops/inbox', label: 'WhatsApp', icon: MessageSquare, match: '/ops/inbox' },
   { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
+  {
+    href: '/ops/reports',
+    label: 'דוחות',
+    icon: BarChart3,
+    match: '/ops/reports',
+  },
 ]
+
+const MOBILE_PRIMARY = PRIMARY.slice(0, 4)
 
 const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'תפעול',
     items: [
-      {
-        href: '/ops/inbox',
-        label: 'תיבת WhatsApp',
-        icon: MessageSquare,
-        match: '/ops/inbox',
-      },
       { href: '/ops/assets', label: 'נכסים', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
@@ -74,23 +73,18 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         icon: Truck,
         match: '/ops/vendors',
       },
-      {
-        href: '/ops/activity',
-        label: 'יומן פעילות',
-        icon: ScrollText,
-        match: '/ops/activity',
-      },
-      {
-        href: '/ops/reports',
-        label: 'דוחות',
-        icon: BarChart3,
-        match: '/ops/reports',
-      },
+      { href: '/ops/users', label: 'משתמשים', icon: Users, match: '/ops/users' },
     ],
   },
   {
     label: 'מערכת',
     items: [
+      {
+        href: '/ops/settings',
+        label: 'הגדרות',
+        icon: Settings,
+        match: '/ops/settings',
+      },
       {
         href: '/ops/status',
         label: 'סטטוס מערכת',
@@ -98,23 +92,16 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         match: '/ops/status',
       },
       {
-        href: '/ops/settings',
-        label: 'הגדרות',
-        icon: Settings,
-        match: '/ops/settings',
+        href: '/ops/lab',
+        label: 'מעבדה',
+        icon: Smartphone,
+        match: '/ops/lab',
       },
-      { href: '/ops/users', label: 'משתמשים', icon: Users, match: '/ops/users' },
       {
         href: '/ops/stores/print-qr',
         label: 'הדפסת QR',
         icon: QrCode,
         match: '/ops/stores/print-qr',
-      },
-      {
-        href: '/ops/lab',
-        label: 'מעבדה',
-        icon: Smartphone,
-        match: '/ops/lab',
       },
       {
         href: '/ops/simulator',
@@ -159,23 +146,16 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        't-control flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
         active
-          ? 'bg-white/10 text-white'
-          : 'text-white/70 hover:bg-white/5 hover:text-white',
+          ? 'bg-[var(--tenant-soft)] text-[var(--tenant)]'
+          : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-block-2 w-[2px] rounded-full start-0',
-          active ? 'bg-[var(--tenant)]' : 'bg-transparent',
-        )}
-      />
       <Icon
         className={cn(
           'h-4 w-4 shrink-0',
-          active ? 'text-[var(--tenant)]' : undefined,
+          active ? 'text-[var(--tenant)]' : 'text-ink-3',
         )}
         aria-hidden
       />
@@ -191,9 +171,8 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/stores')) return 'חנויות'
   if (pathname.startsWith('/ops/assets')) return 'נכסים'
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
-  if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
   if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
-  if (pathname.startsWith('/ops/inbox')) return 'תיבת WhatsApp'
+  if (pathname.startsWith('/ops/inbox')) return 'WhatsApp'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
@@ -205,8 +184,8 @@ function pageTitle(pathname: string): string {
 function TenantMark() {
   return (
     <BrandMark
-      size={32}
-      className="rounded-[var(--radius-md)] ring-1 ring-white/15"
+      size={28}
+      className="rounded-[var(--radius-md)]"
       alt=""
     />
   )
@@ -226,30 +205,27 @@ export function AppShell({
   return (
     <div className="dvh-screen min-w-0 overflow-x-hidden bg-canvas text-ink">
       <SkipLink />
-      {/* ---------- Desktop sidebar ---------- */}
+      {/* ---------- Desktop sidebar — light ---------- */}
       <aside
         aria-label="תפריט צד"
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-[var(--panel-dark)] text-[var(--panel-dark-fg)] shadow-[var(--shadow-pop)] start-0 border-e md:flex"
+        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e border-border bg-surface start-0 md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="border-b border-white/10 bg-[var(--panel-dark)] px-5"
+          className="border-b border-border px-5"
           style={{ height: 'var(--topbar-h)' }}
         >
           <div className="flex h-full items-center gap-2.5">
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-white">MaintainOS</p>
-              <p className="t-caption truncate text-white/55">
-                Optical Center · ישראל
-              </p>
+              <p className="t-body-strong truncate text-ink">Optical Center</p>
+              <p className="t-caption truncate text-ink-3">MaintainOS</p>
             </div>
           </div>
         </div>
 
         <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-white/50">מרכז שליטה</p>
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-0.5">
             {PRIMARY.map((item) => (
               <li key={item.href}>
                 <SidebarNavLink item={item} pathname={pathname} />
@@ -258,9 +234,9 @@ export function AppShell({
           </ul>
 
           {toolGroups.map((group) => (
-            <div key={group.label} className="mt-6">
-              <p className="t-caption mb-2 px-2.5 text-white/50">{group.label}</p>
-              <ul className="flex flex-col gap-1">
+            <div key={group.label} className="mt-7">
+              <p className="t-caption mb-2 px-3 text-ink-3">{group.label}</p>
+              <ul className="flex flex-col gap-0.5">
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <SidebarNavLink item={item} pathname={pathname} />
@@ -271,40 +247,25 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
-          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
-            <span className="t-caption text-white/50">ערכת נושא</span>
-            <ThemeToggleOnDark />
-          </div>
-          <div className="px-2.5">
-            <LogoutButton className="w-full justify-start px-0 text-white/80 hover:text-white" />
-          </div>
-          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
-            />
-            <span className="t-caption truncate text-white/50">
-              Optical Center · ישראל
-            </span>
+        <div className="border-t border-border p-3">
+          <div className="px-2">
+            <LogoutButton className="w-full justify-start px-1" />
           </div>
         </div>
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden">
+      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface md:hidden">
         <div
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
           <TenantMark />
           <div className="min-w-0 flex-1">
-            <h1 className="t-body-strong truncate text-ink">
+            <p className="t-body-strong truncate text-ink">
               {pageTitle(pathname)}
-            </h1>
+            </p>
           </div>
-          <ThemeToggle compact className="shrink-0" />
-          <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
         </div>
       </header>
 
@@ -314,9 +275,9 @@ export function AppShell({
           <main
             id="main-content"
             tabIndex={-1}
-            className="pb-nav mx-auto min-w-0 w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
+            className="pb-nav mx-auto min-w-0 w-full max-w-[1280px] px-4 pt-6 outline-none md:px-8 md:pt-8"
           >
-            <div className="mb-4 hidden justify-end md:flex">
+            <div className="mb-6 hidden justify-end md:flex">
               <SystemStatusBanner compact />
             </div>
             {children}
@@ -327,11 +288,11 @@ export function AppShell({
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
         aria-label="ניווט תחתון"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface md:hidden"
         style={{ paddingBottom: 'var(--safe-b)' }}
       >
         <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
-          {PRIMARY.map((item) => {
+          {MOBILE_PRIMARY.map((item) => {
             const active = isActive(pathname, item.match)
             const Icon = item.icon
             return (
@@ -341,7 +302,7 @@ export function AppShell({
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
-                    active ? 'nav-pill-active' : 'text-ink-3',
+                    active ? 'text-[var(--tenant)]' : 'text-ink-3',
                   )}
                 >
                   <Icon className="h-5 w-5" aria-hidden />
@@ -368,8 +329,40 @@ export function AppShell({
       <BottomSheet
         open={moreOpen}
         onOpenChange={setMoreOpen}
-        title="כלים והגדרות"
+        title="עוד"
       >
+        <div className="mb-5">
+          <p className="t-caption mb-2 text-ink-3">ראשי</p>
+          <ul className="divide-y divide-border">
+            {PRIMARY.filter((i) => !MOBILE_PRIMARY.some((m) => m.href === i.href)).map(
+              (item) => {
+                const Icon = item.icon
+                const active = isActive(pathname, item.match)
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        't-body flex min-h-[var(--tap)] items-center gap-2.5',
+                        active ? 'text-[var(--tenant)]' : 'text-ink',
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'h-4 w-4 shrink-0',
+                          active ? 'text-[var(--tenant)]' : 'text-ink-3',
+                        )}
+                        aria-hidden
+                      />
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              },
+            )}
+          </ul>
+        </div>
         {toolGroups.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
             <p className="t-caption mb-2 text-ink-3">{group.label}</p>
@@ -383,7 +376,7 @@ export function AppShell({
                       href={item.href}
                       onClick={() => setMoreOpen(false)}
                       className={cn(
-                        't-body flex min-h-[var(--tap)] items-center gap-2.5 transition-colors',
+                        't-body flex min-h-[var(--tap)] items-center gap-2.5',
                         active ? 'text-[var(--tenant)]' : 'text-ink',
                       )}
                     >
@@ -405,9 +398,6 @@ export function AppShell({
         <div className="mt-4">
           <LogoutButton size="touch" variant="secondary" className="w-full" />
         </div>
-        <p className="t-caption mt-4 text-ink-3">
-          Optical Center · פיילוט ישראל
-        </p>
       </BottomSheet>
     </div>
   )
