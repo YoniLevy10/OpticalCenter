@@ -233,6 +233,32 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(second.ticketId).not.toBe(first.ticketId)
   })
 
+  it('WA-11b thank-you after ticket does not open a new ticket', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    await processInboundMessage(msg({ text: 'STORE_172', waId }), {
+      skipOutboundGraph: true,
+    })
+    const created = await processInboundMessage(
+      msg({ waId, text: 'סתימה בשירותים נשים אין ניקוז' }),
+      { skipOutboundGraph: true },
+    )
+    expect(created.ticketId).toBeTruthy()
+    const before = memListTickets().length
+    const thanks = await processInboundMessage(
+      msg({ waId, text: 'תודה רבה' }),
+      { skipOutboundGraph: true },
+    )
+    expect(thanks.ok).toBe(true)
+    expect(thanks.ticketId).toBeFalsy()
+    expect(thanks.state).toBe('done')
+    expect(memListTickets().length).toBe(before)
+    expect(thanks.reply || '').toMatch(/בשמחה|תקלה נוספת/i)
+    const session = memGetSession(waId)
+    expect(session?.state).toBe('done')
+  })
+
   it('WA-15 follow-up photo after ticket attaches to same ticket', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
