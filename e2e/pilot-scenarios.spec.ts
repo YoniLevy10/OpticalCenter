@@ -14,10 +14,13 @@ test.describe('Pilot scenarios (memory backend)', () => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading').first()).toBeVisible()
-    const assignSelect = page.locator('#ticket-assignee')
-    await expect(assignSelect).toBeVisible({ timeout: 15_000 })
-    await assignSelect.selectOption({ index: 1 })
-    await expect(page.getByText(/הטכנאי שויך|יוסי|מיכל|טכנאי/i).first()).toBeVisible({
+    const assignBtn = page.getByRole('button', { name: /שייך טכנאי/i }).first()
+    await expect(assignBtn).toBeVisible({ timeout: 15_000 })
+    await assignBtn.click()
+    const sheet = page.getByRole('dialog')
+    await expect(sheet.getByText(/שייך טכנאי/i)).toBeVisible()
+    await sheet.getByRole('button').filter({ hasText: /טכנאי|יוסי|מיכל/i }).first().click()
+    await expect(page.getByText(/הטכנאי שויך|משויך|טכנאי דמו/i).first()).toBeVisible({
       timeout: 15_000,
     })
   })
@@ -28,10 +31,12 @@ test.describe('Pilot scenarios (memory backend)', () => {
     await page.goto(`/tech/${ticketId}?techId=${DEMO_TECH_ID}`, {
       waitUntil: 'domcontentloaded',
     })
-    const start = page.getByRole('button', { name: /התחלת טיפול|תפיסה/i })
+    const start = page.getByRole('button', { name: /התחל טיפול|התחלת טיפול|תפיסה/i })
     if ((await start.count()) > 0) {
       await start.first().click()
-      await expect(page.getByText(/נשמר/i).first()).toBeVisible({ timeout: 10_000 })
+      await expect(page.getByText(/הטיפול התחיל|נשמר|סיימתי/i).first()).toBeVisible({
+        timeout: 10_000,
+      })
     }
   })
 
