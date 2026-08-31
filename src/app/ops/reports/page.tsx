@@ -136,9 +136,13 @@ export default async function ReportsPage({
   const exportQuery = { from, to, status, month }
 
   const rangeLabel =
-    from || to
-      ? [from, to].filter(Boolean).join(' ← ')
-      : 'כל התקופה'
+    from && to
+      ? `${from} – ${to}`
+      : from
+        ? `מ-${from}`
+        : to
+          ? `עד-${to}`
+          : 'כל התקופה'
   const statusLabel =
     status === 'open' ? ' · פתוחות' : status === 'resolved' ? ' · נפתרו' : ''
 
