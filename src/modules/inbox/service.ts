@@ -20,6 +20,7 @@ import { sendWhatsAppText } from '@/modules/whatsapp/send'
 import { resolveWhatsAppPhoneNumberId } from '@/modules/whatsapp/phone-number-id'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { DEMO_STORES } from '@/modules/stores/data'
+import { dedupeThreadMessages } from './dedupe-messages'
 
 const CUSTOMER_CARE_WINDOW_MS = 24 * 60 * 60 * 1000
 
@@ -620,13 +621,8 @@ export async function listSessionMessages(waId: string): Promise<{
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )
 
-  const seen = new Set<string>()
-  const messages = combined.filter((m) => {
-    const key = `${m.id}:${m.body}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  // Ops replies are stored in both inbox_messages and ticket_messages.
+  const messages = dedupeThreadMessages(combined)
 
   const { data: sessionRow } = await supabase
     .from('intake_sessions')

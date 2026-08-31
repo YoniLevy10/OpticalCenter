@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/primitives'
 
 export default function TechLoading() {
   return (
-    <TechShell title="העבודות שלי" eyebrow="MaintainOS · טכנאי">
+    <TechShell title="העבודות שלי" eyebrow="Optical Center · טכנאי">
       <div className="space-y-3">
         <Skeleton className="h-10 w-full" />
         <div className="-mx-4 divide-y divide-border border-y border-border bg-surface sm:mx-0">

@@ -15,6 +15,7 @@ import {
   supabaseReady,
   type MemTicket,
 } from '@/lib/data/memory-store'
+import { memListUsers } from '@/lib/auth/memory-memberships'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import { TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
 import { computeSlaTimestamps } from '@/modules/tickets/sla'
@@ -655,7 +656,18 @@ export async function listInternalTechnicians(): Promise<
     }
     return result.length ? result : memDemoTechnicians()
   }
-  return memDemoTechnicians()
+
+  const fromMem = memListUsers()
+    .filter((u) =>
+      u.memberships.some((m) => m.role === 'internal_technician'),
+    )
+    .map((u) => ({
+      id: u.id,
+      full_name: u.full_name,
+      email: u.email,
+      phone: u.phone ?? null,
+    }))
+  return fromMem.length ? fromMem : memDemoTechnicians()
 }
 
 type StoreResolved = {

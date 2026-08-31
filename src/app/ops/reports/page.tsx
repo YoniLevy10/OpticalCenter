@@ -198,12 +198,12 @@ export default async function ReportsPage({
             </div>
             <div className="text-end">
               <p className="t-caption text-white/60">טווח פעיל</p>
-              <p className="t-title t-num mt-1 text-white">
+              <p className="t-title t-num mt-1 text-white" dir="ltr">
                 {rangeLabel}
-                {statusLabel}
               </p>
-              <p className="t-caption t-num mt-1 text-white/60">
-                {all.length} תקלות
+              <p className="t-caption mt-1 text-white/60">
+                {statusLabel ? statusLabel.replace(/^ · /, '') + ' · ' : null}
+                <span className="t-num">{all.length}</span> תקלות
               </p>
             </div>
           </div>
@@ -211,7 +211,7 @@ export default async function ReportsPage({
 
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה ללוח בקרה"
+          backLabel="חזרה"
           title="דוחות"
           meta={
             ticketResult.backend === 'supabase'

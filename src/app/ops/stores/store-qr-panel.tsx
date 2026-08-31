@@ -36,14 +36,23 @@ export function StoreQrPanel({
 
   return (
     <div className="flex flex-col items-center gap-4 p-6">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={pngSrc}
-        alt={`QR לסניף ${code}`}
-        width={192}
-        height={192}
-        className="h-48 w-48 rounded-[var(--radius-md)] border border-border bg-surface p-2"
-      />
+      <a
+        href={deepLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="פתיחת קישור NFC / WhatsApp"
+        aria-label={`קישור NFC לסניף ${code}`}
+        className="rounded-[var(--radius-md)] outline-none ring-[var(--tenant)] transition-opacity hover:opacity-90 focus-visible:ring-2"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={pngSrc}
+          alt={`QR לסניף ${code}`}
+          width={192}
+          height={192}
+          className="h-48 w-48 rounded-[var(--radius-md)] border border-border bg-surface p-2"
+        />
+      </a>
       <div className="flex flex-wrap justify-center gap-2">
         <Button asChild variant="secondary" size="sm">
           <a
@@ -68,7 +77,7 @@ export function StoreQrPanel({
         </Button>
       </div>
       <p className="t-caption max-w-sm text-center text-ink-3">
-        סריקה פותחת WhatsApp עם{' '}
+        לחיצה על ה־QR או סריקה פותחת WhatsApp עם{' '}
         <span className="t-num" dir="ltr">
           {storeWhatsAppPrefill(code)}
         </span>

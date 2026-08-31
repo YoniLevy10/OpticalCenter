@@ -26,6 +26,7 @@ const createSchema = z.object({
   organization_id: z.string().uuid().optional(),
   id: z.string().uuid().optional(),
   password: z.string().min(6).max(72).optional(),
+  phone: z.string().max(32).nullable().optional(),
 })
 
 export async function GET(request: Request) {
