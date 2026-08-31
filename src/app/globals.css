@@ -493,6 +493,29 @@ main {
   }
 }
 
+/* WhatsApp-like inbox chat wallpaper (ops takeover thread) */
+.wa-chat-wallpaper {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(16 43 53 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(16 43 53 / 3.5%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 35%, #efeae2) 0%,
+      #efeae2 28%,
+      #e8e0d5 100%
+    );
+  background-size: 22px 22px, 28px 28px, auto;
+}
+
 /* Screen-reader only — skip link */
 .sr-only {
   position: absolute;
