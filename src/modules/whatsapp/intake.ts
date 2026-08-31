@@ -27,6 +27,7 @@ import { resolveInboundMediaUrl } from './media'
 import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
 import type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'
+import { isHumanPauseActive } from './human-pause'
 
 type CountryRow = {
   id: string
@@ -58,11 +59,12 @@ type SessionRow = {
   draft_payload: Record<string, unknown> | null
   active_ticket_id: string | null
   human_takeover: boolean
+  human_takeover_until: string | null
   expires_at: string
 }
 
 const SESSION_SELECT =
-  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, clarification_count, draft_payload, active_ticket_id, human_takeover, expires_at'
+  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, clarification_count, draft_payload, active_ticket_id, human_takeover, human_takeover_until, expires_at'
 
 const SESSION_SELECT_LEGACY =
   'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, human_takeover, expires_at'
@@ -86,7 +88,8 @@ async function selectSession(
     error &&
     (isMissingColumnError(error, 'clarification_count') ||
       isMissingColumnError(error, 'draft_payload') ||
-      isMissingColumnError(error, 'active_ticket_id'))
+      isMissingColumnError(error, 'active_ticket_id') ||
+      isMissingColumnError(error, 'human_takeover_until'))
   ) {
     ;({ data, error } = await supabase
       .from('intake_sessions')
@@ -144,6 +147,7 @@ function sessionFromMem(
     draft_payload: existing.draft_payload ?? null,
     active_ticket_id: existing.active_ticket_id ?? null,
     human_takeover: Boolean(existing.human_takeover),
+    human_takeover_until: existing.human_takeover_until ?? null,
     expires_at: existing.expires_at,
   }
 }
@@ -162,6 +166,7 @@ function normalizeSessionRow(row: Record<string, unknown>): SessionRow {
     draft_payload: (row.draft_payload as Record<string, unknown> | null) ?? null,
     active_ticket_id: (row.active_ticket_id as string | null) ?? null,
     human_takeover: Boolean(row.human_takeover),
+    human_takeover_until: (row.human_takeover_until as string | null) ?? null,
     expires_at: String(row.expires_at),
   }
 }
@@ -394,6 +399,7 @@ async function getOrCreateSession(
       draft_payload: null,
       active_ticket_id: null,
       human_takeover: false,
+      human_takeover_until: null,
     })
     return sessionFromMem(waId, country, session)
   }
@@ -480,6 +486,7 @@ type SessionPatch = Partial<{
   active_ticket_id: string | null
   last_inbound: string | null
   human_takeover: boolean
+  human_takeover_until: string | null
 }>
 
 async function updateSession(
@@ -513,6 +520,10 @@ async function updateSession(
         patch.human_takeover !== undefined
           ? patch.human_takeover
           : session.human_takeover,
+      human_takeover_until:
+        patch.human_takeover_until !== undefined
+          ? patch.human_takeover_until
+          : session.human_takeover_until,
       last_inbound: patch.last_inbound ?? undefined,
     })
     return
@@ -827,30 +838,30 @@ export async function processInboundMessage(
 
     const storeCodeHint = text ? parseStoreCodeFromText(text) : null
 
-    // Human takeover: bot stays silent while ops owns the thread.
-    // Auto-resume when the customer clearly starts a *new* ticket after done,
-    // or sends an explicit STORE_ code — otherwise a forgotten takeover
-    // permanently kills the bot for that phone (see production human_takeover_skip).
+    // Per-chat private window only — bot stays on for every other wa_id.
+    // Expired / legacy permanent flags auto-clear so the bot resumes.
     if (session.human_takeover) {
-      const resumeForNewTicket =
-        Boolean(storeCodeHint) ||
-        (session.state === 'done' &&
-          Boolean(text?.trim()) &&
-          !message.mediaUrl)
-
-      if (!resumeForNewTicket) {
+      if (isHumanPauseActive(session)) {
         logEvent('whatsapp:intake', 'info', 'human_takeover_skip', {
           waId: message.waId,
           state: session.state,
+          until: session.human_takeover_until,
         })
         return { ok: true, reply: null, state: session.state }
       }
 
-      await updateSession(supabase, session, { human_takeover: false })
-      session = { ...session, human_takeover: false }
+      await updateSession(supabase, session, {
+        human_takeover: false,
+        human_takeover_until: null,
+      })
+      session = {
+        ...session,
+        human_takeover: false,
+        human_takeover_until: null,
+      }
       logEvent('whatsapp:intake', 'info', 'human_takeover_auto_resume', {
         waId: message.waId,
-        reason: storeCodeHint ? 'store_code' : 'new_text_after_done',
+        reason: 'pause_window_expired',
       })
     }
 

@@ -38,6 +38,8 @@ type Session = {
   display_name?: string
   state: string
   human_takeover?: boolean
+  /** ISO — private ops window ends at this time for this chat only. */
+  human_takeover_until?: string | null
   last_inbound?: string | null
   last_message?: string | null
   unread?: boolean
@@ -45,6 +47,16 @@ type Session = {
   inbox_status?: 'waiting' | 'handled'
   updated_at: string
   country_id?: string
+}
+
+function formatPauseUntilLabel(untilIso: string | null | undefined): string | null {
+  if (!untilIso) return null
+  const ms = Date.parse(untilIso)
+  if (!Number.isFinite(ms) || ms <= Date.now()) return null
+  return new Date(ms).toLocaleTimeString('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 type ThreadMessage = {
@@ -284,7 +296,7 @@ export function InboxClient() {
       }
       setReply('')
       setNotice(
-        'הודעה נשלחה · הבוט הושהה לשיחה זו — לחצו «החזר לבוט» כשתסיימו',
+        'הודעה נשלחה · נפתח חלון שיחה פרטית ל־30 דקות בשיחה זו בלבד (בוט ממשיך בשאר השיחות). לחצו «החזר לבוט» כשתסיימו.',
       )
       await loadThread(selected)
       await loadSessions()
@@ -312,6 +324,9 @@ export function InboxClient() {
 
   const waiting =
     Boolean(active?.human_takeover) || active?.inbox_status === 'waiting'
+  const pauseUntilLabel = waiting
+    ? formatPauseUntilLabel(active?.human_takeover_until)
+    : null
 
   const threadItems = useMemo(() => buildThreadItems(messages), [messages])
 
@@ -369,7 +384,7 @@ export function InboxClient() {
                       ) : null}
                       <span className="t-caption text-ink-3">
                         {s.human_takeover || s.inbox_status === 'waiting'
-                          ? 'בוט מושהה'
+                          ? 'שיחה פרטית'
                           : s.state === 'done'
                             ? 'טופל'
                             : s.state}
@@ -529,7 +544,9 @@ export function InboxClient() {
             <div className="border-b border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="t-caption text-[var(--signal-warning)]">
-                  הבוט מושהה בשיחה זו — הודעות מהלקוח לא יקבלו מענה אוטומטי.
+                  {pauseUntilLabel
+                    ? `שיחה פרטית עד ${pauseUntilLabel} — הבוט לא מתערב כאן; בשאר השיחות ממשיך כרגיל.`
+                    : 'שיחה פרטית בשיחה זו — הבוט לא מתערב כאן; בשאר השיחות ממשיך כרגיל.'}
                 </p>
                 <Button
                   type="button"
