@@ -161,7 +161,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               className="t-display flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]"
               aria-hidden
             >
-              OC
+              M
             </span>
             <div>
               <p className="t-title text-ink">MaintainOS</p>
@@ -205,10 +205,10 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
         <div className="mb-8 text-center md:hidden">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]">
-            <span className="t-display" aria-hidden>OC</span>
+            <span className="t-display" aria-hidden>M</span>
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
-          <p className="t-body mt-1 text-ink-2">Optical Center · ניהול תחזוקה</p>
+          <p className="t-body mt-1 text-ink-2">Optical Center</p>
           {!googleOAuthReady ? (
             <p className="t-caption mt-2 text-ink-3">מייל + סיסמה · {PILOT_DEMO_EMAIL}</p>
           ) : null}

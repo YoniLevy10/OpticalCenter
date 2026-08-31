@@ -103,15 +103,12 @@ export default async function ReportsPage({
       <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה ללוח בקרה"
-          title="דוחות"
-          meta={ticketResult.backend === 'supabase' ? rangeLabel : 'מצב דמו'}
+          backLabel="חזרה"
           showRefresh
         />
         <PageHeader
           title="דוחות"
-          meta={ticketResult.backend === 'supabase' ? rangeLabel : 'מצב דמו'}
-          description="סיכום תפעולי לטווח שנבחר — מדדים, התפלגות ותובנות."
+          meta={ticketResult.backend === 'supabase' ? rangeLabel : undefined}
           className="hidden md:flex"
           actions={
             <ReportsExportButton rows={exportRows} filename="maintainos-tickets.csv" />

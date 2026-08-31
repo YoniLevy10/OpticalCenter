@@ -112,9 +112,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--signal-progress-soft)] text-[var(--signal-progress)] ring-1 ring-[color-mix(in_srgb,var(--signal-progress)_18%,transparent)]">
-        <Icon className="h-5 w-5" aria-hidden strokeWidth={1.5} />
-      </div>
+      <Icon className="mb-2 h-5 w-5 text-ink-3" aria-hidden strokeWidth={1.5} />
       <p className="t-body-strong text-ink">{title}</p>
       {description ? (
         <p className="t-body mt-1.5 max-w-xs text-ink-2">{description}</p>

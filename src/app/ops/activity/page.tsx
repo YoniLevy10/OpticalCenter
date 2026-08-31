@@ -13,24 +13,13 @@ export default async function ActivityPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
-  const { events, backend } = await listRecentAuditEvents(150)
+  const { events } = await listRecentAuditEvents(150)
 
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4">
-        <PageToolbar
-          backHref="/ops/dashboard"
-          backLabel="חזרה ללוח בקרה"
-          title="יומן פעילות"
-          meta={backend === 'memory' ? 'מצב דמו' : undefined}
-          showRefresh
-        />
-        <PageHeader
-          className="hidden md:flex"
-          title="יומן פעילות"
-          meta={backend === 'memory' ? 'מצב דמו' : undefined}
-          description="מה קרה במערכת ובאיזה סדר — עם קישור לתקלה המקורית."
-        />
+        <PageToolbar backHref="/ops/dashboard" backLabel="חזרה" showRefresh />
+        <PageHeader className="hidden md:flex" title="יומן פעילות" />
         <ActivityLog events={events} />
       </div>
     </OpsAppShell>

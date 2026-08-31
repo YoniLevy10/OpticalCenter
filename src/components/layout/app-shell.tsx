@@ -110,6 +110,12 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         match: '/ops/stores/print-qr',
       },
       {
+        href: '/ops/lab',
+        label: 'מעבדה',
+        icon: Smartphone,
+        match: '/ops/lab',
+      },
+      {
         href: '/ops/simulator',
         label: 'סימולטור WhatsApp',
         icon: Smartphone,
@@ -190,6 +196,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
+  if (pathname.startsWith('/ops/lab')) return 'מעבדה'
   if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
   return 'MaintainOS'
 }
@@ -200,7 +207,7 @@ function TenantMark() {
       aria-hidden
       className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
     >
-      OC
+      M
     </span>
   )
 }
@@ -232,8 +239,10 @@ export function AppShell({
           <div className="flex h-full items-center gap-2.5">
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-white">Optical Center</p>
-              <p className="t-caption truncate text-white/55">MaintainOS · תפעול ותחזוקה</p>
+              <p className="t-body-strong truncate text-white">MaintainOS</p>
+              <p className="t-caption truncate text-white/55">
+                Optical Center · ישראל
+              </p>
             </div>
           </div>
         </div>
@@ -290,7 +299,9 @@ export function AppShell({
         >
           <TenantMark />
           <div className="min-w-0 flex-1">
-            <p className="t-body-strong truncate text-ink">{pageTitle(pathname)}</p>
+            <h1 className="t-body-strong truncate text-ink">
+              {pageTitle(pathname)}
+            </h1>
           </div>
           <ThemeToggle compact className="shrink-0" />
           <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
