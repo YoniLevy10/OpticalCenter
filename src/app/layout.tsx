@@ -14,15 +14,30 @@ const heebo = Heebo({
 
 export const metadata: Metadata = {
   title: 'MaintainOS',
-  description: 'מערכת דיווח וניהול תקלות לרשתות קמעונאיות',
+  description: 'מערכת דיווח וניהול תקלות — Optical Center',
   manifest: '/manifest.webmanifest',
   applicationName: 'MaintainOS',
   appleWebApp: {
     capable: true,
-    title: 'MaintainOS',
+    title: 'Optical Center',
     statusBarStyle: 'default',
   },
   formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/icons/apple-touch-icon.png'],
+  },
+  openGraph: {
+    title: 'MaintainOS · Optical Center',
+    description: 'תחזוקה תפעולית לרשת Optical Center',
+    images: [{ url: '/brand/oc-mark.png', width: 512, height: 512 }],
+  },
 }
 
 export const viewport: Viewport = {

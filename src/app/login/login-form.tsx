@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
 import { SkipLink } from '@/components/layout/skip-link'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { BrandMark, BrandLogoFull } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState } from '@/components/ui/primitives'
@@ -156,18 +157,9 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         />
 
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <span
-              className="t-display flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]"
-              aria-hidden
-            >
-              M
-            </span>
-            <div>
-              <p className="t-title text-ink">MaintainOS</p>
-              <p className="t-caption text-ink-2">Optical Center</p>
-            </div>
-          </div>
+          <BrandLogoFull priority className="mb-6 w-[132px] rounded-[var(--radius-lg)] shadow-[var(--shadow-2)]" />
+          <p className="t-title text-ink">MaintainOS</p>
+          <p className="t-caption mt-1 text-ink-2">תפעול ותחזוקה · פיילוט ישראל</p>
           <h1 className="t-display mt-10 max-w-md text-ink">
             תחזוקה חכמה לרשתות קמעונאיות
           </h1>
@@ -204,8 +196,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       {/* Form column */}
       <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
         <div className="mb-8 text-center md:hidden">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]">
-            <span className="t-display" aria-hidden>M</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <BrandMark size={56} priority className="rounded-[var(--radius-xl)] shadow-[var(--shadow-pop)]" />
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
           <p className="t-body mt-1 text-ink-2">Optical Center</p>

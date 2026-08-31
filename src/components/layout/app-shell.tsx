@@ -25,6 +25,7 @@ import type { NavTool } from '@/lib/auth/nav-access'
 import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
 import { BottomSheet } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle, ThemeToggleOnDark } from '@/components/theme/theme-toggle'
@@ -203,12 +204,11 @@ function pageTitle(pathname: string): string {
 
 function TenantMark() {
   return (
-    <span
-      aria-hidden
-      className="t-body-strong inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]"
-    >
-      M
-    </span>
+    <BrandMark
+      size={32}
+      className="rounded-[var(--radius-md)] ring-1 ring-white/15"
+      alt=""
+    />
   )
 }
 

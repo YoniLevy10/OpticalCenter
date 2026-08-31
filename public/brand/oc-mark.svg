@@ -1,11 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Optical Center">
+  <!-- Official Optical Center mark: black field, red diamond, white OC glasses -->
   <rect width="512" height="512" fill="#000000"/>
   <g transform="translate(256 256)">
     <rect x="-148" y="-148" width="296" height="296" fill="#D92621" transform="rotate(45)"/>
   </g>
+  <!-- Glasses / OC monogram -->
   <g fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- brow / bridge -->
     <path d="M148 188 C200 168, 312 168, 364 188"/>
+    <!-- O (left lens) -->
     <circle cx="196" cy="248" r="58"/>
+    <!-- C (right lens, open on the right) -->
     <path d="M372 210 A58 58 0 1 0 372 286"/>
   </g>
 </svg>

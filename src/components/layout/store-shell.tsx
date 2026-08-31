@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { cn } from '@/lib/utils'
 
 export function StoreShell({
@@ -26,14 +27,17 @@ export function StoreShell({
     <div className="dvh-screen bg-canvas text-ink">
       <header className="safe-pt border-b border-border bg-surface shadow-[var(--shadow-1)]">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <p className="t-body-strong truncate text-ink">MaintainOS · חנות</p>
-            {storeName ? (
-              <p className="t-caption truncate text-ink-3">
-                {storeName}
-                {storeCode ? ` · #${storeCode}` : ''}
-              </p>
-            ) : null}
+          <div className="flex min-w-0 items-center gap-2.5">
+            <BrandMark size={32} className="rounded-[var(--radius-md)]" alt="" />
+            <div className="min-w-0">
+              <p className="t-body-strong truncate text-ink">Optical Center · חנות</p>
+              {storeName ? (
+                <p className="t-caption truncate text-ink-3">
+                  {storeName}
+                  {storeCode ? ` · #${storeCode}` : ''}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <ThemeToggle compact />

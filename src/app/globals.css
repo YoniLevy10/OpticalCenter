@@ -35,11 +35,11 @@
   --signal-idle: #8b90a0;
   --signal-idle-soft: #f5f6fa;
 
-  /* ---------- Layer 3 — TENANT (logo · primary · active chrome) ---------- */
-  --tenant: #0d7a72;
-  --tenant-hover: #0a6660;
-  --tenant-soft: #e3f6f3;
-  --tenant-line: #b8e5df;
+  /* ---------- Layer 3 — TENANT (Optical Center logo red) ---------- */
+  --tenant: #d92621;
+  --tenant-hover: #b81f1b;
+  --tenant-soft: #fdeceb;
+  --tenant-line: #f5c4c2;
   --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
 
@@ -109,12 +109,12 @@ html.dark {
   --signal-idle: #8b90a0;
   --signal-idle-soft: #1a1e28;
 
-  --tenant: #2bb8ad;
-  --tenant-hover: #3ec9be;
-  --tenant-soft: #12332f;
-  --tenant-line: #1f5c55;
+  --tenant: #ef4a45;
+  --tenant-hover: #f56b66;
+  --tenant-soft: #3a1818;
+  --tenant-line: #6b2e2e;
   --signal-accent: #f4b860;
-  --tenant-contrast: #06201d;
+  --tenant-contrast: #1a0606;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);

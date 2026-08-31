@@ -2,6 +2,7 @@ import { BackButton } from '@/components/layout/back-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { cn } from '@/lib/utils'
 import { LogoutButton } from '@/components/auth/logout-button'
 
@@ -53,8 +54,11 @@ export function TechShell({
       <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">
           {backHref ? <BackButton href={backHref} label={backLabel} /> : null}
+          {!backHref ? (
+            <BrandMark size={32} className="mt-0.5 rounded-[var(--radius-md)]" alt="" />
+          ) : null}
           <div className="min-w-0 flex-1">
-            <p className="t-caption text-ink-3">{eyebrow ?? 'MaintainOS · טכנאי'}</p>
+            <p className="t-caption text-ink-3">{eyebrow ?? 'Optical Center · טכנאי'}</p>
             <h1 className="t-title mt-0.5 truncate text-ink">{title}</h1>
             {subtitle ? (
               <div className="t-meta mt-0.5 truncate text-ink-2">{subtitle}</div>
