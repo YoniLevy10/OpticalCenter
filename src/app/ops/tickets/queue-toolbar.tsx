@@ -30,7 +30,7 @@ const PRIMARY_VIEWS: { key: QueueView; label: string }[] = [
   { key: 'all', label: 'הכל' },
   { key: 'mine', label: 'שלי' },
   { key: 'urgent', label: 'דחופות' },
-  { key: 'unassigned', label: 'עדיין בלי טכנאי' },
+  { key: 'unassigned', label: 'ללא אחראי' },
 ]
 
 export function QueueToolbar({
@@ -94,7 +94,7 @@ export function QueueToolbar({
     filters.tech && {
       label:
         filters.tech === 'none'
-          ? 'עדיין בלי טכנאי'
+          ? 'ללא אחראי'
           : (technicians.find((t) => t.id === filters.tech)?.name ?? 'אחראי'),
       clear: { tech: undefined },
     },
@@ -225,7 +225,7 @@ export function QueueToolbar({
               onChange={(e) => setFilter({ tech: e.target.value || undefined })}
             >
               <option value="">הכל</option>
-              <option value="none">עדיין בלי טכנאי</option>
+              <option value="none">ללא אחראי</option>
               {technicians.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}

@@ -26,12 +26,11 @@ function classifyTransition(to: TicketStatus): 'primary' | 'secondary' | 'critic
 }
 
 function transitionLabel(from: TicketStatus, to: TicketStatus): string {
-  if (to === 'assigned') return 'בחר טכנאי'
-  if (to === 'in_progress') return from === 'resolved' ? 'פתח מחדש' : 'התחל טיפול'
-  if (to === 'resolved') return 'סמן כטופל'
-  if (to === 'closed') return 'סגור תקלה'
-  if (to === 'cancelled') return 'בטל תקלה'
-  if (to === 'waiting_parts') return 'סמן מחכה לחלק'
+  if (to === 'assigned') return 'שיוך לטיפול'
+  if (to === 'in_progress') return from === 'resolved' ? 'פתיחה מחדש' : 'התחלת טיפול'
+  if (to === 'resolved') return 'סימון כנפתר'
+  if (to === 'closed') return 'סגירה'
+  if (to === 'cancelled') return 'ביטול תקלה'
   return TICKET_STATUS_LABELS_HE[to] ?? to
 }
 
@@ -92,21 +91,21 @@ export function TicketActions({
 
   return (
     <div className="space-y-5">
-      <Field label="בחר טכנאי" htmlFor={assigneeFieldId}>
+      <Field label="טכנאי מטפל" htmlFor={assigneeFieldId}>
         {hasTechnicians ? (
           <div className="flex gap-2">
             <Select
               id={assigneeFieldId}
-              aria-label="בחר טכנאי"
+              aria-label="טכנאי מטפל"
               value={profileId}
               disabled={disabled}
               onChange={(e) => {
                 const next = e.target.value
                 setProfileId(next)
-                if (next) void patch({ assignedTo: next }, '✓ הטכנאי נבחר')
+                if (next) void patch({ assignedTo: next }, 'הטכנאי שויך')
               }}
             >
-              <option value="">— עדיין לא נבחר —</option>
+              <option value="">— ללא שיוך —</option>
               {technicians.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.full_name || t.email || t.id.slice(0, 8)}
@@ -116,7 +115,7 @@ export function TicketActions({
           </div>
         ) : (
           <p className="t-body rounded-[var(--radius-md)] border border-border bg-canvas px-3 py-2 text-ink-2">
-            אין עדיין טכנאים במערכת. הוסיפו אנשים בהרשאת טכנאי כדי לבחור מי מטפל.
+            אין טכנאים זמינים לשיוך. הוסיפו טכנאים במסד הנתונים כדי לשייך תקלות.
           </p>
         )}
       </Field>
@@ -133,7 +132,7 @@ export function TicketActions({
               size="block"
               disabled={disabled}
               onClick={() =>
-                void patch({ status: s }, `✓ עודכן ל«${TICKET_STATUS_LABELS_HE[s]}»`)
+                void patch({ status: s }, `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`)
               }
             >
               {transitionLabel(status, s)}
@@ -152,7 +151,7 @@ export function TicketActions({
                   onClick={() =>
                     void patch(
                       { status: s },
-                      `✓ עודכן ל«${TICKET_STATUS_LABELS_HE[s]}»`,
+                      `הסטטוס עודכן ל${TICKET_STATUS_LABELS_HE[s]}`,
                     )
                   }
                 >
@@ -170,7 +169,7 @@ export function TicketActions({
               size="sm"
               disabled={disabled}
               className="text-[var(--signal-critical)] hover:bg-[var(--signal-critical-soft)]"
-              onClick={() => void patch({ status: s }, '✓ התקלה בוטלה')}
+              onClick={() => void patch({ status: s }, 'התקלה בוטלה')}
             >
               {transitionLabel(status, s)}
             </Button>

@@ -18,14 +18,14 @@ export default async function InboxPage() {
       <div className="flex flex-col gap-4">
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה לראשי"
-          title="הודעות"
-          meta="WhatsApp"
+          backLabel="חזרה ללוח בקרה"
+          title="תיבת WhatsApp"
+          meta="השתלטות אנושית"
           showRefresh
         />
         <PageHeader
-          title="הודעות"
-          description="שיחות WhatsApp — האם הבוט מטפל או שאתם עונים?"
+          title="תיבת WhatsApp"
+          meta="השתלטות אנושית"
           className="hidden md:flex"
         />
         <Suspense

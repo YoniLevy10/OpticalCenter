@@ -30,15 +30,15 @@ export const QUEUE_VIEWS: { key: QueueView; label: string }[] = [
   { key: 'all', label: 'הכל' },
   { key: 'mine', label: 'שלי' },
   { key: 'urgent', label: 'דחופות' },
-  { key: 'unassigned', label: 'עדיין בלי טכנאי' },
-  { key: 'attention', label: 'צריך טיפול' },
+  { key: 'unassigned', label: 'ללא אחראי' },
+  { key: 'attention', label: 'דורש תשומת לב' },
   { key: 'open', label: 'פתוחות' },
-  { key: 'resolved', label: 'הסתיימו' },
+  { key: 'resolved', label: 'נפתרו' },
 ]
 
 export const QUEUE_SORTS: { key: QueueSort; label: string }[] = [
   { key: 'urgency', label: 'דחיפות' },
-  { key: 'sla', label: 'זמן טיפול' },
+  { key: 'sla', label: 'SLA' },
   { key: 'newest', label: 'חדשות' },
   { key: 'oldest', label: 'ותיקות' },
 ]

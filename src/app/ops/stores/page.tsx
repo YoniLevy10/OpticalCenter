@@ -86,8 +86,7 @@ export default async function StoresPage({
       <div className="flex flex-col gap-4">
         <PageHeader
           className="hidden md:flex"
-          title="סניפים"
-          description="כל הסניפים — ומה שקורה בכל אחד"
+          title="חנויות"
           meta={<span className="t-num">{filtered.length}</span>}
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -115,8 +114,8 @@ export default async function StoresPage({
         <Panel flush elevated className="overflow-hidden">
           {filtered.length === 0 ? (
             <EmptyState
-              title="לא נמצאו סניפים"
-              description="נסו קוד, שם, עיר או שנו את הסינון. אפשר גם להוסיף סניף חדש."
+              title="לא נמצאו חנויות"
+              description="נסו קוד, שם, עיר או שנו את הסינון."
               icon={Store}
             />
           ) : (

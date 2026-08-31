@@ -165,7 +165,7 @@ export function getSlaView(input: SlaInput): SlaView {
     return {
       tone: 'critical',
       short: `באיחור ${overdue}`,
-      long: `זמן הטיפול (${phaseLabel}) עבר · ${overdue}`,
+      long: `חריגת SLA ${phaseLabel} · ${overdue}`,
       phase,
       dueAt,
       remainingMs,

@@ -147,7 +147,7 @@ describe('buildActivity', () => {
     expect(items.map((i) => i.id)).toEqual(['m-m1', 'e-e1', 'm-m2', 'e-e2'])
     expect(items[0].kind).toBe('message_in')
     expect(items[3].transition?.from).toBe('חדש')
-    expect(items[3].transition?.to).toBe('מחכה לטיפול')
+    expect(items[3].transition?.to).toBe('משויך')
   })
 
   it('falls back to from_status/to_status payload shape', () => {

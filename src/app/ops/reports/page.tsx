@@ -6,7 +6,6 @@ import {
   Panel,
   PanelHeader,
   EmptyState,
-  PageHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR, RowLink } from '@/components/ui/table'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
@@ -159,7 +158,7 @@ export default async function ReportsPage({
       href: queueHref({ view: 'open', sort: 'urgency' }),
     },
     {
-      label: 'זמן הטיפול עבר',
+      label: 'חריגות SLA',
       value: String(kpis.breached),
       href: queueHref({ view: 'attention', sort: 'urgency' }),
       warn: kpis.breached > 0,
@@ -185,23 +184,34 @@ export default async function ReportsPage({
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5">
-        <PageHeader
-          className="hidden md:flex"
-          title="דוחות"
-          description="סיכום לפי תאריכים — הורדה או שמירה"
-          meta={
-            <span className="t-num" dir="ltr">
-              {rangeLabel}
-              {statusLabel}
-              {` · ${all.length}`}
-            </span>
-          }
-          actions={<ReportsExportActions query={exportQuery} count={all.length} />}
-        />
+        <div className="rounded-[var(--radius-xl)] bg-[var(--ink)] px-5 py-6 text-white shadow-[var(--shadow-pop)] md:px-8 md:py-7">
+          <p className="t-caption text-white/60">OPERATIONS OS · REPORTS</p>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-white">
+                דוחות
+              </h1>
+              <p className="t-body mt-2 max-w-xl text-white/70">
+                סיכום תפעולי, היסטוריית תקלות והנפקת דוחות לפי טווח תאריכים —
+                CSV, Excel ו-PDF.
+              </p>
+            </div>
+            <div className="text-end">
+              <p className="t-caption text-white/60">טווח פעיל</p>
+              <p className="t-title t-num mt-1 text-white" dir="ltr">
+                {rangeLabel}
+              </p>
+              <p className="t-caption mt-1 text-white/60">
+                {statusLabel ? statusLabel.replace(/^ · /, '') + ' · ' : null}
+                <span className="t-num">{all.length}</span> תקלות
+              </p>
+            </div>
+          </div>
+        </div>
 
         <PageToolbar
           backHref="/ops/dashboard"
-          backLabel="חזרה לראשי"
+          backLabel="חזרה"
           title="דוחות"
           meta={
             ticketResult.backend === 'supabase'
@@ -319,13 +329,13 @@ export default async function ReportsPage({
                 </p>
               </li>
               <li>
-                <p className="t-caption text-ink-3">זמן הטיפול עבר</p>
+                <p className="t-caption text-ink-3">חריגות SLA</p>
                 <p className="t-body text-ink">
                   {sla.openBreached > 0
-                    ? `${sla.openBreached} פתוחות שזמן הטיפול שלהן עבר`
-                    : 'אין פתוחות שזמן הטיפול שלהן עבר'}
+                    ? `${sla.openBreached} פתוחות בחריגה כעת`
+                    : 'אין פתוחות בחריגה כעת'}
                   {sla.resolvedBreached > 0
-                    ? ` · ${sla.resolvedBreached} הסתיימו אחרי שזמן הטיפול עבר`
+                    ? ` · ${sla.resolvedBreached} נפתרו אחרי חריגה`
                     : ''}
                   {sla.pctWithinSla != null
                     ? ` · ${sla.pctWithinSla}% בתוך SLA`
@@ -355,7 +365,7 @@ export default async function ReportsPage({
                       <span className="t-num">#{s.code}</span> · {s.name}
                     </Link>
                     <p className="t-caption t-num mt-1 text-ink-2">
-                      {s.total} סה״כ · {s.open} פתוחות · {s.breached} שעבר הזמן
+                      {s.total} סה״כ · {s.open} פתוחות · {s.breached} חריגות
                     </p>
                   </li>
                 ))}
@@ -366,7 +376,7 @@ export default async function ReportsPage({
                     <TH>סניף</TH>
                     <TH>סה״כ</TH>
                     <TH>פתוחות</TH>
-                    <TH>זמן הטיפול עבר</TH>
+                    <TH>חריגות SLA</TH>
                   </THead>
                   <TBody>
                     {storeReport.map((s) => (
