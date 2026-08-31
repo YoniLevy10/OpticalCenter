@@ -34,10 +34,25 @@ export async function GET(
   }
 }
 
+/**
+ * Pilot is Israel-only for now.
+ * Ignore countryId entirely (clients may still send "null" / garbage).
+ */
 const replySchema = z.object({
   text: z.string().min(1).max(4096),
-  ticketId: z.string().uuid().optional().nullable(),
-  countryId: z.string().uuid().optional(),
+  ticketId: z.preprocess((value) => {
+    if (
+      value == null ||
+      value === '' ||
+      value === 'null' ||
+      value === 'undefined'
+    ) {
+      return null
+    }
+    return value
+  }, z.string().uuid().nullable().optional()),
+  // Accepted but ignored — Israel is resolved server-side.
+  countryId: z.any().optional(),
 })
 
 export async function POST(
@@ -47,23 +62,38 @@ export async function POST(
   try {
     await requireActor(request)
     const { waId } = await ctx.params
-    const parsed = replySchema.safeParse(await request.json())
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 })
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'גוף בקשה לא תקין (JSON)' }, { status: 400 })
     }
+
+    const parsed = replySchema.safeParse(body)
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      const field = issue?.path?.join('.') || 'payload'
+      return NextResponse.json(
+        {
+          error: `בקשה לא תקינה (${field}): ${issue?.message || 'validation'}`,
+          details: parsed.error.flatten(),
+        },
+        { status: 400 },
+      )
+    }
+
     const result = await replyToSession({
       waId,
       text: parsed.data.text,
-      ticketId: parsed.data.ticketId,
-      countryId: parsed.data.countryId,
+      ticketId: parsed.data.ticketId ?? null,
+      // Israel-only pilot: never trust client countryId.
+      countryId: undefined,
     })
     return NextResponse.json(result)
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'POST /api/inbox/sessions/[waId]' })
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'שגיאה' },
-      { status: 400 },
-    )
+    const message = err instanceof Error ? err.message : 'שגיאה'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

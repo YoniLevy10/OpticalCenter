@@ -1,10 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import {
-  AlertTriangle,
-  Package,
-  Ticket,
-} from 'lucide-react'
+import { Ticket } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
@@ -21,13 +17,13 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { getStoreByCode } from '@/modules/stores/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
-import { getSettings } from '@/modules/settings/service'
+import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppPrefill } from '@/modules/tickets/constants'
 import { listTickets } from '@/modules/tickets/service'
 import { listAssets } from '@/modules/assets/service'
 import { isBreached } from '@/modules/tickets/queue'
 import type { QueueTicket } from '@/modules/tickets/queue'
-import { QrDownloadButtons } from '../qr-download-buttons'
+import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
 import { StoreAssetsPanel } from './store-assets-panel'
 import { StoreSecondaryActions } from './store-secondary-actions'
@@ -45,37 +41,22 @@ function MetricLink({
   label,
   value,
   href,
-  icon: Icon,
-  iconClass,
   valueClass,
 }: {
   label: string
   value: number
   href: string
-  icon: typeof Ticket
-  iconClass: string
   valueClass?: string
 }) {
   return (
     <Link
       href={href}
-      className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-3.5 shadow-[var(--shadow-1)] transition-[background-color,box-shadow] duration-[var(--dur-1)] hover:bg-surface-sunken/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+      className="rounded-[var(--radius-lg)] border border-border bg-surface px-3.5 py-3 transition-colors hover:bg-surface-sunken/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
     >
-      <span
-        aria-hidden
-        className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
-          iconClass,
-        )}
-      >
-        <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
-      </span>
-      <div className="min-w-0">
-        <p className="t-caption text-ink-3">{label}</p>
-        <p className={cn('t-display t-num mt-0.5 text-ink', valueClass)}>
-          {value}
-        </p>
-      </div>
+      <p className="t-caption text-ink-3">{label}</p>
+      <p className={cn('t-display t-num mt-0.5 text-ink', valueClass)}>
+        {value}
+      </p>
     </Link>
   )
 }
@@ -102,16 +83,13 @@ export default async function StoreDetailPage({
     ? (tabRaw as TabKey)
     : 'overview'
 
-  const { store, backend } = await getStoreByCode(code)
+  const { store } = await getStoreByCode(code)
   if (!store) notFound()
 
-  const { settings } = await getSettings().catch(() => ({
-    settings: { wa_business_phone: '' } as { wa_business_phone: string },
-  }))
-  const deepLink = storeWhatsAppDeepLink(
-    store.code,
-    settings.wa_business_phone || process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE,
-  )
+  const businessPhone = await resolveWhatsAppBusinessPhone()
+  const deepLink = businessPhone
+    ? storeWhatsAppDeepLink(store.code, businessPhone)
+    : null
   const canEdit =
     Boolean(
       actor?.memberships.some(
@@ -166,13 +144,13 @@ export default async function StoreDetailPage({
         />
 
         <PageHeader
+          className="hidden md:flex"
           title={store.name}
           meta={
             <>
               <span className="t-num" dir="ltr">
                 #{store.code}
               </span>
-              {backend === 'memory' ? ' · מצב דמו' : null}
               {store.is_active === false ? ' · מושבת' : null}
             </>
           }
@@ -192,22 +170,16 @@ export default async function StoreDetailPage({
             label="תקלות פתוחות"
             value={openTickets.length}
             href={`/ops/tickets?store=${encodeURIComponent(store.code)}`}
-            icon={Ticket}
-            iconClass="bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]"
           />
           <MetricLink
             label="נכסים"
             value={assets.length}
             href={`${base}?tab=assets`}
-            icon={Package}
-            iconClass="bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]"
           />
           <MetricLink
             label="חריגות"
             value={exceptional.length}
             href={`${base}?tab=tickets`}
-            icon={AlertTriangle}
-            iconClass="bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]"
             valueClass={
               exceptional.length > 0 ? 'text-[var(--signal-critical)]' : undefined
             }
@@ -235,19 +207,8 @@ export default async function StoreDetailPage({
             </Panel>
 
             <Panel flush className="overflow-hidden" id="store-qr">
-              <PanelHeader title="QR להדפסה" meta="wa.me" />
-              <div className="flex flex-col items-center gap-4 p-6">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/stores/qr?code=${encodeURIComponent(store.code)}&format=svg`}
-                  alt={`QR לסניף ${store.code}`}
-                  className="h-48 w-48 rounded-[var(--radius-md)] border border-border bg-surface p-2"
-                />
-                <QrDownloadButtons code={store.code} />
-                <p className="t-caption max-w-sm text-center text-ink-3">
-                  אותו קישור משמש גם לכתיבת NFC. סרקו או הדביקו על דלת הסניף.
-                </p>
-              </div>
+              <PanelHeader title="QR להדפסה" meta="WhatsApp" />
+              <StoreQrPanel code={store.code} deepLink={deepLink} />
             </Panel>
 
             {canEdit ? (
@@ -346,15 +307,19 @@ export default async function StoreDetailPage({
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
             <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
             <KeyValue label="קישור WhatsApp">
-              <a
-                href={deepLink}
-                target="_blank"
-                rel="noreferrer"
-                dir="ltr"
-                className="t-caption break-all text-ink-2 underline-offset-2 hover:underline"
-              >
-                {deepLink}
-              </a>
+              {deepLink ? (
+                <a
+                  href={deepLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="ltr"
+                  className="t-caption break-all text-ink-2 underline-offset-2 hover:underline"
+                >
+                  {deepLink}
+                </a>
+              ) : (
+                <span className="text-ink-3">חסר מספר עסקי — הגדירו בהגדרות</span>
+              )}
             </KeyValue>
             <KeyValue label="טקסט זיהוי" ltr>
               {storeWhatsAppPrefill(store.code)}

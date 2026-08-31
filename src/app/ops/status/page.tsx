@@ -8,10 +8,7 @@ export default function OpsStatusPage() {
   return (
     <OpsAppShell>
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <PageHeader
-          title="סטטוס מערכת"
-          description="האם הכול עובד? תשובה ברורה בלי צ׳קליסט טכני."
-        />
+        <PageHeader className="hidden md:flex" title="סטטוס מערכת" />
         <StatusHealthPanel />
       </div>
     </OpsAppShell>

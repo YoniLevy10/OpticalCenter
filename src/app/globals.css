@@ -35,11 +35,11 @@
   --signal-idle: #8b90a0;
   --signal-idle-soft: #f5f6fa;
 
-  /* ---------- Layer 3 — TENANT (logo · primary · active chrome) ---------- */
-  --tenant: #0d7a72;
-  --tenant-hover: #0a6660;
-  --tenant-soft: #e3f6f3;
-  --tenant-line: #b8e5df;
+  /* ---------- Layer 3 — TENANT (Optical Center logo red) ---------- */
+  --tenant: #d92621;
+  --tenant-hover: #b81f1b;
+  --tenant-soft: #fdeceb;
+  --tenant-line: #f5c4c2;
   --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
 
@@ -54,6 +54,10 @@
   --shadow-2: 0 2px 8px rgba(26, 26, 46, 0.06), 0 1px 2px rgba(26, 26, 46, 0.04);
   --shadow-hover: 0 6px 18px rgba(26, 26, 46, 0.08), 0 2px 4px rgba(26, 26, 46, 0.04);
   --shadow-pop: 0 14px 40px rgba(26, 26, 46, 0.12), 0 4px 12px rgba(26, 26, 46, 0.06);
+
+  /* Intentional dark chrome (sidebar / OS heroes) — stays dark in both themes */
+  --panel-dark: #102b35;
+  --panel-dark-fg: #ffffff;
 
   /* ---------- Motion — smoother, iOS-like ---------- */
   --dur-1: 150ms;
@@ -71,6 +75,54 @@
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  color-scheme: light;
+}
+
+/* ---------- Dark theme (token remap — not crude invert) ---------- */
+html.dark {
+  color-scheme: dark;
+
+  --canvas: #0e1619;
+  --surface: #152025;
+  --surface-sunken: #0a1012;
+  --surface-raised: #1c2a30;
+  --border: #2a3c42;
+  --border-strong: #3d545c;
+  --ink: #e8f0f2;
+  --ink-2: #a9bec4;
+  /* ≥4.5:1 on --canvas (#0e1619) */
+  --ink-3: #8aa0a7;
+
+  --signal-critical: #f07171;
+  --signal-critical-soft: #3a1818;
+  --signal-critical-line: #6b2e2e;
+  --signal-warning: #e0b35a;
+  --signal-warning-soft: #3a2e14;
+  --signal-warning-line: #6b5528;
+  --signal-progress: #7eabeb;
+  --signal-progress-soft: #182636;
+  --signal-resolved: #5dcc8f;
+  --signal-resolved-soft: #143024;
+  --signal-idle: #8b90a0;
+  --signal-idle-soft: #1a1e28;
+
+  --tenant: #ef4a45;
+  --tenant-hover: #f56b66;
+  --tenant-soft: #3a1818;
+  --tenant-line: #6b2e2e;
+  --signal-accent: #f4b860;
+  --tenant-contrast: #1a0606;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+  --panel-dark: #080e11;
+  --panel-dark-fg: #e8f0f2;
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -329,7 +381,7 @@ textarea:focus-visible,
   background:
     radial-gradient(
       ellipse 90% 70% at 100% 0%,
-      color-mix(in srgb, var(--tenant-soft) 85%, white),
+      color-mix(in srgb, var(--tenant-soft) 85%, var(--surface)),
       transparent 58%
     ),
   linear-gradient(
@@ -491,6 +543,121 @@ main {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* WhatsApp-like inbox chat wallpaper (ops takeover thread) */
+.wa-chat-wallpaper {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(16 43 53 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(16 43 53 / 3.5%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 35%, #efeae2) 0%,
+      #efeae2 28%,
+      #e8e0d5 100%
+    );
+  background-size: 22px 22px, 28px 28px, auto;
+}
+
+html.dark .wa-chat-wallpaper {
+  background-color: #0b141a;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(233 237 239 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(233 237 239 / 3%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 40%, #0b141a) 0%,
+      #0b141a 32%,
+      #111b21 100%
+    );
+}
+
+/* Bubble ink must stay readable — never inherit theme --ink on light surfaces */
+.wa-bubble {
+  color: #111b21;
+}
+.wa-bubble-in {
+  background-color: #ffffff;
+}
+.wa-bubble-out {
+  background-color: #d9fdd3;
+}
+.wa-bubble-meta {
+  color: #667781;
+}
+.wa-day-pill {
+  background-color: rgb(255 255 255 / 0.92);
+  color: #54656f;
+}
+.wa-ticket-strip {
+  background-color: #f7f5f3;
+  border-color: rgb(0 0 0 / 0.05);
+  color: #667781;
+}
+.wa-composer-bar {
+  background-color: #f0f2f5;
+}
+.wa-composer-input {
+  background-color: #ffffff !important;
+  color: #111b21 !important;
+}
+.wa-composer-input::placeholder {
+  color: #667781 !important;
+}
+.wa-empty-stage {
+  background-color: #efeae2;
+}
+
+html.dark .wa-bubble {
+  color: #e9edef;
+}
+html.dark .wa-bubble-in {
+  background-color: #202c33;
+}
+html.dark .wa-bubble-out {
+  background-color: #005c4b;
+}
+html.dark .wa-bubble-meta {
+  color: #8696a0;
+}
+html.dark .wa-day-pill {
+  background-color: #182229;
+  color: #8696a0;
+}
+html.dark .wa-ticket-strip {
+  background-color: #111b21;
+  border-color: rgb(255 255 255 / 0.06);
+  color: #8696a0;
+}
+html.dark .wa-composer-bar {
+  background-color: #1d1f24;
+}
+html.dark .wa-composer-input {
+  background-color: #2a2f32 !important;
+  color: #e9edef !important;
+}
+html.dark .wa-composer-input::placeholder {
+  color: #8696a0 !important;
+}
+html.dark .wa-empty-stage {
+  background-color: #0b141a;
 }
 
 /* Screen-reader only — skip link */

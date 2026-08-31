@@ -39,11 +39,14 @@ export function TicketActions({
   status,
   assignedTo,
   technicians,
+  assigneeFieldId = 'ticket-assignee',
 }: {
   ticketId: string
   status: TicketStatus
   assignedTo: string | null
   technicians: Technician[]
+  /** Unique when the panel is rendered twice (mobile + desktop). */
+  assigneeFieldId?: string
 }) {
   const router = useRouter()
   const toast = useToast()
@@ -88,11 +91,11 @@ export function TicketActions({
 
   return (
     <div className="space-y-5">
-      <Field label="טכנאי מטפל" htmlFor="ticket-assignee">
+      <Field label="טכנאי מטפל" htmlFor={assigneeFieldId}>
         {hasTechnicians ? (
           <div className="flex gap-2">
             <Select
-              id="ticket-assignee"
+              id={assigneeFieldId}
               aria-label="טכנאי מטפל"
               value={profileId}
               disabled={disabled}

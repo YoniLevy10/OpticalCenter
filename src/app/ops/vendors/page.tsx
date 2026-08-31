@@ -20,7 +20,7 @@ export default async function VendorsPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
-  const [{ vendors, backend }, { events }, ticketResult] = await Promise.all([
+  const [{ vendors }, { events }, ticketResult] = await Promise.all([
     listVendors(),
     listRecentAuditEvents(300),
     listTickets(1000).catch(() => ({ tickets: [], backend: 'memory' as const })),
@@ -75,18 +75,11 @@ export default async function VendorsPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4">
-        <PageToolbar
-          backHref="/ops/settings"
-          backLabel="חזרה להגדרות"
-          title="ספקים"
-          meta={`${activeCount} פעילים`}
-          showRefresh
-        />
+        <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
         <PageHeader
-          title="ספקים"
-          meta={backend === 'memory' ? 'מצב דמו' : `${activeCount} פעילים`}
-          description="שותפים חיצוניים לשיגור תקלות — לפי תחום, זמינות ועומס פתוח."
           className="hidden md:flex"
+          title="ספקים"
+          meta={<span className="t-num">{activeCount}</span>}
         />
         <VendorsAdmin initialVendors={enriched} />
       </div>

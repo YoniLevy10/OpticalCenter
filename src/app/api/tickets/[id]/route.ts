@@ -37,12 +37,12 @@ const patchSchema = z
 async function resolveTechProfile(assignedTo: string) {
   const techs = await listInternalTechnicians()
   const fromList = techs.find((t) => t.id === assignedTo)
-  if (fromList && 'phone' in fromList && fromList.phone) {
-    return fromList as {
-      id: string
-      full_name: string | null
-      email: string | null
-      phone?: string | null
+  if (fromList) {
+    return {
+      id: fromList.id,
+      full_name: fromList.full_name,
+      email: fromList.email,
+      phone: fromList.phone ?? null,
     }
   }
   const mem = memDemoTechnicians().find((t) => t.id === assignedTo)
@@ -63,9 +63,7 @@ async function resolveTechProfile(assignedTo: string) {
       phone: '+972501000001',
     }
   }
-  return fromList
-    ? { ...fromList, phone: null }
-    : { id: assignedTo, full_name: null, email: null, phone: null }
+  return { id: assignedTo, full_name: null, email: null, phone: null }
 }
 
 export async function PATCH(

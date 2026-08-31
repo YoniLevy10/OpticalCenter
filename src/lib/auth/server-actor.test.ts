@@ -24,7 +24,7 @@ const ticketA: TicketScopeRow = {
   organization_id: '11111111-1111-1111-1111-111111111111',
   country_id: '22222222-2222-2222-2222-222222222222',
   region_id: 'ta',
-  store_id: 'demo-172',
+  store_id: 'il-store-172',
   assigned_to: DEMO_ACTORS.techA,
   status: 'assigned',
 }
@@ -64,7 +64,7 @@ describe('ticket scope helpers', () => {
     expect(
       toTicketScope({
         id: 'x',
-        store_id: 'demo-172',
+        store_id: 'il-store-172',
         status: 'new',
         assigned_to: null,
       }),

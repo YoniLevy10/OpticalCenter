@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
@@ -22,7 +21,7 @@ import {
   type TicketStatus,
 } from '@/modules/tickets/constants'
 import { getById, listInternalTechnicians } from '@/modules/tickets/service'
-import { getSlaView } from '@/modules/tickets/sla-display'
+import { formatDateTimeHe, getSlaView } from '@/modules/tickets/sla-display'
 import { buildActivity } from '@/modules/tickets/activity'
 import {
   fetchTicketAttachments,
@@ -38,15 +37,6 @@ import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 
 export const dynamic = 'force-dynamic'
-
-function fmt(iso: string | null | undefined) {
-  if (!iso) return '—'
-  try {
-    return format(new Date(iso), 'dd/MM/yyyy HH:mm')
-  } catch {
-    return '—'
-  }
-}
 
 export default async function TicketDetailPage({
   params,
@@ -155,13 +145,13 @@ export default async function TicketDetailPage({
         <KeyValue label="SLA">
           <SlaBlock view={slaView} />
         </KeyValue>
-        <KeyValue label="נפתחה">{fmt(ticket.created_at)}</KeyValue>
+        <KeyValue label="נפתחה">{formatDateTimeHe(ticket.created_at)}</KeyValue>
         <KeyValue label="גיל">
           <LiveAge createdAt={ticket.created_at} />
         </KeyValue>
-        <KeyValue label="עודכנה">{fmt(ticket.updated_at)}</KeyValue>
+        <KeyValue label="עודכנה">{formatDateTimeHe(ticket.updated_at)}</KeyValue>
         {ticket.resolved_at ? (
-          <KeyValue label="נפתרה">{fmt(ticket.resolved_at)}</KeyValue>
+          <KeyValue label="נפתרה">{formatDateTimeHe(ticket.resolved_at)}</KeyValue>
         ) : null}
         <KeyValue label="קטגוריה">
           {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
@@ -174,17 +164,15 @@ export default async function TicketDetailPage({
     </Panel>
   )
 
-  const actionsPanel = (
+  const actionsPanel = (assigneeFieldId: string) => (
     <Panel className="mb-3 md:mb-0">
-      <h2 className="t-section mb-1 text-ink">פעולות</h2>
-      <p className="t-caption mb-4 text-ink-3">
-        פעולות זמינות לפי הסטטוס הנוכחי
-      </p>
+      <h2 className="t-section mb-3 text-ink">פעולות</h2>
       <TicketActions
         ticketId={ticket.id}
         status={ticket.status as TicketStatus}
         assignedTo={ticket.assigned_to}
         technicians={technicians}
+        assigneeFieldId={assigneeFieldId}
       />
       <div className="mt-3 border-t border-border pt-3">
         <TicketShareBar
@@ -200,10 +188,9 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
-        <PageToolbar backHref="/ops/tickets" backLabel="חזרה לתקלות" showRefresh />
+      <div className="flex flex-col gap-4 pb-actions-hq md:pb-0">
+        <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
-        {/* Breadcrumb — quiet, one line, never a heading. */}
         <nav aria-label="מיקום בעמוד" className="hidden items-center gap-1 md:flex">
           <Link
             href="/ops/tickets"
@@ -218,7 +205,6 @@ export default async function TicketDetailPage({
           <span className="t-meta t-num text-ink-2">{display}</span>
         </nav>
 
-        {/* ---------- Header: number first, then status / priority / assignee ---------- */}
         <header className="border-b border-border pb-5">
           <p className="t-caption t-num text-ink-3">{display}</p>
           <h1 className="t-title mt-1 max-w-4xl text-balance text-ink">
@@ -232,38 +218,20 @@ export default async function TicketDetailPage({
               >
                 {ticket.stores.name}
               </Link>
-              <span className="t-num text-ink-3">
-                {' '}
-                · #{ticket.stores.code}
-              </span>
-              {ticket.stores.city ? ` · ${ticket.stores.city}` : ''}
+              <span className="t-num text-ink-3"> · #{ticket.stores.code}</span>
             </p>
-          ) : (
-            <p className="t-body mt-2 text-ink-2">חנות לא ידועה</p>
-          )}
+          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">סטטוס</span>
-              <StatusLabel status={ticket.status as TicketStatus} />
-            </div>
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
-            <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">עדיפות</span>
-              <PriorityText priority={ticket.priority as TicketPriority} />
-            </div>
-            <span aria-hidden className="hidden h-3.5 w-px bg-border sm:block" />
-            <div className="flex items-center gap-1.5">
-              <span className="t-caption text-ink-3">אחראי</span>
-              <span className="t-body-strong text-ink">
-                {assignee?.full_name || assignee?.email || 'לא משויך'}
-              </span>
-            </div>
+            <StatusLabel status={ticket.status as TicketStatus} />
+            <PriorityText priority={ticket.priority as TicketPriority} />
+            <span className="t-body text-ink-2">
+              {assignee?.full_name || assignee?.email || 'לא משויך'}
+            </span>
           </div>
         </header>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* ---------- Main column ---------- */}
           <div className="flex flex-col gap-4">
             {ticket.title && ticket.description !== ticket.title ? (
               <Panel>
@@ -275,42 +243,39 @@ export default async function TicketDetailPage({
 
             {attachments.length > 0 ? (
               <Panel flush>
-                <PanelHeader
-                  title="תיעוד מהשטח"
-                  meta={`${attachments.length} פריטים`}
-                />
+                <PanelHeader title="תיעוד" />
                 <div className="p-4">
                   <EvidenceGrid attachments={attachments} />
                 </div>
               </Panel>
             ) : null}
 
-            {/* Actions in document flow on mobile — no fixed overlay */}
-            <div className="md:hidden">{actionsPanel}</div>
             <div className="md:hidden">{contextPanel}</div>
             <div className="md:hidden">{slaDatesPanel}</div>
 
             <Panel flush data-visual="ticket-timeline">
-              <PanelHeader title="כרונולוגיה" meta={`${activity.length} רשומות`} />
+              <PanelHeader title="כרונולוגיה" />
               <Timeline items={activity} />
             </Panel>
           </div>
 
-          {/* ---------- Side column (desktop) ---------- */}
           <div className="hidden space-y-4 md:block lg:sticky lg:top-4 lg:self-start">
-            {actionsPanel}
+            {actionsPanel('ticket-assignee')}
             {contextPanel}
             {slaDatesPanel}
 
             {attachments.length === 0 ? (
               <Panel flush>
-                <EmptyState
-                  title="אין תיעוד מצורף"
-                  description="תמונות שנשלחו ב־WhatsApp או צולמו בשטח יופיעו כאן."
-                  className="py-10"
-                />
+                <EmptyState title="אין תיעוד" className="py-10" />
               </Panel>
             ) : null}
+          </div>
+        </div>
+
+        {/* Mobile sticky action dock above bottom nav */}
+        <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:hidden">
+          <div className="mx-auto max-h-[min(40vh,var(--hq-actions-dock-h))] overflow-y-auto">
+            {actionsPanel('ticket-assignee-mobile')}
           </div>
         </div>
       </div>

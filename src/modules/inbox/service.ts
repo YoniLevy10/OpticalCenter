@@ -17,8 +17,28 @@ import {
   type MemSession,
 } from '@/lib/data/memory-store'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
+import { resolveWhatsAppPhoneNumberId } from '@/modules/whatsapp/phone-number-id'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { DEMO_STORES } from '@/modules/stores/data'
+import { dedupeThreadMessages } from './dedupe-messages'
+
+const CUSTOMER_CARE_WINDOW_MS = 24 * 60 * 60 * 1000
+
+function isUuid(value: string | null | undefined): boolean {
+  if (!value) return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  )
+}
+
+function sanitizeOptionalUuid(
+  value: string | null | undefined,
+): string | undefined {
+  if (value == null) return undefined
+  const trimmed = String(value).trim()
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return undefined
+  return isUuid(trimmed) ? trimmed : undefined
+}
 
 const SESSION_SELECT_FULL =
   'wa_id, country_id, store_id, store_code, state, pending_description, expires_at, updated_at, human_takeover, last_inbound'
@@ -36,10 +56,20 @@ function mapSessionRow(
   row: Record<string, unknown>,
   opts?: { human_takeover?: boolean; last_inbound?: string | null },
 ): InboxSession {
+  const rawCountry = row.country_id
+  const countryId =
+    rawCountry == null || rawCountry === '' || rawCountry === 'null'
+      ? ''
+      : String(rawCountry)
+
   return {
     wa_id: String(row.wa_id),
-    country_id: String(row.country_id),
-    store_id: (row.store_id as string | null) ?? null,
+    // Never stringify SQL NULL into the literal "null" (breaks UUID validation).
+    country_id: countryId,
+    store_id:
+      row.store_id == null || row.store_id === 'null'
+        ? null
+        : String(row.store_id),
     store_code: (row.store_code as string | null) ?? null,
     state: row.state as InboxSession['state'],
     pending_description: (row.pending_description as string | null) ?? null,
@@ -59,7 +89,7 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972501112233',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-172',
+      store_id: 'il-store-172',
       store_code: '172',
       state: 'awaiting_description',
       pending_description: null,
@@ -69,7 +99,7 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972509998877',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-101',
+      store_id: 'il-store-101',
       store_code: '101',
       state: 'awaiting_description',
       pending_description: null,
@@ -79,8 +109,8 @@ function seedDemoInboxIfEmpty() {
     memUpsertSession({
       wa_id: '972503334455',
       country_id: MEM_COUNTRY_ID,
-      store_id: 'demo-109',
-      store_code: '109',
+      store_id: 'il-store-124',
+      store_code: '124',
       state: 'done',
       pending_description: null,
       human_takeover: false,
@@ -591,13 +621,8 @@ export async function listSessionMessages(waId: string): Promise<{
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )
 
-  const seen = new Set<string>()
-  const messages = combined.filter((m) => {
-    const key = `${m.id}:${m.body}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  // Ops replies are stored in both inbox_messages and ticket_messages.
+  const messages = dedupeThreadMessages(combined)
 
   const { data: sessionRow } = await supabase
     .from('intake_sessions')
@@ -637,18 +662,23 @@ export async function replyToSession(input: {
   if (!text) throw new Error('הודעה ריקה')
 
   const waId = input.waId.replace(/\D/g, '') || input.waId
+  if (!waId) throw new Error('מזהה WhatsApp חסר')
+
+  const ticketIdInput = sanitizeOptionalUuid(input.ticketId ?? undefined) ?? null
+  // Israel-only pilot: ignore client countryId entirely.
+  void input.countryId
 
   if (!(await supabaseReady())) {
     const message = memAddInboxMessage({
       wa_id: waId,
       direction: 'outbound',
       body: text,
-      ticket_id: input.ticketId ?? null,
+      ticket_id: ticketIdInput,
     })
     const send = await sendWhatsAppText({
       toWaId: waId,
       text,
-      ticketId: input.ticketId ?? null,
+      ticketId: ticketIdInput,
       purpose: 'ops_reply',
       forceDryRun: true,
     })
@@ -657,44 +687,12 @@ export async function replyToSession(input: {
 
   const supabase = createSystemClient('inbox_reply')
 
-  // Never fall back to memory demo country UUID — that FK-fails in production.
-  let countryId = input.countryId?.trim() || null
-  let phoneNumberId: string | null = null
+  // Israel-only pilot: always resolve IL.
+  let countryId: string
+  let phoneNumberIdCandidate: string | null = null
+  let lastInboundAt: string | null = null
 
-  if (countryId) {
-    const { data: byId } = await supabase
-      .from('countries')
-      .select('id, whatsapp_phone_number_id')
-      .eq('id', countryId)
-      .maybeSingle()
-    if (byId?.id) {
-      countryId = byId.id
-      phoneNumberId = byId.whatsapp_phone_number_id ?? null
-    } else {
-      countryId = null
-    }
-  }
-
-  if (!countryId) {
-    const { data: sessions } = await supabase
-      .from('intake_sessions')
-      .select('country_id')
-      .eq('wa_id', waId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-    const sessionCountryId = sessions?.[0]?.country_id as string | undefined
-    if (sessionCountryId) {
-      countryId = sessionCountryId
-      const { data: c } = await supabase
-        .from('countries')
-        .select('whatsapp_phone_number_id')
-        .eq('id', sessionCountryId)
-        .maybeSingle()
-      phoneNumberId = c?.whatsapp_phone_number_id ?? null
-    }
-  }
-
-  if (!countryId) {
+  {
     const { data: il } = await supabase
       .from('countries')
       .select('id, whatsapp_phone_number_id')
@@ -702,7 +700,44 @@ export async function replyToSession(input: {
       .maybeSingle()
     if (!il?.id) throw new Error('לא נמצאה מדינה לשליחה (IL)')
     countryId = il.id
-    phoneNumberId = il.whatsapp_phone_number_id ?? null
+    phoneNumberIdCandidate = il.whatsapp_phone_number_id ?? null
+  }
+
+  // Last inbound timestamp (message body lives in last_inbound — do NOT Date.parse it).
+  {
+    const { data: lastIn } = await supabase
+      .from('inbox_messages')
+      .select('created_at')
+      .eq('wa_id', waId)
+      .eq('direction', 'inbound')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    lastInboundAt = (lastIn?.created_at as string | undefined) ?? null
+    if (!lastInboundAt) {
+      const { data: waIn } = await supabase
+        .from('whatsapp_messages')
+        .select('created_at')
+        .eq('wa_id', waId)
+        .eq('direction', 'inbound')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      lastInboundAt = (waIn?.created_at as string | undefined) ?? null
+    }
+  }
+
+  // Prefer valid Meta ID from IL country; otherwise env (never demo placeholders).
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(phoneNumberIdCandidate)
+
+  // Active customer-care window: free-form text is allowed for 24h after last inbound.
+  if (lastInboundAt) {
+    const lastMs = Date.parse(lastInboundAt)
+    if (Number.isFinite(lastMs) && Date.now() - lastMs > CUSTOMER_CARE_WINDOW_MS) {
+      throw new Error(
+        'חלון 24 השעות של WhatsApp פג עבור שיחה זו. יש לשלוח תבנית (template) מאושרת, או לבקש מהלקוח לשלוח הודעה חדשה.',
+      )
+    }
   }
 
   // Ops reply = human takeover so the bot stays quiet.
@@ -715,20 +750,22 @@ export async function replyToSession(input: {
     toWaId: waId,
     text,
     phoneNumberId,
-    ticketId: input.ticketId ?? null,
+    ticketId: ticketIdInput,
     supabase,
     purpose: 'ops_reply',
   })
 
-  if (!send.ok) {
+  if (!send.ok || send.dryRun) {
     throw new Error(
       send.error
         ? `שליחת WhatsApp נכשלה: ${send.error}`
-        : 'שליחת WhatsApp נכשלה',
+        : send.dryRun
+          ? 'שליחת WhatsApp לא בוצעה (מצב הדמיה / חסר Phone Number ID או טוקן)'
+          : 'שליחת WhatsApp נכשלה',
     )
   }
 
-  let ticketId = input.ticketId ?? null
+  let ticketId = ticketIdInput
   if (ticketId) {
     const { data: ticket } = await supabase
       .from('tickets')

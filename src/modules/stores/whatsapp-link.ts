@@ -14,7 +14,8 @@ export function whatsAppShareUrl(text: string, businessPhoneE164?: string | null
 
 /**
  * Same URL for QR print and NFC tag write.
- * Country WhatsApp number comes from env until countries.whatsapp_display_phone is set.
+ * Prefer passing an explicit phone from `resolveWhatsAppBusinessPhone()`
+ * (settings → countries.whatsapp_display_phone → env).
  */
 export function storeWhatsAppDeepLink(storeCode: string, businessPhoneE164?: string | null) {
   return whatsAppShareUrl(storeWhatsAppPrefill(storeCode), businessPhoneE164)

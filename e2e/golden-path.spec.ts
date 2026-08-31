@@ -16,7 +16,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     const s1 = await demoWhatsApp(request, {
       wa_id,
       text: 'STORE_172',
-      source: 'demo',
+      source: 'whatsapp',
     })
     expect(s1.ok).toBe(true)
     expect(s1.state).toBe('awaiting_description')
@@ -26,7 +26,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     const s2 = await demoWhatsApp(request, {
       wa_id,
       text: 'המזגן הראשי לא עובד',
-      source: 'demo',
+      source: 'whatsapp',
     })
     expect(s2.ok).toBe(true)
     expect(s2.ticket_id).toBeTruthy()
@@ -47,7 +47,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(/מזגן הראשי/).first()).toBeVisible()
-    await expect(page.getByText(/כרונולוגיה|פעילות|רשומות/).first()).toBeVisible()
+    await expect(page.getByText(/כרונולוגיה|פעילות/).first()).toBeVisible()
 
     const assign = await patchTicket(request, ticketId, {
       assignedTo: DEMO_TECH_ID,
@@ -100,7 +100,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     const res = await demoWhatsApp(request, {
       wa_id,
       text: 'STORE_172 המזגן לא עובד',
-      source: 'demo',
+      source: 'whatsapp',
     })
     expect(res.ok).toBe(true)
     expect(res.ticket_id).toBeTruthy()

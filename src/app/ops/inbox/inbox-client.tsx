@@ -2,10 +2,17 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { ArrowRight, ExternalLink } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { ArrowRight, CheckCheck, ExternalLink, SendHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Field, Textarea } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/input'
 import {
   EmptyState,
   ErrorState,
@@ -67,6 +74,10 @@ type SessionContext = {
   openTickets: OpenTicket[]
 }
 
+type ThreadItem =
+  | { kind: 'day'; key: string; label: string }
+  | { kind: 'message'; key: string; message: ThreadMessage }
+
 function sessionTitle(s: Session): string {
   return s.display_name || s.store_name || s.store_code || s.wa_id
 }
@@ -74,6 +85,62 @@ function sessionTitle(s: Session): string {
 function isDesktopMq(): boolean {
   if (typeof window === 'undefined') return true
   return window.matchMedia('(min-width: 1024px)').matches
+}
+
+function initialsFrom(label: string): string {
+  const parts = label.trim().split(/\\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0]!.slice(0, 2)
+  return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`
+}
+
+function formatBubbleTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
+}
+
+function dayKey(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+function formatDayLabel(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  if (sameDay(d, today)) return 'היום'
+  if (sameDay(d, yesterday)) return 'אתמול'
+  return d.toLocaleDateString('he-IL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function buildThreadItems(messages: ThreadMessage[]): ThreadItem[] {
+  const items: ThreadItem[] = []
+  let lastDay: string | null = null
+  for (const message of messages) {
+    const key = dayKey(message.created_at)
+    if (key !== lastDay) {
+      items.push({
+        kind: 'day',
+        key: `day-${key}`,
+        label: formatDayLabel(message.created_at),
+      })
+      lastDay = key
+    }
+    items.push({ kind: 'message', key: message.id, message })
+  }
+  return items
 }
 
 export function InboxClient() {
@@ -92,6 +159,9 @@ export function InboxClient() {
   const [mobileShowThread, setMobileShowThread] = useState(Boolean(waFromUrl))
   const [reply, setReply] = useState('')
 
+  const threadEndRef = useRef<HTMLDivElement | null>(null)
+  const composerRef = useRef<HTMLTextAreaElement | null>(null)
+
   const loadSessions = useCallback(async () => {
     setError(null)
     try {
@@ -99,9 +169,8 @@ export function InboxClient() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'טעינה נכשלה')
       setSessions(json.sessions ?? [])
-      // Desktop: auto-select first if nothing selected; mobile stays on list.
       if (!selected && json.sessions?.[0] && isDesktopMq()) {
-        setSelected(json.sessions[0].wa_id)
+        setSelected(json.sessions[0].wa_id as string)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינה נכשלה')
@@ -137,6 +206,10 @@ export function InboxClient() {
     if (selected) void loadThread(selected)
   }, [selected, loadThread])
 
+  useLayoutEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, selected])
+
   function openConversation(waId: string) {
     setSelected(waId)
     setMobileShowThread(true)
@@ -159,7 +232,11 @@ export function InboxClient() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'עדכון נכשל')
-      setNotice(status === 'waiting' ? 'סומן כממתין — השתלטות אנושית' : 'סומן כטופל')
+      setNotice(
+        status === 'waiting'
+          ? 'סומן כממתין — השתלטות אנושית'
+          : 'סומן כטופל',
+      )
       await loadSessions()
       if (selected) await loadThread(selected)
     } catch (err) {
@@ -175,7 +252,15 @@ export function InboxClient() {
     setNotice(null)
     setError(null)
     try {
-      const active = sessions.find((s) => s.wa_id === selected)
+      // Israel-only pilot: do not send countryId (server defaults to IL).
+      const rawTicket = ticketIds[0] ?? openTickets[0]?.id ?? null
+      const ticketId =
+        rawTicket &&
+        rawTicket !== 'null' &&
+        /^[0-9a-f-]{36}$/i.test(rawTicket)
+          ? rawTicket
+          : null
+
       const res = await fetch(
         `/api/inbox/sessions/${encodeURIComponent(selected)}`,
         {
@@ -183,17 +268,25 @@ export function InboxClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: reply.trim(),
-            ticketId: ticketIds[0] ?? openTickets[0]?.id ?? null,
-            countryId: active?.country_id,
+            ticketId,
           }),
         },
       )
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'שליחה נכשלה')
+      if (json.send && json.send.ok === false) {
+        throw new Error(json.send.error || 'שליחת WhatsApp נכשלה')
+      }
+      if (json.send?.dryRun) {
+        throw new Error(
+          'ההודעה לא נשלחה ללקוח (מצב הדמיה / חסרים פרטי Meta). בדקו WHATSAPP_ACCESS_TOKEN ו־WHATSAPP_PHONE_NUMBER_ID.',
+        )
+      }
       setReply('')
-      setNotice(json.send?.dryRun ? 'נשלח (מצב דמו)' : 'הודעה נשלחה')
+      setNotice('הודעה נשלחה')
       await loadThread(selected)
       await loadSessions()
+      composerRef.current?.focus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שליחה נכשלה')
     } finally {
@@ -206,14 +299,19 @@ export function InboxClient() {
     ? openTickets
     : ticketIds.map((id) => ({
         id,
-        display_number: null,
-        title: null,
+        display_number: null as string | null,
+        title: null as string | null,
         status: 'new',
         priority: active?.priority ?? 'medium',
         description: '',
         store_code: active?.store_code ?? null,
         store_name: active?.store_name ?? null,
       }))
+
+  const waiting =
+    Boolean(active?.human_takeover) || active?.inbox_status === 'waiting'
+
+  const threadItems = useMemo(() => buildThreadItems(messages), [messages])
 
   const listPanel = (
     <Panel flush elevated className="flex min-h-0 flex-col overflow-hidden">
@@ -224,54 +322,58 @@ export function InboxClient() {
         <ul className="divide-y divide-border overflow-y-auto">
           {sessions.map((s) => {
             const selectedRow = selected === s.wa_id
+            const title = sessionTitle(s)
             return (
               <li key={s.wa_id}>
                 <button
                   type="button"
                   onClick={() => openConversation(s.wa_id)}
                   className={cn(
-                    'flex w-full flex-col gap-1 px-4 py-3 ps-5 text-start transition-colors hover:bg-canvas',
+                    'flex w-full items-center gap-3 px-3 py-3 text-start transition-colors hover:bg-canvas',
                     priorityEdgeClass(s.priority),
                     priorityRowClass(s.priority),
                     selectedRow && 'bg-[var(--tenant-soft)]',
                   )}
                 >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="t-body-strong flex min-w-0 items-center gap-2 text-ink">
-                      {s.unread ? (
-                        <span
-                          aria-label="לא נקרא"
-                          className="h-2 w-2 shrink-0 rounded-full bg-[var(--tenant)]"
-                        />
-                      ) : (
-                        <span className="h-2 w-2 shrink-0" aria-hidden />
-                      )}
-                      <span className="truncate">{sessionTitle(s)}</span>
-                    </span>
-                    <LiveAge
-                      createdAt={s.updated_at}
-                      className="shrink-0"
-                    />
-                  </div>
-                  <p className="t-body line-clamp-1 text-ink-2">
-                    {s.last_message || s.last_inbound || 'אין הודעות'}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {s.priority ? (
-                      <span className="t-caption text-ink-3">
-                        {TICKET_PRIORITY_LABELS_HE[
-                          s.priority as keyof typeof TICKET_PRIORITY_LABELS_HE
-                        ] ?? s.priority}
+                  <span
+                    aria-hidden
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--tenant)_22%,white)] text-sm font-semibold text-[var(--tenant)]"
+                  >
+                    {initialsFrom(title)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="t-body-strong flex min-w-0 items-center gap-2 text-ink">
+                        {s.unread ? (
+                          <span
+                            aria-label="לא נקרא"
+                            className="h-2 w-2 shrink-0 rounded-full bg-[var(--tenant)]"
+                          />
+                        ) : null}
+                        <span className="truncate">{title}</span>
                       </span>
-                    ) : null}
-                    <span className="t-caption text-ink-3">
-                      {s.human_takeover || s.inbox_status === 'waiting'
-                        ? 'ממתין'
-                        : s.state === 'done'
-                          ? 'טופל'
-                          : s.state}
+                      <LiveAge createdAt={s.updated_at} className="shrink-0" />
                     </span>
-                  </div>
+                    <p className="t-body mt-0.5 line-clamp-1 text-ink-2">
+                      {s.last_message || s.last_inbound || 'אין הודעות'}
+                    </p>
+                    <span className="mt-1 flex flex-wrap items-center gap-2">
+                      {s.priority ? (
+                        <span className="t-caption text-ink-3">
+                          {TICKET_PRIORITY_LABELS_HE[
+                            s.priority as keyof typeof TICKET_PRIORITY_LABELS_HE
+                          ] ?? s.priority}
+                        </span>
+                      ) : null}
+                      <span className="t-caption text-ink-3">
+                        {s.human_takeover || s.inbox_status === 'waiting'
+                          ? 'ממתין'
+                          : s.state === 'done'
+                            ? 'טופל'
+                            : s.state}
+                      </span>
+                    </span>
+                  </span>
                 </button>
               </li>
             )
@@ -348,134 +450,195 @@ export function InboxClient() {
   ) : null
 
   const conversationPanel = (
-    <Panel elevated className="flex min-h-[420px] flex-col lg:min-h-0">
+    <Panel
+      flush
+      elevated
+      className="flex min-h-[min(72vh,640px)] flex-col overflow-hidden lg:min-h-0"
+    >
       {!active ? (
-        <EmptyState title="בחרו שיחה" description="מהרשימה מימין" />
+        <div className="flex flex-1 items-center justify-center wa-empty-stage">
+          <EmptyState
+            title="בחרו שיחה"
+            description="מהרשימה מימין — התצוגה תיראה כמו WhatsApp"
+          />
+        </div>
       ) : (
         <>
-          <div className="border-b border-border px-4 py-3">
-            <div className="flex items-start gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="lg:hidden -ms-2 shrink-0"
-                onClick={backToList}
-                aria-label="חזרה לרשימה"
-              >
-                <ArrowRight className="h-4 w-4" aria-hidden />
-                חזרה
-              </Button>
-              <div className="min-w-0 flex-1">
-                <h2 className="t-section truncate text-ink">
-                  {sessionTitle(active)}
-                </h2>
-                <p dir="ltr" className="t-caption t-num mt-0.5 text-ink-2">
-                  {context?.wa_display || active.wa_id}
-                </p>
-              </div>
-            </div>
-
-            {linkedTickets.length > 0 ? (
-              <p className="t-caption mt-2 text-ink-3">
-                מקושר לתקלה:{' '}
-                {linkedTickets.map((t, i) => (
-                  <span key={t.id}>
-                    {i > 0 ? ', ' : ''}
-                    <Link
-                      href={`/ops/tickets/${t.id}`}
-                      className="text-[var(--tenant)] hover:underline"
-                    >
-                      {t.display_number || `${t.id.slice(0, 8)}…`}
-                    </Link>
-                  </span>
-                ))}
+          <header className="flex items-center gap-3 bg-[var(--tenant)] px-3 py-2.5 text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-ms-1 shrink-0 text-[var(--tenant-contrast)] hover:bg-white/10 hover:text-[var(--tenant-contrast)] lg:hidden"
+              onClick={backToList}
+              aria-label="חזרה לרשימה"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
+            <span
+              aria-hidden
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-semibold"
+            >
+              {initialsFrom(sessionTitle(active))}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[15px] font-semibold leading-tight">
+                {sessionTitle(active)}
+              </h2>
+              <p dir="ltr" className="truncate text-[12px] opacity-85">
+                {context?.wa_display || active.wa_id}
               </p>
-            ) : null}
-
-            <div className="mt-3 flex flex-wrap gap-2">
+            </div>
+            <div className="flex shrink-0 gap-1.5">
               <Button
                 type="button"
-                variant={
-                  active.human_takeover || active.inbox_status === 'waiting'
-                    ? 'primary'
-                    : 'secondary'
-                }
                 size="sm"
                 disabled={busy}
+                variant={waiting ? 'secondary' : 'ghost'}
+                className={cn(
+                  'h-8 border-0 px-2.5 text-[12px]',
+                  waiting
+                    ? 'bg-white text-[var(--tenant)] hover:bg-white/90'
+                    : 'text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]',
+                )}
                 onClick={() => void setInboxStatus(active.wa_id, 'waiting')}
               >
                 ממתין
               </Button>
               <Button
                 type="button"
-                variant={
-                  !active.human_takeover && active.inbox_status !== 'waiting'
-                    ? 'resolve'
-                    : 'secondary'
-                }
                 size="sm"
                 disabled={busy}
+                variant={!waiting ? 'resolve' : 'ghost'}
+                className={cn(
+                  'h-8 border-0 px-2.5 text-[12px]',
+                  !waiting
+                    ? undefined
+                    : 'text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]',
+                )}
                 onClick={() => void setInboxStatus(active.wa_id, 'handled')}
               >
                 טופל
               </Button>
             </div>
-          </div>
+          </header>
 
-          <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
+          {linkedTickets.length > 0 ? (
+            <div className="wa-ticket-strip border-b px-3 py-1.5">
+              <p className="t-caption">
+                מקושר לתקלה:{' '}
+                {linkedTickets.map((t, i) => (
+                  <span key={t.id}>
+                    {i > 0 ? ', ' : ''}
+                    <Link
+                      href={`/ops/tickets/${t.id}`}
+                      className="font-medium text-[var(--tenant)] hover:underline"
+                    >
+                      {t.display_number || `${t.id.slice(0, 8)}…`}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="wa-chat-wallpaper relative flex-1 overflow-y-auto px-2.5 py-3 sm:px-4">
             {messages.length === 0 ? (
-              <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
+              <div className="flex h-full items-center justify-center">
+                <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
+              </div>
             ) : (
-              messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={cn(
-                    'max-w-[85%] rounded-[var(--radius-md)] px-3 py-2',
-                    m.direction === 'outbound'
-                      ? 'ms-auto bg-[var(--tenant-soft)] text-ink'
-                      : 'bg-surface-sunken/70 text-ink',
-                  )}
-                >
-                  <p className="t-body whitespace-pre-wrap">{m.body}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <time className="t-caption t-num text-ink-3">
-                      {new Date(m.created_at).toLocaleString('he-IL')}
-                    </time>
-                    {m.ticket_id ? (
-                      <Link
-                        href={`/ops/tickets/${m.ticket_id}`}
-                        className="t-caption text-[var(--tenant)] hover:underline"
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5">
+                {threadItems.map((item) =>
+                  item.kind === 'day' ? (
+                    <div key={item.key} className="my-2 flex justify-center">
+                      <span className="wa-day-pill rounded-full px-3 py-1 text-[11px] font-medium shadow-sm">
+                        {item.label}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      key={item.key}
+                      className={cn(
+                        'flex',
+                        // RTL WhatsApp: outbound (us) on the left, inbound on the right.
+                        item.message.direction === 'outbound'
+                          ? 'justify-end'
+                          : 'justify-start',
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'wa-bubble relative max-w-[min(85%,28rem)] px-2.5 pb-1.5 pt-1.5 text-[14.5px] leading-snug shadow-sm',
+                          item.message.direction === 'outbound'
+                            ? 'wa-bubble-out rounded-2xl rounded-ee-md'
+                            : 'wa-bubble-in rounded-2xl rounded-es-md',
+                        )}
                       >
-                        תקלה {m.ticket_id.slice(0, 8)}…
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-              ))
+                        <p className="whitespace-pre-wrap break-words pe-12">
+                          {item.message.body}
+                        </p>
+                        <div className="mt-0.5 flex items-center justify-end gap-1">
+                          {item.message.ticket_id ? (
+                            <Link
+                              href={`/ops/tickets/${item.message.ticket_id}`}
+                              className="me-auto text-[10px] text-[var(--tenant)] hover:underline"
+                            >
+                              תקלה {item.message.ticket_id.slice(0, 8)}…
+                            </Link>
+                          ) : null}
+                          <time className="wa-bubble-meta text-[10px] tabular-nums">
+                            {formatBubbleTime(item.message.created_at)}
+                          </time>
+                          {item.message.direction === 'outbound' ? (
+                            <CheckCheck
+                              className="h-3.5 w-3.5 text-[#53bdeb]"
+                              aria-label="נשלח"
+                            />
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
+                <div ref={threadEndRef} />
+              </div>
             )}
           </div>
 
-          <div className="space-y-2 border-t border-border p-4">
-            <Field label="תשובה" htmlFor="inbox-reply">
-              <Textarea
-                id="inbox-reply"
-                rows={2}
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                placeholder="כתבו הודעה ללקוח…"
-                disabled={busy}
-              />
-            </Field>
-            <Button
+          <div className="wa-composer-bar flex items-end gap-2 px-2 py-2 sm:px-3">
+            <label className="sr-only" htmlFor="inbox-reply">
+              הודעה ללקוח
+            </label>
+            <Textarea
+              ref={composerRef}
+              id="inbox-reply"
+              rows={1}
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  void sendReply()
+                }
+              }}
+              placeholder="כתבו הודעה ללקוח…"
+              disabled={busy}
+              className="wa-composer-input max-h-32 min-h-[42px] flex-1 resize-none rounded-[22px] border-0 px-4 py-2.5 shadow-sm focus:ring-1 focus:ring-[color-mix(in_srgb,var(--tenant)_35%,transparent)]"
+            />
+            <button
               type="button"
-              variant="primary"
-              size="block"
               disabled={busy || !reply.trim()}
               onClick={() => void sendReply()}
+              aria-label={busy ? 'שולח' : 'שליחה'}
+              className={cn(
+                'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity',
+                'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]',
+                'hover:bg-[var(--tenant-hover)] disabled:opacity-40',
+              )}
             >
-              {busy ? 'שולח…' : 'שליחה'}
-            </Button>
+              <SendHorizontal className="h-5 w-5 -scale-x-100" aria-hidden />
+            </button>
           </div>
         </>
       )}
@@ -487,7 +650,6 @@ export function InboxClient() {
       {error ? <ErrorState title="שגיאה" description={error} /> : null}
       {notice ? <Notice tone="progress">{notice}</Notice> : null}
 
-      {/* Mobile: list first, then conversation */}
       <div className="lg:hidden">
         {!mobileShowThread ? (
           listPanel
@@ -499,8 +661,7 @@ export function InboxClient() {
         )}
       </div>
 
-      {/* Desktop: list + conversation + context */}
-      <div className="hidden min-h-[560px] gap-4 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_240px]">
+      <div className="hidden min-h-[640px] gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_240px]">
         {listPanel}
         {conversationPanel}
         {contextPanel ?? (

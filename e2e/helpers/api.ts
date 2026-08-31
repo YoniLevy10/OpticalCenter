@@ -103,11 +103,15 @@ export async function createStore172Ticket(
   const step1 = await demoWhatsApp(request, {
     wa_id,
     text: 'STORE_172',
-    source: 'demo',
+    source: 'whatsapp',
   })
   expect(step1.ok).toBeTruthy()
   expect(step1.ticket_id).toBeFalsy()
-  const step2 = await demoWhatsApp(request, { wa_id, text, source: 'demo' })
+  const step2 = await demoWhatsApp(request, {
+    wa_id,
+    text,
+    source: 'whatsapp',
+  })
   expect(step2.ok).toBeTruthy()
   expect(step2.ticket_id).toBeTruthy()
   return { wa_id, step1, step2, ticketId: step2.ticket_id as string }

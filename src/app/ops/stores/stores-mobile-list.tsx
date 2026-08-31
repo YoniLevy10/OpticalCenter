@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { QrCode } from 'lucide-react'
 import { StoreRowActions } from './store-row-actions'
 import { cn } from '@/lib/utils'
 
@@ -41,19 +40,19 @@ export function StoresMobileList({
                 </span>
                 <span className="t-meta mt-0.5 block truncate text-ink-2">
                   {s.address?.trim() || s.city || '—'}
-                  {inactive ? ' · מושבת' : s.openCount > 0 ? ' · פעיל · תקלות' : ' · פעיל'}
+                  {inactive ? ' · מושבת' : ''}
                 </span>
               </span>
-              {s.openCount > 0 ? (
-                <span className="t-caption t-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--signal-critical-soft)] px-1.5 text-[var(--signal-critical)]">
-                  {s.openCount}
-                </span>
-              ) : (
-                <QrCode
-                  className={cn('h-4 w-4 shrink-0 text-ink-3')}
-                  aria-hidden
-                />
-              )}
+              <span
+                className={cn(
+                  't-caption t-num shrink-0 pt-0.5',
+                  s.openCount > 0
+                    ? 'text-[var(--signal-critical)]'
+                    : 'text-ink-3',
+                )}
+              >
+                {s.openCount}
+              </span>
             </Link>
             <div className="mt-2 flex justify-end">
               <StoreRowActions code={s.code} canEdit={canEdit} />

@@ -117,6 +117,20 @@ describe('applyQueue — view and filters are orthogonal', () => {
       applyQueue(withStore, { view: 'all', q: 'מזגן', sort: 'newest' }, NOW),
     ).toHaveLength(1)
   })
+  it('hides demo tickets by default', () => {
+    const withDemo = [
+      ...ALL,
+      ticket({ id: 'demo-1', source: 'demo', priority: 'critical' }),
+    ]
+    const hidden = applyQueue(withDemo, { view: 'all', sort: 'urgency' }, NOW)
+    expect(hidden.map((t) => t.id)).not.toContain('demo-1')
+    const shown = applyQueue(
+      withDemo,
+      { view: 'all', sort: 'urgency', includeDemo: true },
+      NOW,
+    )
+    expect(shown.map((t) => t.id)).toContain('demo-1')
+  })
 })
 
 describe('queueCounts', () => {

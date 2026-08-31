@@ -1,14 +1,13 @@
 import type { Actor, MemberRole, Membership } from '@/lib/auth/types'
+import {
+  hqProductRoles,
+  storeProductRoles,
+  techProductRoles,
+} from '@/lib/auth/roles'
 
-const HQ_ROLES: MemberRole[] = [
-  'global_admin',
-  'global_maintenance',
-  'country_manager',
-  'regional_manager',
-  'store_manager',
-]
-
-const TECH_ROLES: MemberRole[] = ['internal_technician', 'external_provider']
+const HQ_ROLES: MemberRole[] = hqProductRoles()
+const TECH_ROLES: MemberRole[] = techProductRoles()
+const STORE_ROLES: MemberRole[] = storeProductRoles()
 
 export type HomePath = '/tech' | '/ops/dashboard' | '/store'
 
@@ -23,11 +22,8 @@ function hasTech(memberships: Membership[]) {
 /** Store staff with no HQ/tech role — store portal only. */
 export function isStoreEmployeeOnly(memberships: Membership[]): boolean {
   if (memberships.length === 0) return false
-  const roles = memberships.map((m) => m.role)
-  const onlyStore = roles.every(
-    (r) => r === 'store_employee' || r === 'store_manager',
-  )
-  return onlyStore && roles.includes('store_employee') && !hasHq(memberships)
+  if (hasHq(memberships) || hasTech(memberships)) return false
+  return memberships.every((m) => STORE_ROLES.includes(m.role))
 }
 
 export function actorIsStoreEmployeeOnly(actor: Pick<Actor, 'memberships'>): boolean {
@@ -35,7 +31,7 @@ export function actorIsStoreEmployeeOnly(actor: Pick<Actor, 'memberships'>): boo
 }
 
 /**
- * Post-login home: tech-only → /tech, store employee only → /store, else HQ.
+ * Post-login home: tech-only → /tech, store staff only → /store, else HQ.
  */
 export function resolveHomePath(actor: Pick<Actor, 'memberships'>): HomePath {
   if (hasTech(actor.memberships) && !hasHq(actor.memberships)) {
@@ -57,8 +53,10 @@ export function shouldAllowDemoEntry(): boolean {
   )
 }
 
-/** Primary store_id for store_employee (first match). */
+/** Primary store_id for store staff (first match). */
 export function primaryStoreId(actor: Pick<Actor, 'memberships'>): string | null {
-  const m = actor.memberships.find((x) => x.role === 'store_employee' && x.store_id)
+  const m = actor.memberships.find(
+    (x) => STORE_ROLES.includes(x.role) && x.store_id,
+  )
   return m?.store_id ?? null
 }

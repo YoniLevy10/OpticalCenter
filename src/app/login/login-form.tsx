@@ -5,17 +5,15 @@ import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
 import { SkipLink } from '@/components/layout/skip-link'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { BrandMark, BrandLogoFull } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
-import { ErrorState, Notice } from '@/components/ui/primitives'
+import { ErrorState } from '@/components/ui/primitives'
 import { LiveRegion } from '@/components/ui/a11y'
-import { SegmentedButtons } from '@/components/ui/segmented'
-import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
 import { createClient } from '@/lib/supabase/client'
 
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
-
-type Mode = 'link' | 'otp' | 'password'
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
@@ -52,19 +50,18 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error') === 'auth'
+  const unauthorized = searchParams.get('error') === 'unauthorized'
   const nextPath = safeNextPath(searchParams.get('next'))
   const googleOAuthReady =
     process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === '1'
-  const [mode, setMode] = useState<Mode>('password')
   const [email, setEmail] = useState(PILOT_DEMO_EMAIL)
-  const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
-  const [sent, setSent] = useState(false)
-  const [hint, setHint] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(
-    authError
-      ? 'הקישור פג, לא תקין, או הוביל ל־localhost — נסו קוד או סיסמה'
-      : null,
+    unauthorized
+      ? 'המייל אינו מאושר להתחברות. פנו למנהל המערכת.'
+      : authError
+        ? 'ההתחברות נכשלה — נסו Google או מייל וסיסמה שסופקו לכם'
+        : null,
   )
   const [busy, setBusy] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
@@ -87,58 +84,6 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google OAuth נכשל')
       setGoogleBusy(false)
-    }
-  }
-
-  async function requestLink(e?: FormEvent) {
-    e?.preventDefault()
-    setBusy(true)
-    setError(null)
-    if (e) setSent(false)
-    setHint(null)
-    try {
-      const res = await fetch('/api/auth/request-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      })
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string
-        hint?: string
-        next?: string
-      }
-      if (!res.ok) throw new Error(data.error || 'שליחה נכשלה')
-      setSent(true)
-      setHint(data.hint || null)
-      setMode('otp')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'שליחה נכשלה')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function verifyOtp(e: FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/auth/request-login?mode=verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), token: otp.trim() }),
-      })
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string
-        home?: string
-      }
-      if (!res.ok) throw new Error(data.error || 'קוד לא תקין')
-      router.replace(nextPath ?? data.home ?? '/ops/dashboard')
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'אימות נכשל')
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -192,8 +137,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   }
 
   return (
-    <div className="login-shell dvh-screen safe-pt safe-pb grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+    <div className="login-shell dvh-screen safe-pt safe-pb relative grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       <SkipLink />
+      <div className="absolute end-3 top-3 z-20 md:end-5 md:top-5">
+        <ThemeToggle compact />
+      </div>
       {/* Brand story — desktop hero */}
       <aside
         className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
@@ -205,22 +153,13 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-white opacity-30 blur-3xl"
+          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-surface opacity-40 blur-3xl"
         />
 
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <span
-              className="t-display flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]"
-              aria-hidden
-            >
-              OC
-            </span>
-            <div>
-              <p className="t-title text-ink">MaintainOS</p>
-              <p className="t-caption text-ink-2">Optical Center</p>
-            </div>
-          </div>
+          <BrandLogoFull priority className="mb-6 w-[132px] rounded-[var(--radius-lg)] shadow-[var(--shadow-2)]" />
+          <p className="t-title text-ink">MaintainOS</p>
+          <p className="t-caption mt-1 text-ink-2">תפעול ותחזוקה · פיילוט ישראל</p>
           <h1 className="t-display mt-10 max-w-md text-ink">
             תחזוקה חכמה לרשתות קמעונאיות
           </h1>
@@ -235,7 +174,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             return (
               <li key={item.title} className="flex gap-3">
                 <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-white/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
                   aria-hidden
                 >
                   <Icon className="h-5 w-5" strokeWidth={1.75} />
@@ -257,11 +196,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       {/* Form column */}
       <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
         <div className="mb-8 text-center md:hidden">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-pop)]">
-            <span className="t-display" aria-hidden>OC</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <BrandMark size={56} priority className="rounded-[var(--radius-xl)] shadow-[var(--shadow-pop)]" />
           </div>
           <h1 className="t-title text-ink">MaintainOS</h1>
-          <p className="t-body mt-1 text-ink-2">Optical Center · ניהול תחזוקה</p>
+          <p className="t-body mt-1 text-ink-2">Optical Center</p>
           {!googleOAuthReady ? (
             <p className="t-caption mt-2 text-ink-3">מייל + סיסמה · {PILOT_DEMO_EMAIL}</p>
           ) : null}
@@ -272,8 +211,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             <h2 className="t-title text-ink">כניסה למערכת</h2>
             <p className="t-body mt-1 text-ink-2">
               {googleOAuthReady
-                ? 'התחברות עם Google — מומלץ ל-HQ, חנויות וטכנאים.'
-                : 'התחברות עם מייל וסיסמת הפיילוט.'}
+                ? 'Gmail מאושר, או מייל וסיסמה שסופקו על ידי מנהל המערכת.'
+                : 'מייל וסיסמה שסופקו על ידי מנהל המערכת.'}
             </p>
           </div>
 
@@ -299,159 +238,30 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   onClick={() => setShowEmailBackup((v) => !v)}
                 >
                   {showEmailBackup
-                    ? 'הסתר גיבוי מייל/סיסמה'
-                    : 'גיבוי: מייל / קוד / סיסמה'}
+                    ? 'הסתר התחברות בסיסמה'
+                    : 'התחברות עם מייל וסיסמה'}
                 </button>
               </>
-            ) : (
-              <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="block"
-                  disabled
-                  className="flex-1"
-                >
-                  המשך עם Google
-                </Button>
-                <ComingSoonBadge />
-              </div>
-            )}
+            ) : null}
 
             {showEmailBackup || !googleOAuthReady ? (
-              <>
-            <SegmentedButtons
-              fill
-              className="mb-6 w-full"
-              mode="tabs"
-              panelIdPrefix="login-mode"
-              activeKey={mode}
-              onChange={(key) => {
-                setMode(key as Mode)
-                setError(null)
-              }}
-              segments={
-                googleOAuthReady
-                  ? [
-                      { key: 'link', label: 'קישור במייל' },
-                      { key: 'otp', label: 'קוד' },
-                      { key: 'password', label: 'סיסמה' },
-                    ]
-                  : [
-                      { key: 'password', label: 'סיסמה' },
-                      { key: 'otp', label: 'קוד' },
-                      { key: 'link', label: 'קישור במייל' },
-                    ]
-              }
-            />
-
-            {mode === 'link' ? (
-              <form
-                id="login-mode-link"
-                role="tabpanel"
-                aria-labelledby="login-mode-tab-link"
-                onSubmit={requestLink}
-                className="space-y-4"
-                aria-busy={busy}
-              >
-                <Field label="כתובת מייל" htmlFor="login-email">
-                  <Input
-                    id="login-email"
-                    type="email"
-                    dir="ltr"
-                    required
-                    autoComplete="email"
-                    inputMode="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@optical-center.co.il"
-                  />
-                </Field>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="block"
-                  disabled={busy || !email.trim()}
-                >
-                  {busy ? 'שולח…' : 'שליחת קישור / קוד'}
-                </Button>
-              </form>
-            ) : null}
-
-            {mode === 'otp' ? (
-              <form
-                id="login-mode-otp"
-                role="tabpanel"
-                aria-labelledby="login-mode-tab-otp"
-                onSubmit={verifyOtp}
-                className="space-y-4"
-                aria-busy={busy}
-              >
-                <Field label="כתובת מייל" htmlFor="otp-email">
-                  <Input
-                    id="otp-email"
-                    type="email"
-                    dir="ltr"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </Field>
-                <Field
-                  label="קוד מהמייל"
-                  htmlFor="login-otp"
-                  hint="6–8 ספרות שנשלחו למייל"
-                >
-                  <Input
-                    id="login-otp"
-                    type="text"
-                    dir="ltr"
-                    required
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="12345678"
-                    className="t-num text-center tracking-[0.2em]"
-                  />
-                </Field>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="block"
-                  disabled={busy || !otp.trim()}
-                >
-                  {busy ? 'מאמת…' : 'אימות קוד וכניסה'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="block"
-                  disabled={busy || !email.trim()}
-                  onClick={() => void requestLink()}
-                >
-                  {busy ? 'שולח…' : 'שליחת קוד מחדש'}
-                </Button>
-              </form>
-            ) : null}
-
-            {mode === 'password' ? (
               <form
                 id="login-mode-password"
-                role="tabpanel"
-                aria-labelledby="login-mode-tab-password"
                 onSubmit={signInPassword}
                 className="space-y-4"
                 aria-busy={busy}
               >
-                <Field label="כתובת מייל" htmlFor="pw-email">
+                <Field label="מייל" htmlFor="login-email-pw">
                   <Input
-                    id="pw-email"
+                    id="login-email-pw"
                     type="email"
                     dir="ltr"
                     required
+                    autoComplete="username"
+                    inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@gmail.com"
                   />
                 </Field>
                 <Field label="סיסמה" htmlFor="login-password">
@@ -463,35 +273,13 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    minLength={6}
                   />
                 </Field>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="block"
-                  disabled={busy || !password}
-                >
-                  {busy ? 'מתחבר…' : 'כניסה עם סיסמה'}
+                <Button type="submit" variant="primary" size="block" disabled={busy}>
+                  {busy ? 'מתחבר…' : 'כניסה'}
                 </Button>
               </form>
-            ) : null}
-
-            {sent ? (
-              <div className="mt-4">
-                <Notice tone="progress">
-                  <div className="flex items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="h-2 w-2 animate-pulse rounded-full bg-[var(--signal-progress)]"
-                    />
-                    {hint ||
-                      'הקישור נשלח. אם הוא נפתח ב־localhost — עברו ללשונית «קוד» או «סיסמה».'}
-                  </div>
-                </Notice>
-              </div>
-            ) : null}
-              </>
             ) : null}
 
             {!googleOAuthReady ? (
@@ -504,13 +292,6 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
               <LiveRegion politeness="assertive" className="mt-4">
                 <ErrorState title="ההתחברות נכשלה" description={error} />
               </LiveRegion>
-            ) : null}
-
-            {googleOAuthReady ? (
-              <p className="t-caption mt-3 flex flex-wrap items-center justify-center gap-2 text-ink-3">
-                <ComingSoonBadge />
-                <span>MFA · הגבלת דומיין Google (hd=)</span>
-              </p>
             ) : null}
 
             {demoEntry ? (

@@ -1,4 +1,5 @@
 import { createSystemClient } from '@/lib/supabase/system'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   memAddMembership,
   memListUsers,
@@ -8,19 +9,20 @@ import {
 } from '@/lib/auth/memory-memberships'
 import type { MemberRole, Membership } from '@/lib/auth/types'
 import { AuthError, type Actor } from '@/lib/auth/types'
+import { isAssignableRole } from '@/lib/auth/roles'
 import { MEM_COUNTRY_ID, MEM_ORG_ID, supabaseReady } from '@/lib/data/memory-store'
+import { sanitizePhoneInput } from '@/lib/phone'
 
 export type UserRow = {
   id: string
   email: string | null
   full_name: string | null
+  phone: string | null
   memberships: Membership[]
 }
 
 export function requireUsersAdmin(actor: Actor) {
-  const ok = actor.memberships.some(
-    (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
-  )
+  const ok = actor.memberships.some((m) => m.role === 'global_admin')
   if (!ok) {
     throw new AuthError('אין הרשאת ניהול משתמשים', 403)
   }
@@ -34,7 +36,7 @@ export async function listUsers(): Promise<UserRow[]> {
   const supabase = createSystemClient('users_list')
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name')
+    .select('id, email, full_name, phone')
     .order('full_name', { ascending: true })
   if (error) throw new Error(error.message)
 
@@ -60,6 +62,7 @@ export async function listUsers(): Promise<UserRow[]> {
     id: p.id,
     email: p.email,
     full_name: p.full_name,
+    phone: (p as { phone?: string | null }).phone ?? null,
     memberships: byProfile.get(p.id) ?? [],
   }))
 }
@@ -68,27 +71,38 @@ export type CreateUserInput = {
   full_name: string
   email: string
   role: MemberRole
+  phone?: string | null
   country_id?: string | null
   region_id?: string | null
   store_id?: string | null
   organization_id?: string | null
   /** Optional explicit profile id (defaults to new uuid). */
   id?: string
+  /** When set, also creates a Supabase Auth user that can log in with password. */
+  password?: string
 }
 
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
-  const id = input.id ?? crypto.randomUUID()
+  if (!isAssignableRole(input.role)) {
+    throw new Error('תפקיד לא נתמך — בחרו מנהל מערכת, תפעול, חנות או טכנאי')
+  }
+
+  let id = input.id ?? crypto.randomUUID()
   const orgId = input.organization_id ?? MEM_ORG_ID
   const countryId =
     input.country_id === undefined
       ? techDefaultCountry(input.role)
       : input.country_id
+  const email = input.email.trim().toLowerCase()
+  const password = input.password?.trim() || null
+  const phone = sanitizePhoneInput(input.phone)
 
   if (!(await supabaseReady())) {
     memUpsertProfile({
       id,
-      email: input.email,
+      email,
       full_name: input.full_name,
+      phone,
     })
     memAddMembership(id, input.role, {
       organization_id: orgId,
@@ -100,11 +114,27 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     return toUserRow(row!)
   }
 
+  // Prefer Auth user id so Google/password sessions match the profile row.
+  if (password) {
+    const admin = createAdminClient()
+    const { data: created, error: authErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: input.full_name },
+    })
+    if (authErr || !created.user) {
+      throw new Error(authErr?.message || 'יצירת חשבון התחברות נכשלה')
+    }
+    id = created.user.id
+  }
+
   const supabase = createSystemClient('users_create')
   const { error: pErr } = await supabase.from('profiles').upsert({
     id,
-    email: input.email,
+    email,
     full_name: input.full_name,
+    phone,
     locale: 'he',
   })
   if (pErr) throw new Error(pErr.message)
@@ -127,8 +157,9 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
 
   return {
     id,
-    email: input.email,
+    email,
     full_name: input.full_name,
+    phone,
     memberships: [membership as Membership],
   }
 }
@@ -136,6 +167,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
 export type PatchUserInput = {
   full_name?: string
   email?: string
+  phone?: string | null
   membership_id?: string
   role?: MemberRole
   country_id?: string | null
@@ -150,7 +182,11 @@ export async function patchUser(
   if (!(await supabaseReady())) {
     const existing = memListUsers().find((u) => u.id === profileId)
     if (!existing) throw new Error('משתמש לא נמצא')
-    if (input.full_name !== undefined || input.email !== undefined) {
+    if (
+      input.full_name !== undefined ||
+      input.email !== undefined ||
+      input.phone !== undefined
+    ) {
       memUpsertProfile({
         id: profileId,
         full_name:
@@ -158,6 +194,10 @@ export async function patchUser(
             ? input.full_name
             : existing.full_name,
         email: input.email !== undefined ? input.email : existing.email,
+        phone:
+          input.phone !== undefined
+            ? sanitizePhoneInput(input.phone)
+            : existing.phone ?? null,
       })
     }
     if (input.membership_id && input.role) {
@@ -190,7 +230,11 @@ export async function patchUser(
   }
 
   const supabase = createSystemClient('users_patch')
-  if (input.full_name !== undefined || input.email !== undefined) {
+  if (
+    input.full_name !== undefined ||
+    input.email !== undefined ||
+    input.phone !== undefined
+  ) {
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -198,6 +242,9 @@ export async function patchUser(
           ? { full_name: input.full_name }
           : {}),
         ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.phone !== undefined
+          ? { phone: sanitizePhoneInput(input.phone) }
+          : {}),
       })
       .eq('id', profileId)
     if (error) throw new Error(error.message)
@@ -260,6 +307,7 @@ function toUserRow(row: MemUserRow): UserRow {
     id: row.id,
     email: row.email,
     full_name: row.full_name,
+    phone: row.phone ?? null,
     memberships: row.memberships,
   }
 }

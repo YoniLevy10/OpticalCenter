@@ -15,17 +15,14 @@ const patchSchema = z.object({
     .enum([
       'global_admin',
       'global_maintenance',
-      'country_manager',
-      'regional_manager',
-      'store_manager',
       'store_employee',
       'internal_technician',
-      'external_provider',
     ])
     .optional(),
   country_id: z.string().uuid().nullable().optional(),
   region_id: z.string().nullable().optional(),
   store_id: z.string().nullable().optional(),
+  phone: z.string().max(32).nullable().optional(),
 })
 
 export async function PATCH(
