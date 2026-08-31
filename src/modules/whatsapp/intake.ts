@@ -58,13 +58,16 @@ type SessionRow = {
   clarification_count: number
   draft_payload: Record<string, unknown> | null
   active_ticket_id: string | null
+  /** Bamakor-style: media held until ticket create. */
+  pending_media_url: string | null
+  pending_media_kind: InboundMessage['mediaKind']
   human_takeover: boolean
   human_takeover_until: string | null
   expires_at: string
 }
 
 const SESSION_SELECT =
-  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, clarification_count, draft_payload, active_ticket_id, human_takeover, human_takeover_until, expires_at'
+  'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, clarification_count, draft_payload, active_ticket_id, pending_media_url, pending_media_kind, human_takeover, human_takeover_until, expires_at'
 
 const SESSION_SELECT_LEGACY =
   'id, organization_id, country_id, wa_id, store_id, store_code, state, pending_description, human_takeover, expires_at'
@@ -89,7 +92,9 @@ async function selectSession(
     (isMissingColumnError(error, 'clarification_count') ||
       isMissingColumnError(error, 'draft_payload') ||
       isMissingColumnError(error, 'active_ticket_id') ||
-      isMissingColumnError(error, 'human_takeover_until'))
+      isMissingColumnError(error, 'human_takeover_until') ||
+      isMissingColumnError(error, 'pending_media_url') ||
+      isMissingColumnError(error, 'pending_media_kind'))
   ) {
     ;({ data, error } = await supabase
       .from('intake_sessions')
@@ -129,6 +134,43 @@ function isIdentityOnly(text: string | null, storeCode: string): boolean {
   )
 }
 
+/** Prefer current-message media; fall back to Bamakor-style session stash. */
+function resolveEffectiveMedia(
+  message: InboundMessage,
+  session: SessionRow,
+): {
+  mediaUrl: string | null
+  mediaKind: InboundMessage['mediaKind']
+} {
+  if (message.mediaUrl) {
+    return {
+      mediaUrl: message.mediaUrl,
+      mediaKind: message.mediaKind ?? null,
+    }
+  }
+  return {
+    mediaUrl: session.pending_media_url,
+    mediaKind: session.pending_media_kind,
+  }
+}
+
+async function stashInboundMedia(
+  supabase: SupabaseClient | null,
+  session: SessionRow,
+  message: InboundMessage,
+): Promise<SessionRow> {
+  if (!message.mediaUrl) return session
+  await updateSession(supabase, session, {
+    pending_media_url: message.mediaUrl,
+    pending_media_kind: message.mediaKind ?? 'image',
+  })
+  return {
+    ...session,
+    pending_media_url: message.mediaUrl,
+    pending_media_kind: message.mediaKind ?? 'image',
+  }
+}
+
 function sessionFromMem(
   waId: string,
   country: CountryRow,
@@ -146,6 +188,8 @@ function sessionFromMem(
     clarification_count: existing.clarification_count ?? 0,
     draft_payload: existing.draft_payload ?? null,
     active_ticket_id: existing.active_ticket_id ?? null,
+    pending_media_url: existing.pending_media_url ?? null,
+    pending_media_kind: existing.pending_media_kind ?? null,
     human_takeover: Boolean(existing.human_takeover),
     human_takeover_until: existing.human_takeover_until ?? null,
     expires_at: existing.expires_at,
@@ -153,6 +197,9 @@ function sessionFromMem(
 }
 
 function normalizeSessionRow(row: Record<string, unknown>): SessionRow {
+  const kind = row.pending_media_kind
+  const pendingKind =
+    kind === 'image' || kind === 'video' || kind === 'document' ? kind : null
   return {
     id: String(row.id),
     organization_id: String(row.organization_id),
@@ -165,6 +212,8 @@ function normalizeSessionRow(row: Record<string, unknown>): SessionRow {
     clarification_count: Number(row.clarification_count ?? 0),
     draft_payload: (row.draft_payload as Record<string, unknown> | null) ?? null,
     active_ticket_id: (row.active_ticket_id as string | null) ?? null,
+    pending_media_url: (row.pending_media_url as string | null) ?? null,
+    pending_media_kind: pendingKind,
     human_takeover: Boolean(row.human_takeover),
     human_takeover_until: (row.human_takeover_until as string | null) ?? null,
     expires_at: String(row.expires_at),
@@ -339,6 +388,7 @@ async function logWhatsAppMessage(params: {
   body: string | null
   metaMessageId: string | null
   mediaKind?: string | null
+  mediaRef?: string | null
   ticketId?: string | null
 }) {
   const {
@@ -350,11 +400,12 @@ async function logWhatsAppMessage(params: {
     body,
     metaMessageId,
     mediaKind,
+    mediaRef,
     ticketId,
   } = params
   if (!supabase) return
   try {
-    await supabase.from('whatsapp_messages').insert({
+    const row: Record<string, unknown> = {
       organization_id: country.organization_id,
       country_id: country.id,
       wa_id: waId,
@@ -362,9 +413,15 @@ async function logWhatsAppMessage(params: {
       body,
       meta_message_id: metaMessageId,
       media_kind: mediaKind ?? null,
+      media_ref: mediaRef ?? null,
       ticket_id: ticketId ?? null,
       intake_session_id: session && !session.id.startsWith('mem-') ? session.id : null,
-    })
+    }
+    const { error } = await supabase.from('whatsapp_messages').insert(row)
+    if (error && isMissingColumnError(error, 'media_ref')) {
+      delete row.media_ref
+      await supabase.from('whatsapp_messages').insert(row)
+    }
   } catch {
     // Table may not exist pre-migration — non-fatal
   }
@@ -398,6 +455,8 @@ async function getOrCreateSession(
       clarification_count: 0,
       draft_payload: null,
       active_ticket_id: null,
+      pending_media_url: null,
+      pending_media_kind: null,
       human_takeover: false,
       human_takeover_until: null,
     })
@@ -423,6 +482,8 @@ async function getOrCreateSession(
       clarification_count: 0,
       draft_payload: null,
       active_ticket_id: null,
+      pending_media_url: null,
+      pending_media_kind: null,
       expires_at: new Date(now + 30 * 60 * 1000).toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -435,11 +496,15 @@ async function getOrCreateSession(
     if (
       error &&
       (isMissingColumnError(error, 'clarification_count') ||
-        isMissingColumnError(error, 'draft_payload'))
+        isMissingColumnError(error, 'draft_payload') ||
+        isMissingColumnError(error, 'pending_media_url') ||
+        isMissingColumnError(error, 'pending_media_kind'))
     ) {
       delete resetPatch.clarification_count
       delete resetPatch.draft_payload
       delete resetPatch.active_ticket_id
+      delete resetPatch.pending_media_url
+      delete resetPatch.pending_media_kind
       ;({ data: updated, error } = await supabase
         .from('intake_sessions')
         .update(resetPatch)
@@ -484,6 +549,8 @@ type SessionPatch = Partial<{
   clarification_count: number
   draft_payload: Record<string, unknown> | null
   active_ticket_id: string | null
+  pending_media_url: string | null
+  pending_media_kind: InboundMessage['mediaKind']
   last_inbound: string | null
   human_takeover: boolean
   human_takeover_until: string | null
@@ -516,6 +583,14 @@ async function updateSession(
         patch.active_ticket_id !== undefined
           ? patch.active_ticket_id
           : session.active_ticket_id,
+      pending_media_url:
+        patch.pending_media_url !== undefined
+          ? patch.pending_media_url
+          : session.pending_media_url,
+      pending_media_kind:
+        patch.pending_media_kind !== undefined
+          ? patch.pending_media_kind
+          : session.pending_media_kind,
       human_takeover:
         patch.human_takeover !== undefined
           ? patch.human_takeover
@@ -533,8 +608,19 @@ async function updateSession(
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     updated_at: new Date().toISOString(),
   }
-  // last_inbound may exist from phase6
-  await supabase.from('intake_sessions').update(dbPatch).eq('id', session.id)
+  const { error } = await supabase
+    .from('intake_sessions')
+    .update(dbPatch)
+    .eq('id', session.id)
+  if (
+    error &&
+    (isMissingColumnError(error, 'pending_media_url') ||
+      isMissingColumnError(error, 'pending_media_kind'))
+  ) {
+    delete dbPatch.pending_media_url
+    delete dbPatch.pending_media_kind
+    await supabase.from('intake_sessions').update(dbPatch).eq('id', session.id)
+  }
 }
 
 async function createTicketFromIntake(params: {
@@ -831,6 +917,7 @@ export async function processInboundMessage(
       body: text,
       metaMessageId: message.messageId,
       mediaKind: message.mediaKind,
+      mediaRef: message.mediaUrl,
     })
     await updateSession(supabase, session, {
       last_inbound: text || (message.mediaUrl ? '[media]' : null),
@@ -842,6 +929,10 @@ export async function processInboundMessage(
     // Expired / legacy permanent flags auto-clear so the bot resumes.
     if (session.human_takeover) {
       if (isHumanPauseActive(session)) {
+        // Still stash media so ops/ticket can recover after the pause.
+        if (message.mediaUrl) {
+          session = await stashInboundMedia(supabase, session, message)
+        }
         logEvent('whatsapp:intake', 'info', 'human_takeover_skip', {
           waId: message.waId,
           state: session.state,
@@ -893,6 +984,8 @@ export async function processInboundMessage(
         pending_description: null,
         draft_payload: null,
         active_ticket_id: null,
+        pending_media_url: null,
+        pending_media_kind: null,
         clarification_count: 0,
       })
       session = {
@@ -903,6 +996,8 @@ export async function processInboundMessage(
         pending_description: null,
         draft_payload: null,
         active_ticket_id: null,
+        pending_media_url: null,
+        pending_media_kind: null,
         clarification_count: 0,
       }
     }
@@ -921,6 +1016,8 @@ export async function processInboundMessage(
         active_ticket_id: null,
         pending_description: null,
         draft_payload: null,
+        pending_media_url: null,
+        pending_media_kind: null,
         clarification_count: 0,
       })
       session = {
@@ -929,6 +1026,8 @@ export async function processInboundMessage(
         active_ticket_id: null,
         pending_description: null,
         draft_payload: null,
+        pending_media_url: null,
+        pending_media_kind: null,
         clarification_count: 0,
       }
     }
@@ -952,7 +1051,7 @@ export async function processInboundMessage(
           store_code: byPhone.code,
           state: 'awaiting_description',
         }
-        if (!text && !message.mediaUrl) {
+        if (!text && !message.mediaUrl && !session.pending_media_url) {
           const reply = await craftIntakeReply(
             WA_COPY.askDescription(byPhone.name, byPhone.code),
             'intake_ask_description',
@@ -970,6 +1069,10 @@ export async function processInboundMessage(
         storeCodeFromText,
       )
       if (!store) {
+        // Keep any photo that arrived with a bad store code.
+        if (message.mediaUrl) {
+          session = await stashInboundMedia(supabase, session, message)
+        }
         const reply = await craftIntakeReply(
           WA_COPY.storeNotFound(storeCodeFromText),
           'intake_store_not_found',
@@ -991,6 +1094,8 @@ export async function processInboundMessage(
       }
       await linkStorePhone(supabase, country, message.waId, store)
 
+      // Identity-only STORE_ keeps any stashed photo and asks for description.
+      // Media on *this* message (photo+store together) can proceed immediately.
       if (isIdentityOnly(text, store.code) && !message.mediaUrl) {
         const reply = await craftIntakeReply(
           WA_COPY.askDescription(store.name, store.code),
@@ -1004,7 +1109,9 @@ export async function processInboundMessage(
         text && !isIdentityOnly(text, store.code)
           ? text.replace(/\bSTORE[_\s-]?\d{1,6}\b/i, '').trim() || text
           : text || ''
-      if (description || message.mediaUrl) {
+      const hasMedia =
+        Boolean(message.mediaUrl) || Boolean(session.pending_media_url)
+      if (description || hasMedia) {
         return await analyzeAndFinalize({
           supabase,
           session,
@@ -1019,6 +1126,14 @@ export async function processInboundMessage(
     }
 
     if (session.state === 'awaiting_store' || !session.store_id) {
+      // Bamakor pattern: photo before store → stash Meta media id, ask for store.
+      if (message.mediaUrl) {
+        session = await stashInboundMedia(supabase, session, message)
+        logEvent('whatsapp:intake', 'info', 'media_stashed_awaiting_store', {
+          waId: message.waId,
+          mediaKind: message.mediaKind,
+        })
+      }
       const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
       await sendReply(supabase, message, country, reply, null, options, session)
       return { ok: true, reply, state: 'awaiting_store' }
@@ -1030,6 +1145,9 @@ export async function processInboundMessage(
       session.store_code || '',
     )
     if (!store) {
+      if (message.mediaUrl) {
+        session = await stashInboundMedia(supabase, session, message)
+      }
       await updateSession(supabase, session, {
         store_id: null,
         store_code: null,
@@ -1042,10 +1160,15 @@ export async function processInboundMessage(
 
     // Clarification follow-up: merge answer with pending description
     if (session.state === 'awaiting_clarification') {
+      if (message.mediaUrl) {
+        session = await stashInboundMedia(supabase, session, message)
+      }
       const prior = session.pending_description || ''
       const answer = text || ''
       const combined = [prior, answer].filter(Boolean).join('\n').trim()
-      if (!combined && !message.mediaUrl) {
+      const hasMedia =
+        Boolean(message.mediaUrl) || Boolean(session.pending_media_url)
+      if (!combined && !hasMedia) {
         const q =
           (session.draft_payload?.clarificationQuestion as string) ||
           WA_COPY.needDescription
@@ -1066,7 +1189,7 @@ export async function processInboundMessage(
       })
     }
 
-    if (!text && !message.mediaUrl) {
+    if (!text && !message.mediaUrl && !session.pending_media_url) {
       const reply = await craftIntakeReply(
         WA_COPY.needDescription,
         'intake_need_description',
@@ -1139,7 +1262,7 @@ async function analyzeAndFinalize(params: {
     text: description,
     storeName: store.name,
     storeCode: store.code,
-    hasMedia: Boolean(message.mediaUrl),
+    hasMedia: Boolean(message.mediaUrl || session.pending_media_url),
   })
 
   const canClarify =
@@ -1149,8 +1272,13 @@ async function analyzeAndFinalize(params: {
     session.clarification_count < 2
 
   if (canClarify) {
-    const nextCount = session.clarification_count + 1
-    await updateSession(supabase, session, {
+    // Keep photo across clarification turns (Bamakor pending_whatsapp_media pattern).
+    let nextSession = session
+    if (message.mediaUrl) {
+      nextSession = await stashInboundMedia(supabase, session, message)
+    }
+    const nextCount = nextSession.clarification_count + 1
+    await updateSession(supabase, nextSession, {
       state: 'awaiting_clarification',
       pending_description: description,
       clarification_count: nextCount,
@@ -1164,7 +1292,7 @@ async function analyzeAndFinalize(params: {
     })
     const reply = decision.clarificationQuestion!
     await sendReply(supabase, message, country, reply, null, options, {
-      ...session,
+      ...nextSession,
       clarification_count: nextCount,
       state: 'awaiting_clarification',
     })
@@ -1217,13 +1345,15 @@ async function finalizeTicket(params: {
     ? `ייתכן שקיימת תקלה דומה פתוחה ${dup.displayNumber || ''}`.trim()
     : decision.possibleDuplicateHint
 
+  const effective = resolveEffectiveMedia(message, session)
+
   const { ticketId, displayNumber, mediaFailed } = await createTicketFromIntake({
     store,
     country,
     description,
     decision,
-    mediaUrl: message.mediaUrl,
-    mediaKind: message.mediaKind,
+    mediaUrl: effective.mediaUrl,
+    mediaKind: effective.mediaKind,
     waId: message.waId,
     messageId: message.messageId,
     source,
@@ -1236,6 +1366,8 @@ async function finalizeTicket(params: {
     pending_description: null,
     draft_payload: null,
     active_ticket_id: ticketId,
+    pending_media_url: null,
+    pending_media_kind: null,
     clarification_count: 0,
   })
 
@@ -1264,6 +1396,8 @@ async function finalizeTicket(params: {
     category: decision.category,
     priority: decision.priority,
     provider: decision.provider,
+    mediaAttached: Boolean(effective.mediaUrl) && !mediaFailed,
+    mediaFromStash: Boolean(!message.mediaUrl && session.pending_media_url),
   })
 
   return {

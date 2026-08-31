@@ -2,8 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { logEvent } from '@/lib/logging'
 
 const META_MEDIA_PREFIX = 'meta-media:'
-const GRAPH_VERSION = 'v21.0'
+/** Align with Bamakor Graph version used for media download. */
+const GRAPH_VERSION = 'v23.0'
 const BUCKET = 'ticket-media'
+const MEDIA_DOWNLOAD_RETRY_MS = 1200
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 export type ResolveInboundMediaResult = {
   url: string | null
@@ -122,7 +128,26 @@ export async function resolveInboundMediaUrl(
   }
 
   try {
-    const { bytes, mimeType } = await fetchGraphMediaBinary(mediaId, token)
+    // Bamakor: Meta media URLs can be briefly unavailable — retry once.
+    let binary: Awaited<ReturnType<typeof fetchGraphMediaBinary>> | null = null
+    let lastError: unknown = null
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        binary = await fetchGraphMediaBinary(mediaId, token)
+        break
+      } catch (e) {
+        lastError = e
+        if (attempt === 0) await sleepMs(MEDIA_DOWNLOAD_RETRY_MS)
+      }
+    }
+    if (!binary) {
+      const error =
+        lastError instanceof Error ? lastError.message : 'media_resolve_failed'
+      logEvent('whatsapp:media', 'error', 'download_failed', { mediaId, error })
+      return { url: null, source: 'failed', mediaId, error }
+    }
+
+    const { bytes, mimeType } = binary
     const ext = extensionForMime(mimeType, opts.mediaKind ?? null)
     const path = `${opts.ticketId ?? 'inbound'}/${mediaId}.${ext}`
 
