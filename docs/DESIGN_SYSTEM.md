@@ -87,7 +87,7 @@ Desktop page padding: `32px` · Mobile: `16px` · Section gap: `32px`
 
 | Role | Size / Weight |
 |---|---|
-| Page title | 28px / 600 (mobile 22px) |
+| Page title | Black plate · 18–20px / 600 · white on `#1D1D1F` |
 | Section | 18px / 600 |
 | Card title | 15px / 600 |
 | Body | 14px / 400 |
@@ -95,7 +95,7 @@ Desktop page padding: `32px` · Mobile: `16px` · Section gap: `32px`
 | Caption | 12px / 500 |
 | KPI number | 30–32px / 600 |
 
-One **H1** per page. No decorative eyebrows / “OPERATIONS OS” banners.
+One **H1** per page — compact black title plate only. No eyebrows, descriptions, or meta under the title.
 
 ---
 

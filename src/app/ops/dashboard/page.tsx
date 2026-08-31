@@ -217,7 +217,6 @@ export default async function OpsDashboardPage() {
       <div className="flex flex-col gap-8">
         <PageHeader
           title="לוח בקרה"
-          description="תמונה חיה של מה שדורש תשומת לב עכשיו."
           actions={
             <Button asChild variant="primary" size="sm">
               <Link href="/ops/tickets">לתור התקלות</Link>

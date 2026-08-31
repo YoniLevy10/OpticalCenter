@@ -25,7 +25,6 @@ export default async function InboxPage() {
         />
         <PageHeader
           title="תיבת WhatsApp"
-          meta="השתלטות אנושית"
           className="hidden md:flex"
         />
         <Suspense

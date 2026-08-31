@@ -57,14 +57,16 @@ export function PanelHeader({
 
 export function PageHeader({
   title,
-  description,
-  meta,
   actions,
   className,
 }: {
   title: string
-  /** Short supporting line under the title. */
+  /**
+   * @deprecated Optical Clean titles are the black plate only —
+   * captions / meta are not rendered.
+   */
   description?: React.ReactNode
+  /** @deprecated Not rendered — title plate only. */
   meta?: React.ReactNode
   actions?: React.ReactNode
   className?: string
@@ -72,19 +74,13 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-start justify-between gap-x-4 gap-y-3 pb-2',
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-3 pb-2',
         className,
       )}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-3">
-          <h1 className="t-title text-ink">{title}</h1>
-          {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
-        </div>
-        {description ? (
-          <p className="t-body mt-1.5 max-w-2xl text-ink-2">{description}</p>
-        ) : null}
-      </div>
+      <h1 className="inline-flex max-w-full items-center rounded-[var(--radius-lg)] bg-[var(--ink)] px-3.5 py-2 text-[18px] font-semibold leading-none tracking-[-0.02em] text-white md:px-4 md:py-2.5 md:text-[20px]">
+        {title}
+      </h1>
       {actions ? (
         <div className="flex items-center gap-2">{actions}</div>
       ) : null}

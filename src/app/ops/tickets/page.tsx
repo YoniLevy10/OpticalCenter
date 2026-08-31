@@ -155,8 +155,6 @@ export default async function TicketsPage({
 
         <PageHeader
           title="תקלות"
-          description="ניהול ומעקב אחר תקלות פעילות."
-          meta={<span className="t-num">{filtered.length}</span>}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (
               <PurgeDemoButton />

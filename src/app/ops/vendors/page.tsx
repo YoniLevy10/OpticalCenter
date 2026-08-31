@@ -70,8 +70,6 @@ export default async function VendorsPage() {
     }
   })
 
-  const activeCount = enriched.filter((v) => v.active).length
-
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-4">
@@ -79,7 +77,6 @@ export default async function VendorsPage() {
         <PageHeader
           className="hidden md:flex"
           title="ספקים"
-          meta={<span className="t-num">{activeCount}</span>}
         />
         <VendorsAdmin initialVendors={enriched} />
       </div>

@@ -46,7 +46,6 @@ export default async function AssetsPage() {
         />
         <PageHeader
           title="נכסים"
-          meta="ציוד לפי סניף"
           className="hidden md:flex"
         />
         <AssetsAdmin
