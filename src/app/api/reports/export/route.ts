@@ -16,6 +16,7 @@ import {
   TICKET_CATEGORY_LABELS_HE,
   TICKET_PRIORITY_LABELS_HE,
   TICKET_STATUS_LABELS_HE,
+  OPEN_TICKET_STATUSES,
 } from '@/modules/tickets/constants'
 import {
   buildTicketsPdf,
@@ -78,12 +79,17 @@ export async function GET(request: Request) {
       }
     }
     const store = url.searchParams.get('store')
-    const status = url.searchParams.get('status')
+    const statusParam = url.searchParams.get('status')
+
+    const listStatus =
+      statusParam && statusParam !== 'open' && statusParam !== 'resolved'
+        ? statusParam
+        : undefined
 
     const [result, techRows] = await Promise.all([
       listTickets({
         limit: 5000,
-        status: status ?? undefined,
+        status: listStatus,
         storeCode: store ?? undefined,
       }),
       listInternalTechnicians(),
@@ -91,6 +97,17 @@ export async function GET(request: Request) {
     const fetched = (result.tickets ?? []) as unknown as QueueTicket[]
     let scoped = scopeTicketsForActor(actor, fetched)
     scoped = filterTicketsByDateRange(scoped, from, to)
+    if (statusParam === 'open') {
+      scoped = scoped.filter((t) =>
+        OPEN_TICKET_STATUSES.includes(
+          t.status as (typeof OPEN_TICKET_STATUSES)[number],
+        ),
+      )
+    } else if (statusParam === 'resolved') {
+      scoped = scoped.filter(
+        (t) => t.status === 'resolved' || t.status === 'closed',
+      )
+    }
 
     const technicians = techRows.map((t) => ({
       id: t.id,

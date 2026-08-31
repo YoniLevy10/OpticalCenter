@@ -27,10 +27,10 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops/stores')
     await expect(page.getByRole('heading', { name: 'חנויות' })).toBeVisible()
     await gotoStable(page, '/ops/reports')
-    await expect(page.getByRole('heading', { name: 'דוחות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'דוחות', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /ייצוא CSV/ }).first()).toBeVisible()
     await gotoStable(page, '/ops/settings')
-    await expect(page.getByRole('heading', { name: 'הגדרות' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'הגדרות', exact: true })).toBeVisible()
   })
 
   test('mobile bottom nav + More', async ({ page }) => {
