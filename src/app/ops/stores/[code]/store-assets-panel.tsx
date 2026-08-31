@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { ScanBarcode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
 import {
@@ -11,6 +12,8 @@ import {
   PanelHeader,
 } from '@/components/ui/primitives'
 import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
+import { BarcodeScannerModal } from '@/components/assets/barcode-scanner'
+import { normalizeBarcode } from '@/modules/assets/barcode'
 import { assetWhatsAppPrefill } from '@/modules/assets/service'
 
 type AssetRow = {
@@ -35,6 +38,7 @@ export function StoreAssetsPanel({
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [assetType, setAssetType] = useState('hvac')
+  const [scanOpen, setScanOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -109,15 +113,28 @@ export function StoreAssetsPanel({
         {notice ? <Notice tone="progress">{notice}</Notice> : null}
 
         <form onSubmit={onCreate} className="grid gap-3 md:grid-cols-3">
-          <Field label="קוד נכס" htmlFor="asset-code">
-            <Input
-              id="asset-code"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="HVAC-1"
-              dir="ltr"
-            />
+          <Field label="קוד / ברקוד" htmlFor="asset-code">
+            <div className="flex gap-2">
+              <Input
+                id="asset-code"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="HVAC-1"
+                dir="ltr"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                aria-label="סריקת ברקוד"
+                onClick={() => setScanOpen(true)}
+              >
+                <ScanBarcode className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </Field>
           <Field label="שם" htmlFor="asset-name">
             <Input
@@ -198,6 +215,19 @@ export function StoreAssetsPanel({
           </>
         )}
       </div>
+
+      <BarcodeScannerModal
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onScan={(raw) => {
+          const value = normalizeBarcode(raw)
+          if (!value) return
+          setCode(value)
+          setNotice(`ברקוד נסרק · ${value}`)
+        }}
+        title="סריקת ברקוד לנכס"
+        description="הברקוד ייכנס לשדה הקוד."
+      />
     </Panel>
   )
 }
