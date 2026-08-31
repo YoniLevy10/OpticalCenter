@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { PrintQrClient } from './print-qr-client'
 import { fetchStores } from '@/modules/stores/data'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
+import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 
@@ -57,8 +58,9 @@ export default async function PrintQrBatchPage() {
 
         <Panel elevated className="print:border-0 print:p-0 print:shadow-none">
           <p className="t-body mb-4 text-ink-2 print:hidden">
-            כל כרטיס כולל QR ל־WhatsApp עם טקסט STORE_CODE. השתמשו בהדפסה מהדפדפן
-            (PDF). מומלץ PNG לסריקה אמינה מהמסך.
+            כל כרטיס כולל QR ל־WhatsApp עם טקסט STORE_CODE. לחיצה על ה־QR פותחת
+            את אותו קישור לכתיבת תג NFC. השתמשו בהדפסה מהדפדפן (PDF). מומלץ PNG
+            לסריקה אמינה מהמסך.
           </p>
           {!phoneReady ? (
             <EmptyState
@@ -72,25 +74,46 @@ export default async function PrintQrBatchPage() {
               role="list"
               className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2"
             >
-              {active.map((s) => (
-                <li key={s.id}>
-                  <div className="break-inside-avoid rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/api/stores/qr?code=${encodeURIComponent(s.code)}&format=png`}
-                      alt={`QR ${s.code}`}
-                      width={160}
-                      height={160}
-                      className="mx-auto h-40 w-40"
-                    />
-                    <p className="t-body-strong mt-3 text-ink">{s.name}</p>
-                    <p className="t-num t-meta text-ink-2">#{s.code}</p>
-                    <p dir="ltr" className="t-caption t-num mt-1 text-ink-3">
-                      STORE_{s.code}
-                    </p>
-                  </div>
-                </li>
-              ))}
+              {active.map((s) => {
+                const deepLink = storeWhatsAppDeepLink(s.code, businessPhone)
+                return (
+                  <li key={s.id}>
+                    <div className="break-inside-avoid rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
+                      <a
+                        href={deepLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="פתיחת קישור NFC / WhatsApp"
+                        aria-label={`קישור NFC לסניף ${s.code}`}
+                        className="mx-auto inline-block rounded-[var(--radius-md)] outline-none ring-[var(--tenant)] transition-opacity hover:opacity-90 focus-visible:ring-2 print:pointer-events-none"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/stores/qr?code=${encodeURIComponent(s.code)}&format=png`}
+                          alt={`QR ${s.code}`}
+                          width={160}
+                          height={160}
+                          className="h-40 w-40"
+                        />
+                      </a>
+                      <p className="t-body-strong mt-3 text-ink">{s.name}</p>
+                      <p className="t-num t-meta text-ink-2">#{s.code}</p>
+                      <p dir="ltr" className="t-caption t-num mt-1 text-ink-3">
+                        STORE_{s.code}
+                      </p>
+                      <a
+                        href={deepLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        dir="ltr"
+                        className="t-caption t-num mt-2 block break-all text-ink-3 underline-offset-2 hover:text-[var(--tenant)] hover:underline print:hidden"
+                      >
+                        {deepLink}
+                      </a>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </Panel>
