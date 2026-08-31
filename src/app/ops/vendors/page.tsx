@@ -79,6 +79,7 @@ export default async function VendorsPage() {
         <PageHeader
           className="hidden md:flex"
           title="ספקים"
+          description="מי מתחזק מה — ופרטי קשר"
           meta={<span className="t-num">{activeCount}</span>}
         />
         <VendorsAdmin initialVendors={enriched} />

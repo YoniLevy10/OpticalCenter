@@ -22,17 +22,16 @@ function isProductionRuntime(): boolean {
 }
 
 export const ALL_NAV_TOOLS: NavTool[] = [
-  { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
-  { id: 'assets', href: '/ops/assets', label: 'נכסים' },
+  { id: 'assets', href: '/ops/assets', label: 'ציוד' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
-  { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
+  { id: 'activity', href: '/ops/activity', label: 'מה קרה במערכת' },
   { id: 'reports', href: '/ops/reports', label: 'דוחות' },
-  { id: 'status', href: '/ops/status', label: 'סטטוס מערכת' },
+  { id: 'status', href: '/ops/status', label: 'בריאות המערכת' },
   { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
-  { id: 'users', href: '/ops/users', label: 'משתמשים' },
-  { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
+  { id: 'users', href: '/ops/users', label: 'אנשים והרשאות' },
+  { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR לסניפים' },
   { id: 'lab', href: '/ops/lab', label: 'מעבדה' },
-  { id: 'simulator', href: '/ops/simulator', label: 'סימולטור WhatsApp' },
+  { id: 'simulator', href: '/ops/simulator', label: 'סימולטור הודעות' },
 ]
 
 export function canAccessUsers(actor: Actor | null): boolean {
@@ -90,7 +89,6 @@ export function canAccessPrintQr(actor: Actor | null): boolean {
 }
 
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
-  inbox: canAccessInbox,
   assets: canAccessAssets,
   vendors: canAccessVendors,
   activity: canAccessActivity,

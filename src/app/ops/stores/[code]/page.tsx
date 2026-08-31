@@ -127,7 +127,7 @@ export default async function StoreDetailPage({
     },
     {
       key: 'assets',
-      label: 'נכסים',
+      label: 'ציוד',
       count: assets.length,
       href: `${base}?tab=assets`,
     },
@@ -139,7 +139,7 @@ export default async function StoreDetailPage({
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
         <PageToolbar
           backHref="/ops/stores"
-          backLabel="חזרה לחנויות"
+          backLabel="חזרה לסניפים"
           showRefresh
         />
 
@@ -172,12 +172,12 @@ export default async function StoreDetailPage({
             href={`/ops/tickets?store=${encodeURIComponent(store.code)}`}
           />
           <MetricLink
-            label="נכסים"
+            label="ציוד"
             value={assets.length}
             href={`${base}?tab=assets`}
           />
           <MetricLink
-            label="חריגות"
+            label="זמן טיפול עבר"
             value={exceptional.length}
             href={`${base}?tab=tickets`}
             valueClass={
@@ -229,7 +229,7 @@ export default async function StoreDetailPage({
               <Panel flush elevated className="overflow-hidden">
                 <PanelHeader
                   title="דורש תשומת לב"
-                  meta={`${exceptional.length} חריגות`}
+                  meta={`${exceptional.length} שעבר הזמן`}
                 />
                 <ul className="divide-y divide-border">
                   {exceptional.slice(0, 5).map((t) => (

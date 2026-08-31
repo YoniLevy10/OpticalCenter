@@ -64,7 +64,7 @@ export function AssetScanClient() {
         fetch('/api/stores'),
       ])
       const assetsJson = await assetsRes.json()
-      if (!assetsRes.ok) throw new Error(assetsJson.error || 'טעינת נכסים נכשלה')
+      if (!assetsRes.ok) throw new Error(assetsJson.error || 'טעינת הציוד נכשלה')
       setAssets(assetsJson.assets ?? [])
 
       if (storesRes.ok) {
@@ -162,7 +162,7 @@ export function AssetScanClient() {
         </p>
         <div className="mt-4">
           {loading ? (
-            <p className="t-body text-ink-2">טוען נכסים…</p>
+            <p className="t-body text-ink-2">טוען ציוד…</p>
           ) : (
             <BarcodeScannerModal
               open
@@ -195,7 +195,7 @@ export function AssetScanClient() {
               </Link>
             </Button>
             <Button asChild variant="secondary" size="sm">
-              <Link href="/ops/assets">רשימת נכסים</Link>
+              <Link href="/ops/assets">רשימת ציוד</Link>
             </Button>
           </div>
         </Panel>
@@ -204,7 +204,7 @@ export function AssetScanClient() {
       {last?.kind === 'missing' ? (
         <Panel className="p-4">
           <EmptyState
-            title="נכס לא נמצא"
+            title="הציוד לא נמצא"
             description={`אין התאמה ל־${last.query}`}
             icon={Package}
             action={
@@ -261,7 +261,7 @@ export function AssetScanClient() {
       <Modal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="הוספת נכס מסריקה"
+        title="הוספת ציוד מסריקה"
         description="הברקוד שנסרק כבר מולא."
       >
         <form onSubmit={onCreate} className="space-y-3">
