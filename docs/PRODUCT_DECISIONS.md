@@ -12,11 +12,11 @@
 | תפקידים | 4 בלבד: מנהל מערכת, תפעול, חנות, טכנאי | `docs/ROLES_AND_ACCESS.md` |
 | עובדי חנות | פורטל `/store` — לא HQ מלא | `store_employee` role + `/store/report` |
 | מדיה | תמונה + וידאו (עד 3), Bamakor-style | web + WA + tech upload |
-| Phase D | PDF מתוזמן, i18n FR, OAuth domain, Push — **אחרי** go-live IL | «בקרוב» badges |
+| Phase D | PDF מתוזמן + email — **הושלם** (`/api/cron/monthly-report`); i18n FR, OAuth domain, Push — **אחרי** go-live IL | «בקרוב» ל־Push / i18n |
 
-## שלב D — לא ב-wave הנוכחי
+## שלב D — אחרי go-live IL
 
 - i18n צרפת
 - Web Push production + VAPID
-- cron דוח חודשי + email
+- ~~cron דוח חודשי + email~~ (הושלם בגל 2)
 - Google domain restriction (MFA)

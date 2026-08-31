@@ -266,11 +266,11 @@ _(pilot note: memory/system fetch + actor scope filter; full user-client swap wh
 ### 7.2 QR/NFC Generation Tool (1 יום)
 
 - [x] `/ops/stores/[id]` — עמוד חנות עם QR generation
+- [x] הורדת PDF עם QR להדפסה (sticker format)
 - [x] יצירת QR code עם wa.me link + קוד חנות
   - ספריה: `qrcode` או client-side canvas
-- [ ] הורדת PDF עם QR להדפסה (sticker format)
 - [x] הנחיות NFC: כתיבת NDEF record עם אותו URL
-- [ ] Batch generation: כל החנויות במדינה → PDF אחד
+- [x] Batch generation: כל החנויות במדינה → PDF אחד
 
 ### 7.3 Store/Asset CRUD (1 יום)
 

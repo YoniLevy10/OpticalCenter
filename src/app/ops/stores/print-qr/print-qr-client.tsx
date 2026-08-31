@@ -16,8 +16,17 @@ export function PrintQrClient() {
         הדפסה / שמירה ל־PDF
       </Button>
       <Button asChild variant="secondary" size="sm">
+        <Link
+          href="/api/stores/qr-batch?format=pdf"
+          target="_blank"
+          rel="noopener"
+        >
+          הורדת PDF לכל החנויות
+        </Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm">
         <Link href="/api/stores/qr-batch" target="_blank" rel="noopener">
-          הורדת QR לכל החנויות
+          תצוגת HTML
         </Link>
       </Button>
     </div>

@@ -116,7 +116,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
 
           {section === 'notifications' ? (
             <div className="grid gap-3">
-              <Field label="מייל התראות SLA" htmlFor="email">
+              <Field label="מייל התראות Ops" htmlFor="email">
                 <Input
                   id="email"
                   type="email"
@@ -127,7 +127,8 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                 />
               </Field>
               <Notice tone="neutral">
-                התראות טכנאים בפיילוט נשלחות ב־WhatsApp עם לינק לתקלה.
+                מקבל: הפרות SLA, תקלות ללא שיוך מעל הסף, ודוח חודשי אוטומטי.
+                התראות טכנאים בפיילוט נשלחות ב־WhatsApp/SMS עם לינק לתקלה.
               </Notice>
             </div>
           ) : null}
@@ -207,7 +208,6 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                 </p>
                 <ul className="t-caption mt-2 space-y-1 text-ink-3">
                   <li>Web Push לטכנאים</li>
-                  <li>דוח חודשי אוטומטי ב-email</li>
                   <li>תמיכה בצרפת (i18n)</li>
                 </ul>
               </div>
