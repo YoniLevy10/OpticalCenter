@@ -740,7 +740,8 @@ export async function replyToSession(input: {
     }
   }
 
-  // Ops reply = human takeover so the bot stays quiet.
+  // Ops reply pauses the bot for this thread until ops clicks «החזר לבוט»
+  // (or the customer starts a new ticket after state=done).
   await supabase
     .from('intake_sessions')
     .update({ human_takeover: true, updated_at: new Date().toISOString() })
