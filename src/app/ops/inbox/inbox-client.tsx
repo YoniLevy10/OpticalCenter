@@ -234,8 +234,8 @@ export function InboxClient() {
       if (!res.ok) throw new Error(json.error || 'עדכון נכשל')
       setNotice(
         status === 'waiting'
-          ? 'סומן כממתין — השתלטות אנושית'
-          : 'סומן כטופל',
+          ? 'הבוט הושהה — השתלטות אנושית'
+          : 'הבוט חזר לפעול בשיחה זו',
       )
       await loadSessions()
       if (selected) await loadThread(selected)
@@ -283,7 +283,9 @@ export function InboxClient() {
         )
       }
       setReply('')
-      setNotice('הודעה נשלחה')
+      setNotice(
+        'הודעה נשלחה · הבוט הושהה לשיחה זו — לחצו «החזר לבוט» כשתסיימו',
+      )
       await loadThread(selected)
       await loadSessions()
       composerRef.current?.focus()
@@ -367,7 +369,7 @@ export function InboxClient() {
                       ) : null}
                       <span className="t-caption text-ink-3">
                         {s.human_takeover || s.inbox_status === 'waiting'
-                          ? 'ממתין'
+                          ? 'בוט מושהה'
                           : s.state === 'done'
                             ? 'טופל'
                             : s.state}
@@ -503,7 +505,7 @@ export function InboxClient() {
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'waiting')}
               >
-                ממתין
+                השהה בוט
               </Button>
               <Button
                 type="button"
@@ -514,14 +516,33 @@ export function InboxClient() {
                   'h-8 border-0 px-2.5 text-[12px]',
                   !waiting
                     ? undefined
-                    : 'text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]',
+                    : 'bg-white/20 text-[var(--tenant-contrast)] hover:bg-white/30 hover:text-[var(--tenant-contrast)]',
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'handled')}
               >
-                טופל
+                {waiting ? 'החזר לבוט' : 'טופל'}
               </Button>
             </div>
           </header>
+
+          {waiting ? (
+            <div className="border-b border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="t-caption text-[var(--signal-warning)]">
+                  הבוט מושהה בשיחה זו — הודעות מהלקוח לא יקבלו מענה אוטומטי.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="resolve"
+                  disabled={busy}
+                  onClick={() => void setInboxStatus(active.wa_id, 'handled')}
+                >
+                  החזר לבוט
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {linkedTickets.length > 0 ? (
             <div className="wa-ticket-strip border-b px-3 py-1.5">

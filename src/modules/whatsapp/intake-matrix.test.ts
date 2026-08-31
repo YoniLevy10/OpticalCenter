@@ -323,6 +323,35 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(memListTickets().length).toBe(before)
   })
 
+  it('WA-13b human_takeover auto-resumes after done + new text', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
+    memUpsertSession({
+      wa_id: waId,
+      country_id: MEM_COUNTRY_ID,
+      store_id: 'il-store-172',
+      store_code: '172',
+      state: 'done',
+      pending_description: null,
+      human_takeover: true,
+      active_ticket_id: 'ticket-old',
+    })
+    const before = memListTickets().length
+    const r = await processInboundMessage(
+      msg({
+        waId,
+        text: 'יש תקלה חדשה — המזגן שוב לא עובד באולם',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(true)
+    expect(r.reply).toBeTruthy()
+    expect(memListTickets().length).toBeGreaterThan(before)
+    const session = memGetSession(waId)
+    expect(session?.human_takeover).toBe(false)
+  })
+
   it('WA-14 STORE_172 HVAC leak → high priority ticket', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()

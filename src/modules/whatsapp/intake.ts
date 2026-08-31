@@ -479,6 +479,7 @@ type SessionPatch = Partial<{
   draft_payload: Record<string, unknown> | null
   active_ticket_id: string | null
   last_inbound: string | null
+  human_takeover: boolean
 }>
 
 async function updateSession(
@@ -508,7 +509,10 @@ async function updateSession(
         patch.active_ticket_id !== undefined
           ? patch.active_ticket_id
           : session.active_ticket_id,
-      human_takeover: session.human_takeover,
+      human_takeover:
+        patch.human_takeover !== undefined
+          ? patch.human_takeover
+          : session.human_takeover,
       last_inbound: patch.last_inbound ?? undefined,
     })
     return
@@ -821,15 +825,36 @@ export async function processInboundMessage(
       last_inbound: text || (message.mediaUrl ? '[media]' : null),
     })
 
-    // Human takeover: log only, bot silent
+    const storeCodeHint = text ? parseStoreCodeFromText(text) : null
+
+    // Human takeover: bot stays silent while ops owns the thread.
+    // Auto-resume when the customer clearly starts a *new* ticket after done,
+    // or sends an explicit STORE_ code — otherwise a forgotten takeover
+    // permanently kills the bot for that phone (see production human_takeover_skip).
     if (session.human_takeover) {
-      logEvent('whatsapp:intake', 'info', 'human_takeover_skip', {
+      const resumeForNewTicket =
+        Boolean(storeCodeHint) ||
+        (session.state === 'done' &&
+          Boolean(text?.trim()) &&
+          !message.mediaUrl)
+
+      if (!resumeForNewTicket) {
+        logEvent('whatsapp:intake', 'info', 'human_takeover_skip', {
+          waId: message.waId,
+          state: session.state,
+        })
+        return { ok: true, reply: null, state: session.state }
+      }
+
+      await updateSession(supabase, session, { human_takeover: false })
+      session = { ...session, human_takeover: false }
+      logEvent('whatsapp:intake', 'info', 'human_takeover_auto_resume', {
         waId: message.waId,
+        reason: storeCodeHint ? 'store_code' : 'new_text_after_done',
       })
-      return { ok: true, reply: null, state: session.state }
     }
 
-    const storeCodeFromText = text ? parseStoreCodeFromText(text) : null
+    const storeCodeFromText = storeCodeHint
     let source = inferSourceFromText(text, message.sourceHint)
 
     // Photo (or other media) right after a ticket was opened → attach to that ticket.
