@@ -49,7 +49,7 @@ export function TechJobList({
               title={t.description || t.title || 'תקלה'}
               footer={
                 <>
-                  <StatusLabel status={t.status} />
+                  <StatusChip status={t.status} />
                   <Dot />
                   <span className="t-meta text-ink-2">
                     {waiting ? 'ממתינה' : t.status === 'in_progress' ? 'בטיפול' : 'הסתיימה'}
