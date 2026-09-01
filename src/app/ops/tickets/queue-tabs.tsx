@@ -19,7 +19,7 @@ export function QueueTabs({ active }: { active: Tab }) {
         className={cn(
           'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
           active === 'open'
-            ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+            ? 'border border-border bg-surface text-ink'
             : 'text-ink-3',
         )}
       >
@@ -32,7 +32,7 @@ export function QueueTabs({ active }: { active: Tab }) {
         className={cn(
           'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
           active === 'resolved'
-            ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+            ? 'border border-border bg-surface text-ink'
             : 'text-ink-3',
         )}
       >

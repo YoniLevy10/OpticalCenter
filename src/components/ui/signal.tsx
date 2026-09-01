@@ -28,7 +28,7 @@ export function priorityEdgeClass(priority: string | null | undefined): string {
 /** Critical rows get a faint tint so a breach-heavy queue reads at a glance. */
 export function priorityRowClass(priority: string | null | undefined): string {
   return priority === 'critical'
-    ? 'bg-[var(--signal-critical-soft)]/40'
+    ? 'bg-[var(--signal-critical-soft)]/25'
     : ''
 }
 
@@ -118,6 +118,42 @@ export function StatusLabel({
         <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', marker)} />
       ) : null}
       {label}
+    </span>
+  )
+}
+
+function statusChipClass(status: string): string {
+  switch (status) {
+    case 'new':
+    case 'waiting_parts':
+      return 'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]'
+    case 'assigned':
+    case 'triaged':
+    case 'in_progress':
+      return 'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]'
+    case 'resolved':
+    case 'closed':
+      return 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]'
+    case 'cancelled':
+      return 'bg-surface-sunken text-ink-3'
+    default:
+      return 'bg-surface-sunken text-ink-2'
+  }
+}
+
+/** Quiet pill for list rows — Operational Quiet inventory style. */
+export function StatusChip({
+  status,
+  className,
+}: {
+  status: TicketStatus | string
+  className?: string
+}) {
+  return (
+    <span
+      className={cn('ops-status-chip', statusChipClass(status), className)}
+    >
+      {plainStatus(status)}
     </span>
   )
 }

@@ -6,10 +6,11 @@ import {
   Panel,
   PanelHeader,
   EmptyState,
+  StatCard,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { StatusLabel } from '@/components/ui/signal'
+import { StatusChip } from '@/components/ui/signal'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -47,6 +48,7 @@ export default async function OpsDashboardPage() {
   const isDemo = ticketResult.backend === 'memory'
   const hasOpen = kpis.open > 0
   const urgentCount = kpis.urgent
+  const unassignedCount = kpis.unassigned
 
   return (
     <OpsAppShell>
@@ -54,52 +56,49 @@ export default async function OpsDashboardPage() {
       <div className="flex flex-col gap-5 stagger">
         <h1 className="t-display text-ink">מה קורה עכשיו?</h1>
 
-        <Panel
-          elevated
-          className={cn(
-            'px-6 py-8 text-center',
-            !hasOpen &&
-              'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
-            hasOpen &&
-              urgentCount > 0 &&
-              'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
-            hasOpen &&
-              urgentCount === 0 &&
-              'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
-          )}
-        >
-          {!hasOpen ? (
-            <>
-              <CheckCircle2
-                className="mx-auto mb-3 h-10 w-10 text-[var(--signal-resolved)]"
-                aria-hidden
-                strokeWidth={1.5}
-              />
-              <p className="t-lead text-[var(--signal-resolved)]">
-                הכל תקין — אין תקלות פתוחות
-              </p>
-            </>
-          ) : (
-            <>
-              <p
-                className={cn(
-                  't-display t-num',
-                  urgentCount > 0
-                    ? 'text-[var(--signal-critical)]'
-                    : 'text-[var(--signal-warning)]',
-                )}
-              >
-                {kpis.open}
-              </p>
-              <p className="t-lead mt-2 text-ink-2">
-                {kpis.open} תקלות פתוחות
-                {urgentCount > 0 ? `, ${urgentCount} דחופות` : ''}
-              </p>
-            </>
-          )}
-        </Panel>
+        <div className="ops-stat-grid">
+          <StatCard label="תקלות פתוחות" value={kpis.open} />
+          <StatCard
+            label="דחופות"
+            value={urgentCount}
+            tone={urgentCount > 0 ? 'critical' : 'neutral'}
+            accent={urgentCount > 0}
+            hint={
+              urgentCount > 0 ? (
+                <span className="text-[var(--signal-critical)]">דורש טיפול</span>
+              ) : undefined
+            }
+          />
+          <StatCard
+            label="ללא טכנאי"
+            value={unassignedCount}
+            tone={unassignedCount > 0 ? 'warning' : 'neutral'}
+            accent={unassignedCount > 0}
+            hint={
+              unassignedCount > 0 ? (
+                <span className="text-[var(--signal-warning)]">ממתין לשיוך</span>
+              ) : undefined
+            }
+          />
+        </div>
 
-        <Panel flush elevated className="overflow-hidden">
+        {!hasOpen ? (
+          <Panel
+            flat
+            className="border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)] px-6 py-6 text-center"
+          >
+            <CheckCircle2
+              className="mx-auto mb-2 h-9 w-9 text-[var(--signal-resolved)]"
+              aria-hidden
+              strokeWidth={1.5}
+            />
+            <p className="t-lead text-[var(--signal-resolved)]">
+              הכל תקין — אין תקלות פתוחות
+            </p>
+          </Panel>
+        ) : null}
+
+        <Panel flush flat className="overflow-hidden">
           <PanelHeader title="תקלות שדורשות תשומת לב" />
           {topUrgent.length === 0 ? (
             <EmptyState
@@ -133,7 +132,7 @@ export default async function OpsDashboardPage() {
                     title={t.title || t.description}
                     footer={
                       <>
-                        <StatusLabel status={t.status} />
+                        <StatusChip status={t.status} />
                         <Dot />
                         <span className="t-meta text-ink-2">לטפל ←</span>
                       </>
@@ -145,7 +144,7 @@ export default async function OpsDashboardPage() {
           )}
         </Panel>
 
-        <Button asChild variant="secondary" size="touch" className="w-full">
+        <Button asChild variant="primary" size="touch" className="w-full">
           <Link href="/ops/tickets">כל התקלות</Link>
         </Button>
 

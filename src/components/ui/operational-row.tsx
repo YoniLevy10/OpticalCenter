@@ -35,7 +35,7 @@ export function OperationalRow({
     <Link
       href={href}
       className={cn(
-        'flex min-h-[80px] flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-colors duration-[var(--dur-1)] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
+        'flex min-h-[76px] flex-col justify-center gap-1.5 px-4 py-3 ps-5 transition-colors duration-[var(--dur-1)] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/30',
         priorityEdgeClass(priority),
         priorityRowClass(priority),
         className,
@@ -74,7 +74,7 @@ export function RowList({
   className?: string
 }) {
   return (
-    <div className={cn('divide-y divide-border bg-surface', className)}>
+    <div className={cn('divide-y divide-border/80 bg-surface', className)}>
       {children}
     </div>
   )

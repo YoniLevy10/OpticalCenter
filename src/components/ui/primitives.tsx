@@ -11,20 +11,24 @@ export function Panel({
   className,
   flush,
   elevated,
+  flat,
   ...rest
 }: {
   children: React.ReactNode
   className?: string
   /** No padding — for tables and lists that manage their own row rhythm. */
   flush?: boolean
-  /** Soft Bamakor-style lift for hero / primary surfaces. */
+  /** Soft lift for hero / primary surfaces. */
   elevated?: boolean
+  /** Flat ops surface — border only, no shadow (Operational Quiet). */
+  flat?: boolean
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
         'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
-        elevated && 'shadow-[var(--shadow-1)]',
+        flat && 'shadow-none',
+        elevated && !flat && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
       )}
@@ -45,13 +49,56 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/35 px-4">
+    <header className="flex min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/25 px-4">
       <div className="flex items-baseline gap-2">
         <h2 className="t-section text-ink">{title}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
       </div>
       {action}
     </header>
+  )
+}
+
+/** Flat KPI tile for ops dashboard (Operational Quiet). */
+export function StatCard({
+  label,
+  value,
+  hint,
+  tone = 'neutral',
+  accent = false,
+  className,
+}: {
+  label: string
+  value: React.ReactNode
+  hint?: React.ReactNode
+  tone?: 'neutral' | 'critical' | 'resolved' | 'warning'
+  /** Red leading bar — for metrics that need attention. */
+  accent?: boolean
+  className?: string
+}) {
+  const valueTone =
+    tone === 'critical'
+      ? 'text-[var(--signal-critical)]'
+      : tone === 'resolved'
+        ? 'text-[var(--signal-resolved)]'
+        : tone === 'warning'
+          ? 'text-[var(--signal-warning)]'
+          : 'text-ink'
+
+  return (
+    <div
+      className={cn(
+        'ops-stat-card',
+        accent && 'ops-stat-card--accent ps-5',
+        className,
+      )}
+    >
+      <span className="ops-stat-label">{label}</span>
+      <div className="mt-1 flex items-end justify-between gap-2">
+        <span className={cn('ops-stat-value', valueTone)}>{value}</span>
+        {hint ? <span className="ops-stat-hint">{hint}</span> : null}
+      </div>
+    </div>
   )
 }
 

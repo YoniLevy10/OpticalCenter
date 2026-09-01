@@ -3,7 +3,7 @@
 import { ClipboardList } from 'lucide-react'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { EmptyState } from '@/components/ui/primitives'
-import { StatusLabel } from '@/components/ui/signal'
+import { StatusChip } from '@/components/ui/signal'
 import { techHref } from '@/lib/tech-href'
 import type { TechTicketRow } from '@/modules/tickets/tech'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'

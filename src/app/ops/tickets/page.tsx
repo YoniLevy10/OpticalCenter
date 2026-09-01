@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { StatusLabel } from '@/components/ui/signal'
+import { StatusChip } from '@/components/ui/signal'
 import { QueueTabs } from './queue-tabs'
 import { PurgeDemoButton } from './purge-demo-button'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
@@ -140,7 +140,7 @@ export default async function TicketsPage({
           />
         ) : null}
 
-        <Panel flush elevated className="overflow-hidden">
+        <Panel flush flat className="overflow-hidden">
           {rows.length === 0 ? (
             <EmptyState
               title={
@@ -168,7 +168,7 @@ export default async function TicketsPage({
                     title={t.title || t.description}
                     footer={
                       <>
-                        <StatusLabel status={t.status} />
+                        <StatusChip status={t.status} />
                         <Dot />
                         <span
                           className={cn(
