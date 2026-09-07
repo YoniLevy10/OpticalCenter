@@ -82,6 +82,8 @@ export async function callIntakeLlm(params: {
       system: SYSTEM_INSTRUCTION,
       prompt,
       temperature: 0.2,
+      // Hard cap so a hung Gateway call cannot starve the outbound reply.
+      abortSignal: AbortSignal.timeout(12_000),
       output: Output.object({
         name: 'whatsapp_intake',
         description: 'Structured WhatsApp fault intake for MaintainOS',
