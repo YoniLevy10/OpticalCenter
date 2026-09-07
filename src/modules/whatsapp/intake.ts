@@ -1243,11 +1243,32 @@ export async function processInboundMessage(
     console.error('[whatsapp] intake error', e)
     logEvent('whatsapp:intake', 'error', 'intake_error', {
       error: e instanceof Error ? e.message : 'unknown',
+      waId: message.waId,
+      messageId: message.messageId,
     })
     const reply = await craftIntakeReply(
       WA_COPY.genericError,
       'intake_generic_error',
     )
+    // Always try to tell the reporter something went wrong — previously this
+    // path built a reply and returned without sending, so WhatsApp stayed silent.
+    try {
+      await sendWhatsAppText({
+        toWaId: message.waId,
+        text: reply,
+        phoneNumberId:
+          message.phoneNumberId ||
+          process.env.WHATSAPP_PHONE_NUMBER_ID ||
+          null,
+        forceDryRun: options?.skipOutboundGraph === true,
+        purpose: 'intake_reply',
+      })
+    } catch (sendErr) {
+      logEvent('whatsapp:intake', 'error', 'error_reply_send_failed', {
+        error: sendErr instanceof Error ? sendErr.message : 'unknown',
+        waId: message.waId,
+      })
+    }
     return {
       ok: false,
       reply,

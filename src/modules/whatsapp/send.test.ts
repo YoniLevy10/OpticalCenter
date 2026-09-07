@@ -167,3 +167,52 @@ describe('sendWhatsAppText ops_reply', () => {
     expect(result.dryRun).toBe(true)
   })
 })
+
+describe('sendWhatsAppText intake_reply', () => {
+  const prevToken = process.env.WHATSAPP_ACCESS_TOKEN
+  const prevPhone = process.env.WHATSAPP_PHONE_NUMBER_ID
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    if (prevToken === undefined) delete process.env.WHATSAPP_ACCESS_TOKEN
+    else process.env.WHATSAPP_ACCESS_TOKEN = prevToken
+    if (prevPhone === undefined) delete process.env.WHATSAPP_PHONE_NUMBER_ID
+    else process.env.WHATSAPP_PHONE_NUMBER_ID = prevPhone
+  })
+
+  it('fails clearly when token missing (no silent dry-run)', async () => {
+    delete process.env.WHATSAPP_ACCESS_TOKEN
+    process.env.WHATSAPP_PHONE_NUMBER_ID = '1262299850304510'
+    const result = await sendWhatsAppText({
+      toWaId: '972501112233',
+      text: 'מה קוד החנות?',
+      purpose: 'intake_reply',
+    })
+    expect(result.ok).toBe(false)
+    expect(result.dryRun).toBe(false)
+    expect(result.error).toMatch(/WHATSAPP_ACCESS_TOKEN/)
+  })
+
+  it('sends intake reply on Graph success', async () => {
+    process.env.WHATSAPP_ACCESS_TOKEN = 'test-token'
+    process.env.WHATSAPP_PHONE_NUMBER_ID = '1262299850304510'
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ messages: [{ id: 'wamid.INTAKE1' }] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await sendWhatsAppText({
+      toWaId: '972501112233',
+      text: 'מה קוד החנות שלכם?',
+      purpose: 'intake_reply',
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.dryRun).toBe(false)
+    expect(result.waMessageId).toBe('wamid.INTAKE1')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})

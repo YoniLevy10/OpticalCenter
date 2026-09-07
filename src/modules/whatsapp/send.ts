@@ -94,10 +94,13 @@ export async function sendWhatsAppText(
     : process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
   const phoneNumberId = resolveWhatsAppPhoneNumberId(params.phoneNumberId)
 
+  // intake_reply must also fail loudly — silent dry-run looked like "bot
+  // received the message but never answered" in production WhatsApp chats.
   const requireLive =
     purpose === 'ops_reply' ||
     purpose === 'status_update' ||
-    purpose === 'ticket_confirmation'
+    purpose === 'ticket_confirmation' ||
+    purpose === 'intake_reply'
 
   if (!params.forceDryRun && requireLive) {
     if (!token) {

@@ -112,6 +112,8 @@ export async function enhanceWhatsAppMessage(
       system: SYSTEM_PROMPT,
       prompt,
       maxOutputTokens: 300,
+      // Hard cap so webhook `after()` is not killed before sendReply runs.
+      abortSignal: AbortSignal.timeout(12_000),
     })
 
     if (text?.trim()) return text.trim()

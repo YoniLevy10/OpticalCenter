@@ -10,6 +10,8 @@ import { checkRateLimit, clientIpFromRequest } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+/** Allow `after()` intake + optional AI rewrite + Graph send to finish. */
+export const maxDuration = 60
 
 const WEBHOOK_RATE_LIMIT = 60
 const WEBHOOK_RATE_WINDOW_MS = 60_000
