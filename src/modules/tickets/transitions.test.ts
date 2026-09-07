@@ -16,6 +16,12 @@ describe('ticket status transitions', () => {
     expect(canTransition('resolved', 'closed')).toBe(true)
   })
 
+  it('allows HQ quick-close to resolved from open states', () => {
+    expect(canTransition('new', 'resolved')).toBe(true)
+    expect(canTransition('triaged', 'resolved')).toBe(true)
+    expect(canTransition('assigned', 'resolved')).toBe(true)
+  })
+
   it('blocks terminal and illegal jumps', () => {
     expect(canTransition('closed', 'new')).toBe(false)
     expect(canTransition('cancelled', 'assigned')).toBe(false)

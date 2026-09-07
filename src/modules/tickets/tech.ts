@@ -95,7 +95,7 @@ export async function fetchTechTickets(techId: string | null): Promise<{
         )
         .in('status', TECH_LIST_STATUSES)
         .order('updated_at', { ascending: false })
-        .limit(100)
+        .limit(300)
 
       if (techId) {
         query = query.or(

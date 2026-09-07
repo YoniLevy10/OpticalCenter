@@ -150,7 +150,7 @@ export function TicketActions({
         </Button>
       ) : null}
 
-      {!unassigned && open ? (
+      {open ? (
         <Button
           type="button"
           variant="secondary"
@@ -160,7 +160,10 @@ export function TicketActions({
           onClick={() =>
             void (async () => {
               const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
-              if (ok) setLocalStatus('resolved')
+              if (ok) {
+                setLocalStatus('resolved')
+                startTransition(() => router.push('/ops/tickets?view=resolved'))
+              }
             })()
           }
         >

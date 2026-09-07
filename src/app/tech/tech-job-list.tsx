@@ -40,12 +40,27 @@ export function TechJobList({
         {sorted.map((t) => {
           const waiting = OPEN_TICKET_STATUSES.includes(t.status as never) &&
             t.status !== 'in_progress'
+          const num =
+            t.display_number ||
+            (t.number != null ? `OC-${t.number}` : null)
           return (
             <OperationalRow
               key={t.id}
               href={techHref(`/tech/${t.id}`, techId)}
               priority={t.priority}
-              leading={storeLabel(t.stores)}
+              leading={
+                <span className="inline-flex items-center gap-2">
+                  {num ? (
+                    <span className="t-num text-ink" data-live="ticket-no">
+                      {num}
+                      <span className="mx-1.5 text-ink-3" aria-hidden>
+                        ·
+                      </span>
+                    </span>
+                  ) : null}
+                  <span>{storeLabel(t.stores)}</span>
+                </span>
+              }
               title={t.description || t.title || 'תקלה'}
               footer={
                 <>

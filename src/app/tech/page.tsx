@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorIsTech } from '@/lib/auth/types'
+import { techHref } from '@/lib/tech-href'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export default async function TechPortalPage({
   const techId = resolveServerTechId(actor, params.techId ?? null)
   const { tickets: fetched, error } = await fetchTechTickets(techId)
 
+  // Strict: only jobs assigned to this technician (no unassigned pool noise).
   const tickets = techId
     ? fetched.filter((t) => t.assigned_to === techId)
     : []
@@ -37,8 +39,12 @@ export default async function TechPortalPage({
     OPEN_TICKET_STATUSES.includes(t.status as never),
   ).length
 
-  const missingTech =
-    !techId || (actor && !actorIsTech(actor) && !shouldAllowDemoEntry())
+  const missingTech = !techId
+  const hqPreview =
+    Boolean(techId) &&
+    Boolean(actor) &&
+    !actorIsTech(actor!) &&
+    Boolean(params.techId)
 
   return (
     <TechShell
@@ -68,7 +74,19 @@ export default async function TechPortalPage({
       {missingTech ? (
         <div className="mb-3">
           <Notice tone="warning">
-            לא זוהה טכנאי. פתחו את הקישור האישי שקיבלתם.
+            לא זוהה טכנאי. היכנסו עם חשבון טכנאי, או פתחו את קישור השטח האישי
+            ממסך המשתמשים (כולל techId).
+          </Notice>
+        </div>
+      ) : null}
+
+      {hqPreview ? (
+        <div className="mb-3">
+          <Notice tone="warning">
+            תצוגת תור של טכנאי דרך קישור שטח.{' '}
+            <a className="underline" href={techHref('/tech', techId)}>
+              רענון
+            </a>
           </Notice>
         </div>
       ) : null}

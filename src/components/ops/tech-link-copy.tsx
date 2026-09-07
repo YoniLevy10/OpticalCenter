@@ -20,10 +20,9 @@ export function TechFieldLinkCopy({
 
   const origin =
     typeof window !== 'undefined' ? window.location.origin : ''
-  const demo =
-    process.env.NEXT_PUBLIC_MAINTAINOS_DEMO_ENTRY === '1' ||
-    process.env.NODE_ENV !== 'production'
-  const path = demo ? techHref('/tech', userId) : '/tech'
+  // Always include techId so HQ field-links open the correct personal queue
+  // (logged-in technicians still resolve via session actor.id).
+  const path = techHref('/tech', userId)
   const url = origin ? `${origin}${path}` : path
 
   async function copy() {

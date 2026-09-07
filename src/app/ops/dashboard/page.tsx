@@ -25,6 +25,47 @@ import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
+function DashTile({
+  href,
+  value,
+  label,
+  tone = 'neutral',
+}: {
+  href: string
+  value: number | string
+  label: string
+  tone?: 'neutral' | 'critical' | 'warning' | 'ok'
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex min-h-[5.5rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border px-4 py-3 transition-colors duration-[var(--dur-1)] active:opacity-90 md:hover:bg-surface-sunken/40',
+        tone === 'critical' &&
+          'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
+        tone === 'warning' &&
+          'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
+        tone === 'ok' &&
+          'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
+        tone === 'neutral' && 'border-border bg-surface',
+      )}
+    >
+      <span
+        className={cn(
+          't-display t-num leading-none',
+          tone === 'critical' && 'text-[var(--signal-critical)]',
+          tone === 'warning' && 'text-[var(--signal-warning)]',
+          tone === 'ok' && 'text-[var(--signal-resolved)]',
+          tone === 'neutral' && 'text-ink',
+        )}
+      >
+        {value}
+      </span>
+      <span className="t-caption text-ink-2">{label}</span>
+    </Link>
+  )
+}
+
 export default async function OpsDashboardPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -54,10 +95,60 @@ export default async function OpsDashboardPage() {
       <div className="flex flex-col gap-5 stagger">
         <h1 className="t-display text-ink">מה קורה עכשיו?</h1>
 
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={kpis.open}
+            label="פתוחות"
+            tone={
+              !hasOpen ? 'ok' : urgentCount > 0 ? 'critical' : 'warning'
+            }
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={urgentCount}
+            label="דחופות"
+            tone={urgentCount > 0 ? 'critical' : 'neutral'}
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={kpis.unassigned}
+            label="ללא אחראי"
+            tone={kpis.unassigned > 0 ? 'warning' : 'neutral'}
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={kpis.inProgress}
+            label="בטיפול"
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={kpis.waiting}
+            label="ממתינות לחלקים"
+          />
+          <DashTile
+            href="/ops/tickets?view=resolved"
+            value={kpis.done}
+            label="הסתיימו"
+            tone="ok"
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={kpis.breached}
+            label="חריגות SLA"
+            tone={kpis.breached > 0 ? 'critical' : 'neutral'}
+          />
+          <DashTile
+            href="/ops/users"
+            value={technicians.length}
+            label="טכנאים"
+          />
+        </div>
+
         <Panel
           elevated
           className={cn(
-            'px-6 py-8 text-center',
+            'px-6 py-6 text-center',
             !hasOpen &&
               'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
             hasOpen &&
@@ -80,22 +171,11 @@ export default async function OpsDashboardPage() {
               </p>
             </>
           ) : (
-            <>
-              <p
-                className={cn(
-                  't-display t-num',
-                  urgentCount > 0
-                    ? 'text-[var(--signal-critical)]'
-                    : 'text-[var(--signal-warning)]',
-                )}
-              >
-                {kpis.open}
-              </p>
-              <p className="t-lead mt-2 text-ink-2">
-                {kpis.open} תקלות פתוחות
-                {urgentCount > 0 ? `, ${urgentCount} דחופות` : ''}
-              </p>
-            </>
+            <p className="t-body text-ink-2">
+              {urgentCount > 0
+                ? `${urgentCount} דחופות דורשות טיפול עכשיו`
+                : 'יש תקלות פתוחות — אין דחופות כרגע'}
+            </p>
           )}
         </Panel>
 
@@ -112,12 +192,23 @@ export default async function OpsDashboardPage() {
             <RowList>
               {topUrgent.map((t) => {
                 const openFor = plainOpenForHe(t.created_at, t)
+                const num =
+                  t.display_number ||
+                  (t.number != null ? `OC-${t.number}` : null)
                 return (
                   <OperationalRow
                     key={t.id}
                     href={`/ops/tickets/${t.id}`}
                     priority={t.priority}
-                    leading={storeLabel(t.stores)}
+                    leading={
+                      <span className="inline-flex items-center gap-2">
+                        {num ? (
+                          <span className="t-num text-ink">{num}</span>
+                        ) : null}
+                        {num ? <span aria-hidden>·</span> : null}
+                        <span>{storeLabel(t.stores)}</span>
+                      </span>
+                    }
                     trailing={
                       <span
                         className={cn(

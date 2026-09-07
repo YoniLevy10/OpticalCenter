@@ -29,9 +29,10 @@ const patchSchema = z
   .object({
     status: z.enum(TICKET_STATUSES).optional(),
     assignedTo: z.string().uuid().optional(),
+    note: z.string().trim().max(2000).optional(),
   })
-  .refine((v) => v.status != null || v.assignedTo != null, {
-    message: 'יש לציין status או assignedTo',
+  .refine((v) => v.status != null || v.assignedTo != null || Boolean(v.note), {
+    message: 'יש לציין status, assignedTo או note',
   })
 
 async function resolveTechProfile(assignedTo: string) {
@@ -103,6 +104,13 @@ export async function PATCH(
     }
     if (parsed.data.status) {
       ticket = await updateStatus(id, parsed.data.status, actor.id)
+    }
+    if (parsed.data.note) {
+      const { appendEvent } = await import('@/modules/tickets/service')
+      await appendEvent(id, 'hq_note', actor.id, {
+        note: parsed.data.note,
+        ...(parsed.data.status ? { to_status: parsed.data.status } : {}),
+      })
     }
 
     // Refresh detail for templates (store name, assignee).

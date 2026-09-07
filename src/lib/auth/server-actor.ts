@@ -72,5 +72,10 @@ export function resolveServerTechId(
     return resolveTechId(queryTechId ?? null)
   }
 
-  return actor?.id ?? null
+  // HQ / anonymous in production: never treat the HQ profile id as a
+  // technician id (assigned tickets looked "missing" on /tech). Honor
+  // explicit ?techId= from field links so HQ can open a tech's queue.
+  const fromQuery = queryTechId?.trim()
+  if (fromQuery && isProfileUuid(fromQuery)) return fromQuery
+  return null
 }

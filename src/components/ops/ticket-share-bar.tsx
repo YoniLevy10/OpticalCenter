@@ -8,19 +8,25 @@ export function TicketShareBar({
   storeName,
   description,
   techName,
+  techId,
 }: {
   display: string
   storeCode?: string
   storeName?: string
   description: string
   techName?: string | null
+  techId?: string | null
 }) {
   const lines = [
     `MaintainOS · ${display}`,
     storeName && storeCode ? `${storeName} (#${storeCode})` : null,
     description.slice(0, 200),
     techName ? `טכנאי: ${techName}` : 'לא משויך',
-    typeof window !== 'undefined' ? `${window.location.origin}/tech` : '/tech',
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${techId ? `/tech?techId=${encodeURIComponent(techId)}` : '/tech'}`
+      : techId
+        ? `/tech?techId=${techId}`
+        : '/tech',
   ].filter(Boolean)
 
   return (
