@@ -28,7 +28,14 @@
 
 ## הצד שלך (Meta + מספר)
 
-1. WhatsApp Business / Meta Cloud API — מספר פעיל  
+> **חיבור מחדש (App חדש):** אם המספר הועבר בין Meta Apps, ראו  
+> [`WHATSAPP_PHONE_CONNECT_PLAN.md`](./WHATSAPP_PHONE_CONNECT_PLAN.md).  
+> סימפטום אופייני ב־`/api/health/pilot`:  
+> `meta_graph_send_ready` נכשל עם  
+> `The application does not belong to system user's business…`  
+> → מחליפים את כל `WHATSAPP_*` (+ verify token) לערכים מה־App החדש, מגדירים webhook מחדש, Redeploy, ומריצים `configure-whatsapp-country.mjs`.
+
+1. WhatsApp Business / Meta Cloud API — מספר פעיל **ב־App / WABA הנכון**  
 2. ב־Vercel Production:
    - `WHATSAPP_PHONE_NUMBER_ID`
    - `WHATSAPP_ACCESS_TOKEN`
