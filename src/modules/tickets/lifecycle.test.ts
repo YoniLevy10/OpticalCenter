@@ -61,9 +61,7 @@ describe('Ticket lifecycle transitions', () => {
   })
 
   const invalid: [TicketStatus, TicketStatus][] = [
-    ['new', 'resolved'],
     ['new', 'closed'],
-    ['assigned', 'resolved'],
     ['closed', 'in_progress'],
     ['cancelled', 'assigned'],
     ['new', 'new'],
@@ -81,6 +79,18 @@ describe('Ticket lifecycle transitions', () => {
       await expect(updateStatus(id, to)).rejects.toThrow(/לא חוקי/)
     })
   }
+
+  it('allows HQ quick-close new → resolved and assigned → resolved', async () => {
+    const fromNew = await seed('new')
+    const closedNew = await updateStatus(fromNew.id, 'resolved')
+    expect(closedNew.status).toBe('resolved')
+    expect(closedNew.resolved_at).toBeTruthy()
+
+    const fromAssigned = await seed('assigned')
+    const closedAssigned = await updateStatus(fromAssigned.id, 'resolved')
+    expect(closedAssigned.status).toBe('resolved')
+    expect(closedAssigned.resolved_at).toBeTruthy()
+  })
 
   it('reopen resolved → in_progress clears resolved_at', async () => {
     const t = await seed('resolved')
