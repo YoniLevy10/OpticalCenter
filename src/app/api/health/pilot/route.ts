@@ -108,7 +108,9 @@ export async function GET() {
   let countryPhoneId = ''
   let storePhones = 0
   let recentInboundCount = 0
+  let recentOutboundCount = 0
   let activeHumanPauses = 0
+  let lastInboundSummary = ''
   if (ready) {
     try {
       const supabase = createSystemClient('pilot_health')
@@ -147,6 +149,28 @@ export async function GET() {
         .eq('direction', 'inbound')
         .gte('created_at', sinceIso)
       recentInboundCount = inboundCount ?? 0
+
+      const { count: outboundCount } = await supabase
+        .from('whatsapp_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('direction', 'outbound')
+        .gte('created_at', sinceIso)
+      recentOutboundCount = outboundCount ?? 0
+
+      const { data: lastIn } = await supabase
+        .from('whatsapp_messages')
+        .select('wa_id, body, created_at')
+        .eq('direction', 'inbound')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (lastIn?.wa_id) {
+        const wa = String(lastIn.wa_id)
+        const masked =
+          wa.length > 6 ? `${wa.slice(0, 4)}…${wa.slice(-3)}` : wa
+        const body = (lastIn.body as string | null)?.slice(0, 40) || '(ללא טקסט)'
+        lastInboundSummary = `${masked}: ${body}`
+      }
 
       const nowIso = new Date().toISOString()
       const { count: pauseCount } = await supabase
@@ -303,10 +327,23 @@ export async function GET() {
     level: 'info',
     message: ready
       ? recentInboundCount > 0
-        ? `${recentInboundCount} הודעות נכנסות ב־30 הדקות האחרונות (webhook מגיע)`
+        ? `${recentInboundCount} נכנסות / ${recentOutboundCount} יוצאות ב־30 דק׳${lastInboundSummary ? ` · אחרונה: ${lastInboundSummary}` : ''}`
         : 'אין הודעות נכנסות ב־30 הדקות האחרונות — אם שלחתם לבוט ולא הופיע כאן, בדקו ב־Meta שה־webhook מצביע ל־Callback URL וה־messages subscribed'
       : 'לא ניתן לבדוק inbound בלי Supabase',
     owner: 'meta',
+  })
+
+  checks.push({
+    id: 'inbound_without_reply',
+    ok: !(recentInboundCount > 0 && recentOutboundCount === 0),
+    level: 'should',
+    message:
+      recentInboundCount > 0 && recentOutboundCount === 0
+        ? 'יש הודעות נכנסות בלי תשובות יוצאות — עיבוד/שליחה נכשלים אחרי ה־webhook'
+        : recentOutboundCount > 0
+          ? 'יש תשובות יוצאות מהבוט לאחרונה'
+          : 'אין פעילות יוצאת לבדיקה',
+    owner: 'ops',
   })
 
   checks.push({

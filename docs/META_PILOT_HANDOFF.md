@@ -3,7 +3,7 @@
 ## צד בנייה (MaintainOS) — הושלם בקוד
 
 - [x] AI Intake Agent + Rules Engine + clarification + takeover
-- [x] Webhook fast-path (`after`) + signature + dedupe + send retries
+- [x] Webhook sync process (verify → intake → Graph reply → 200) + signature + dedupe + send retries
 - [x] Ticket creation דרך השירות הקיים → Ops dashboard
 - [x] מדיה → `ticket-media`
 - [x] QR/NFC deep link `STORE_{code}` (דורש מספר עסקי)
