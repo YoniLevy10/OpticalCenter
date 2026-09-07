@@ -95,6 +95,7 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   assigned: 'שיוך טכנאי',
   sla_breached: 'חריגת SLA',
   tech_note: 'הערת טכנאי',
+  hq_note: 'הערת מוקד',
   tech_photo: 'תמונת טכנאי',
 }
 

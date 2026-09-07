@@ -20,7 +20,7 @@ export { DEMO_TECH_ID }
 export async function listTechTickets(opts?: {
   techId?: string | null
 }): Promise<{ tickets: TechTicketRow[]; backend: 'supabase' | 'memory' }> {
-  const { tickets, backend } = await listTickets(100)
+  const { tickets, backend } = await listTickets(500)
   const openish = new Set(TECH_LIST_STATUSES)
   let filtered = tickets.filter((t) => openish.has(t.status as TicketStatus))
 

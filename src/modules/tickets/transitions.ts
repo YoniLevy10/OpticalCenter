@@ -7,9 +7,10 @@ import { TICKET_STATUSES } from '@/modules/tickets/constants'
  * Cancellation is allowed from any non-terminal open state.
  */
 export const ALLOWED_TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
-  new: ['triaged', 'assigned', 'cancelled'],
-  triaged: ['assigned', 'cancelled'],
-  assigned: ['in_progress', 'cancelled'],
+  // HQ may close (→ resolved) from any open state — "סגור תקלה" must not fail.
+  new: ['triaged', 'assigned', 'resolved', 'cancelled'],
+  triaged: ['assigned', 'resolved', 'cancelled'],
+  assigned: ['in_progress', 'resolved', 'cancelled'],
   in_progress: ['waiting_parts', 'resolved', 'cancelled'],
   waiting_parts: ['in_progress', 'resolved', 'cancelled'],
   resolved: ['closed', 'in_progress'],

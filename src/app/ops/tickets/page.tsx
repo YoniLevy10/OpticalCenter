@@ -10,10 +10,9 @@ import {
   ErrorState,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
-import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { StatusLabel } from '@/components/ui/signal'
 import { QueueTabs } from './queue-tabs'
 import { PurgeDemoButton } from './purge-demo-button'
+import { TicketQueueItem } from './ticket-queue-item'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import {
   applyQueue,
@@ -23,11 +22,6 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
-import {
-  plainOpenForHe,
-  storeLabel,
-} from '@/components/ops/plain-labels'
-import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,9 +83,10 @@ export default async function TicketsPage({
       ? String(ticketResult.error)
       : null
 
+  // Newest → oldest; sequential OC-N numbers shown on each row.
   const filtered = applyQueue(all, {
     view,
-    sort: 'urgency',
+    sort: 'newest',
     includeDemo: false,
   })
 
@@ -156,38 +151,16 @@ export default async function TicketsPage({
               icon={PartyPopper}
             />
           ) : (
-            <RowList>
-              {rows.map((t) => {
-                const openFor = plainOpenForHe(t.created_at, t)
-                return (
-                  <OperationalRow
-                    key={t.id}
-                    href={`/ops/tickets/${t.id}`}
-                    priority={t.priority}
-                    leading={storeLabel(t.stores)}
-                    title={t.title || t.description}
-                    footer={
-                      <>
-                        <StatusLabel status={t.status} />
-                        <Dot />
-                        <span
-                          className={cn(
-                            't-meta truncate',
-                            openFor.overdue
-                              ? 'text-[var(--signal-critical)]'
-                              : 'text-ink-2',
-                          )}
-                        >
-                          {view === 'resolved'
-                            ? technicianName(t.assigned_to, technicians)
-                            : openFor.text}
-                        </span>
-                      </>
-                    }
-                  />
-                )
-              })}
-            </RowList>
+            <div className="divide-y divide-border bg-surface">
+              {rows.map((t) => (
+                <TicketQueueItem
+                  key={t.id}
+                  ticket={t}
+                  view={view}
+                  assigneeLabel={technicianName(t.assigned_to, technicians)}
+                />
+              ))}
+            </div>
           )}
         </Panel>
 
