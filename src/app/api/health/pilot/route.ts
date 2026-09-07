@@ -105,6 +105,7 @@ export async function GET() {
   let schemaAi = false
   let schemaMessages = false
   let countryDemo = true
+  let countryPhoneId = ''
   let storePhones = 0
   if (ready) {
     try {
@@ -126,8 +127,11 @@ export async function GET() {
         .select('code, whatsapp_phone_number_id')
         .eq('code', 'IL')
         .maybeSingle()
-      const id = countries?.whatsapp_phone_number_id || ''
-      countryDemo = !id || id.includes('demo') || id.startsWith('wa_phone_')
+      countryPhoneId = countries?.whatsapp_phone_number_id || ''
+      countryDemo =
+        !countryPhoneId ||
+        countryPhoneId.includes('demo') ||
+        countryPhoneId.startsWith('wa_phone_')
 
       const { count } = await supabase
         .from('store_phones')
@@ -137,6 +141,16 @@ export async function GET() {
       /* ignore */
     }
   }
+
+  const envPhoneId = (
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+    ''
+  ).trim()
+  const phoneIdAligned =
+    !envPhoneId || !countryPhoneId || countryDemo
+      ? true
+      : envPhoneId === countryPhoneId
 
   checks.push({
     id: 'schema_ai_intake',
@@ -158,6 +172,16 @@ export async function GET() {
       : countryDemo
         ? 'countries.whatsapp_phone_number_id עדיין demo — עדכנו למזהה Meta האמיתי'
         : 'מזהה מדינה IL מחובר ל־Meta',
+    owner: 'meta',
+  })
+
+  checks.push({
+    id: 'country_phone_matches_env',
+    ok: phoneIdAligned,
+    level: 'must',
+    message: phoneIdAligned
+      ? 'מזהה המספר ב־DB תואם ל־Vercel env'
+      : `אי־התאמה אחרי חיבור Meta מחדש — DB≠env. הריצו: configure-whatsapp-country --phone-number-id=${envPhoneId || '<ID>'}`,
     owner: 'meta',
   })
 
