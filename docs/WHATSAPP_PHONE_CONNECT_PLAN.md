@@ -134,7 +134,10 @@ node scripts/configure-whatsapp-country.mjs \
 2. **App ב־Development**  
    אם האפליקציה לא Published — רק מספרי **Admin / Developer / Tester** מקבלים webhooks.  
    הוסף את מספר ה־WhatsApp שממנו אתה כותב:  
-   App roles → Roles → Add Testers (או App → WhatsApp → API Setup → רשימת מספרי בדיקה).
+   App roles → Roles → Add Testers (או App → WhatsApp → API Setup → רשימת מספרי בדיקה).  
+   לפרסום האפליקציה ב־Meta נדרשים URLs ציבוריים:  
+   - Privacy Policy: `https://optical-center-rose.vercel.app/privacy`  
+   - Terms of Service: `https://optical-center-rose.vercel.app/terms`
 
 3. **`WHATSAPP_APP_SECRET` מה־App החדש**  
    Verify משתמש ב־Verify token; שליחת הודעות משתמשת בחתימה עם App Secret.  
