@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, after } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import {
   parseWhatsAppWebhook,
   processInboundMessage,
@@ -10,7 +10,11 @@ import { checkRateLimit, clientIpFromRequest } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-/** Allow `after()` intake + optional AI rewrite + Graph send to finish. */
+/**
+ * Process intake + Graph reply inside the request.
+ * Do NOT defer with `after()` — on Vercel that continuation often never
+ * finishes after Meta already got 200, so the bot "receives" but never replies.
+ */
 export const maxDuration = 60
 
 const WEBHOOK_RATE_LIMIT = 60
@@ -36,9 +40,8 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Inbound WhatsApp messages — fast path.
- * Verify + parse + acknowledge 200; AI/intake runs via `after()` so Meta
- * does not hit timeouts (Helban-style separation).
+ * Inbound WhatsApp messages — verify, process, reply, then 200.
+ * Meta allows ~15–20s; AI calls are capped (~12s) so this fits maxDuration.
  */
 export async function POST(request: NextRequest) {
   const ip = clientIpFromRequest(request)
@@ -84,49 +87,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, accepted: 0 }, { status: 200 })
     }
 
-    // Sync path for tests / memory when AFTER is disabled
-    const sync =
-      process.env.WHATSAPP_WEBHOOK_SYNC === '1' ||
-      process.env.MAINTAINOS_FORCE_MEMORY === '1' ||
-      process.env.NODE_ENV === 'test'
-
-    if (sync) {
-      const results = []
-      for (const msg of messages) {
+    const results = []
+    for (const msg of messages) {
+      try {
         const result = await processInboundMessage(msg)
-        results.push({
+        const summary = {
           messageId: msg.messageId,
+          waId: msg.waId,
           ok: result.ok,
           duplicate: result.duplicate ?? false,
           ticketId: result.ticketId ?? null,
           state: result.state ?? null,
+          hasReply: Boolean(result.reply),
+          error: result.error ?? null,
+        }
+        results.push(summary)
+        logEvent('whatsapp:webhook', 'info', 'processed', summary)
+        console.info('[whatsapp:webhook] processed', JSON.stringify(summary))
+      } catch (e) {
+        captureError(e, {
+          route: 'POST /api/whatsapp/webhook',
+          messageId: msg.messageId,
+        })
+        const error = e instanceof Error ? e.message : 'unknown'
+        logEvent('whatsapp:webhook', 'error', 'process_failed', {
+          messageId: msg.messageId,
+          error,
+        })
+        console.error('[whatsapp:webhook] process_failed', error)
+        results.push({
+          messageId: msg.messageId,
+          ok: false,
+          error,
         })
       }
-      return NextResponse.json(
-        { ok: true, processed: results.length, results },
-        { status: 200 },
-      )
     }
 
-    after(async () => {
-      for (const msg of messages) {
-        try {
-          await processInboundMessage(msg)
-        } catch (e) {
-          captureError(e, {
-            route: 'POST /api/whatsapp/webhook after',
-            messageId: msg.messageId,
-          })
-          logEvent('whatsapp:webhook', 'error', 'after_process_failed', {
-            messageId: msg.messageId,
-            error: e instanceof Error ? e.message : 'unknown',
-          })
-        }
-      }
-    })
-
     return NextResponse.json(
-      { ok: true, accepted: messages.length },
+      { ok: true, processed: results.length, results },
       { status: 200 },
     )
   } catch (e) {

@@ -26,6 +26,7 @@ import { enhanceWhatsAppMessage, type WhatsAppAiSituation } from './ai'
 import { resolveInboundMediaUrl } from './media'
 import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
+import { resolveWhatsAppPhoneNumberId } from './phone-number-id'
 import type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'
 import { isHumanPauseActive } from './human-pause'
 import { isNonIssueAck } from './non-issue'
@@ -1548,7 +1549,9 @@ async function sendReply(
   const result = await sendWhatsAppText({
     toWaId: message.waId,
     text: reply,
-    phoneNumberId: message.phoneNumberId || country.whatsapp_phone_number_id,
+    phoneNumberId: resolveWhatsAppPhoneNumberId(
+      message.phoneNumberId || country.whatsapp_phone_number_id,
+    ),
     ticketId,
     supabase: ticketId && supabase ? supabase : undefined,
     forceDryRun,
@@ -1560,13 +1563,26 @@ async function sendReply(
       dryRun: result.dryRun,
       error: result.error ?? null,
       to: message.waId,
-      phoneNumberId: message.phoneNumberId || country.whatsapp_phone_number_id,
+      phoneNumberId: result.phoneNumberId ?? null,
     })
+    console.warn(
+      '[whatsapp:send] outbound_result',
+      JSON.stringify({
+        ok: result.ok,
+        dryRun: result.dryRun,
+        error: result.error ?? null,
+        to: message.waId,
+      }),
+    )
   } else {
     logEvent('whatsapp:send', 'info', 'outbound_ok', {
       to: message.waId,
       waMessageId: result.waMessageId,
     })
+    console.info(
+      '[whatsapp:send] outbound_ok',
+      JSON.stringify({ to: message.waId, waMessageId: result.waMessageId }),
+    )
   }
   await logWhatsAppMessage({
     supabase,
