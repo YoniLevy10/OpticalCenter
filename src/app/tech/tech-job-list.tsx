@@ -50,8 +50,14 @@ export function TechJobList({
               priority={t.priority}
               leading={
                 <span className="inline-flex items-center gap-2">
-                  {num ? <span className="t-num text-ink">{num}</span> : null}
-                  {num ? <span aria-hidden>·</span> : null}
+                  {num ? (
+                    <span className="t-num text-ink" data-live="ticket-no">
+                      {num}
+                      <span className="mx-1.5 text-ink-3" aria-hidden>
+                        ·
+                      </span>
+                    </span>
+                  ) : null}
                   <span>{storeLabel(t.stores)}</span>
                 </span>
               }

@@ -29,6 +29,7 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator('.live-sla'),
     page.locator('.live-age'),
     page.locator('.t-num'),
+    page.locator('[data-live="ticket-no"]'),
     // Lifecycle WA notifies + chronology length vary by ticket id / prior seeds.
     page.locator('[data-visual="ticket-timeline"]'),
     page.locator('[data-activity-kind]'),

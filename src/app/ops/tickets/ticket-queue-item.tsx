@@ -110,8 +110,12 @@ export function TicketQueueItem({
         priority={ticket.priority}
         leading={
           <span className="inline-flex items-center gap-2">
-            <span className="t-num">{displayNum(ticket)}</span>
-            <span aria-hidden>·</span>
+            <span className="t-num" data-live="ticket-no">
+              {displayNum(ticket)}
+              <span className="mx-1.5 text-ink-3" aria-hidden>
+                ·
+              </span>
+            </span>
             <span>{storeLabel(ticket.stores)}</span>
           </span>
         }
@@ -142,9 +146,9 @@ export function TicketQueueItem({
         )}
       >
         <div className="flex items-baseline justify-between gap-3">
-          <span className="t-caption t-num text-ink-3">
+          <span className="t-caption t-num text-ink-3" data-live="ticket-no">
             <span className="text-ink">{displayNum(ticket)}</span>
-            <span className="mx-1.5 text-ink-3" aria-hidden>
+            <span className="mx-1.5" aria-hidden>
               ·
             </span>
             {storeLabel(ticket.stores)}
