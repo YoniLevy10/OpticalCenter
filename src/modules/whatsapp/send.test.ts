@@ -223,4 +223,35 @@ describe('sendWhatsAppText intake_reply', () => {
     expect(result.waMessageId).toBe('wamid.INTAKE1')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it('maps Meta 131030 allowlist errors to actionable Hebrew', async () => {
+    process.env.WHATSAPP_ACCESS_TOKEN = 'test-token'
+    process.env.WHATSAPP_PHONE_NUMBER_ID = '1262299850304510'
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          error: {
+            message: '(#131030) Recipient phone number not in allowed list',
+            type: 'OAuthException',
+            code: 131030,
+            fbtrace_id: 'ABC',
+          },
+        }),
+      }),
+    )
+
+    const result = await sendWhatsAppText({
+      toWaId: '972548174688',
+      text: 'בדיקה',
+      purpose: 'intake_reply',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.errorCode).toBe(131030)
+    expect(result.error).toMatch(/Tester|Advanced Access|רשימת בדיקה/)
+  })
 })

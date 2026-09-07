@@ -108,9 +108,11 @@ export async function GET() {
   let countryPhoneId = ''
   let storePhones = 0
   let recentInboundCount = 0
-  let recentOutboundCount = 0
+  let recentOutboundOkCount = 0
+  let recentOutboundFailCount = 0
   let activeHumanPauses = 0
   let lastInboundSummary = ''
+  let lastSendFailSummary = ''
   if (ready) {
     try {
       const supabase = createSystemClient('pilot_health')
@@ -150,12 +152,30 @@ export async function GET() {
         .gte('created_at', sinceIso)
       recentInboundCount = inboundCount ?? 0
 
-      const { count: outboundCount } = await supabase
+      const { data: recentOut } = await supabase
         .from('whatsapp_messages')
-        .select('*', { count: 'exact', head: true })
+        .select('meta_message_id, body, created_at')
         .eq('direction', 'outbound')
         .gte('created_at', sinceIso)
-      recentOutboundCount = outboundCount ?? 0
+        .order('created_at', { ascending: false })
+        .limit(50)
+      for (const row of recentOut ?? []) {
+        const mid = (row.meta_message_id as string | null) ?? ''
+        if (mid.startsWith('graph_fail:')) {
+          recentOutboundFailCount += 1
+          if (!lastSendFailSummary) {
+            lastSendFailSummary = String(row.body ?? '').slice(0, 180)
+          }
+        } else if (mid && !mid.startsWith('dryrun_')) {
+          recentOutboundOkCount += 1
+        } else if (!mid) {
+          // Legacy failed sends before graph_fail marker
+          recentOutboundFailCount += 1
+          if (!lastSendFailSummary && String(row.body ?? '').startsWith('[שליחה נכשלה]')) {
+            lastSendFailSummary = String(row.body ?? '').slice(0, 180)
+          }
+        }
+      }
 
       const { data: lastIn } = await supabase
         .from('whatsapp_messages')
@@ -277,6 +297,8 @@ export async function GET() {
   // Live Graph probe — token must be able to read the configured phone number.
   let graphOk = false
   let graphMessage = 'לא נבדק — חסר טוקן או מזהה מספר'
+  let tokenValid: boolean | null = null
+  let tokenProbeMessage = 'לא נבדק'
   if (waToken && waPhoneId) {
     const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim()
     const phoneId = (
@@ -286,7 +308,7 @@ export async function GET() {
     ).trim()
     try {
       const res = await fetch(
-        `https://graph.facebook.com/v21.0/${encodeURIComponent(phoneId)}?fields=id,display_phone_number,verified_name`,
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(phoneId)}?fields=id,display_phone_number,verified_name,quality_rating,messaging_limit_tier,status`,
         {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
@@ -295,6 +317,9 @@ export async function GET() {
       const json = (await res.json()) as {
         id?: string
         display_phone_number?: string
+        quality_rating?: string
+        messaging_limit_tier?: string
+        status?: string
         error?: { message?: string; code?: number }
       }
       if (res.ok && json.id) {
@@ -302,7 +327,14 @@ export async function GET() {
         const display = json.display_phone_number
           ? ` (${json.display_phone_number})`
           : ''
-        graphMessage = `Meta Graph מאשר את מספר הבוט${display}`
+        const extras = [
+          json.status ? `status=${json.status}` : null,
+          json.quality_rating ? `quality=${json.quality_rating}` : null,
+          json.messaging_limit_tier ? `tier=${json.messaging_limit_tier}` : null,
+        ]
+          .filter(Boolean)
+          .join(', ')
+        graphMessage = `Meta Graph מאשר את מספר הבוט${display}${extras ? ` · ${extras}` : ''}`
       } else {
         graphMessage =
           json.error?.message ||
@@ -311,6 +343,40 @@ export async function GET() {
     } catch (e) {
       graphMessage =
         e instanceof Error ? e.message : 'בדיקת Graph נכשלה'
+    }
+
+    try {
+      const dbg = await fetch(
+        `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(token)}`,
+        { cache: 'no-store' },
+      )
+      const dbgJson = (await dbg.json()) as {
+        data?: {
+          is_valid?: boolean
+          scopes?: string[]
+          type?: string
+          app_id?: string
+          expires_at?: number
+          error?: { message?: string }
+        }
+        error?: { message?: string }
+      }
+      const data = dbgJson.data
+      if (data) {
+        tokenValid = Boolean(data.is_valid)
+        const scopes = data.scopes ?? []
+        const hasWa =
+          scopes.some((s) => /whatsapp/i.test(s)) || scopes.length === 0
+        tokenProbeMessage = tokenValid
+          ? `טוקן תקף (${data.type || 'token'})${scopes.length ? ` · scopes: ${scopes.slice(0, 6).join(', ')}` : ''}${hasWa ? '' : ' · חסר scope של WhatsApp'}`
+          : `טוקן לא תקף — ${data.error?.message || dbgJson.error?.message || 'חדשו System User Token'}`
+      } else {
+        tokenProbeMessage =
+          dbgJson.error?.message || `debug_token נכשל (HTTP ${dbg.status})`
+      }
+    } catch (e) {
+      tokenProbeMessage =
+        e instanceof Error ? e.message : 'בדיקת debug_token נכשלה'
     }
   }
   checks.push({
@@ -322,25 +388,48 @@ export async function GET() {
   })
 
   checks.push({
+    id: 'meta_token_debug',
+    ok: tokenValid !== false,
+    level: 'should',
+    message: tokenProbeMessage,
+    owner: 'meta',
+  })
+
+  checks.push({
     id: 'recent_inbound_webhook',
     ok: true,
     level: 'info',
     message: ready
       ? recentInboundCount > 0
-        ? `${recentInboundCount} נכנסות / ${recentOutboundCount} יוצאות ב־30 דק׳${lastInboundSummary ? ` · אחרונה: ${lastInboundSummary}` : ''}`
+        ? `${recentInboundCount} נכנסות / ${recentOutboundOkCount} נשלחו / ${recentOutboundFailCount} נכשלו ב־30 דק׳${lastInboundSummary ? ` · אחרונה: ${lastInboundSummary}` : ''}`
         : 'אין הודעות נכנסות ב־30 הדקות האחרונות — אם שלחתם לבוט ולא הופיע כאן, בדקו ב־Meta שה־webhook מצביע ל־Callback URL וה־messages subscribed'
       : 'לא ניתן לבדוק inbound בלי Supabase',
     owner: 'meta',
   })
 
   checks.push({
+    id: 'graph_send_failures',
+    ok: recentOutboundFailCount === 0 || recentOutboundOkCount > 0,
+    level: 'must',
+    message:
+      recentOutboundFailCount > 0 && recentOutboundOkCount === 0
+        ? `שליחת WhatsApp נכשלת ב־Meta${lastSendFailSummary ? ` — ${lastSendFailSummary}` : ''}. בדקו Tester list / Advanced Access / System User Token.`
+        : recentOutboundFailCount > 0
+          ? `יש ${recentOutboundFailCount} כשלי שליחה וגם ${recentOutboundOkCount} הצלחות לאחרונה`
+          : recentOutboundOkCount > 0
+            ? 'שליחות ל־WhatsApp מצליחות'
+            : 'אין שליחות יוצאות לבדיקה',
+    owner: 'meta',
+  })
+
+  checks.push({
     id: 'inbound_without_reply',
-    ok: !(recentInboundCount > 0 && recentOutboundCount === 0),
+    ok: !(recentInboundCount > 0 && recentOutboundOkCount === 0),
     level: 'should',
     message:
-      recentInboundCount > 0 && recentOutboundCount === 0
-        ? 'יש הודעות נכנסות בלי תשובות יוצאות — עיבוד/שליחה נכשלים אחרי ה־webhook'
-        : recentOutboundCount > 0
+      recentInboundCount > 0 && recentOutboundOkCount === 0
+        ? 'יש הודעות נכנסות בלי תשובות שנשלחו בהצלחה — Meta דוחה את ה־Graph send'
+        : recentOutboundOkCount > 0
           ? 'יש תשובות יוצאות מהבוט לאחרונה'
           : 'אין פעילות יוצאת לבדיקה',
     owner: 'ops',

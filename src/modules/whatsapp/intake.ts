@@ -1562,6 +1562,7 @@ async function sendReply(
       ok: result.ok,
       dryRun: result.dryRun,
       error: result.error ?? null,
+      errorCode: result.errorCode ?? null,
       to: message.waId,
       phoneNumberId: result.phoneNumberId ?? null,
     })
@@ -1571,9 +1572,23 @@ async function sendReply(
         ok: result.ok,
         dryRun: result.dryRun,
         error: result.error ?? null,
+        errorCode: result.errorCode ?? null,
         to: message.waId,
       }),
     )
+    // Persist failure so /api/health/pilot can show the real Meta error.
+    if (!result.ok && !result.dryRun) {
+      await logWhatsAppMessage({
+        supabase,
+        country,
+        session: session ?? null,
+        waId: message.waId,
+        direction: 'outbound',
+        body: `[שליחה נכשלה] ${result.error ?? 'Graph error'}\n---\n${reply}`,
+        metaMessageId: `graph_fail:${result.errorCode ?? 'unknown'}`,
+        ticketId,
+      })
+    }
   } else {
     logEvent('whatsapp:send', 'info', 'outbound_ok', {
       to: message.waId,
@@ -1583,17 +1598,17 @@ async function sendReply(
       '[whatsapp:send] outbound_ok',
       JSON.stringify({ to: message.waId, waMessageId: result.waMessageId }),
     )
+    await logWhatsAppMessage({
+      supabase,
+      country,
+      session: session ?? null,
+      waId: message.waId,
+      direction: 'outbound',
+      body: reply,
+      metaMessageId: result.waMessageId,
+      ticketId,
+    })
   }
-  await logWhatsAppMessage({
-    supabase,
-    country,
-    session: session ?? null,
-    waId: message.waId,
-    direction: 'outbound',
-    body: reply,
-    metaMessageId: result.waMessageId,
-    ticketId,
-  })
 }
 
 /** Demo / simulator entry — same intake, dry-run outbound Graph. */

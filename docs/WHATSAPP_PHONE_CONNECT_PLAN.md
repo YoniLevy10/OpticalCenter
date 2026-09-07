@@ -123,27 +123,30 @@ node scripts/configure-whatsapp-country.mjs \
 
 ---
 
-## אם הבוט לא עונה (אחרי Verify הצליח)
+## אם הבוט לא עונה (אחרי Verify הצליח + webhook accepted)
 
 בדיקה מסודרת — מהנפוץ לנדיר:
 
-1. **Webhook → Subscribe: `messages`**  
+1. **בלוגים יש `Graph API failed`**  
+   פתחו את ה־JSON בלוג — חפשו `code` / `message`.  
+   הנפוץ ביותר אחרי פרסום App:
+   - **`131030` Recipient not in allowed list** — האפליקציה עדיין מוגבלת.  
+     פתרון מיידי: Meta App → WhatsApp → API Setup → הוסיפו את מספר הטלפון שלכם לרשימת בדיקה (Tester).  
+     פתרון קבוע: Business Verification + **Advanced Access** ל־`whatsapp_business_messaging`.
+   - **`190` / permission** — חדשו System User Token על ה־WABA הנכון, הדביקו ב־Vercel `WHATSAPP_ACCESS_TOKEN`, Redeploy.
+
+2. **Webhook → Subscribe: `messages`**  
    ב־Meta → WhatsApp → Configuration / Webhooks → ודא ש־`messages` מסומן (ירוק).  
    Verify לבד לא מספיק.
 
-2. **App ב־Development**  
-   אם האפליקציה לא Published — רק מספרי **Admin / Developer / Tester** מקבלים webhooks.  
-   הוסף את מספר ה־WhatsApp שממנו אתה כותב:  
-   App roles → Roles → Add Testers (או App → WhatsApp → API Setup → רשימת מספרי בדיקה).  
-   לפרסום האפליקציה ב־Meta נדרשים URLs ציבוריים:  
-   - Privacy Policy: `https://optical-center-rose.vercel.app/privacy`  
-   - Terms of Service: `https://optical-center-rose.vercel.app/terms`
+3. **App Mode Live ≠ WhatsApp Advanced Access**  
+   פרסום האפליקציה (Privacy Policy) לא מספיק לבד. בלי Advanced Access רק Testers מקבלים תשובות.
 
-3. **`WHATSAPP_APP_SECRET` מה־App החדש**  
+4. **`WHATSAPP_APP_SECRET` מה־App החדש**  
    Verify משתמש ב־Verify token; שליחת הודעות משתמשת בחתימה עם App Secret.  
    Secret ישן → Vercel logs: `invalid_signature` → הבוט שותק לגמרי.
 
-4. **סנכרון Phone Number ID ב־DB** (חובה אחרי App חדש):
+5. **סנכרון Phone Number ID ב־DB** (חובה אחרי App חדש):
    ```sql
    update countries
    set whatsapp_phone_number_id = '1322189407641255',
@@ -151,15 +154,11 @@ node scripts/configure-whatsapp-country.mjs \
    where code = 'IL';
    ```
 
-5. **Human pause** על הצ׳אט שלך:
-   ```sql
-   update intake_sessions
-   set human_takeover = false, human_takeover_until = null
-   where wa_id like '%<הסיומת_של_המספר_שלך>%';
-   ```
-   או ב־Ops → Inbox → Resume bot.
+6. **Human pause** על הצ׳אט שלך:
+   ב־Ops → Inbox → «החזר לבוט».
 
-6. Smoke: שלח `STORE_172` ואז `המזגן לא עובד`.
+7. Smoke: שלח `STORE_172` ואז `המזגן לא עובד`.  
+   ב־`/api/health/pilot` אמור להופיע שליחות מצליחות (לא רק נכנסות).
 
 ---
 

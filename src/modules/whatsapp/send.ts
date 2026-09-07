@@ -39,6 +39,7 @@ type GraphErrorBody = {
     code?: number
     error_subcode?: number
     fbtrace_id?: string
+    error_data?: { details?: string }
   }
 }
 
@@ -46,7 +47,25 @@ function hebrewGraphError(json: GraphErrorBody, status: number): string {
   const code = json.error?.code
   const sub = json.error?.error_subcode
   const msg = json.error?.message || `Graph API ${status}`
+  const details = json.error?.error_data?.details || ''
 
+  // Development / allowlist — most common after App Live without WhatsApp Advanced Access
+  if (code === 131030 || /not in.*allowed list|recipient.*not.*allowed/i.test(msg)) {
+    return (
+      'Meta חוסם שליחה למספר הזה (לא ברשימת בדיקה / אין Advanced Access ל־WhatsApp). ' +
+      'ב־Meta App: הוסיפו את מספר השולח כ־Tester, או השלימו Business Verification + Advanced Access ל־whatsapp_business_messaging. ' +
+      `(${msg}${details ? ` — ${details}` : ''})`
+    )
+  }
+  if (code === 131031 || /business eligibility|account has not been registered/i.test(msg)) {
+    return (
+      'חשבון WhatsApp Business לא מוכן לשליחה חיה — בדקו רישום המספר ו־Business Verification ב־Meta. ' +
+      `(${msg})`
+    )
+  }
+  if (code === 133010 || /account is restricted|disabled/i.test(msg)) {
+    return `חשבון WhatsApp מוגבל ב־Meta (${msg})`
+  }
   // Outside 24h customer-care window / template required
   if (
     code === 131047 ||
@@ -62,10 +81,16 @@ function hebrewGraphError(json: GraphErrorBody, status: number): string {
   if (code === 190 || status === 401) {
     return `טוקן WhatsApp לא תקף או חסר הרשאה (${msg})`
   }
-  if (code === 100 || status === 400) {
-    return `בקשת WhatsApp נדחתה על ידי Meta (${msg})`
+  if (code === 10 || /permission/i.test(msg)) {
+    return (
+      'לטוקן אין הרשאת שליחת WhatsApp — צרו System User Token עם whatsapp_business_messaging על ה־WABA הנכון. ' +
+      `(${msg})`
+    )
   }
-  return msg
+  if (code === 100 || status === 400) {
+    return `בקשת WhatsApp נדחתה על ידי Meta (${msg}${details ? ` — ${details}` : ''})`
+  }
+  return details ? `${msg} — ${details}` : msg
 }
 
 /**
