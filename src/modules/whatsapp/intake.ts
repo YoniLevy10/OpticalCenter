@@ -978,6 +978,13 @@ export async function processInboundMessage(
           state: session.state,
           until: session.human_takeover_until,
         })
+        console.info(
+          '[whatsapp:intake] human_takeover_skip',
+          JSON.stringify({
+            waId: message.waId,
+            until: session.human_takeover_until,
+          }),
+        )
         return { ok: true, reply: null, state: session.state }
       }
 

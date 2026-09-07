@@ -1,8 +1,12 @@
 /**
  * Per-chat private ops window.
  * Bot stays on globally; only this wa_id is paused until `human_takeover_until`.
+ * Keep this short — ops chats briefly; the bot must resume quickly.
  */
-export const HUMAN_PAUSE_WINDOW_MS = 30 * 60 * 1000
+export const HUMAN_PAUSE_WINDOW_MS = 10 * 60 * 1000
+
+/** Display helper for ops UI copy. */
+export const HUMAN_PAUSE_WINDOW_MINUTES = HUMAN_PAUSE_WINDOW_MS / 60_000
 
 export function humanPauseUntilIso(fromMs: number = Date.now()): string {
   return new Date(fromMs + HUMAN_PAUSE_WINDOW_MS).toISOString()

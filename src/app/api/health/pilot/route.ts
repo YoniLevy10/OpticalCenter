@@ -107,6 +107,8 @@ export async function GET() {
   let countryDemo = true
   let countryPhoneId = ''
   let storePhones = 0
+  let recentInboundCount = 0
+  let activeHumanPauses = 0
   if (ready) {
     try {
       const supabase = createSystemClient('pilot_health')
@@ -137,6 +139,22 @@ export async function GET() {
         .from('store_phones')
         .select('*', { count: 'exact', head: true })
       storePhones = count ?? 0
+
+      const sinceIso = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      const { count: inboundCount } = await supabase
+        .from('whatsapp_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('direction', 'inbound')
+        .gte('created_at', sinceIso)
+      recentInboundCount = inboundCount ?? 0
+
+      const nowIso = new Date().toISOString()
+      const { count: pauseCount } = await supabase
+        .from('intake_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('human_takeover', true)
+        .gt('human_takeover_until', nowIso)
+      activeHumanPauses = pauseCount ?? 0
     } catch {
       /* ignore */
     }
@@ -147,10 +165,35 @@ export async function GET() {
     process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
     ''
   ).trim()
-  const phoneIdAligned =
+  let phoneIdAligned =
     !envPhoneId || !countryPhoneId || countryDemo
       ? true
       : envPhoneId === countryPhoneId
+
+  // Auto-heal stale / demo countries.whatsapp_phone_number_id after Meta reconnect.
+  if (ready && envPhoneId && countryPhoneId !== envPhoneId) {
+    try {
+      const supabase = createSystemClient('pilot_health_heal_phone')
+      const { error: healErr } = await supabase
+        .from('countries')
+        .update({ whatsapp_phone_number_id: envPhoneId })
+        .eq('code', 'IL')
+      if (!healErr) {
+        countryPhoneId = envPhoneId
+        countryDemo = false
+        phoneIdAligned = true
+        checks.push({
+          id: 'country_phone_auto_healed',
+          ok: true,
+          level: 'info',
+          message: `עודכן countries.whatsapp_phone_number_id ל־env (${envPhoneId.slice(0, 6)}…)`,
+          owner: 'meta',
+        })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   checks.push({
     id: 'schema_ai_intake',
@@ -252,6 +295,30 @@ export async function GET() {
     level: 'must',
     message: graphMessage,
     owner: 'meta',
+  })
+
+  checks.push({
+    id: 'recent_inbound_webhook',
+    ok: true,
+    level: 'info',
+    message: ready
+      ? recentInboundCount > 0
+        ? `${recentInboundCount} הודעות נכנסות ב־30 הדקות האחרונות (webhook מגיע)`
+        : 'אין הודעות נכנסות ב־30 הדקות האחרונות — אם שלחתם לבוט ולא הופיע כאן, בדקו ב־Meta שה־webhook מצביע ל־Callback URL וה־messages subscribed'
+      : 'לא ניתן לבדוק inbound בלי Supabase',
+    owner: 'meta',
+  })
+
+  checks.push({
+    id: 'active_human_pauses',
+    ok: true,
+    level: 'info',
+    message: ready
+      ? activeHumanPauses > 0
+        ? `${activeHumanPauses} שיחות בהשתלטות אנושית (הבוט מושתק בהן עד סיום החלון / «החזר לבוט»)`
+        : 'אין שיחות מושהות — הבוט פעיל בכל השיחות'
+      : 'לא ניתן לבדוק השתלטות בלי Supabase',
+    owner: 'ops',
   })
 
   const must = checks.filter((c) => c.level === 'must')

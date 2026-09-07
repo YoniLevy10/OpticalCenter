@@ -72,6 +72,14 @@ export async function POST(request: NextRequest) {
     }
 
     const messages = parseWhatsAppWebhook(body)
+    logEvent('whatsapp:webhook', 'info', 'accepted', {
+      messageCount: messages.length,
+      hasSignature: Boolean(signature),
+    })
+    console.info(
+      '[whatsapp:webhook] accepted',
+      JSON.stringify({ messageCount: messages.length }),
+    )
     if (messages.length === 0) {
       return NextResponse.json({ ok: true, accepted: 0 }, { status: 200 })
     }

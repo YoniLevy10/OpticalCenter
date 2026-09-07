@@ -38,7 +38,7 @@ describe('human pause window', () => {
       isHumanPauseActive({ human_takeover: true, human_takeover_until: until }),
     ).toBe(true)
 
-    vi.setSystemTime(new Date('2026-08-31T10:31:00.000Z'))
+    vi.setSystemTime(new Date('2026-08-31T10:11:00.000Z'))
     expect(
       isHumanPauseActive({ human_takeover: true, human_takeover_until: until }),
     ).toBe(false)
