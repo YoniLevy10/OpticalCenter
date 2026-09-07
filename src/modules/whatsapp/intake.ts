@@ -263,6 +263,45 @@ export async function resolveCountryByPhoneNumberId(
     .eq('whatsapp_phone_number_id', id)
     .maybeSingle()
   if (data) return data as CountryRow
+
+  // After reconnecting a number to a new Meta app, phone_number_id changes.
+  // If the webhook ID matches the live env ID, route to IL and heal the DB row
+  // so the next message matches on the primary lookup.
+  const envId = (
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID ||
+    ''
+  ).trim()
+  if (envId && id === envId) {
+    const { data: il } = await supabase
+      .from('countries')
+      .select(
+        'id, organization_id, code, whatsapp_phone_number_id, whatsapp_access_token',
+      )
+      .eq('code', 'IL')
+      .maybeSingle()
+    if (il) {
+      const { error: healErr } = await supabase
+        .from('countries')
+        .update({ whatsapp_phone_number_id: id })
+        .eq('id', il.id)
+      if (healErr) {
+        logEvent('whatsapp:intake', 'warn', 'phone_number_id_heal_failed', {
+          countryId: il.id,
+          phoneNumberId: id,
+          error: healErr.message,
+        })
+      } else {
+        logEvent('whatsapp:intake', 'info', 'phone_number_id_healed', {
+          countryId: il.id,
+          phoneNumberId: id,
+          previous: il.whatsapp_phone_number_id,
+        })
+      }
+      return { ...(il as CountryRow), whatsapp_phone_number_id: id }
+    }
+  }
+
   return null
 }
 

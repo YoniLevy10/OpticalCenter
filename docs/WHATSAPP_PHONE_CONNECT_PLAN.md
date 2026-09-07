@@ -123,6 +123,43 @@ node scripts/configure-whatsapp-country.mjs \
 
 ---
 
+## אם הבוט לא עונה (אחרי Verify הצליח)
+
+בדיקה מסודרת — מהנפוץ לנדיר:
+
+1. **Webhook → Subscribe: `messages`**  
+   ב־Meta → WhatsApp → Configuration / Webhooks → ודא ש־`messages` מסומן (ירוק).  
+   Verify לבד לא מספיק.
+
+2. **App ב־Development**  
+   אם האפליקציה לא Published — רק מספרי **Admin / Developer / Tester** מקבלים webhooks.  
+   הוסף את מספר ה־WhatsApp שממנו אתה כותב:  
+   App roles → Roles → Add Testers (או App → WhatsApp → API Setup → רשימת מספרי בדיקה).
+
+3. **`WHATSAPP_APP_SECRET` מה־App החדש**  
+   Verify משתמש ב־Verify token; שליחת הודעות משתמשת בחתימה עם App Secret.  
+   Secret ישן → Vercel logs: `invalid_signature` → הבוט שותק לגמרי.
+
+4. **סנכרון Phone Number ID ב־DB** (חובה אחרי App חדש):
+   ```sql
+   update countries
+   set whatsapp_phone_number_id = '1322189407641255',
+       whatsapp_display_phone = '972552819086'
+   where code = 'IL';
+   ```
+
+5. **Human pause** על הצ׳אט שלך:
+   ```sql
+   update intake_sessions
+   set human_takeover = false, human_takeover_until = null
+   where wa_id like '%<הסיומת_של_המספר_שלך>%';
+   ```
+   או ב־Ops → Inbox → Resume bot.
+
+6. Smoke: שלח `STORE_172` ואז `המזגן לא עובד`.
+
+---
+
 ## עצור כאן
 
 **עכשיו רק שלב 1–2 ב־Meta.**  
