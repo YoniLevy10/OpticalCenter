@@ -732,12 +732,6 @@ export async function replyToSession(input: {
   void input.countryId
 
   if (!(await supabaseReady())) {
-    const existing = memListSessions().find((s) => s.wa_id === waId)
-    if (existing) {
-      memSetSessionTakeover(waId, true, {
-        human_takeover_until: humanPauseUntilIso(),
-      })
-    }
     const message = memAddInboxMessage({
       wa_id: waId,
       direction: 'outbound',
@@ -751,6 +745,13 @@ export async function replyToSession(input: {
       purpose: 'ops_reply',
       forceDryRun: true,
     })
+    // Pause only after a completed ops reply (even dry-run in memory mode).
+    const existing = memListSessions().find((s) => s.wa_id === waId)
+    if (existing) {
+      memSetSessionTakeover(waId, true, {
+        human_takeover_until: humanPauseUntilIso(),
+      })
+    }
     return { message, send }
   }
 
@@ -809,6 +810,26 @@ export async function replyToSession(input: {
     }
   }
 
+  // Send first — never mute the bot if Graph delivery failed.
+  const send = await sendWhatsAppText({
+    toWaId: waId,
+    text,
+    phoneNumberId,
+    ticketId: ticketIdInput,
+    supabase,
+    purpose: 'ops_reply',
+  })
+
+  if (!send.ok || send.dryRun) {
+    throw new Error(
+      send.error
+        ? `שליחת WhatsApp נכשלה: ${send.error}`
+        : send.dryRun
+          ? 'שליחת WhatsApp לא בוצעה (מצב הדמיה / חסר Phone Number ID או טוקן)'
+          : 'שליחת WhatsApp נכשלה',
+    )
+  }
+
   // Open / extend a short private window for THIS chat only.
   // Bot keeps running on every other number.
   const pauseUntil = humanPauseUntilIso()
@@ -830,25 +851,6 @@ export async function replyToSession(input: {
         })
         .eq('wa_id', waId)
     }
-  }
-
-  const send = await sendWhatsAppText({
-    toWaId: waId,
-    text,
-    phoneNumberId,
-    ticketId: ticketIdInput,
-    supabase,
-    purpose: 'ops_reply',
-  })
-
-  if (!send.ok || send.dryRun) {
-    throw new Error(
-      send.error
-        ? `שליחת WhatsApp נכשלה: ${send.error}`
-        : send.dryRun
-          ? 'שליחת WhatsApp לא בוצעה (מצב הדמיה / חסר Phone Number ID או טוקן)'
-          : 'שליחת WhatsApp נכשלה',
-    )
   }
 
   let ticketId = ticketIdInput

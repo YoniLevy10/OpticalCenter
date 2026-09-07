@@ -375,7 +375,7 @@ describe('WhatsApp intake matrix (memory)', () => {
       state: 'awaiting_description',
       pending_description: null,
       human_takeover: true,
-      human_takeover_until: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      human_takeover_until: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     })
     const before = memListTickets().length
     const r = await processInboundMessage(

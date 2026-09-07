@@ -29,6 +29,7 @@ import {
 import { LiveAge } from '@/components/ui/time'
 import { cn } from '@/lib/utils'
 import { TICKET_PRIORITY_LABELS_HE } from '@/modules/tickets/constants'
+import { HUMAN_PAUSE_WINDOW_MINUTES } from '@/modules/whatsapp/human-pause'
 
 type Session = {
   wa_id: string
@@ -296,7 +297,7 @@ export function InboxClient() {
       }
       setReply('')
       setNotice(
-        'הודעה נשלחה · נפתח חלון שיחה פרטית ל־30 דקות בשיחה זו בלבד (בוט ממשיך בשאר השיחות). לחצו «החזר לבוט» כשתסיימו.',
+        `הודעה נשלחה · נפתח חלון שיחה פרטית ל־${HUMAN_PAUSE_WINDOW_MINUTES} דקות בשיחה זו בלבד (בוט ממשיך בשאר השיחות). לחצו «החזר לבוט» כשתסיימו.`,
       )
       await loadThread(selected)
       await loadSessions()

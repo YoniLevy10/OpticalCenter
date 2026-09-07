@@ -35,16 +35,22 @@ export function envWhatsAppPhoneNumberId(): string | null {
 }
 
 /**
- * Prefer a valid country-level Meta ID; otherwise fall back to env.
+ * Prefer a valid Meta ID. When country DB and env both have numeric IDs but
+ * they disagree (typical after Meta app reconnect), env wins — Vercel env is
+ * the live wiring; countries.whatsapp_phone_number_id can lag.
  * Never returns demo placeholders.
  */
 export function resolveWhatsAppPhoneNumberId(
   countryOrCandidate?: string | null,
 ): string | null {
-  if (isMetaPhoneNumberId(countryOrCandidate)) {
-    return countryOrCandidate.trim()
+  const fromCountry = isMetaPhoneNumberId(countryOrCandidate)
+    ? countryOrCandidate.trim()
+    : null
+  const fromEnv = envWhatsAppPhoneNumberId()
+  if (fromEnv && fromCountry && fromEnv !== fromCountry) {
+    return fromEnv
   }
-  return envWhatsAppPhoneNumberId()
+  return fromCountry || fromEnv
 }
 
 /** Digits-only WhatsApp recipient (Meta `to` field). */

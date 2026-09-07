@@ -34,8 +34,16 @@ describe('phone-number-id', () => {
     )
   })
 
-  it('prefers valid country id over env', () => {
-    process.env.WHATSAPP_PHONE_NUMBER_ID = '999999999999999'
+  it('prefers env over stale country id after Meta reconnect', () => {
+    process.env.WHATSAPP_PHONE_NUMBER_ID = '1322189407641255'
+    expect(resolveWhatsAppPhoneNumberId('1262299850304510')).toBe(
+      '1322189407641255',
+    )
+  })
+
+  it('uses country id when env is unset', () => {
+    delete process.env.WHATSAPP_PHONE_NUMBER_ID
+    delete process.env.NEXT_PUBLIC_WA_PHONE_NUMBER_ID
     expect(resolveWhatsAppPhoneNumberId('1262299850304510')).toBe(
       '1262299850304510',
     )
