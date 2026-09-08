@@ -48,9 +48,18 @@ Closest formal option: **Strategy C**, with a deliberate **B-lite** extraction l
 
 Build a **neutral retail maintenance platform core**, with Optical Center as first deployment:
 
-- Code/product working name: **`RetailOps` / `MaintainOS` / `StoreMaintain`** (pick one; avoid `OpticalCenterMaintenance` as the platform name).
+- Code/product working name: **`MaintainOS`** (canonical; avoid `OpticalCenterMaintenance` as the platform name).
 - Tenant: `Optical Center` = first `organization`.
 - Do **not** over-genericize UI copy or schema with fashion/hotel abstractions in MVP — only keep hierarchy + roles + assets generic enough to reuse.
+
+### Differentiation (canonical)
+
+Product north star and decision filter live in [`DIFFERENTIATION.md`](DIFFERENTIATION.md):
+
+- **What we are:** operational OS for multi-branch retail networks (shared core: report → store ID → SLA → assign → vendors → close → exec reports).
+- **What we are not:** another ticketing product, per-client fork, or generic CMMS.
+- **Tenant variance only:** branding, permissions, fault types, SLA.
+- **Post-core intelligence (deferred):** store Digital Twin → cross-branch patterns → cost prediction / preventive recommendations. Do not block MVP on this layer.
 
 ### One-line architecture
 

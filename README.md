@@ -1,7 +1,9 @@
 # MaintainOS
 
-פלטפורמת דיווח וניהול תקלות לרשתות קמעונאיות.  
+מערכת הפעלה תפעולית לרשתות מרובות סניפים — לא עוד מערכת Ticketing.  
 **Optical Center** = deployment ראשון (פיילוט ישראל).
+
+בידול ופילטר החלטות: [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md).
 
 ## עקרונות פיילוט
 
@@ -66,6 +68,7 @@ MAINTAINOS_FORCE_MEMORY=1
 
 ## מסמכים
 
+- [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md) — בידול, ליבה אחידה, Digital Twin, פילטר פיצ׳רים
 - [`docs/CORE_FEATURES_ROADMAP.md`](docs/CORE_FEATURES_ROADMAP.md) — חיזוק ליבה + פיצ׳רים (בלי Zapier)
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)

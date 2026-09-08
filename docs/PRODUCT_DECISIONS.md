@@ -1,9 +1,11 @@
 # החלטות מוצר — פיילוט Optical Center IL
 
-תיעוד החלטות הנהלה (Phase E + ישיבת מנהלים).
+תיעוד החלטות הנהלה (Phase E + ישיבת מנהלים).  
+מצפן בידול: [`DIFFERENTIATION.md`](DIFFERENTIATION.md).
 
 | נושא | החלטה | יישום |
 |------|--------|--------|
+| בידול / היקף | MaintainOS = OS תפעולי לרשתות; לא ticketing גנרי ולא custom-per-client. ליבה אחידה; משתנה רק מיתוג, הרשאות, סוגי תקלות, SLA | `docs/DIFFERENTIATION.md` |
 | דוחות | CSV + Excel + PDF + dashboard מספיק; PDF לא חובה נפרד | `/api/reports/export?format=csv\|xlsx\|pdf` |
 | היסטוריה | דוחות חודשיים נשמרים ידנית | `/ops/reports/history` + `report_snapshots` |
 | התראות טכנאי | SMS (019) בשיוך + WhatsApp עם קישור `/tech` — כמו Bamakor; לא Web Push בפיילוט | Push UI «בקרוב» |
