@@ -19,7 +19,18 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: |
+          set +e
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            echo "playwright install attempt $i failed; retrying…"
+            sleep $((i * 5))
+          done
+          # Fallback: browser binaries only (skip apt chrome deps — Google apt
+          # mirrors occasionally return Hash Sum mismatch on ubuntu-latest).
+          npx playwright install chromium
+        shell: bash
       - run: npm run build
         env:
           MAINTAINOS_FORCE_MEMORY: '1'

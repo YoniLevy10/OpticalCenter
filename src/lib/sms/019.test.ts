@@ -72,7 +72,7 @@ describe('send019Sms', () => {
 
   it('dry-runs without HTTP when SMS_019_DRY_RUN=1', async () => {
     process.env.SMS_019_USERNAME = 'u'
-    process.env.SMS_019_SENDER = 'OpticalCtr'
+    process.env.SMS_019_SENDER = 'opc'
     process.env.SMS_019_TOKEN = 'tok'
     process.env.SMS_019_DRY_RUN = '1'
     const fetchSpy = vi.fn()
@@ -89,7 +89,7 @@ describe('send019Sms', () => {
 
   it('POSTs JSON with Bearer token and treats status 0 as success', async () => {
     process.env.SMS_019_USERNAME = 'u'
-    process.env.SMS_019_SENDER = 'OpticalCtr'
+    process.env.SMS_019_SENDER = 'opc'
     process.env.SMS_019_TOKEN = 'tok'
 
     const fetchSpy = vi.fn().mockResolvedValue({
@@ -121,7 +121,7 @@ describe('send019Sms', () => {
       }
     }
     expect(body.sms.user.username).toBe('u')
-    expect(body.sms.source).toBe('OpticalCtr')
+    expect(body.sms.source).toBe('opc')
     expect(body.sms.destinations.phone).toBe('0548102688')
     expect(body.sms.message).toContain('OC-9')
   })

@@ -15,10 +15,13 @@ const ticket: LifecycleTicket = {
 }
 
 describe('lifecycleTemplate', () => {
-  it('renders assigned with store + tech name', () => {
-    expect(lifecycleTemplate('assigned', ticket)).toContain('יוסי כהן')
-    expect(lifecycleTemplate('assigned', ticket)).toContain('תל אביב אבן גבירול')
-    expect(lifecycleTemplate('assigned', ticket)).toContain('OC-42')
+  it('renders assigned with store + tech name for the store reporter', () => {
+    const text = lifecycleTemplate('assigned', ticket)
+    expect(text).toContain('יוסי כהן')
+    expect(text).toContain('תל אביב אבן גבירול')
+    expect(text).toContain('OC-42')
+    expect(text).toMatch(/עדכון לחנות|שייך טכנאי/)
+    expect(text).not.toMatch(/שיוכת אליך/)
   })
 
   it('renders status templates in Hebrew', () => {

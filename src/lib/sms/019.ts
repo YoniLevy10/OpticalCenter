@@ -54,7 +54,7 @@ export function is019SmsConfigured(): boolean {
  * Env:
  * - SMS_019_USERNAME (required)
  * - SMS_019_SENDER (required, max 11 English letters/digits — no Hebrew/spaces/+;
- *   recommended branded value: OpticalCtr; must be registered in 019 dashboard)
+ *   recommended branded value: opc; must be registered in 019 dashboard)
  * - SMS_019_TOKEN or SMS_019_BEARER_TOKEN (preferred) — Authorization: Bearer
  * - SMS_019_PASSWORD (legacy) — included in JSON user object when no token
  * - SMS_019_TEST=1 — use /api/test (no real send)

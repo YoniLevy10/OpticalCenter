@@ -30,7 +30,8 @@ describe('buildTechnicianAssignedSms', () => {
 })
 
 describe('RECOMMENDED_SMS_019_SENDER', () => {
-  it('fits 019 alphanumeric source rules', () => {
+  it('fits 019 alphanumeric source rules (opc)', () => {
+    expect(RECOMMENDED_SMS_019_SENDER).toBe('opc')
     expect(RECOMMENDED_SMS_019_SENDER.length).toBeLessThanOrEqual(11)
     expect(RECOMMENDED_SMS_019_SENDER).toMatch(/^[A-Za-z0-9]+$/)
   })

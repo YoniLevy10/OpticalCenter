@@ -119,24 +119,32 @@ export async function PATCH(
     try {
       if (assignedTechId) {
         const tech = await resolveTechProfile(assignedTechId)
-        await notifyTechnicianAssigned(
+        const phone =
+          tech.phone?.trim() ||
+          detail.assignee?.phone?.trim() ||
+          null
+        const techNotify = await notifyTechnicianAssigned(
           {
             ...detail,
             assigned_to: assignedTechId,
           },
-          tech,
+          { ...tech, phone },
         )
+        if (!techNotify.sent) {
+          logEvent('api:tickets', 'warn', 'tech_assign_notify_skipped', {
+            ticketId: id,
+            techId: assignedTechId,
+            skipped: techNotify.skipped ?? null,
+          })
+        }
       }
 
-      const lifecycleStatus =
-        parsed.data.status && isLifecycleEvent(parsed.data.status)
-          ? parsed.data.status
-          : assignedTechId && detail.status === 'assigned'
-            ? 'assigned'
-            : null
-
-      if (lifecycleStatus) {
-        await notifyReporter(detail, lifecycleStatus)
+      // Store reporter: only on explicit status change, or a clear
+      // "technician was assigned to your ticket" update (never tech copy).
+      if (parsed.data.status && isLifecycleEvent(parsed.data.status)) {
+        await notifyReporter(detail, parsed.data.status)
+      } else if (assignedTechId && detail.status === 'assigned') {
+        await notifyReporter(detail, 'assigned')
       }
     } catch (e) {
       logEvent('api:tickets', 'warn', 'lifecycle_notify_failed', {

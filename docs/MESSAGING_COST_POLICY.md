@@ -21,8 +21,7 @@ Goal: keep WhatsApp spend near-zero for fault reporting.
 
 ## Providers
 - Default WhatsApp: **Meta Cloud API direct**
-- Technician assign SMS: **019SMS** (`SMS_019_*` env) — “שיוך חדש · תקלה … + חנות + קישור”.  
-  Sender must be **≤11 English letters/digits** (019 API). Hebrew / spaces are rejected.  
-  Recommended: `SMS_019_SENDER=OpticalCtr` (register that source in the 019 dashboard).  
-  Do **not** use the WhatsApp E.164 number as sender if you want a branded name.
+- Technician assign SMS: **019SMS** (`SMS_019_*` env) — “שיוך חדש · תקלה … + חנות + קישור” **to the technician phone only**.  
+  Sender must be **≤11 English letters/digits** (019 API). Recommended: `SMS_019_SENDER=opc` (register in 019 dashboard + Vercel).  
+  Never send technician-assign copy to the ticket reporter WhatsApp.
 - Aggregators (e.g. Sent.dm) do **not** remove Meta conversation fees; evaluate later for broader SMS/RCS
