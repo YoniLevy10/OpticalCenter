@@ -3,6 +3,7 @@ import 'server-only'
 import { logEvent } from '@/lib/logging'
 import { memAddMessage, supabaseReady } from '@/lib/data/memory-store'
 import { send019Sms } from '@/lib/sms/019'
+import { buildTechnicianAssignedSms } from './tech-assign-sms'
 import { createSystemClient } from '@/lib/supabase/system'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
 import {
@@ -161,8 +162,12 @@ export async function notifyTechnicianAssigned(
     const storeName = ticket.stores?.name?.trim() || 'חנות'
     const link = `${appUrl}/tech/${ticket.id}`
 
-    // SMS: short Bamakor-style assign ping (primary for field techs).
-    const smsText = `שויכת לתקלה ${display}\n${link}`
+    // SMS: short assign ping for field techs (019 alphanumeric sender).
+    const smsText = buildTechnicianAssignedSms({
+      displayNumber: display,
+      storeName,
+      link,
+    })
     const sms = await send019Sms({
       to: phone,
       message: smsText,
@@ -199,7 +204,7 @@ export async function notifyTechnicianAssigned(
       }
     }
 
-    const baseText = `שיוכת לתקלה ${display} בחנות ${storeName}.\nלפתיחה: ${link}`
+    const baseText = `שיוכת אליך תקלה ${display} בחנות ${storeName}.\nלפתיחה בטלפון: ${link}`
     const text = await enhanceWhatsAppMessage(baseText, {
       situation: 'lifecycle_tech_assigned',
     })
