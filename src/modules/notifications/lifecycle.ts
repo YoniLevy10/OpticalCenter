@@ -36,7 +36,7 @@ export function lifecycleTemplate(
 
   switch (event) {
     case 'assigned':
-      return `טכנאי הוקצה לתקלה ${display} בחנות ${storeName}.\nשם הטכנאי: ${techName}`
+      return `עדכון לחנות: צוות התחזוקה שייך טכנאי לתקלה ${display} בחנות ${storeName}.\nשם הטכנאי: ${techName}`
     case 'in_progress':
       return `הטכנאי התחיל טיפול בתקלה ${display}.`
     case 'waiting_parts':

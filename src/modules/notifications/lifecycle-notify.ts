@@ -3,6 +3,8 @@ import 'server-only'
 import { logEvent } from '@/lib/logging'
 import { memAddMessage, supabaseReady } from '@/lib/data/memory-store'
 import { send019Sms } from '@/lib/sms/019'
+import { buildTechnicianAssignedSms, resolveTechnicianNotifyPhone } from './tech-assign-sms'
+import type { TechNotifyProfile } from './tech-assign-sms'
 import { createSystemClient } from '@/lib/supabase/system'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
 import {
@@ -30,8 +32,12 @@ const LIFECYCLE_AI_SITUATION: Record<LifecycleEvent, WhatsAppAiSituation> = {
 export async function buildLifecycleMessage(
   event: LifecycleEvent,
   ticket: LifecycleTicket,
+  opts?: { enhance?: boolean },
 ): Promise<string> {
   const base = lifecycleTemplate(event, ticket)
+  // Never AI-rewrite "assigned" — the model often flips perspective and tells
+  // the store reporter they were assigned as the technician.
+  if (opts?.enhance === false || event === 'assigned') return base
   return enhanceWhatsAppMessage(base, {
     situation: LIFECYCLE_AI_SITUATION[event],
   })
@@ -127,13 +133,15 @@ export async function notifyReporter(
   }
 }
 
+export type { TechNotifyProfile } from './tech-assign-sms'
+
 /**
- * Notify assigned technician — Bamakor-style SMS first (019), then WhatsApp
- * with a deep link to `/tech/{ticketId}`.
+ * Notify assigned technician — SMS first (019), then WhatsApp deep link.
+ * Must never message the ticket reporter as if they are the technician.
  */
 export async function notifyTechnicianAssigned(
   ticket: LifecycleTicket & { assigned_to?: string | null },
-  tech: { id: string; full_name?: string | null; phone?: string | null } | null,
+  tech: TechNotifyProfile | null,
 ): Promise<{
   sent: boolean
   skipped?: string
@@ -141,13 +149,15 @@ export async function notifyTechnicianAssigned(
   whatsappSent?: boolean
 }> {
   try {
-    const phone = tech?.phone ? normalizePhoneDigits(tech.phone) : null
+    const resolved = resolveTechnicianNotifyPhone(tech, ticket)
+    const phone = resolved.phone
     if (!phone) {
-      logEvent('lifecycle:tech_notify', 'info', 'no_tech_phone', {
+      logEvent('lifecycle:tech_notify', 'info', resolved.skipped ?? 'no_tech_phone', {
         ticketId: ticket.id,
         techId: tech?.id ?? ticket.assigned_to ?? null,
+        hasTechPhone: Boolean(tech?.phone),
       })
-      return { sent: false, skipped: 'no_tech_phone' }
+      return { sent: false, skipped: resolved.skipped ?? 'no_tech_phone' }
     }
 
     const appUrl = (
@@ -161,8 +171,11 @@ export async function notifyTechnicianAssigned(
     const storeName = ticket.stores?.name?.trim() || 'חנות'
     const link = `${appUrl}/tech/${ticket.id}`
 
-    // SMS: short Bamakor-style assign ping (primary for field techs).
-    const smsText = `שויכת לתקלה ${display}\n${link}`
+    const smsText = buildTechnicianAssignedSms({
+      displayNumber: display,
+      storeName,
+      link,
+    })
     const sms = await send019Sms({
       to: phone,
       message: smsText,
@@ -170,6 +183,7 @@ export async function notifyTechnicianAssigned(
         ticketId: ticket.id,
         techId: tech?.id ?? ticket.assigned_to ?? null,
         event: 'tech_assigned',
+        toRole: 'technician',
       },
     })
 
@@ -183,6 +197,8 @@ export async function notifyTechnicianAssigned(
         raw: {
           event: 'tech_assigned',
           provider: '019',
+          toRole: 'technician',
+          to: phone,
           dryRun: sms.dryRun ?? false,
           status: sms.status ?? null,
         },
@@ -199,10 +215,8 @@ export async function notifyTechnicianAssigned(
       }
     }
 
-    const baseText = `שיוכת לתקלה ${display} בחנות ${storeName}.\nלפתיחה: ${link}`
-    const text = await enhanceWhatsAppMessage(baseText, {
-      situation: 'lifecycle_tech_assigned',
-    })
+    // Technician WhatsApp: fixed copy (no AI) so perspective cannot flip.
+    const text = `שיוכת אליך תקלה ${display} בחנות ${storeName}.\nלפתיחה בטלפון: ${link}`
 
     const ready = await supabaseReady()
     const supabase = ready ? createSystemClient('tech_assign_notify') : undefined
@@ -219,6 +233,8 @@ export async function notifyTechnicianAssigned(
     if (!ready || !supabase) {
       await persistOutbound(ticket.id, text, result.waMessageId, {
         event: 'tech_assigned',
+        toRole: 'technician',
+        to: phone,
         dryRun: result.dryRun,
         ok: result.ok,
         smsOk: sms.ok,
@@ -231,6 +247,8 @@ export async function notifyTechnicianAssigned(
 
     logEvent('lifecycle:tech_notify', 'info', 'assign_notify_done', {
       ticketId: ticket.id,
+      to: phone,
+      toRole: 'technician',
       smsOk: sms.ok,
       smsSkipped: sms.skipped ?? null,
       whatsappOk: whatsappSent,
