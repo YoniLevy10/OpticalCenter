@@ -19,16 +19,19 @@ Unit: `npm test -- src/modules/whatsapp` (כולל WA-14 HVAC leak).
 
 ## Checklist production
 
-### צד בנייה
-- [ ] `npm run db:migrate:ai-intake` (או הדבקת SQL ב־Supabase)
-- [ ] AI Gateway enabled ב־Vercel (`AI_GATEWAY_API_KEY` / OIDC) + intake מופעל
-- [ ] `MAINTAINOS_FORCE_MEMORY` **לא** set
-- [ ] Storage bucket `ticket-media` עם policies
-- [ ] `/api/health/pilot` → `buildSideReady: true`
+**מוכנות (2026-09-09):** `/api/health/pilot` → `readyForPilot: true` (build + meta).  
+אפשר להריץ את 5 התרחישים למעלה על פרודקשן.
 
-### צד Meta (שלך)
-- [ ] Meta WhatsApp webhook + credentials ב־Vercel
-- [ ] `NEXT_PUBLIC_WA_BUSINESS_PHONE` / Ops settings מספר עסקי
-- [ ] `countries.whatsapp_phone_number_id` = מזהה Meta אמיתי
-- [ ] QR מודפס מחדש אחרי המספר
-- [ ] `/api/health/pilot` → `readyForPilot: true`
+### צד בנייה
+- [x] מיגרציית AI Intake על Supabase (health: `schema_ai_intake`)
+- [x] AI Gateway + intake מופעל (health: `ai_intake`)
+- [x] `MAINTAINOS_FORCE_MEMORY` **לא** set
+- [ ] Storage bucket `ticket-media` עם policies — לוודא ידנית במדיה
+- [x] `/api/health/pilot` → `buildSideReady: true`
+
+### צד Meta
+- [x] Meta WhatsApp webhook + credentials ב־Vercel
+- [x] `NEXT_PUBLIC_WA_BUSINESS_PHONE` / מספר עסקי מוגדר
+- [x] `countries.whatsapp_phone_number_id` תואם ל־env
+- [ ] QR מודפס לסניפי הפיילוט (מומלץ לפני הרחבה)
+- [x] `/api/health/pilot` → `readyForPilot: true`

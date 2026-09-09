@@ -1,73 +1,62 @@
 # תוכנית חיבור מחדש — מספר WhatsApp → Meta App חדש → Vercel → בוט
 
-**הקשר (ספט׳ 2026):** המספר הוכנס בטעות ל־Meta App של פרויקט אחר, הוסר משם, ונפתח **Meta App חדש** לפרויקט Optical Center. צריך לחבר מחדש את המספר + לעדכן credentials בפרודקשן.
+**סטטוס (ספט׳ 2026):** החיבור ל־Meta App החדש **הושלם**. פרודקשן מדווח `readyForPilot: true`.
 
-**עקרון:** שלב אחד בכל פעם. לא מדלגים. אחרי כל שלב בודקים ✅ ואז ממשיכים.
-
-**יעד:** מספר עסקי מחובר ל־Meta App **החדש** → Webhook ל־Vercel → הבוט עונה ופותח תקלות.
+מסמך זה נשאר כ־**runbook** לחיבור מחדש בעתיד + פתרון תקלות. לא לחסום פיילוט על בסיס הסטטוס הישן למטה.
 
 ---
 
-## מצב נוכחי (פרודקשן)
+## מצב נוכחי (פרודקשן) — מאומת
 
-`GET https://optical-center-rose.vercel.app/api/health/pilot`
+`GET https://optical-center-rose.vercel.app/api/health/pilot`  
+(נבדק 2026-09-09)
 
 | בדיקה | סטטוס |
 |--------|--------|
 | Build / Supabase / AI Intake | ✅ מוכן |
-| Env vars של Meta קיימים ב־Vercel | ✅ מוגדרים (אבל מהאפליקציה הישנה) |
-| Graph API send (`meta_graph_send_ready`) | ❌ `The application does not belong to system user's business…` |
-| `readyForPilot` | ❌ false |
+| Env vars של Meta ב־Vercel | ✅ תואמים ל־App הנוכחי |
+| Graph API send (`meta_graph_send_ready`) | ✅ מאשר את מספר הבוט (`+972 55-281-9086`) |
+| DB ↔ env (IL phone number id) | ✅ תואם |
+| `readyForPilot` | ✅ **true** |
 
-**משמעות:** הטוקן / האפליקציה ב־Vercel לא תואמים ל־WABA של המספר. חיבור מחדש ל־App החדש יפתור את זה.
-
----
-
-## מפת הדרך (5 שלבים)
-
-| שלב | מה | מי | סטטוס |
-|-----|-----|-----|--------|
-| **1** | וידוא מספר פנוי + Meta App חדש מוכן | אתה | ⬅️ עכשיו |
-| **2** | הוספת המספר ל־WhatsApp ב־App החדש + העתקת credentials | אתה | ממתין |
-| **3** | עדכון Vercel env + Webhook + Redeploy | יחד (כאן) | ממתין |
-| **4** | עדכון DB (`countries` + QR) | כאן | ממתין |
-| **5** | Smoke test מהטלפון → תקלה ב־Ops | יחד | ממתין |
+**משמעות:** אפשר להתחיל פיילוט 2–3 חנויות. הצעד הבא = smoke מהטלפון + בחירת סניפים — לא חיבור Meta.
 
 ---
 
-## שלב 1 — הכנה (עכשיו)
+## מפת הדרך (5 שלבים) — היסטוריה
 
-### 1.1 צ׳קליסט לפני חיבור ל־App החדש
+| שלב | מה | סטטוס |
+|-----|-----|--------|
+| **1** | וידוא מספר פנוי + Meta App חדש מוכן | ✅ הושלם |
+| **2** | הוספת המספר ל־WhatsApp ב־App החדש + credentials | ✅ הושלם |
+| **3** | עדכון Vercel env + Webhook + Redeploy | ✅ הושלם |
+| **4** | עדכון DB (`countries` + QR) | ✅ הושלם |
+| **5** | Smoke test מהטלפון → תקלה ב־Ops | ⬅️ מומלץ לוודא לפני הרחבת חנויות |
 
-- [ ] יש לך **Meta App חדש** (Developers) עם מוצר **WhatsApp** מחובר
+---
+
+## Runbook — חיבור מחדש (אם נדרש שוב)
+
+### שלב 1 — הכנה
+
+- [ ] יש **Meta App** עם מוצר **WhatsApp** מחובר
 - [ ] ה־App משויך ל־**Business Manager** הנכון (אותו Business שמחזיק את ה־WABA)
-- [ ] המספר **הוסר** מה־App / WABA הישן (לא נשאר "תקוע" שם)
-- [ ] המספר **לא** פעיל כרגע ב־WhatsApp אישי / Business App על טלפון
-- [ ] המספר יכול לקבל **SMS** (או שיחת אימות) לאימות Meta
-- [ ] רשמת את המספר בפורמט: `9725XXXXXXXX` (בלי `+` ו־`-`)
+- [ ] המספר **הוסר** מ־App / WABA ישן (לא נשאר "תקוע")
+- [ ] המספר **לא** פעיל כ־WhatsApp אישי / Business App על טלפון
+- [ ] המספר יכול לקבל **SMS** (או שיחת אימות)
+- [ ] מספר בפורמט: `9725XXXXXXXX` (בלי `+` ו־`-`)
 
-### 1.2 מה לשלוח לי כשסיימת שלב 1
+### שלב 2 — Meta
 
-1. שם / App ID של ה־Meta App החדש (מספר בלבד, לא סוד)
-2. המספר בפורמט `9725…`
-3. האם המספר כבר הופיע תחת WhatsApp → API Setup באפליקציה החדשה? (כן/לא)
-4. האם קיבלת / תוכל לקבל SMS לאימות עכשיו?
-
----
-
-## שלב 2 — Meta (אחרי שלב 1)
-
-1. [developers.facebook.com](https://developers.facebook.com/) → האפליקציה **החדשה**
+1. [developers.facebook.com](https://developers.facebook.com/) → האפליקציה
 2. מוצר **WhatsApp** → **API Setup**
 3. **Add phone number** → אימות ב־SMS / שיחה
-4. העתק (בלי לשתף בצ׳אט ציבורי אם אפשר — העדף הודעה פרטית / Vercel env ישירות):
+4. העתק ל־Vercel (לא לצ׳אט ציבורי אם אפשר):
    - **Phone number ID**
-   - **WhatsApp Business Account ID** (WABA) — לוידוא שהמספר ב־Business הנכון
-   - **Temporary access token** (או System User token קבוע — מומלץ לפיילוט ארוך)
+   - **WhatsApp Business Account ID** (WABA)
+   - **Access token** (System User קבוע מומלץ לפיילוט ארוך)
    - **App Secret** (Settings → Basic)
-5. בחר **Verify token** משלך (מחרוזת אקראית חזקה) — נשתמש בו גם ב־Vercel וגם ב־Webhook
-
-### מה לשלוח לי לסיום שלב 2
+5. בחר **Verify token** משלך — אותו ערך ב־Vercel וב־Webhook
 
 | שדה | למה |
 |-----|-----|
@@ -77,35 +66,26 @@
 | `WHATSAPP_VERIFY_TOKEN` | אימות webhook (GET) |
 | `NEXT_PUBLIC_WA_BUSINESS_PHONE` | ספרות בלבד, למשל `972552819086` |
 
----
-
-## שלב 3 — Vercel + Webhook (יחד)
+### שלב 3 — Vercel + Webhook
 
 Webhook Callback URL:
 
 `https://optical-center-rose.vercel.app/api/whatsapp/webhook`
 
 1. Vercel → Project **optical-center** → Settings → Environment Variables → **Production**
-2. עדכון / החלפה של:
-   - `WHATSAPP_PHONE_NUMBER_ID`
-   - `WHATSAPP_ACCESS_TOKEN`
-   - `WHATSAPP_VERIFY_TOKEN`
-   - `WHATSAPP_APP_SECRET`
-   - `NEXT_PUBLIC_WA_BUSINESS_PHONE`
-3. **Redeploy** Production (env חדשים לא נכנסים בלי deploy)
+2. עדכון / החלפה של משתני `WHATSAPP_*` + `NEXT_PUBLIC_WA_BUSINESS_PHONE`
+3. **Redeploy** Production
 4. Meta → WhatsApp → Configuration → Webhook:
    - Callback URL = כתובת למעלה
    - Verify token = אותו ערך כמו `WHATSAPP_VERIFY_TOKEN`
    - Subscribe: **`messages`**
 
----
-
-## שלב 4 — DB / QR
+### שלב 4 — DB / QR
 
 ```bash
 node scripts/configure-whatsapp-country.mjs \
   --code=IL \
-  --phone-number-id=<PHONE_NUMBER_ID_מה_APP_החדש> \
+  --phone-number-id=<PHONE_NUMBER_ID> \
   --display=9725...
 ```
 
@@ -113,9 +93,7 @@ node scripts/configure-whatsapp-country.mjs \
 
 אחרי זה: Ops → `/ops/stores/print-qr` — הדפסה מחדש אם המספר הציבורי השתנה.
 
----
-
-## שלב 5 — בדיקה
+### שלב 5 — בדיקה
 
 1. `GET /api/health/pilot` → `readyForPilot: true` ו־`meta_graph_send_ready: true`
 2. WhatsApp למספר: `STORE_172` → `המזגן לא עובד`
@@ -128,42 +106,33 @@ node scripts/configure-whatsapp-country.mjs \
 בדיקה מסודרת — מהנפוץ לנדיר:
 
 1. **Webhook → Subscribe: `messages`**  
-   ב־Meta → WhatsApp → Configuration / Webhooks → ודא ש־`messages` מסומן (ירוק).  
+   ב־Meta → WhatsApp → Configuration / Webhooks → ודא ש־`messages` מסומן.  
    Verify לבד לא מספיק.
 
 2. **App ב־Development**  
    אם האפליקציה לא Published — רק מספרי **Admin / Developer / Tester** מקבלים webhooks.  
-   הוסף את מספר ה־WhatsApp שממנו אתה כותב:  
-   App roles → Roles → Add Testers (או App → WhatsApp → API Setup → רשימת מספרי בדיקה).  
-   לפרסום האפליקציה ב־Meta נדרשים URLs ציבוריים:  
-   - Privacy Policy: `https://optical-center-rose.vercel.app/privacy`  
+   הוסף את מספר ה־WhatsApp שממנו כותבים.  
+   לפרסום האפליקציה ב־Meta:
+   - Privacy Policy: `https://optical-center-rose.vercel.app/privacy`
    - Terms of Service: `https://optical-center-rose.vercel.app/terms`
 
-3. **`WHATSAPP_APP_SECRET` מה־App החדש**  
-   Verify משתמש ב־Verify token; שליחת הודעות משתמשת בחתימה עם App Secret.  
-   Secret ישן → Vercel logs: `invalid_signature` → הבוט שותק לגמרי.
+3. **`WHATSAPP_APP_SECRET` מה־App הנכון**  
+   Secret ישן → Vercel logs: `invalid_signature` → הבוט שותק.
 
-4. **סנכרון Phone Number ID ב־DB** (חובה אחרי App חדש):
+4. **סנכרון Phone Number ID ב־DB**:
    ```sql
    update countries
-   set whatsapp_phone_number_id = '1322189407641255',
+   set whatsapp_phone_number_id = '<PHONE_NUMBER_ID>',
        whatsapp_display_phone = '972552819086'
    where code = 'IL';
    ```
 
-5. **Human pause** על הצ׳אט שלך:
+5. **Human pause** על הצ׳אט:
    ```sql
    update intake_sessions
    set human_takeover = false, human_takeover_until = null
-   where wa_id like '%<הסיומת_של_המספר_שלך>%';
+   where wa_id like '%<סיומת_המספר>%';
    ```
    או ב־Ops → Inbox → Resume bot.
 
 6. Smoke: שלח `STORE_172` ואז `המזגן לא עובד`.
-
----
-
-## עצור כאן
-
-**עכשיו רק שלב 1–2 ב־Meta.**  
-סיים חיבור המספר ל־App החדש, שלח את ה־credentials מהטבלה למעלה — ואז נעדכן כאן Vercel + DB + נריץ smoke.

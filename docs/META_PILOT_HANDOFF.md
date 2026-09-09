@@ -11,55 +11,33 @@
 - [x] סקריפטים: `apply-migration`, `configure-whatsapp-country`, `seed-store-phones`, `pilot-readiness`
 - [x] מיגרציה `20260827230000_whatsapp_ai_intake.sql` בריפו
 
-### מה שעדיין דורש הרצה חד־פעמית (לא Meta)
+### צד בנייה בפרודקשן — הושלם
 
-1. **מיגרציית AI** על Supabase `pfsxuylbnpbcgjehuaqo`  
-   SQL Editor → הדביקו את הקובץ, או:  
-   `SUPABASE_DB_PASSWORD=… node scripts/apply-migration.mjs`
-2. **Vercel env ל־AI**  
-   AI Gateway בלבד: `AI_GATEWAY_API_KEY` או OIDC (`vercel env pull`) + `WHATSAPP_AI_INTAKE_ENABLED=true`  
-   (סובבו מפתח שנחשף בצ'אט)
-3. אופציונלי: `SENTRY_DSN`, `CRON_SECRET`
+1. ~~מיגרציית AI על Supabase~~ — health: `schema_ai_intake` ✅  
+2. ~~Vercel env ל־AI Gateway + intake~~ — health: `ai_intake` ✅  
+3. אופציונלי עדיין: `SENTRY_DSN`, `CRON_SECRET`
 
-בדיקה: `node scripts/pilot-readiness.mjs`  
-או: `https://optical-center-rose.vercel.app/api/health/pilot`
+בדיקה חיה: `https://optical-center-rose.vercel.app/api/health/pilot`
 
 ---
 
-## הצד שלך (Meta + מספר)
+## הצד שלך (Meta + מספר) — הושלם בפרודקשן
 
-> **חיבור מחדש (App חדש):** אם המספר הועבר בין Meta Apps, ראו  
-> [`WHATSAPP_PHONE_CONNECT_PLAN.md`](./WHATSAPP_PHONE_CONNECT_PLAN.md).  
-> סימפטום אופייני ב־`/api/health/pilot`:  
-> `meta_graph_send_ready` נכשל עם  
-> `The application does not belong to system user's business…`  
-> → מחליפים את כל `WHATSAPP_*` (+ verify token) לערכים מה־App החדש, מגדירים webhook מחדש, Redeploy, ומריצים `configure-whatsapp-country.mjs`.
+**סטטוס (2026-09-09):** `/api/health/pilot` → `readyForPilot: true` · `metaSideReady: true` · Graph מאשר `+972 55-281-9086`.
 
-1. WhatsApp Business / Meta Cloud API — מספר פעיל **ב־App / WABA הנכון**  
-2. ב־Vercel Production:
-   - `WHATSAPP_PHONE_NUMBER_ID`
-   - `WHATSAPP_ACCESS_TOKEN`
-   - `WHATSAPP_VERIFY_TOKEN`
-   - `WHATSAPP_APP_SECRET`
-   - `NEXT_PUBLIC_WA_BUSINESS_PHONE` (ספרות, למשל `9725…`)
-3. Webhook Callback URL:  
-   `https://optical-center-rose.vercel.app/api/whatsapp/webhook`  
-   Verify token = אותו ערך כמו `WHATSAPP_VERIFY_TOKEN`  
-   Subscribe: `messages`
-4. עדכון DB (אחרי שיש Phone Number ID):
-   ```bash
-   node scripts/configure-whatsapp-country.mjs \
-     --code=IL \
-     --phone-number-id=<META_ID> \
-     --display=9725...
-   ```
-5. שמירת המספר גם ב־Ops → הגדרות → WhatsApp (ל־QR)  
-   אם השתמשתם ב־`--display=` בסקריפט למעלה — `app_settings.wa_business_phone` מסונכרן אוטומטית.
-6. הדפסת QR מחדש לפיילוט מ־`/ops/stores/print-qr` (PNG מומלץ)
-7. (מומלץ) מיפוי טלפוני עובדים:
-   ```bash
-   node scripts/seed-store-phones.mjs --store=172 --wa=97250... --label="מנהל"
-   ```
-8. Smoke: סריקת QR → הודעת תקלה → תקלה ב־`/ops/tickets`
+חיבור Meta App החדש + Vercel env + webhook + DB — **סגורים**.  
+Runbook לחיבור מחדש / תקלות: [`WHATSAPP_PHONE_CONNECT_PLAN.md`](./WHATSAPP_PHONE_CONNECT_PLAN.md).
 
-כש־`/api/health/pilot` מחזיר `"readyForPilot": true` — אפשר להתחיל עם 2–3 חנויות.
+### צעדים שכבר בוצעו (לתיעוד)
+
+1. WhatsApp Business / Meta Cloud API — מספר פעיל ב־App / WABA הנכון
+2. `WHATSAPP_*` + `NEXT_PUBLIC_WA_BUSINESS_PHONE` ב־Vercel Production
+3. Webhook: `https://optical-center-rose.vercel.app/api/whatsapp/webhook` · Subscribe: `messages`
+4. `configure-whatsapp-country` / סנכרון IL ב־DB
+5. מספרים ממופים לחנויות (health: store_phones ✅)
+
+### לפני הרחבת פיילוט
+
+1. Smoke מהטלפון: QR / `STORE_{code}` → תקלה ב־`/ops/tickets`
+2. (אופציונלי) הדפסת QR מ־`/ops/stores/print-qr` לסניפי הפיילוט
+3. בחירת 2–3 חנויות להתחלה
