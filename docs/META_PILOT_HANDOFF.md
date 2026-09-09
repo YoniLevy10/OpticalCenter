@@ -11,18 +11,13 @@
 - [x] סקריפטים: `apply-migration`, `configure-whatsapp-country`, `seed-store-phones`, `pilot-readiness`
 - [x] מיגרציה `20260827230000_whatsapp_ai_intake.sql` בריפו
 
-### מה שעדיין דורש הרצה חד־פעמית (לא Meta)
+### צד בנייה בפרודקשן — הושלם
 
-1. **מיגרציית AI** על Supabase `pfsxuylbnpbcgjehuaqo`  
-   SQL Editor → הדביקו את הקובץ, או:  
-   `SUPABASE_DB_PASSWORD=… node scripts/apply-migration.mjs`
-2. **Vercel env ל־AI**  
-   AI Gateway בלבד: `AI_GATEWAY_API_KEY` או OIDC (`vercel env pull`) + `WHATSAPP_AI_INTAKE_ENABLED=true`  
-   (סובבו מפתח שנחשף בצ'אט)
-3. אופציונלי: `SENTRY_DSN`, `CRON_SECRET`
+1. ~~מיגרציית AI על Supabase~~ — health: `schema_ai_intake` ✅  
+2. ~~Vercel env ל־AI Gateway + intake~~ — health: `ai_intake` ✅  
+3. אופציונלי עדיין: `SENTRY_DSN`, `CRON_SECRET`
 
-בדיקה: `node scripts/pilot-readiness.mjs`  
-או: `https://optical-center-rose.vercel.app/api/health/pilot`
+בדיקה חיה: `https://optical-center-rose.vercel.app/api/health/pilot`
 
 ---
 
