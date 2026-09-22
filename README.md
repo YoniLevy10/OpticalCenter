@@ -69,6 +69,7 @@ MAINTAINOS_FORCE_MEMORY=1
 ## מסמכים
 
 - [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md) — בידול, ליבה אחידה, Digital Twin, פילטר פיצ׳רים
+- [`docs/ARI_MEETING_BRIEF.md`](docs/ARI_MEETING_BRIEF.md) — בריף פגישה עם ארי (Optical Center): התנגדויות → הוכחות
 - [`docs/CORE_FEATURES_ROADMAP.md`](docs/CORE_FEATURES_ROADMAP.md) — חיזוק ליבה + פיצ׳רים (בלי Zapier)
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)

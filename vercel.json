@@ -13,6 +13,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/lifecycle-nudge",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/monthly-report",
       "schedule": "0 6 1 * *"
     }

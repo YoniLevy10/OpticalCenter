@@ -56,6 +56,7 @@ export default async function StoreHomePage() {
           <ul className="divide-y divide-border">
             {mine.slice(0, 30).map((t) => (
               <li key={t.id} className="px-4 py-3">
+              <Link href={`/store/tickets/${t.id}`} className="block">
                 <p className="t-body-strong t-num text-ink">
                   {t.display_number ?? t.id.slice(0, 8)}
                 </p>
@@ -64,8 +65,14 @@ export default async function StoreHomePage() {
                 </p>
                 <div className="mt-2">
                   <StatusLabel status={t.status} />
+                  {t.status === 'resolved' ? (
+                    <span className="t-meta mr-2 text-[var(--signal-warning)]">
+                      נדרש אישור
+                    </span>
+                  ) : null}
                 </div>
-              </li>
+              </Link>
+            </li>
             ))}
           </ul>
         )}

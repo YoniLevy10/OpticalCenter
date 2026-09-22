@@ -19,6 +19,7 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { PreferredVendorsPanel } from './preferred-vendors-panel'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -165,6 +166,12 @@ export default async function TicketDetailPage({
             ))}
           </ul>
         </Panel>
+
+        <PreferredVendorsPanel
+          ticketId={ticket.id}
+          category={ticket.category}
+          regionId={ticket.region_id}
+        />
 
         <div className="hidden md:block">
           <TicketActions

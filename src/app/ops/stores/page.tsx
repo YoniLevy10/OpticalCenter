@@ -11,13 +11,20 @@ import { listTickets } from '@/modules/tickets/service'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { cn } from '@/lib/utils'
+import {
+  IL_REGION_CODES,
+  IL_REGION_LABELS_HE,
+  regionCodeFromId,
+  regionLabelHe,
+  type IlRegionCode,
+} from '@/modules/stores/regions'
 
 export const dynamic = 'force-dynamic'
 
 export default async function StoresPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; region?: string }>
 }) {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -26,6 +33,9 @@ export default async function StoresPage({
 
   const sp = await searchParams
   const q = (sp.q ?? '').trim().toLowerCase()
+  const regionFilter = (sp.region ?? '').trim().toUpperCase() as
+    | IlRegionCode
+    | ''
   const { stores } = await fetchStores({ includeInactive: true })
 
   const { tickets } = await listTickets(500).catch(() => ({
@@ -46,9 +56,22 @@ export default async function StoresPage({
     openCountByStore.set(t.store_id, (openCountByStore.get(t.store_id) ?? 0) + 1)
   }
 
+  const byRegion = new Map<IlRegionCode, number>()
+  for (const code of IL_REGION_CODES) byRegion.set(code, 0)
+  for (const s of stores) {
+    if (s.is_active === false) continue
+    const code = regionCodeFromId(s.region_id)
+    if (code) byRegion.set(code, (byRegion.get(code) ?? 0) + 1)
+  }
+  const activeCount = stores.filter((s) => s.is_active !== false).length
+
   const filtered = stores.filter((s) => {
+    if (regionFilter && regionCodeFromId(s.region_id) !== regionFilter) {
+      return false
+    }
     if (!q) return true
-    const hay = `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''}`.toLowerCase()
+    const hay =
+      `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''}`.toLowerCase()
     return hay.includes(q)
   })
 
@@ -56,6 +79,14 @@ export default async function StoresPage({
     actor?.memberships.some(
       (m) => m.role === 'global_admin' || m.role === 'country_manager',
     ) || shouldAllowDemoEntry()
+
+  function regionHref(code: IlRegionCode | '') {
+    const params = new URLSearchParams()
+    if (sp.q) params.set('q', sp.q)
+    if (code) params.set('region', code)
+    const qs = params.toString()
+    return qs ? `/ops/stores?${qs}` : '/ops/stores'
+  }
 
   return (
     <OpsAppShell>
@@ -67,13 +98,50 @@ export default async function StoresPage({
           actions={canMutate ? <StoreCreateForm /> : undefined}
         />
 
+        <Panel className="space-y-3">
+          <p className="t-body-strong text-ink">
+            פריסה ארצית · {activeCount} סניפים ב־6 מחוזות
+          </p>
+          <p className="t-meta text-ink-2">
+            לכל חנות מיקום, תקלות, היסטוריה וסטטוס — הגיאוגרפיה לא מגבילה את
+            המערכת.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={regionHref('')}
+              className={cn(
+                't-caption rounded-md border px-3 py-1.5',
+                !regionFilter
+                  ? 'border-ink bg-ink text-surface'
+                  : 'border-border text-ink-2 hover:bg-surface-sunken/40',
+              )}
+            >
+              הכל · {activeCount}
+            </Link>
+            {IL_REGION_CODES.map((code) => (
+              <Link
+                key={code}
+                href={regionHref(code)}
+                className={cn(
+                  't-caption rounded-md border px-3 py-1.5',
+                  regionFilter === code
+                    ? 'border-ink bg-ink text-surface'
+                    : 'border-border text-ink-2 hover:bg-surface-sunken/40',
+                )}
+              >
+                {IL_REGION_LABELS_HE[code]} · {byRegion.get(code) ?? 0}
+              </Link>
+            ))}
+          </div>
+        </Panel>
+
         <StoreSearch initialQ={sp.q ?? ''} />
 
         <Panel flush elevated className="overflow-hidden">
           {filtered.length === 0 ? (
             <EmptyState
               title="לא נמצאו חנויות"
-              description="נסו שם, מספר או עיר."
+              description="נסו שם, מספר, עיר או מחוז."
               icon={Store}
             />
           ) : (
@@ -94,7 +162,9 @@ export default async function StoresPage({
                           {s.name}
                         </span>
                         <span className="t-meta mt-0.5 block truncate text-ink-2">
-                          {s.city || s.address || '—'}
+                          {regionLabelHe(s.region_id)}
+                          {s.city ? ` · ${s.city}` : ''}
+                          {s.address ? ` · ${s.address}` : ''}
                         </span>
                       </span>
                       {openCount > 0 ? (

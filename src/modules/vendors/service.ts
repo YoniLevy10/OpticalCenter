@@ -9,6 +9,7 @@ import {
   supabaseReady,
   type MemVendor,
 } from '@/lib/data/memory-store'
+import { matchPreferredVendors, type VendorMatch } from './match'
 
 export type VendorPublic = Omit<MemVendor, 'hmac_secret'> & {
   has_hmac: boolean
@@ -16,10 +17,25 @@ export type VendorPublic = Omit<MemVendor, 'hmac_secret'> & {
 
 function toPublic(v: MemVendor): VendorPublic {
   const { hmac_secret, ...rest } = v
-  return { ...rest, has_hmac: Boolean(hmac_secret) }
+  return {
+    ...rest,
+    preferred: Boolean(v.preferred),
+    coverage_regions: v.coverage_regions ?? [],
+    notes: v.notes ?? null,
+    has_hmac: Boolean(hmac_secret),
+  }
 }
 
 function rowToMem(row: Record<string, unknown>): MemVendor {
+  const regions = Array.isArray(row.coverage_regions)
+    ? (row.coverage_regions as string[])
+    : typeof row.coverage_regions === 'string'
+      ? (row.coverage_regions as string)
+          .replace(/[{}]/g, '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
   return {
     id: String(row.id),
     name: String(row.name),
@@ -29,17 +45,23 @@ function rowToMem(row: Record<string, unknown>): MemVendor {
     active: Boolean(row.active),
     webhook_url: (row.webhook_url as string | null) ?? null,
     hmac_secret: (row.hmac_secret as string | null) ?? null,
+    preferred: Boolean(row.preferred),
+    coverage_regions: regions.map((c) => c.toUpperCase()),
+    notes: (row.notes as string | null) ?? null,
     created_at: String(row.created_at),
   }
 }
 
 export async function listVendors(opts?: {
   activeOnly?: boolean
+  preferredOnly?: boolean
 }): Promise<{ vendors: VendorPublic[]; backend: 'memory' | 'supabase' }> {
   if (!(await supabaseReady())) {
+    let list = memListVendors(opts?.activeOnly)
+    if (opts?.preferredOnly) list = list.filter((v) => v.preferred)
     return {
       backend: 'memory',
-      vendors: memListVendors(opts?.activeOnly).map(toPublic),
+      vendors: list.map(toPublic),
     }
   }
 
@@ -51,13 +73,16 @@ export async function listVendors(opts?: {
     .order('name', { ascending: true })
 
   if (opts?.activeOnly) query = query.eq('active', true)
+  if (opts?.preferredOnly) query = query.eq('preferred', true)
 
   const { data, error } = await query
   if (error) {
     if (isSupabaseSchemaError(error)) {
+      let list = memListVendors(opts?.activeOnly)
+      if (opts?.preferredOnly) list = list.filter((v) => v.preferred)
       return {
         backend: 'memory',
-        vendors: memListVendors(opts?.activeOnly).map(toPublic),
+        vendors: list.map(toPublic),
       }
     }
     throw new Error(error.message)
@@ -69,12 +94,27 @@ export async function listVendors(opts?: {
   }
 }
 
+export async function suggestVendorsForTicket(input: {
+  category: string
+  regionId?: string | null
+}): Promise<{ matches: VendorMatch[]; backend: 'memory' | 'supabase' }> {
+  const { vendors, backend } = await listVendors({ activeOnly: true })
+  const matches = matchPreferredVendors(vendors, {
+    category: input.category,
+    regionIdOrCode: input.regionId,
+  })
+  return { matches, backend }
+}
+
 export async function createVendor(input: {
   name: string
   contact_phone?: string | null
   contact_email?: string | null
   specialties?: string
   webhook_url?: string | null
+  preferred?: boolean
+  coverage_regions?: string[]
+  notes?: string | null
 }): Promise<VendorPublic> {
   if (!(await supabaseReady())) {
     return toPublic(memCreateVendor(input))
@@ -92,6 +132,11 @@ export async function createVendor(input: {
       specialties: input.specialties?.trim() || 'general',
       webhook_url: input.webhook_url?.trim() || null,
       hmac_secret: hmac,
+      preferred: Boolean(input.preferred),
+      coverage_regions: (input.coverage_regions ?? []).map((c) =>
+        c.toUpperCase(),
+      ),
+      notes: input.notes?.trim() || null,
     })
     .select('*')
     .single()
@@ -114,6 +159,9 @@ export async function updateVendor(
     specialties?: string
     active?: boolean
     webhook_url?: string | null
+    preferred?: boolean
+    coverage_regions?: string[]
+    notes?: string | null
   },
 ): Promise<VendorPublic> {
   if (!(await supabaseReady())) {
@@ -131,6 +179,11 @@ export async function updateVendor(
   if (patch.active != null) payload.active = patch.active
   if (patch.webhook_url !== undefined)
     payload.webhook_url = patch.webhook_url?.trim() || null
+  if (patch.preferred != null) payload.preferred = patch.preferred
+  if (patch.coverage_regions !== undefined) {
+    payload.coverage_regions = patch.coverage_regions.map((c) => c.toUpperCase())
+  }
+  if (patch.notes !== undefined) payload.notes = patch.notes?.trim() || null
 
   const { data, error } = await supabase
     .from('vendors')

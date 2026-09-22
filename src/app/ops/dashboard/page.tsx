@@ -15,6 +15,7 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
+import { listVendors } from '@/modules/vendors/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import {
   plainOpenForHe,
@@ -72,9 +73,12 @@ export default async function OpsDashboardPage() {
     redirect('/login')
   }
 
-  const [ticketResult, techRows] = await Promise.all([
+  const [ticketResult, techRows, vendorResult] = await Promise.all([
     listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
+    listVendors({ activeOnly: true, preferredOnly: true }).catch(() => ({
+      vendors: [],
+    })),
   ])
 
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
@@ -84,10 +88,14 @@ export default async function OpsDashboardPage() {
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
   const kpis = computeDashboardKpis(all, technicians)
-  const topUrgent = kpis.urgentTickets.slice(0, 5)
+  const topUrgent = kpis.exceptions.slice(0, 5)
+  const awaitingConfirm = kpis.awaitingStoreConfirmTickets.slice(0, 5)
   const isDemo = ticketResult.backend === 'memory'
   const hasOpen = kpis.open > 0
   const urgentCount = kpis.urgent
+  const needsAri = kpis.needsAri
+  const awaitingCount = kpis.awaitingStoreConfirm
+  const preferredCount = vendorResult.vendors.length
 
   return (
     <OpsAppShell>
@@ -109,6 +117,18 @@ export default async function OpsDashboardPage() {
             value={urgentCount}
             label="דחופות"
             tone={urgentCount > 0 ? 'critical' : 'neutral'}
+          />
+          <DashTile
+            href="/ops/tickets?view=open"
+            value={needsAri}
+            label="דורש את ארי"
+            tone={needsAri > 0 ? 'critical' : 'ok'}
+          />
+          <DashTile
+            href="/ops/tickets?view=resolved"
+            value={awaitingCount}
+            label="ממתינות לאישור חנות"
+            tone={awaitingCount > 0 ? 'warning' : 'neutral'}
           />
           <DashTile
             href="/ops/tickets?view=open"
@@ -139,11 +159,19 @@ export default async function OpsDashboardPage() {
             tone={kpis.breached > 0 ? 'critical' : 'neutral'}
           />
           <DashTile
-            href="/ops/users"
-            value={technicians.length}
-            label="טכנאים"
+            href="/ops/vendors"
+            value={preferredCount}
+            label="ספקים מועדפים"
           />
         </div>
+
+        <Panel className="space-y-1">
+          <p className="t-body-strong text-ink">ארי נכנס רק לחריגים</p>
+          <p className="t-meta text-ink-2">
+            שיוך חסר, חריגת SLA או חלקים — המערכת רודפת אחרי חנות וטכנאי בשאר
+            המקרים, כולל אישור סגירה מהחנות.
+          </p>
+        </Panel>
 
         <Panel
           elevated
@@ -172,19 +200,21 @@ export default async function OpsDashboardPage() {
             </>
           ) : (
             <p className="t-body text-ink-2">
-              {urgentCount > 0
-                ? `${urgentCount} דחופות דורשות טיפול עכשיו`
-                : 'יש תקלות פתוחות — אין דחופות כרגע'}
+              {needsAri > 0
+                ? `${needsAri} חריגים דורשים את ארי`
+                : awaitingCount > 0
+                  ? `${awaitingCount} ממתינות לאישור חנות — בלי לרדוף`
+                  : 'יש תקלות פתוחות — אין חריגים לארי כרגע'}
             </p>
           )}
         </Panel>
 
         <Panel flush elevated className="overflow-hidden">
-          <PanelHeader title="תקלות שדורשות תשומת לב" />
+          <PanelHeader title="דורש את ארי" />
           {topUrgent.length === 0 ? (
             <EmptyState
-              title="אין תקלות דחופות כרגע 👍"
-              description="כשתגיע תקלה דחופה — היא תופיע כאן."
+              title="אין חריגים כרגע"
+              description="ארי נכנס רק כשאין שיוך, יש חריגת SLA או ממתינים לחלקים."
               icon={ThumbsUp}
               className="py-12"
             />
@@ -227,6 +257,52 @@ export default async function OpsDashboardPage() {
                         <StatusLabel status={t.status} />
                         <Dot />
                         <span className="t-meta text-ink-2">לטפל ←</span>
+                      </>
+                    }
+                  />
+                )
+              })}
+            </RowList>
+          )}
+        </Panel>
+
+        <Panel flush elevated className="overflow-hidden">
+          <PanelHeader title="ממתינות לאישור חנות" />
+          {awaitingConfirm.length === 0 ? (
+            <EmptyState
+              title="אין ממתינות לאישור"
+              description="כשטכנאי מסיים — החנות מאשרת והתקלה נסגרת אוטומטית."
+              icon={CheckCircle2}
+              className="py-12"
+            />
+          ) : (
+            <RowList>
+              {awaitingConfirm.map((t) => {
+                const num =
+                  t.display_number ||
+                  (t.number != null ? `OC-${t.number}` : null)
+                return (
+                  <OperationalRow
+                    key={t.id}
+                    href={`/ops/tickets/${t.id}`}
+                    priority={t.priority}
+                    leading={
+                      <span className="inline-flex items-center gap-2">
+                        {num ? (
+                          <span className="t-num text-ink">{num}</span>
+                        ) : null}
+                        {num ? <span aria-hidden>·</span> : null}
+                        <span>{storeLabel(t.stores)}</span>
+                      </span>
+                    }
+                    title={t.title || t.description}
+                    footer={
+                      <>
+                        <StatusLabel status={t.status} />
+                        <Dot />
+                        <span className="t-meta text-ink-2">
+                          המערכת תזכיר לחנות
+                        </span>
                       </>
                     }
                   />
