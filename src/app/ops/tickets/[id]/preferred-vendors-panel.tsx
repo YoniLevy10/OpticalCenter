@@ -22,19 +22,30 @@ export function PreferredVendorsPanel({
   ticketId,
   category,
   regionId,
+  initialMatches,
+  fixlyLabel: initialFixlyLabel,
 }: {
   ticketId: string
   category: string
   regionId: string
+  initialMatches?: Match[]
+  fixlyLabel?: string
 }) {
   const toast = useToast()
-  const [matches, setMatches] = useState<Match[]>([])
-  const [fixlyLabel, setFixlyLabel] = useState('Fixly כבוי')
-  const [loading, setLoading] = useState(true)
+  const [matches, setMatches] = useState<Match[]>(initialMatches ?? [])
+  const [fixlyLabel, setFixlyLabel] = useState(
+    initialFixlyLabel ?? 'Fixly כבוי — מאגר ספקים מועדפים בלבד',
+  )
+  const [loading, setLoading] = useState(!initialMatches)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (initialMatches) {
+      setMatches(initialMatches)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     ;(async () => {
       setLoading(true)
@@ -60,7 +71,7 @@ export function PreferredVendorsPanel({
     return () => {
       cancelled = true
     }
-  }, [category, regionId])
+  }, [category, regionId, initialMatches])
 
   async function dispatch(vendorId: string) {
     setBusyId(vendorId)
@@ -98,7 +109,7 @@ export function PreferredVendorsPanel({
       <p className="t-meta text-ink-2">{fixlyLabel}</p>
       {loading ? (
         <p className="t-body text-ink-2">טוען התאמות…</p>
-      ) : error ? (
+      ) : error && matches.length === 0 ? (
         <Notice tone="critical">{error}</Notice>
       ) : matches.length === 0 ? (
         <Notice tone="warning">

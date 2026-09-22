@@ -20,6 +20,8 @@ import {
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
 import { PreferredVendorsPanel } from './preferred-vendors-panel'
+import { suggestVendorsForTicket } from '@/modules/vendors/service'
+import { fixlyStatusLabelHe } from '@/modules/vendors/fixly'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -57,13 +59,18 @@ export default async function TicketDetailPage({
   if (!ticket) notFound()
   if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
-  const [technicians, storedAttachments, openTicketsResult] = await Promise.all([
-    listInternalTechnicians().catch(() => []),
-    fetchTicketAttachments(ticket.id),
-    listTickets({ limit: 500, client: resolvedClient?.client }).catch(() => ({
-      tickets: [],
-    })),
-  ])
+  const [technicians, storedAttachments, openTicketsResult, vendorSuggest] =
+    await Promise.all([
+      listInternalTechnicians().catch(() => []),
+      fetchTicketAttachments(ticket.id),
+      listTickets({ limit: 500, client: resolvedClient?.client }).catch(() => ({
+        tickets: [],
+      })),
+      suggestVendorsForTicket({
+        category: ticket.category,
+        regionId: ticket.region_id,
+      }).catch(() => ({ matches: [] })),
+    ])
 
   const openCountByTech = new Map<string, number>()
   for (const t of openTicketsResult.tickets ?? []) {
@@ -80,6 +87,18 @@ export default async function TicketDetailPage({
     full_name: t.full_name,
     email: t.email,
     openCount: openCountByTech.get(t.id) ?? 0,
+  }))
+
+  const preferredMatches = vendorSuggest.matches.slice(0, 4).map((m) => ({
+    id: m.id,
+    name: m.name,
+    specialties: m.specialties,
+    preferred: m.preferred,
+    coverage_regions: m.coverage_regions ?? [],
+    contact_phone: m.contact_phone ?? null,
+    notes: m.notes ?? null,
+    score: m.score,
+    reason: m.reason,
   }))
 
   const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
@@ -171,6 +190,8 @@ export default async function TicketDetailPage({
           ticketId={ticket.id}
           category={ticket.category}
           regionId={ticket.region_id}
+          initialMatches={preferredMatches}
+          fixlyLabel={fixlyStatusLabelHe()}
         />
 
         <div className="hidden md:block">

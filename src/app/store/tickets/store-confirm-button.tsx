@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/primitives'
@@ -11,6 +12,7 @@ export function StoreConfirmButton({
   ticketId: string
   initialStatus: string
 }) {
+  const router = useRouter()
   const [status, setStatus] = useState(initialStatus)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,11 +26,14 @@ export function StoreConfirmButton({
     try {
       const res = await fetch(`/api/tickets/${ticketId}/confirm`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error || 'אישור נכשל')
       setStatus('closed')
       setDone(true)
+      router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאה')
     } finally {
@@ -48,15 +53,16 @@ export function StoreConfirmButton({
         הטכנאי סיים טיפול. אשרו שהבעיה נפתרה — בלי לרדוף אחרי אף אחד.
       </Notice>
       {error ? <Notice tone="critical">{error}</Notice> : null}
-      <Button
-        type="button"
-        variant="primary"
-        size="block"
-        disabled={busy}
-        onClick={() => void confirm()}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void confirm()
+        }}
       >
-        {busy ? 'מאשר…' : 'אשר שהתקלה נפתרה'}
-      </Button>
+        <Button type="submit" variant="primary" size="block" disabled={busy}>
+          {busy ? 'מאשר…' : 'אשר שהתקלה נפתרה'}
+        </Button>
+      </form>
     </div>
   )
 }
