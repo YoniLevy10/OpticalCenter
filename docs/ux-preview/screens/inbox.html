@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WhatsApp Inbox · MaintainOS Preview</title>
+  <link rel="stylesheet" href="../preview.css" />
+</head>
+<body>
+  <div class="preview-bar">
+    <a href="../index.html">← גלריה</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="ticket-detail.html">Detail</a>
+    <a class="active" href="inbox.html">Inbox</a>
+    <a href="stores.html">Stores</a>
+    <span class="spacer"></span>
+    <span class="tag">UX Preview</span>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="brand-mark">MO</div>
+        <div><strong>MaintainOS</strong><span>Optical Center</span></div>
+      </div>
+      <nav class="nav-group">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span> לוח בקרה</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-icon">☰</span> תקלות</a>
+        <a class="nav-item active" href="inbox.html"><span class="nav-icon">💬</span> WhatsApp</a>
+        <a class="nav-item" href="stores.html"><span class="nav-icon">⌂</span> סניפים</a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1>WhatsApp</h1>
+        <div class="topbar-actions">
+          <div class="seg">
+            <button class="active">ממתינים · 3</button>
+            <button>טופלו</button>
+            <button>הכל</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="content" style="padding-top:16px">
+        <div class="inbox">
+          <div class="thread-list">
+            <div class="thread active">
+              <div class="avatar">172</div>
+              <div>
+                <p class="t-body-strong" style="margin:0">סניף אשדוד</p>
+                <p class="t-meta" style="margin:2px 0 0">המזגן שוב לא עובד…</p>
+              </div>
+              <span class="t-caption">עכשיו</span>
+            </div>
+            <div class="thread">
+              <div class="avatar">112</div>
+              <div>
+                <p class="t-body-strong" style="margin:0">דיזנגוף</p>
+                <p class="t-meta" style="margin:2px 0 0">תודה, מחכים לטכנאי</p>
+              </div>
+              <span class="t-caption">12 דק׳</span>
+            </div>
+            <div class="thread">
+              <div class="avatar">?</div>
+              <div>
+                <p class="t-body-strong" style="margin:0">מספר לא מזוהה</p>
+                <p class="t-meta" style="margin:2px 0 0">שלום יש תקלה בחנות</p>
+              </div>
+              <span class="badge warning" style="align-self:center">חדש</span>
+            </div>
+          </div>
+
+          <div class="chat-pane">
+            <div class="chat-head">
+              <div>
+                <p class="t-body-strong" style="margin:0">אשדוד · <span class="t-num">172</span></p>
+                <p class="t-meta" style="margin:2px 0 0">מקושר ל־<a href="ticket-detail.html" style="color:var(--signal-progress)"><span class="t-num" dir="ltr">#10465</span></a></p>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary t-control">השתלטות אנושית</button>
+                <button class="btn btn-primary t-control">סמן כטופל</button>
+              </div>
+            </div>
+            <div class="messages">
+              <div class="bubble in">שלום, המדפסת של התוויות נתקעה שוב אחרי החלפת גליל</div>
+              <div class="bubble out">קיבלתי · פתחתי תקלה #10465 ושייכתי לנועה. מישהו בחנות עכשיו?</div>
+              <div class="bubble in">כן, אני במקום. המזגן שוב לא עובד גם — או לפתוח תקלה נפרדת?</div>
+              <div class="bubble out" style="animation-delay:80ms">כן, עדיף תקלה נפרדת למיזוג. שלחי/י תמונה אם אפשר.</div>
+            </div>
+            <div class="chat-compose">
+              <input type="text" placeholder="הודעה לסניף…" />
+              <button class="btn btn-primary t-control">שלח</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
