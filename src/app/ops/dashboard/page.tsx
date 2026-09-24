@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { CheckCircle2, ThumbsUp } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ThumbsUp } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
   Panel,
@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -26,7 +27,7 @@ import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
-function DashTile({
+function PulseTile({
   href,
   value,
   label,
@@ -41,19 +42,20 @@ function DashTile({
     <Link
       href={href}
       className={cn(
-        'flex min-h-[5.5rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border px-4 py-3 transition-colors duration-[var(--dur-1)] active:opacity-90 md:hover:bg-surface-sunken/40',
+        'group flex min-h-[5.25rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border px-4 py-3 transition-[background,border-color,box-shadow] duration-[var(--dur-1)] active:opacity-90 md:hover:shadow-[var(--shadow-1)]',
         tone === 'critical' &&
           'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
         tone === 'warning' &&
           'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
         tone === 'ok' &&
           'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
-        tone === 'neutral' && 'border-border bg-surface',
+        tone === 'neutral' &&
+          'border-border/80 bg-surface md:hover:bg-surface-sunken/40',
       )}
     >
       <span
         className={cn(
-          't-display t-num leading-none',
+          't-display t-num leading-none tracking-tight',
           tone === 'critical' && 'text-[var(--signal-critical)]',
           tone === 'warning' && 'text-[var(--signal-warning)]',
           tone === 'ok' && 'text-[var(--signal-resolved)]',
@@ -97,86 +99,105 @@ export default async function OpsDashboardPage() {
   const awaitingCount = kpis.awaitingStoreConfirm
   const preferredCount = vendorResult.vendors.length
 
+  const statusLine = !hasOpen
+    ? 'הכל שקט — אין תקלות פתוחות כרגע'
+    : needsAri > 0
+      ? `${needsAri} חריגים דורשים את ארי עכשיו`
+      : awaitingCount > 0
+        ? `${awaitingCount} ממתינות לאישור חנות`
+        : `${kpis.open} פתוחות — בלי חריגים לארי`
+
   return (
     <OpsAppShell>
       <DashboardSoftRefresh />
-      <div className="flex flex-col gap-5 stagger">
-        <h1 className="t-display text-ink">מה קורה עכשיו?</h1>
+      <div className="flex flex-col gap-6 stagger">
+        {/* Hero — one job: orient the operator */}
+        <header className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-[var(--shadow-1)] md:px-7 md:py-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-90"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 90% at 100% 0%, color-mix(in srgb, var(--tenant-soft) 70%, transparent), transparent 55%), radial-gradient(ellipse 50% 60% at 0% 100%, color-mix(in srgb, var(--signal-progress) 10%, transparent), transparent 50%)',
+            }}
+          />
+          <div className="relative flex items-start gap-3.5">
+            <BrandMark
+              size={48}
+              priority
+              className="mt-0.5 rounded-[var(--radius-md)] shadow-[var(--shadow-2)]"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="t-caption text-ink-3">Optical Center · ישראל</p>
+              <h1 className="t-display mt-1 text-ink">מה קורה עכשיו?</h1>
+              <p className="t-body mt-1.5 max-w-xl text-ink-2">{statusLine}</p>
+            </div>
+          </div>
+        </header>
 
+        {/* Primary pulse — 4 decisions only */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <DashTile
+          <PulseTile
             href="/ops/tickets?view=open"
             value={kpis.open}
             label="פתוחות"
-            tone={
-              !hasOpen ? 'ok' : urgentCount > 0 ? 'critical' : 'warning'
-            }
+            tone={!hasOpen ? 'ok' : urgentCount > 0 ? 'critical' : 'warning'}
           />
-          <DashTile
+          <PulseTile
             href="/ops/tickets?view=open"
             value={urgentCount}
             label="דחופות"
             tone={urgentCount > 0 ? 'critical' : 'neutral'}
           />
-          <DashTile
+          <PulseTile
             href="/ops/tickets?view=open"
             value={needsAri}
             label="דורש את ארי"
             tone={needsAri > 0 ? 'critical' : 'ok'}
           />
-          <DashTile
+          <PulseTile
             href="/ops/tickets?view=resolved"
             value={awaitingCount}
             label="ממתינות לאישור חנות"
             tone={awaitingCount > 0 ? 'warning' : 'neutral'}
           />
-          <DashTile
-            href="/ops/tickets?view=open"
-            value={kpis.unassigned}
-            label="ללא אחראי"
-            tone={kpis.unassigned > 0 ? 'warning' : 'neutral'}
-          />
-          <DashTile
-            href="/ops/tickets?view=open"
-            value={kpis.inProgress}
-            label="בטיפול"
-          />
-          <DashTile
-            href="/ops/tickets?view=open"
-            value={kpis.waiting}
-            label="ממתינות לחלקים"
-          />
-          <DashTile
-            href="/ops/tickets?view=resolved"
-            value={kpis.done}
-            label="הסתיימו"
-            tone="ok"
-          />
-          <DashTile
-            href="/ops/tickets?view=open"
-            value={kpis.breached}
-            label="חריגות SLA"
-            tone={kpis.breached > 0 ? 'critical' : 'neutral'}
-          />
-          <DashTile
-            href="/ops/vendors"
-            value={preferredCount}
-            label="ספקים מועדפים"
-          />
         </div>
 
-        <Panel className="space-y-1">
-          <p className="t-body-strong text-ink">ארי נכנס רק לחריגים</p>
-          <p className="t-meta text-ink-2">
-            שיוך חסר, חריגת SLA או חלקים — המערכת רודפת אחרי חנות וטכנאי בשאר
-            המקרים, כולל אישור סגירה מהחנות.
-          </p>
-        </Panel>
+        {/* Compact secondary pulse — no cards */}
+        <p className="t-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-3">
+          <span>
+            ללא אחראי{' '}
+            <span className="t-num text-ink-2">{kpis.unassigned}</span>
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            בטיפול <span className="t-num text-ink-2">{kpis.inProgress}</span>
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            חריגות SLA{' '}
+            <span
+              className={cn(
+                't-num',
+                kpis.breached > 0
+                  ? 'text-[var(--signal-critical)]'
+                  : 'text-ink-2',
+              )}
+            >
+              {kpis.breached}
+            </span>
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            ספקים מועדפים{' '}
+            <span className="t-num text-ink-2">{preferredCount}</span>
+          </span>
+        </p>
 
         <Panel
           elevated
           className={cn(
-            'px-6 py-6 text-center',
+            'px-5 py-4',
             !hasOpen &&
               'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
             hasOpen &&
@@ -188,29 +209,40 @@ export default async function OpsDashboardPage() {
           )}
         >
           {!hasOpen ? (
-            <>
+            <div className="flex items-center gap-3">
               <CheckCircle2
-                className="mx-auto mb-3 h-10 w-10 text-[var(--signal-resolved)]"
+                className="h-7 w-7 shrink-0 text-[var(--signal-resolved)]"
                 aria-hidden
                 strokeWidth={1.5}
               />
               <p className="t-lead text-[var(--signal-resolved)]">
                 הכל תקין — אין תקלות פתוחות
               </p>
-            </>
+            </div>
           ) : (
-            <p className="t-body text-ink-2">
-              {needsAri > 0
-                ? `${needsAri} חריגים דורשים את ארי`
-                : awaitingCount > 0
-                  ? `${awaitingCount} ממתינות לאישור חנות — בלי לרדוף`
-                  : 'יש תקלות פתוחות — אין חריגים לארי כרגע'}
-            </p>
+            <div>
+              <p className="t-body-strong text-ink">ארי נכנס רק לחריגים</p>
+              <p className="t-meta mt-1 text-ink-2">
+                שיוך חסר, חריגת SLA או חלקים — המערכת רודפת אחרי חנות וטכנאי בשאר
+                המקרים.
+              </p>
+            </div>
           )}
         </Panel>
 
         <Panel flush elevated className="overflow-hidden">
-          <PanelHeader title="דורש את ארי" />
+          <PanelHeader
+            title="דורש את ארי"
+            meta={topUrgent.length > 0 ? String(topUrgent.length) : undefined}
+            action={
+              <Link
+                href="/ops/tickets?view=open"
+                className="t-caption text-[var(--tenant)] hover:underline"
+              >
+                כל הפתוחות
+              </Link>
+            }
+          />
           {topUrgent.length === 0 ? (
             <EmptyState
               title="אין חריגים כרגע"
@@ -267,7 +299,14 @@ export default async function OpsDashboardPage() {
         </Panel>
 
         <Panel flush elevated className="overflow-hidden">
-          <PanelHeader title="ממתינות לאישור חנות" />
+          <PanelHeader
+            title="ממתינות לאישור חנות"
+            meta={
+              awaitingConfirm.length > 0
+                ? String(awaitingConfirm.length)
+                : undefined
+            }
+          />
           {awaitingConfirm.length === 0 ? (
             <EmptyState
               title="אין ממתינות לאישור"
@@ -312,8 +351,11 @@ export default async function OpsDashboardPage() {
           )}
         </Panel>
 
-        <Button asChild variant="secondary" size="touch" className="w-full">
-          <Link href="/ops/tickets">כל התקלות</Link>
+        <Button asChild variant="primary" size="touch" className="w-full">
+          <Link href="/ops/tickets" className="inline-flex items-center gap-2">
+            כל התקלות
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+          </Link>
         </Button>
 
         {isDemo ? (

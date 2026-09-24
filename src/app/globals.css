@@ -173,11 +173,28 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Atmospheric cool-teal canvas — not flat white */
+.ops-atmosphere,
+body {
+  background:
+    radial-gradient(
+      ellipse 110% 70% at 100% -10%,
+      color-mix(in srgb, var(--tenant-soft) 55%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at -5% 105%,
+      color-mix(in srgb, var(--signal-progress) 9%, transparent),
+      transparent 48%
+    ),
+    var(--canvas);
+  background-attachment: fixed;
+}
+
 body {
   touch-action: manipulation;
   scroll-padding-top: var(--topbar-h);
   scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
-  background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;
@@ -221,10 +238,12 @@ body {
    ============================================================ */
 
 .t-display {
-  font-size: 26px;
-  line-height: 1.2;
-  font-weight: 650;
-  letter-spacing: -0.025em;
+  font-family: var(--font-rubik), var(--font-heebo), ui-sans-serif, system-ui,
+    sans-serif;
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 .t-title {
   font-size: 20px;
