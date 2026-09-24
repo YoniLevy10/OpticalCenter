@@ -19,6 +19,7 @@ import {
   type LifecycleEvent,
   type LifecycleTicket,
 } from './lifecycle'
+import { storeConfirmUrl } from '@/modules/tickets/store-confirm'
 
 const LIFECYCLE_AI_SITUATION: Record<LifecycleEvent, WhatsAppAiSituation> = {
   assigned: 'lifecycle_assigned',
@@ -35,10 +36,14 @@ export async function buildLifecycleMessage(
   opts?: { enhance?: boolean },
 ): Promise<string> {
   const base = lifecycleTemplate(event, ticket)
+  const withLink =
+    event === 'resolved'
+      ? `${base}\n${storeConfirmUrl(ticket.id)}`
+      : base
   // Never AI-rewrite "assigned" — the model often flips perspective and tells
   // the store reporter they were assigned as the technician.
-  if (opts?.enhance === false || event === 'assigned') return base
-  return enhanceWhatsAppMessage(base, {
+  if (opts?.enhance === false || event === 'assigned') return withLink
+  return enhanceWhatsAppMessage(withLink, {
     situation: LIFECYCLE_AI_SITUATION[event],
   })
 }

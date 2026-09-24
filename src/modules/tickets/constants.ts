@@ -97,6 +97,9 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   tech_note: 'הערת טכנאי',
   hq_note: 'הערת מוקד',
   tech_photo: 'תמונת טכנאי',
+  store_confirmed: 'אישור חנות',
+  partner_dispatched: 'שיגור לספק',
+  lifecycle_nudge: 'תזכורת מחזור',
 }
 
 

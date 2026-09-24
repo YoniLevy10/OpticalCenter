@@ -40,6 +40,9 @@ export type VendorRow = {
   active: boolean
   webhook_url: string | null
   has_hmac: boolean
+  preferred?: boolean
+  coverage_regions?: string[]
+  notes?: string | null
   open_tickets: number
   avg_response_label: string
   recent: VendorDispatchHint[]
@@ -480,13 +483,22 @@ export function VendorsAdmin({
                           />
                           <span>
                             {v.name}
+                            {v.preferred ? (
+                              <span className="t-caption ms-2 text-[var(--signal-resolved)]">
+                                מועדף
+                              </span>
+                            ) : null}
                             {!v.active ? (
                               <span className="t-caption ms-2 text-ink-3">לא פעיל</span>
                             ) : null}
                           </span>
                         </button>
                       }
-                      subtitle={`${specialtyLabel(v.specialties)} · ${v.open_tickets} פתוחות`}
+                      subtitle={`${specialtyLabel(v.specialties)}${
+                        v.coverage_regions?.length
+                          ? ` · ${v.coverage_regions.join(', ')}`
+                          : ''
+                      } · ${v.open_tickets} פתוחות`}
                       footer={
                         <span dir="ltr" className="t-caption text-ink-3">
                           {contactLine(v)}

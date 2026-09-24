@@ -45,6 +45,11 @@ export type DashboardKpis = {
   /** Average hours to resolve among resolved tickets with resolved_at. */
   avgResolveHours: number | null
   resolvedCount: number
+  /** Resolved, waiting for store to confirm close — system owns the chase. */
+  awaitingStoreConfirm: number
+  awaitingStoreConfirmTickets: QueueTicket[]
+  /** Only cases Ari should open: SLA breach + unassigned + waiting_parts. */
+  needsAri: number
 }
 
 export type SlaReport = {
@@ -251,7 +256,11 @@ export function computeDashboardKpis(
 
   let resolveHoursSum = 0
   let resolvedCount = 0
+  const awaitingStoreConfirmTickets: QueueTicket[] = []
   for (const t of tickets) {
+    if (t.status === 'resolved') {
+      awaitingStoreConfirmTickets.push(t)
+    }
     if (t.status !== 'resolved' && t.status !== 'closed') continue
     const resolvedAt = t.resolved_at
     if (!resolvedAt) continue
@@ -263,6 +272,8 @@ export function computeDashboardKpis(
       resolvedCount += 1
     }
   }
+
+  const needsAri = exceptionCandidates.length
 
   return {
     open: openTickets.length,
@@ -285,5 +296,14 @@ export function computeDashboardKpis(
         ? Math.round((resolveHoursSum / resolvedCount) * 10) / 10
         : null,
     resolvedCount,
+    awaitingStoreConfirm: awaitingStoreConfirmTickets.length,
+    awaitingStoreConfirmTickets: awaitingStoreConfirmTickets
+      .sort(
+        (a, b) =>
+          new Date(a.updated_at ?? a.created_at).getTime() -
+          new Date(b.updated_at ?? b.created_at).getTime(),
+      )
+      .slice(0, 8),
+    needsAri,
   }
 }

@@ -1,5 +1,6 @@
 import { DEMO_STORES, type StoreRow } from '@/modules/stores/data'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
+import { PREFERRED_VENDOR_SEEDS } from '@/modules/vendors/preferred-seed'
 
 export type MemTicket = {
   id: string
@@ -25,6 +26,8 @@ export type MemTicket = {
   resolved_at: string | null
   closed_at: string | null
   resolution_note: string | null
+  store_confirmed_at: string | null
+  store_confirmed_by: string | null
   created_at: string
   updated_at: string
   stores: {
@@ -268,6 +271,10 @@ export type MemVendor = {
   webhook_url: string | null
   /** Demo/partner HMAC secret — never expose to client UI. */
   hmac_secret: string | null
+  preferred: boolean
+  /** IL district codes: TA CTR JLM HFA N S */
+  coverage_regions: string[]
+  notes: string | null
   created_at: string
 }
 
@@ -365,8 +372,8 @@ function store(): GlobalMem {
   }
   if (!mem.vendors) {
     mem.vendors = new Map()
-    seedDemoVendors(mem)
   }
+  seedDemoVendors(mem)
   if (!mem.dispatches) mem.dispatches = new Map()
   if (!mem.pushSubs) mem.pushSubs = new Map()
   if (!mem.inboxMessages) mem.inboxMessages = new Map()
@@ -410,30 +417,68 @@ function seedDemoAssets(mem: GlobalMem) {
 }
 
 function seedDemoVendors(mem: GlobalMem) {
-  if (mem.vendors.size > 0) return
   const now = new Date().toISOString()
-  mem.vendors.set('vendor-demo-coolair', {
-    id: 'vendor-demo-coolair',
-    name: 'CoolAir שירות מיזוג',
-    contact_phone: '972501234567',
-    contact_email: 'dispatch@coolair.example',
-    specialties: 'hvac',
-    active: true,
-    webhook_url: null,
-    hmac_secret: 'demo-partner-hmac-secret',
-    created_at: now,
-  })
-  mem.vendors.set('vendor-demo-electro', {
-    id: 'vendor-demo-electro',
-    name: 'אלקטרו-פלוס',
-    contact_phone: '972509876543',
-    contact_email: null,
-    specialties: 'electrical',
-    active: true,
-    webhook_url: null,
-    hmac_secret: 'demo-partner-hmac-secret-2',
-    created_at: now,
-  })
+  // Legacy demo vendors (non-preferred) — keep for dispatch façade demos
+  if (!mem.vendors.has('vendor-demo-coolair')) {
+    mem.vendors.set('vendor-demo-coolair', {
+      id: 'vendor-demo-coolair',
+      name: 'CoolAir שירות מיזוג',
+      contact_phone: '972501234567',
+      contact_email: 'dispatch@coolair.example',
+      specialties: 'hvac',
+      active: true,
+      webhook_url: null,
+      hmac_secret: 'demo-partner-hmac-secret',
+      preferred: false,
+      coverage_regions: ['TA', 'CTR'],
+      notes: null,
+      created_at: now,
+    })
+  }
+  if (!mem.vendors.has('vendor-demo-electro')) {
+    mem.vendors.set('vendor-demo-electro', {
+      id: 'vendor-demo-electro',
+      name: 'אלקטרו-פלוס',
+      contact_phone: '972509876543',
+      contact_email: null,
+      specialties: 'electrical',
+      active: true,
+      webhook_url: null,
+      hmac_secret: 'demo-partner-hmac-secret-2',
+      preferred: false,
+      coverage_regions: ['TA'],
+      notes: null,
+      created_at: now,
+    })
+  }
+  // National preferred pool — upsert by stable id for Ari meeting demos
+  // Dynamic import avoided: keep seed data local to prevent circular deps in tests
+  void ensurePreferredVendors(mem, now)
+}
+
+function ensurePreferredVendors(mem: GlobalMem, now: string) {
+  for (const s of PREFERRED_VENDOR_SEEDS) {
+    if (mem.vendors.has(s.id)) continue
+    mem.vendors.set(s.id, {
+      id: s.id,
+      name: s.name,
+      contact_phone: s.contact_phone,
+      contact_email: null,
+      specialties: s.specialties,
+      active: true,
+      webhook_url: null,
+      hmac_secret: `secret-${s.id}`,
+      preferred: true,
+      coverage_regions: [...s.coverage_regions],
+      notes: s.notes,
+      created_at: now,
+    })
+  }
+  for (const v of mem.vendors.values()) {
+    if (v.preferred == null) v.preferred = false
+    if (!v.coverage_regions) v.coverage_regions = []
+    if (v.notes === undefined) v.notes = null
+  }
 }
 
 /** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
@@ -631,6 +676,8 @@ export function memCreate(input: {
     resolved_at: null,
     closed_at: null,
     resolution_note: null,
+    store_confirmed_at: null,
+    store_confirmed_by: null,
     created_at: now,
     updated_at: now,
     stores: {
@@ -1067,6 +1114,9 @@ export function memCreateVendor(input: {
   specialties?: string
   webhook_url?: string | null
   hmac_secret?: string | null
+  preferred?: boolean
+  coverage_regions?: string[]
+  notes?: string | null
 }): MemVendor {
   const name = input.name.trim()
   if (!name) throw new Error('שם ספק חובה')
@@ -1079,6 +1129,9 @@ export function memCreateVendor(input: {
     active: true,
     webhook_url: input.webhook_url?.trim() || null,
     hmac_secret: input.hmac_secret?.trim() || `secret-${crypto.randomUUID().slice(0, 12)}`,
+    preferred: Boolean(input.preferred),
+    coverage_regions: (input.coverage_regions ?? []).map((c) => c.toUpperCase()),
+    notes: input.notes?.trim() || null,
     created_at: new Date().toISOString(),
   }
   store().vendors.set(row.id, row)
@@ -1097,6 +1150,9 @@ export function memUpdateVendor(
       | 'active'
       | 'webhook_url'
       | 'hmac_secret'
+      | 'preferred'
+      | 'coverage_regions'
+      | 'notes'
     >
   >,
 ): MemVendor {
@@ -1117,6 +1173,11 @@ export function memUpdateVendor(
     row.webhook_url = patch.webhook_url?.trim() || null
   if (patch.hmac_secret !== undefined)
     row.hmac_secret = patch.hmac_secret?.trim() || row.hmac_secret
+  if (patch.preferred != null) row.preferred = patch.preferred
+  if (patch.coverage_regions !== undefined) {
+    row.coverage_regions = patch.coverage_regions.map((c) => c.toUpperCase())
+  }
+  if (patch.notes !== undefined) row.notes = patch.notes?.trim() || null
   return row
 }
 
