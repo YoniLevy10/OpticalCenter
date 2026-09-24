@@ -1,0 +1,955 @@
+# theme.md — MaintainOS tokens
+
+## Part 1 — Compact token summary
+
+**Product:** MaintainOS × Optical Center · Hebrew RTL · light-first atmospheric cool-teal canvas.
+
+**Typography:** Heebo (--font-heebo) — hebrew + latin; body letter-spacing -0.011em; line-height 1.5.
+
+### Light (:root)
+| Token | Value |
+|-------|-------|
+| canvas | #eef4f6 |
+| surface / surface-raised | #ffffff |
+| surface-sunken | #e4edef |
+| border / border-strong | #d7e3e6 / #b6cbd0 |
+| ink / ink-2 / ink-3 | #102b35 / #4c6972 / #556870 |
+| signal-critical | #c01e1e |
+| signal-warning | #8a5a12 |
+| signal-progress | #3b6cb8 |
+| signal-resolved | #187348 |
+| signal-idle | #8b90a0 |
+| **tenant (OC red)** | **#d92621** |
+| tenant-hover | #b81f1b |
+| tenant-soft / tenant-line | #fdeceb / #f5c4c2 |
+| signal-accent | #f4b860 |
+| panel-dark / panel-dark-fg | #102b35 / #ffffff |
+| radius sm/md/lg/xl | 6 / 8 / 12 / 16px |
+| row-h / topbar-h / bottomnav-h / nav-w | 44 / 52 / 64 / 216px |
+| tap target | 44px |
+| motion | dur 150/280/400ms · ease cubic-bezier(0.16,1,0.3,1) |
+
+### Dark (html.dark)
+| Token | Value |
+|-------|-------|
+| canvas | #0e1619 |
+| surface | #152025 |
+| ink | #e8f0f2 |
+| tenant | #ef4a45 |
+| (signals remapped for dark — see globals.css) |
+
+**Note:** Live tenant accent in CSS is Optical Center red #d92621. Ignore stale teal references in docs/DESIGN_SYSTEM.md Layer 3.
+
+## Part 2 — Raw sources
+
+### `src/app/globals.css`
+
+```css
+@import "tailwindcss";
+
+/* ============================================================
+   MaintainOS — Operational Quiet + Bamakor Pulse
+   Substrate/ink/elevation calibrated from live Bamakor CSS
+   (bamakor.vercel.app). Product accent stays Optical Center
+   burgundy — never Bamakor #0066FF.
+   See docs/DESIGN_SYSTEM.md
+   ============================================================ */
+
+:root {
+  /* ---------- Layer 1 — SUBSTRATE (Bamakor luminosity, OC warmth) ---------- */
+  --canvas: #eef4f6;
+  --surface: #ffffff;
+  --surface-sunken: #e4edef;
+  --surface-raised: #ffffff;
+  --border: #d7e3e6;
+  --border-strong: #b6cbd0;
+  --ink: #102b35;
+  --ink-2: #4c6972;
+  /* Darkened for WCAG AA ≥4.5:1 on --canvas (#eef4f6) and white */
+  --ink-3: #556870;
+
+  /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
+  --signal-critical: #c01e1e;
+  --signal-critical-soft: #fef0f0;
+  --signal-critical-line: #f4cfcf;
+  --signal-warning: #8a5a12;
+  --signal-warning-soft: #fdf5e6;
+  --signal-warning-line: #f0e0c2;
+  --signal-progress: #3b6cb8;
+  --signal-progress-soft: #eaf1fa;
+  --signal-resolved: #187348;
+  --signal-resolved-soft: #e8f6ee;
+  --signal-idle: #8b90a0;
+  --signal-idle-soft: #f5f6fa;
+
+  /* ---------- Layer 3 — TENANT (Optical Center logo red) ---------- */
+  --tenant: #d92621;
+  --tenant-hover: #b81f1b;
+  --tenant-soft: #fdeceb;
+  --tenant-line: #f5c4c2;
+  --signal-accent: #f4b860;
+  --tenant-contrast: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ---------- Elevation — Bamakor-soft depth ---------- */
+  --shadow-1: 0 1px 2px rgba(26, 26, 46, 0.05), 0 1px 3px rgba(26, 26, 46, 0.04);
+  --shadow-2: 0 2px 8px rgba(26, 26, 46, 0.06), 0 1px 2px rgba(26, 26, 46, 0.04);
+  --shadow-hover: 0 6px 18px rgba(26, 26, 46, 0.08), 0 2px 4px rgba(26, 26, 46, 0.04);
+  --shadow-pop: 0 14px 40px rgba(26, 26, 46, 0.12), 0 4px 12px rgba(26, 26, 46, 0.06);
+
+  /* Intentional dark chrome (sidebar / OS heroes) — stays dark in both themes */
+  --panel-dark: #102b35;
+  --panel-dark-fg: #ffffff;
+
+  /* ---------- Motion — smoother, iOS-like ---------- */
+  --dur-1: 150ms;
+  --dur-2: 280ms;
+  --dur-3: 400ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---------- Layout (Bamakor bottom-nav height) ---------- */
+  --row-h: 44px;
+  --nav-w: 216px;
+  --topbar-h: 52px;
+  --bottomnav-h: 64px;
+  --hq-actions-dock-h: 220px;
+  --tap: 44px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  color-scheme: light;
+}
+
+/* ---------- Dark theme (token remap — not crude invert) ---------- */
+html.dark {
+  color-scheme: dark;
+
+  --canvas: #0e1619;
+  --surface: #152025;
+  --surface-sunken: #0a1012;
+  --surface-raised: #1c2a30;
+  --border: #2a3c42;
+  --border-strong: #3d545c;
+  --ink: #e8f0f2;
+  --ink-2: #a9bec4;
+  /* ≥4.5:1 on --canvas (#0e1619) */
+  --ink-3: #8aa0a7;
+
+  --signal-critical: #f07171;
+  --signal-critical-soft: #3a1818;
+  --signal-critical-line: #6b2e2e;
+  --signal-warning: #e0b35a;
+  --signal-warning-soft: #3a2e14;
+  --signal-warning-line: #6b5528;
+  --signal-progress: #7eabeb;
+  --signal-progress-soft: #182636;
+  --signal-resolved: #5dcc8f;
+  --signal-resolved-soft: #143024;
+  --signal-idle: #8b90a0;
+  --signal-idle-soft: #1a1e28;
+
+  --tenant: #ef4a45;
+  --tenant-hover: #f56b66;
+  --tenant-soft: #3a1818;
+  --tenant-line: #6b2e2e;
+  --signal-accent: #f4b860;
+  --tenant-contrast: #1a0606;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+  --panel-dark: #080e11;
+  --panel-dark-fg: #e8f0f2;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-foreground: var(--ink);
+  --color-muted: var(--ink-2);
+  --color-faint: var(--ink-3);
+  --color-critical: var(--signal-critical);
+  --color-critical-soft: var(--signal-critical-soft);
+  --color-critical-line: var(--signal-critical-line);
+  --color-warning: var(--signal-warning);
+  --color-warning-soft: var(--signal-warning-soft);
+  --color-warning-line: var(--signal-warning-line);
+  --color-progress: var(--signal-progress);
+  --color-progress-soft: var(--signal-progress-soft);
+  --color-resolved: var(--signal-resolved);
+  --color-resolved-soft: var(--signal-resolved-soft);
+  --color-idle: var(--signal-idle);
+  --color-idle-soft: var(--signal-idle-soft);
+  --color-tenant: var(--tenant);
+  --color-tenant-hover: var(--tenant-hover);
+  --color-tenant-soft: var(--tenant-soft);
+  --color-tenant-line: var(--tenant-line);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+*,
+::before,
+::after {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  touch-action: manipulation;
+  scroll-padding-top: var(--topbar-h);
+  scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+  font-feature-settings: "ss01" 1, "cv01" 1;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--tenant) 18%, transparent);
+  color: var(--ink);
+}
+
+/* Subtle scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-3);
+}
+
+/* ============================================================
+   Typography roles
+   ============================================================ */
+
+.t-display {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.t-title {
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.t-section {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.t-lead {
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.t-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.t-body-strong {
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 550;
+}
+.t-meta {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+.t-caption {
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.t-control {
+  font-size: 13.5px;
+  line-height: 1;
+  font-weight: 500;
+}
+.t-control-lg {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+}
+.t-num {
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.field-text {
+  font-size: 16px;
+  line-height: 1.4;
+}
+@media (min-width: 768px) {
+  .field-text {
+    font-size: 13.5px;
+  }
+}
+
+/* ============================================================
+   Focus — visible halo
+   ============================================================ */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--tenant) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tenant) 15%, transparent);
+}
+
+/* ============================================================
+   Shell helpers
+   ============================================================ */
+
+.safe-pt {
+  padding-top: var(--safe-t);
+}
+.safe-pb {
+  padding-bottom: var(--safe-b);
+}
+
+.pb-nav {
+  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b) + 16px);
+}
+@media (min-width: 768px) {
+  .pb-nav {
+    padding-bottom: 32px;
+  }
+}
+
+.pb-actions {
+  padding-bottom: calc(76px + var(--safe-b) + 16px);
+}
+
+.scroll-pb-actions {
+  scroll-padding-bottom: calc(76px + var(--safe-b) + 16px);
+}
+
+.pb-actions-hq {
+  padding-bottom: calc(
+    var(--hq-actions-dock-h) + var(--bottomnav-h) + var(--safe-b) + 16px
+  );
+}
+/* HQ ticket detail — fixed action dock sits above bottom nav (nav z-30, dock z-40) */
+.hq-ticket-dock {
+  bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  z-index: 40;
+}
+@media (min-width: 768px) {
+  .pb-actions-hq {
+    padding-bottom: 0;
+  }
+  .hq-ticket-dock {
+    bottom: auto;
+    z-index: auto;
+  }
+}
+
+.dvh-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Mobile bottom-nav active pill — Bamakor-style tenant chrome */
+.nav-pill-active {
+  position: relative;
+  color: var(--tenant);
+}
+.nav-pill-active::before {
+  content: "";
+  position: absolute;
+  inset: 6px 4px;
+  border-radius: var(--radius-md);
+  background: var(--tenant-soft);
+  z-index: -1;
+}
+
+/* Login split — brand hero panel (design-system wow moment) */
+.login-shell {
+  background: var(--canvas);
+}
+.login-brand-panel {
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 100% 0%,
+      color-mix(in srgb, var(--tenant-soft) 85%, var(--surface)),
+      transparent 58%
+    ),
+  linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--tenant-soft) 55%, var(--surface)) 0%,
+    var(--surface) 48%,
+    var(--canvas) 100%
+  );
+  border-inline-end: 1px solid var(--border);
+}
+
+/* ============================================================
+   Priority leading edge
+   ============================================================ */
+
+.edge {
+  position: relative;
+}
+.edge::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: transparent;
+}
+.edge-critical::before {
+  background: var(--signal-critical);
+}
+.edge-high::before {
+  background: color-mix(in srgb, var(--signal-critical) 45%, transparent);
+}
+.edge-medium::before {
+  background: var(--border-strong);
+}
+
+/* ============================================================
+   Motion — animations that are actually visible
+   ============================================================ */
+
+@keyframes mo-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mo-sheet-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes mo-slide-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes mo-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes mo-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes mo-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-fade {
+  animation: mo-fade-in var(--dur-2) var(--ease);
+}
+.animate-sheet {
+  animation: mo-sheet-in var(--dur-2) var(--ease);
+}
+.animate-slide-up {
+  animation: mo-slide-up var(--dur-2) var(--ease);
+}
+.animate-scale-in {
+  animation: mo-scale-in var(--dur-2) var(--ease);
+}
+.animate-shimmer {
+  animation: mo-pulse 1.6s var(--ease) infinite;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--border) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: mo-skeleton 1.6s var(--ease) infinite;
+}
+
+/* List stagger — first-impression only (dashboard). Never on daily queues. */
+.stagger > * {
+  animation: mo-slide-up var(--dur-2) var(--ease) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.stagger > *:nth-child(n + 7) {
+  animation-delay: 240ms;
+}
+
+/* Page transition */
+main {
+  animation: mo-fade-in var(--dur-2) var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* WhatsApp-like inbox chat wallpaper (ops takeover thread) */
+.wa-chat-wallpaper {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(16 43 53 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(16 43 53 / 3.5%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 35%, #efeae2) 0%,
+      #efeae2 28%,
+      #e8e0d5 100%
+    );
+  background-size: 22px 22px, 28px 28px, auto;
+}
+
+html.dark .wa-chat-wallpaper {
+  background-color: #0b141a;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(233 237 239 / 4%) 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgb(233 237 239 / 3%) 0.8px,
+      transparent 1.1px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-soft) 40%, #0b141a) 0%,
+      #0b141a 32%,
+      #111b21 100%
+    );
+}
+
+/* Bubble ink must stay readable — never inherit theme --ink on light surfaces */
+.wa-bubble {
+  color: #111b21;
+}
+.wa-bubble-in {
+  background-color: #ffffff;
+}
+.wa-bubble-out {
+  background-color: #d9fdd3;
+}
+.wa-bubble-meta {
+  color: #667781;
+}
+.wa-day-pill {
+  background-color: rgb(255 255 255 / 0.92);
+  color: #54656f;
+}
+.wa-ticket-strip {
+  background-color: #f7f5f3;
+  border-color: rgb(0 0 0 / 0.05);
+  color: #667781;
+}
+.wa-composer-bar {
+  background-color: #f0f2f5;
+}
+.wa-composer-input {
+  background-color: #ffffff !important;
+  color: #111b21 !important;
+}
+.wa-composer-input::placeholder {
+  color: #667781 !important;
+}
+.wa-empty-stage {
+  background-color: #efeae2;
+}
+
+html.dark .wa-bubble {
+  color: #e9edef;
+}
+html.dark .wa-bubble-in {
+  background-color: #202c33;
+}
+html.dark .wa-bubble-out {
+  background-color: #005c4b;
+}
+html.dark .wa-bubble-meta {
+  color: #8696a0;
+}
+html.dark .wa-day-pill {
+  background-color: #182229;
+  color: #8696a0;
+}
+html.dark .wa-ticket-strip {
+  background-color: #111b21;
+  border-color: rgb(255 255 255 / 0.06);
+  color: #8696a0;
+}
+html.dark .wa-composer-bar {
+  background-color: #1d1f24;
+}
+html.dark .wa-composer-input {
+  background-color: #2a2f32 !important;
+  color: #e9edef !important;
+}
+html.dark .wa-composer-input::placeholder {
+  color: #8696a0 !important;
+}
+html.dark .wa-empty-stage {
+  background-color: #0b141a;
+}
+
+/* Screen-reader only — skip link */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+.sr-only:focus,
+.sr-only:focus-visible {
+  position: fixed;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+```
+### `src/components/theme/theme-provider.tsx`
+
+```tsx
+'use client'
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import {
+  applyThemeClass,
+  readStoredThemePreference,
+  resolveDark,
+  writeStoredThemePreference,
+  type ThemePreference,
+} from '@/lib/theme'
+
+type ThemeContextValue = {
+  preference: ThemePreference
+  resolvedDark: boolean
+  setPreference: (next: ThemePreference) => void
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null)
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [preference, setPreferenceState] = useState<ThemePreference>('auto')
+  const [resolvedDark, setResolvedDark] = useState(false)
+
+  const sync = useCallback((pref: ThemePreference) => {
+    const dark = resolveDark(pref)
+    setResolvedDark(dark)
+    applyThemeClass(dark)
+  }, [])
+
+  useEffect(() => {
+    const stored = readStoredThemePreference()
+    setPreferenceState(stored)
+    sync(stored)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        sync(readStoredThemePreference())
+      }
+    }
+    const interval = window.setInterval(() => {
+      sync(readStoredThemePreference())
+    }, 60_000)
+
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.clearInterval(interval)
+    }
+  }, [sync])
+
+  const setPreference = useCallback(
+    (next: ThemePreference) => {
+      setPreferenceState(next)
+      writeStoredThemePreference(next)
+      sync(next)
+    },
+    [sync],
+  )
+
+  const value = useMemo(
+    () => ({ preference, resolvedDark, setPreference }),
+    [preference, resolvedDark, setPreference],
+  )
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext)
+  if (!ctx) {
+    throw new Error('useTheme must be used within ThemeProvider')
+  }
+  return ctx
+}
+
+```
+### `src/components/theme/theme-toggle.tsx`
+
+```tsx
+'use client'
+
+import { Moon, Sun, Sunset } from 'lucide-react'
+import { useTheme } from '@/components/theme/theme-provider'
+import { cn } from '@/lib/utils'
+import type { ThemePreference } from '@/lib/theme'
+
+const OPTIONS: {
+  id: ThemePreference
+  label: string
+  hint: string
+  icon: typeof Sun
+}[] = [
+  { id: 'light', label: 'בהיר', hint: 'תמיד בהיר', icon: Sun },
+  { id: 'dark', label: 'כהה', hint: 'תמיד כהה', icon: Moon },
+  {
+    id: 'auto',
+    label: 'אוטומטי',
+    hint: 'כהה בלילה (19:00–07:00)',
+    icon: Sunset,
+  },
+]
+
+export function ThemeToggle({
+  className,
+  compact = false,
+}: {
+  className?: string
+  /** Icon-sized control for headers / sidebars */
+  compact?: boolean
+}) {
+  const { preference, setPreference, resolvedDark } = useTheme()
+
+  if (compact) {
+    const cycle: ThemePreference[] = ['auto', 'light', 'dark']
+    const next = cycle[(cycle.indexOf(preference) + 1) % cycle.length]!
+    const Icon =
+      preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
+    const label =
+      preference === 'auto'
+        ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה עכשיו' : 'בהיר עכשיו'})`
+        : preference === 'dark'
+          ? 'ערכת נושא כהה'
+          : 'ערכת נושא בהירה'
+
+    return (
+      <button
+        type="button"
+        onClick={() => setPreference(next)}
+        aria-label={`${label}. לחצו להחלפה`}
+        title={label}
+        className={cn(
+          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors hover:bg-surface-sunken hover:text-ink',
+          className,
+        )}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </button>
+    )
+  }
+
+  return (
+    <fieldset className={cn('space-y-2', className)}>
+      <legend className="t-section text-ink">ערכת נושא</legend>
+      <p className="t-caption text-ink-3">
+        מצב אוטומטי עובר לכהה לפי השעון המקומי (19:00–07:00) — נוח יותר בלילה.
+      </p>
+      <div
+        role="radiogroup"
+        aria-label="ערכת נושא"
+        className="grid grid-cols-3 gap-2"
+      >
+        {OPTIONS.map((opt) => {
+          const Icon = opt.icon
+          const selected = preference === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setPreference(opt.id)}
+              className={cn(
+                'flex flex-col items-start gap-1 rounded-[var(--radius-md)] border px-3 py-2.5 text-start transition-colors',
+                selected
+                  ? 'border-[var(--tenant-line)] bg-[var(--tenant-soft)] text-[var(--tenant)]'
+                  : 'border-border bg-surface text-ink-2 hover:bg-surface-sunken hover:text-ink',
+              )}
+            >
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="t-body-strong">{opt.label}</span>
+              <span className="t-caption opacity-80">{opt.hint}</span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
+/** Compact control styled for the dark desktop sidebar. */
+export function ThemeToggleOnDark({ className }: { className?: string }) {
+  const { preference, setPreference, resolvedDark } = useTheme()
+  const cycle: ThemePreference[] = ['auto', 'light', 'dark']
+  const next = cycle[(cycle.indexOf(preference) + 1) % cycle.length]!
+  const Icon =
+    preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
+  const label =
+    preference === 'auto'
+      ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה' : 'בהיר'})`
+      : preference === 'dark'
+        ? 'כהה'
+        : 'בהיר'
+
+  return (
+    <button
+      type="button"
+      onClick={() => setPreference(next)}
+      aria-label={`ערכת נושא: ${label}. לחצו להחלפה`}
+      title={`ערכת נושא: ${label}`}
+      className={cn(
+        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white/70 transition-colors hover:bg-white/10 hover:text-white',
+        className,
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
+  )
+}
+
+```

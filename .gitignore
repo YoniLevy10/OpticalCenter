@@ -53,6 +53,5 @@ storybook-static
 skills-lock.json
 .playwright-mcp/
 
-# Superdesign local design context
-.superdesign/
+# Superdesign — keep init/design-system/resume; ignore temp HTML only
 .superdesign/tmp/
