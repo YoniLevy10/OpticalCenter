@@ -52,3 +52,7 @@ storybook-static
 .agents/
 skills-lock.json
 .playwright-mcp/
+
+# Superdesign local design context
+.superdesign/
+.superdesign/tmp/
