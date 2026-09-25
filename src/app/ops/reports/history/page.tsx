@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Button } from '@/components/ui/button'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -16,18 +16,16 @@ export default async function ReportsHistoryPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/reports"
           backLabel="חזרה לדוחות"
-          title="היסטוריית דוחות"
           showRefresh
         />
 
-        <PageHeader
-          className="hidden md:flex"
+        <OpsPageHero
           title="היסטוריית דוחות"
-          description="דוחות חודשיים שמורים — יצירה, הורדה ושיתוף."
+          status="דוחות חודשיים שמורים — יצירה, הורדה ושיתוף"
           actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/reports">חזרה לסיכום</Link>
