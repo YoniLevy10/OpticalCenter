@@ -205,8 +205,8 @@ export default async function ReportsPage({
 
         <OpsPageHero
           title="דוחות"
-          status={`סיכום תפעולי · ${rangeLabel}${statusLabel}${
-            ticketResult.backend === 'supabase' ? '' : ' · מצב דמו'
+          status={`${rangeLabel}${statusLabel}${
+            ticketResult.backend === 'supabase' ? '' : ' · דמו'
           }`}
           actions={
             <ReportsExportActions query={exportQuery} count={all.length} />
@@ -219,10 +219,6 @@ export default async function ReportsPage({
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <PanelHeader title="הנפקת דוח" meta="לפי הטווח שנבחר" />
-              <p className="t-body mt-2 max-w-xl text-ink-2">
-                הורדה מיידית של פירוט התקלות בטווח, או שמירה להיסטוריית דוחות
-                לחודש/תקופה.
-              </p>
             </div>
             <div className="flex flex-col items-stretch gap-3 md:items-end">
               <ReportsExportActions query={exportQuery} count={all.length} />

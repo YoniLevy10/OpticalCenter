@@ -31,7 +31,7 @@ export default async function StoreReportPage() {
       <OpsPageHero
         eyebrow={`#${locked.code}`}
         title="דיווח תקלה"
-        status={`${locked.name} — תארו מה קרה ונטפל`}
+        status={locked.name}
       />
       <Panel elevated className="px-4 py-5 md:px-5">
         <StoreReportForm

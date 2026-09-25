@@ -378,6 +378,36 @@ textarea:focus-visible,
   min-height: 100dvh;
 }
 
+/* Mobile ops shell — lock to viewport; only main (or inner panes) scroll */
+.ops-shell-mobile {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .ops-shell-mobile {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* Fill-mode pages (WhatsApp): main does not scroll; children fill remaining height */
+.ops-main-fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+}
+@media (min-width: 768px) {
+  .ops-main-fill {
+    overflow: visible;
+    padding-top: 1.75rem;
+    padding-bottom: 2rem;
+  }
+}
+
 /* Mobile bottom-nav active pill — Bamakor-style tenant chrome */
 .nav-pill-active {
   position: relative;
@@ -469,6 +499,16 @@ textarea:focus-visible,
     opacity: 1;
   }
 }
+@keyframes mo-drawer-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.98;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
 @keyframes mo-scale-in {
   from {
     transform: scale(0.95);
@@ -505,6 +545,9 @@ textarea:focus-visible,
 }
 .animate-slide-up {
   animation: mo-slide-up var(--dur-2) var(--ease);
+}
+.animate-drawer-in {
+  animation: mo-drawer-in var(--dur-2) var(--ease);
 }
 .animate-scale-in {
   animation: mo-scale-in var(--dur-2) var(--ease);

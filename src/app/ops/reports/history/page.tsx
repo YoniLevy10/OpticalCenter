@@ -25,7 +25,6 @@ export default async function ReportsHistoryPage() {
 
         <OpsPageHero
           title="היסטוריית דוחות"
-          status="דוחות חודשיים שמורים — יצירה, הורדה ושיתוף"
           actions={
             <Button asChild variant="secondary" size="sm">
               <Link href="/ops/reports">חזרה לסיכום</Link>

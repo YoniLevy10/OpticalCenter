@@ -70,7 +70,7 @@ export function PullToRefresh({
 
   return (
     <div
-      className={cn('relative', className)}
+      className={cn('relative min-h-0', className)}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -92,7 +92,7 @@ export function PullToRefresh({
         />
       </div>
       <div
-        className="transition-transform duration-[var(--dur-1)]"
+        className="flex h-full min-h-0 min-w-0 flex-1 flex-col transition-transform duration-[var(--dur-1)]"
         style={{
           transform: active ? `translateY(${refreshing ? 24 : pull * 0.35}px)` : undefined,
         }}

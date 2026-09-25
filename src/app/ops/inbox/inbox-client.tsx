@@ -337,7 +337,7 @@ export function InboxClient() {
       {sessions.length === 0 ? (
         <EmptyState title="אין שיחות פעילות" />
       ) : (
-        <ul className="divide-y divide-border overflow-y-auto">
+        <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto overscroll-contain">
           {sessions.map((s) => {
             const selectedRow = selected === s.wa_id
             const title = sessionTitle(s)
@@ -471,18 +471,15 @@ export function InboxClient() {
     <Panel
       flush
       elevated
-      className="flex min-h-[min(62vh,520px)] flex-col overflow-hidden lg:h-full lg:min-h-0"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 shadow-none lg:rounded-[var(--radius-lg)] lg:border lg:border-border/80 lg:shadow-[var(--shadow-1)]"
     >
       {!active ? (
         <div className="flex flex-1 items-center justify-center wa-empty-stage">
-          <EmptyState
-            title="בחרו שיחה"
-            description="מהרשימה מימין — התצוגה תיראה כמו WhatsApp"
-          />
+          <EmptyState title="בחרו שיחה" />
         </div>
       ) : (
         <>
-          <header className="flex items-center gap-3 bg-[var(--tenant)] px-3 py-2.5 text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]">
+          <header className="flex shrink-0 items-center gap-3 bg-[var(--tenant)] px-3 py-2.5 text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]">
             <Button
               type="button"
               variant="ghost"
@@ -542,7 +539,7 @@ export function InboxClient() {
           </header>
 
           {waiting ? (
-            <div className="border-b border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2">
+            <div className="shrink-0 border-b border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-3 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="t-caption text-[var(--signal-warning)]">
                   {pauseUntilLabel
@@ -563,7 +560,7 @@ export function InboxClient() {
           ) : null}
 
           {linkedTickets.length > 0 ? (
-            <div className="wa-ticket-strip border-b px-3 py-1.5">
+            <div className="wa-ticket-strip shrink-0 border-b px-3 py-1.5">
               <p className="t-caption">
                 מקושר לתקלה:{' '}
                 {linkedTickets.map((t, i) => (
@@ -581,7 +578,7 @@ export function InboxClient() {
             </div>
           ) : null}
 
-          <div className="wa-chat-wallpaper relative flex-1 overflow-y-auto px-2.5 py-3 sm:px-4">
+          <div className="wa-chat-wallpaper relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-3 sm:px-4">
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
@@ -645,7 +642,7 @@ export function InboxClient() {
             )}
           </div>
 
-          <div className="wa-composer-bar flex items-end gap-2 px-2 py-2 sm:px-3">
+          <div className="wa-composer-bar flex shrink-0 items-end gap-2 px-2 py-2 sm:px-3">
             <label className="sr-only" htmlFor="inbox-reply">
               הודעה ללקוח
             </label>
@@ -685,22 +682,32 @@ export function InboxClient() {
   )
 
   return (
-    <div className="flex flex-col gap-3">
-      {error ? <ErrorState title="שגיאה" description={error} /> : null}
-      {notice ? <Notice tone="progress">{notice}</Notice> : null}
+    <div className="flex min-h-0 flex-1 flex-col gap-2 md:gap-3">
+      {error ? (
+        <div className="shrink-0 px-4 md:px-0">
+          <ErrorState title="שגיאה" description={error} />
+        </div>
+      ) : null}
+      {notice ? (
+        <div className="shrink-0 px-4 md:px-0">
+          <Notice tone="progress">{notice}</Notice>
+        </div>
+      ) : null}
 
-      <div className="lg:hidden">
+      {/* Mobile: fill remaining viewport — only messages scroll */}
+      <div className="flex min-h-0 flex-1 flex-col lg:hidden">
         {!mobileShowThread ? (
-          listPanel
+          <div className="min-h-0 flex-1 overflow-hidden px-3 pb-1 pt-2">
+            {listPanel}
+          </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="min-h-0 flex-1 overflow-hidden px-0">
             {conversationPanel}
-            {contextPanel}
           </div>
         )}
       </div>
 
-      {/* Desktop: fixed WhatsApp-like stage — phone-width chat, not full bleed */}
+      {/* Desktop: fixed WhatsApp-like stage */}
       <div className="mx-auto hidden h-[min(580px,70vh)] w-full max-w-[860px] gap-3 lg:grid lg:grid-cols-[220px_400px_200px] lg:justify-center">
         {listPanel}
         {conversationPanel}

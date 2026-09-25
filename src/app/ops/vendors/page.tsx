@@ -82,12 +82,10 @@ export default async function VendorsPage() {
         <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
         <OpsPageHero
           title="ספקים"
-          status={`${activeCount} פעילים · ${preferredCount} מועדפים — נתיב השיגור הראשי`}
+          status={`${activeCount} פעילים · ${preferredCount} מועדפים`}
         />
         <Notice tone={fixlyOn ? 'progress' : 'neutral'}>
           <span className="t-body-strong block">{fixlyStatusLabelHe()}</span>
-          {preferredCount} ספקים מועדפים פעילים בפריסה ארצית. Fixly יישאר כבוי עד
-          החלטת מוצר — המאגר המועדף הוא נתיב השיגור הראשי.
         </Notice>
         <VendorsAdmin initialVendors={enriched} />
       </div>

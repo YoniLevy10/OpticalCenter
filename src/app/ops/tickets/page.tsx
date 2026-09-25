@@ -107,8 +107,8 @@ export default async function TicketsPage({
         ? 'עדיין אין תקלות שהסתיימו'
         : `${filtered.length} תקלות שהסתיימו`
       : filtered.length === 0
-        ? 'אין תקלות פתוחות כרגע'
-        : `${filtered.length} תקלות פתוחות — מה דורש טיפול עכשיו?`
+        ? 'אין תקלות פתוחות'
+        : `${filtered.length} תקלות פתוחות`
 
   return (
     <OpsAppShell>

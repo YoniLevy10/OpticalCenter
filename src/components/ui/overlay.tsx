@@ -115,3 +115,37 @@ export function BottomSheet({
     </Dialog.Root>
   )
 }
+
+/**
+ * Mobile side drawer — slides in from inline-start (RIGHT in RTL Hebrew).
+ */
+export function SideDrawer({
+  open,
+  onOpenChange,
+  title,
+  children,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={overlayClass} />
+        <Dialog.Content
+          className="safe-pt safe-pb fixed inset-y-0 start-0 z-50 flex w-[min(88vw,300px)] animate-drawer-in flex-col overflow-hidden border-e border-border bg-surface shadow-[var(--shadow-pop)] outline-none"
+        >
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
+            <CloseButton />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+            {children}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}

@@ -42,10 +42,7 @@ export default async function AssetsPage() {
           backLabel="חזרה להגדרות"
           showRefresh
         />
-        <OpsPageHero
-          title="ציוד"
-          status="נכסים לפי סניף — סריקה, תוויות ומעקב תקלות"
-        />
+        <OpsPageHero title="ציוד" />
         <AssetsAdmin
           stores={stores.map((s) => ({
             id: s.id,

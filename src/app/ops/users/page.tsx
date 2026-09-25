@@ -18,10 +18,7 @@ export default async function UsersPage() {
     <OpsAppShell>
       <div className="flex max-w-5xl flex-col gap-5 stagger">
         <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
-        <OpsPageHero
-          title="משתמשים"
-          status="ניהול צוות, תפקידים וקישורי שטח"
-        />
+        <OpsPageHero title="משתמשים" />
         <UsersAdmin
           stores={stores.map((s) => ({
             id: s.id,
