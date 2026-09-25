@@ -332,7 +332,7 @@ export function InboxClient() {
   const threadItems = useMemo(() => buildThreadItems(messages), [messages])
 
   const listPanel = (
-    <Panel flush elevated className="flex min-h-0 flex-col overflow-hidden">
+    <Panel flush elevated className="flex h-full min-h-0 flex-col overflow-hidden">
       <PanelHeader title="שיחות" meta={`${sessions.length}`} />
       {sessions.length === 0 ? (
         <EmptyState title="אין שיחות פעילות" />
@@ -402,7 +402,7 @@ export function InboxClient() {
   )
 
   const contextPanel = active ? (
-    <Panel flush elevated className="flex min-h-0 flex-col overflow-hidden">
+    <Panel flush elevated className="flex h-full min-h-0 flex-col overflow-hidden">
       <PanelHeader title="הקשר" />
       <div className="space-y-4 overflow-y-auto p-4">
         <div>
@@ -471,7 +471,7 @@ export function InboxClient() {
     <Panel
       flush
       elevated
-      className="flex min-h-[min(72vh,640px)] flex-col overflow-hidden lg:min-h-0"
+      className="flex min-h-[min(62vh,520px)] flex-col overflow-hidden lg:h-full lg:min-h-0"
     >
       {!active ? (
         <div className="flex flex-1 items-center justify-center wa-empty-stage">
@@ -587,7 +587,7 @@ export function InboxClient() {
                 <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
               </div>
             ) : (
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5">
+              <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
                 {threadItems.map((item) =>
                   item.kind === 'day' ? (
                     <div key={item.key} className="my-2 flex justify-center">
@@ -700,11 +700,12 @@ export function InboxClient() {
         )}
       </div>
 
-      <div className="hidden min-h-[640px] gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_240px]">
+      {/* Desktop: fixed WhatsApp-like stage — phone-width chat, not full bleed */}
+      <div className="mx-auto hidden h-[min(580px,70vh)] w-full max-w-[860px] gap-3 lg:grid lg:grid-cols-[220px_400px_200px] lg:justify-center">
         {listPanel}
         {conversationPanel}
         {contextPanel ?? (
-          <Panel elevated className="flex items-center justify-center">
+          <Panel elevated className="flex h-full items-center justify-center">
             <EmptyState title="הקשר" description="בחרו שיחה להצגת פרטים" />
           </Panel>
         )}
