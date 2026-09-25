@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stores · MaintainOS Preview</title>
+  <link rel="stylesheet" href="../preview.css" />
+</head>
+<body>
+  <div class="preview-bar">
+    <a href="../index.html">← גלריה</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="tickets.html">Tickets</a>
+    <a href="ticket-detail.html">Detail</a>
+    <a href="inbox.html">Inbox</a>
+    <a class="active" href="stores.html">Stores</a>
+    <span class="spacer"></span>
+    <span class="tag">UX Preview</span>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="brand-mark">MO</div>
+        <div><strong>MaintainOS</strong><span>Optical Center</span></div>
+      </div>
+      <nav class="nav-group">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span> לוח בקרה</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-icon">☰</span> תקלות</a>
+        <a class="nav-item" href="inbox.html"><span class="nav-icon">💬</span> WhatsApp</a>
+        <a class="nav-item active" href="stores.html"><span class="nav-icon">⌂</span> סניפים</a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1>סניפים</h1>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary t-control">הדפסת QR</button>
+          <button class="btn btn-primary t-control">סניף חדש</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="toolbar">
+          <input class="search" type="search" placeholder="חיפוש שם או קוד סניף…" value="" />
+          <div class="seg">
+            <button class="active">הכל</button>
+            <button>מרכז</button>
+            <button>צפון</button>
+            <button>דרום</button>
+          </div>
+        </div>
+
+        <div class="store-grid">
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">112 · מרכז</div>
+            <h3>דיזנגוף</h3>
+            <div class="stats">
+              <span><strong class="t-num" style="color:var(--signal-critical)">2</strong> פתוחות</span>
+              <span>ת״א</span>
+            </div>
+          </a>
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">172 · דרום</div>
+            <h3>אשדוד</h3>
+            <div class="stats">
+              <span><strong class="t-num" style="color:var(--signal-warning)">1</strong> פתוחה</span>
+              <span>אשדוד</span>
+            </div>
+          </a>
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">118 · מרכז</div>
+            <h3>רמת אביב</h3>
+            <div class="stats">
+              <span><strong class="t-num" style="color:var(--signal-critical)">1</strong> פתוחה</span>
+              <span>ת״א</span>
+            </div>
+          </a>
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">204 · דרום</div>
+            <h3>באר שבע</h3>
+            <div class="stats">
+              <span><strong class="t-num">1</strong> פתוחה</span>
+              <span>ב״ש</span>
+            </div>
+          </a>
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">301 · צפון</div>
+            <h3>חיפה גרנד</h3>
+            <div class="stats">
+              <span><strong class="t-num">1</strong> פתוחה</span>
+              <span>חיפה</span>
+            </div>
+          </a>
+          <a class="store-card" href="store-detail.html">
+            <div class="code t-num">155 · מרכז</div>
+            <h3>נתניה</h3>
+            <div class="stats">
+              <span class="t-meta">אין פתוחות</span>
+              <span>נתניה</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

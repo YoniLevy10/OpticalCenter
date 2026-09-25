@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Store Detail · MaintainOS Preview</title>
+  <link rel="stylesheet" href="../preview.css" />
+</head>
+<body>
+  <div class="preview-bar">
+    <a href="../index.html">← גלריה</a>
+    <a href="stores.html">Stores</a>
+    <a class="active" href="store-detail.html">Detail</a>
+    <span class="spacer"></span>
+    <span class="tag">UX Preview</span>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="brand-mark">MO</div>
+        <div><strong>MaintainOS</strong><span>Optical Center</span></div>
+      </div>
+      <nav class="nav-group">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span> לוח בקרה</a>
+        <a class="nav-item" href="tickets.html"><span class="nav-icon">☰</span> תקלות</a>
+        <a class="nav-item" href="inbox.html"><span class="nav-icon">💬</span> WhatsApp</a>
+        <a class="nav-item active" href="stores.html"><span class="nav-icon">⌂</span> סניפים</a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1><a href="stores.html" class="t-meta" style="margin-inline-end:8px">סניפים /</a> דיזנגוף</h1>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary t-control">הורד QR</button>
+          <button class="btn btn-primary t-control">עריכה</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="grid-2">
+          <section class="panel elevated">
+            <div class="panel-head"><h2 class="t-section">פרטי סניף</h2></div>
+            <div class="panel-pad">
+              <div class="meta-row" style="margin:0">
+                <div class="meta-item"><span class="k">קוד</span><span class="v t-num">112</span></div>
+                <div class="meta-item"><span class="k">אזור</span><span class="v">מרכז</span></div>
+                <div class="meta-item"><span class="k">עיר</span><span class="v">תל אביב</span></div>
+                <div class="meta-item"><span class="k">טלפון</span><span class="v t-num" dir="ltr">03-555-1120</span></div>
+              </div>
+              <p class="t-body" style="margin:16px 0 0;color:var(--ink-2)">דיזנגוף סנטר, קומה 1 · מנהלת: מיכל א.</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><h2 class="t-section">כרטיס QR / NFC</h2></div>
+            <div class="panel-pad" style="display:flex;align-items:center;gap:16px">
+              <div style="width:96px;height:96px;background:repeating-conic-gradient(#102b35 0% 25%,#fff 0% 50%) 50%/12px 12px;border-radius:8px;border:1px solid var(--border)"></div>
+              <div>
+                <p class="t-body-strong" style="margin:0">סריקה → WhatsApp מדינה</p>
+                <p class="t-meta" style="margin:4px 0 12px">מזהה סניף אוטומטית בקוד <span class="t-num">112</span></p>
+                <button class="btn btn-secondary t-control">הדפס כרטיס</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel elevated" style="margin-top:16px">
+          <div class="panel-head">
+            <h2 class="t-section">תקלות פתוחות</h2>
+            <a class="btn btn-ghost t-control" href="tickets.html">הכל ←</a>
+          </div>
+          <ul class="exception-list">
+            <li class="exception-row">
+              <span class="prio critical"></span>
+              <div class="row-main">
+                <p class="title">מזגן לא מקרר</p>
+                <p class="meta"><span class="t-num" dir="ltr">#10482</span> · קריטי</p>
+              </div>
+              <div class="row-sla breach t-num">−1:12</div>
+            </li>
+            <li class="exception-row">
+              <span class="prio medium"></span>
+              <div class="row-main">
+                <p class="title">מדף תצוגה רופף</p>
+                <p class="meta"><span class="t-num" dir="ltr">#10450</span> · בינוני</p>
+              </div>
+              <div class="row-sla t-num">4:00</div>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

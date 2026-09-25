@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ticket Detail · MaintainOS Preview</title>
+  <link rel="stylesheet" href="../preview.css" />
+</head>
+<body>
+  <div class="preview-bar">
+    <a href="../index.html">← גלריה</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="tickets.html">Tickets</a>
+    <a class="active" href="ticket-detail.html">Detail</a>
+    <a href="inbox.html">Inbox</a>
+    <a href="stores.html">Stores</a>
+    <span class="spacer"></span>
+    <span class="tag">UX Preview</span>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="brand-mark">MO</div>
+        <div><strong>MaintainOS</strong><span>Optical Center</span></div>
+      </div>
+      <nav class="nav-group">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span> לוח בקרה</a>
+        <a class="nav-item active" href="tickets.html"><span class="nav-icon">☰</span> תקלות</a>
+        <a class="nav-item" href="inbox.html"><span class="nav-icon">💬</span> WhatsApp</a>
+        <a class="nav-item" href="stores.html"><span class="nav-icon">⌂</span> סניפים</a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1><a href="tickets.html" class="t-meta" style="margin-inline-end:8px">תקלות /</a> <span class="t-num" dir="ltr">#10482</span></h1>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary t-control">שייך טכנאי</button>
+          <button class="btn btn-primary t-control">עדכן סטטוס</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:4px">
+          <span class="prio critical" style="width:4px;height:48px;border-radius:2px;flex-shrink:0"></span>
+          <div>
+            <h2 class="t-title" style="margin:0">מזגן לא מקרר</h2>
+            <p class="t-meta" style="margin:4px 0 0">דיזנגוף · קוד <span class="t-num">112</span> · נפתח לפני 3 שעות מ־WhatsApp</p>
+          </div>
+          <span class="badge critical" style="margin-inline-start:auto">חריגת SLA</span>
+        </div>
+
+        <div class="meta-row">
+          <div class="meta-item"><span class="k">עדיפות</span><span class="v">קריטי</span></div>
+          <div class="meta-item"><span class="k">קטגוריה</span><span class="v">מיזוג</span></div>
+          <div class="meta-item"><span class="k">אחראי</span><span class="v" style="color:var(--signal-warning)">לא משויך</span></div>
+          <div class="meta-item"><span class="k">SLA</span><span class="v row-sla breach t-num">−1:12</span></div>
+        </div>
+
+        <div class="detail-layout">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <section class="panel elevated">
+              <div class="panel-head"><h3 class="t-section">תיאור</h3></div>
+              <div class="panel-pad t-body">
+                המזגן באולם המכירה עובד אבל לא מקרר. הטמפרטורה בחנות עלתה ל־28° ולוקוחות מתלוננים.
+                נבדק תרמוסטט — ללא שינוי. בקשה לטכנאי מיזוג היום.
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><h3 class="t-section">ציר זמן</h3></div>
+              <ul class="timeline">
+                <li>
+                  <span class="dot critical"></span>
+                  <div>
+                    <p class="t-body-strong" style="margin:0">חריגת SLA</p>
+                    <p class="t-meta" style="margin:2px 0 0">לפני 72 דק׳ · מערכת</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="dot progress"></span>
+                  <div>
+                    <p class="t-body-strong" style="margin:0">הודעת WhatsApp נקשרה לתקלה</p>
+                    <p class="t-meta" style="margin:2px 0 0">לפני 2 שע׳ · AI Intake</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="dot"></span>
+                  <div>
+                    <p class="t-body-strong" style="margin:0">נפתחה מתפריט דיווח ציבורי</p>
+                    <p class="t-meta" style="margin:2px 0 0">לפני 3 שע׳ · סניף 112</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <aside style="display:flex;flex-direction:column;gap:12px">
+            <section class="panel">
+              <div class="panel-head"><h3 class="t-section">פעולות</h3></div>
+              <div class="panel-pad" style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-primary btn-lg">שייך לטכנאי</button>
+                <button class="btn btn-secondary btn-lg">הצע ספק מועדף</button>
+                <button class="btn btn-secondary btn-lg">סמן כטופלה</button>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><h3 class="t-section">סניף</h3></div>
+              <div class="panel-pad">
+                <p class="t-body-strong" style="margin:0">דיזנגוף</p>
+                <p class="t-meta" style="margin:4px 0">קוד <span class="t-num">112</span> · תל אביב</p>
+                <a class="btn btn-ghost t-control" href="store-detail.html" style="padding-inline:0;margin-top:8px">פרטי סניף ←</a>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
