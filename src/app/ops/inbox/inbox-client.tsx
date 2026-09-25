@@ -700,16 +700,8 @@ export function InboxClient() {
         )}
       </div>
 
-<<<<<<< Updated upstream
-      <div className="hidden min-h-[640px] gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_240px]">
-=======
-<<<<<<< Updated upstream
-      <div className="hidden min-h-[640px] gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_240px]">
-=======
       {/* Desktop: fixed WhatsApp-like stage — phone-width chat, not full bleed */}
       <div className="mx-auto hidden h-[min(580px,70vh)] w-full max-w-[860px] gap-3 lg:grid lg:grid-cols-[220px_400px_200px] lg:justify-center">
->>>>>>> Stashed changes
->>>>>>> Stashed changes
         {listPanel}
         {conversationPanel}
         {contextPanel ?? (
