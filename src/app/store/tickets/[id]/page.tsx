@@ -6,6 +6,7 @@ import { getById } from '@/modules/tickets/service'
 import { StatusLabel } from '@/components/ui/signal'
 import { Panel, KeyValue } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { StoreConfirmButton } from '../store-confirm-button'
 import {
   TICKET_CATEGORY_LABELS_HE,
@@ -32,23 +33,15 @@ export default async function StoreTicketPage({
   if (!ticket) notFound()
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <div>
-        <p className="t-meta text-ink-2">
-          {ticket.display_number ?? ticket.id.slice(0, 8)}
-        </p>
-        <h1 className="t-title mt-1 text-ink">
-          {ticket.stores?.name ?? 'תקלה'}
-        </h1>
-        <p className="t-body mt-2 whitespace-pre-wrap text-ink-2">
-          {ticket.description || ticket.title || 'ללא תיאור'}
-        </p>
-        <div className="mt-3">
-          <StatusLabel status={ticket.status as TicketStatus} />
-        </div>
-      </div>
+    <div className="mx-auto flex max-w-lg flex-col gap-5 stagger">
+      <OpsPageHero
+        eyebrow={ticket.display_number ?? ticket.id.slice(0, 8)}
+        title={ticket.stores?.name ?? 'תקלה'}
+        status={ticket.description || ticket.title || 'ללא תיאור'}
+        footer={<StatusLabel status={ticket.status as TicketStatus} />}
+      />
 
-      <Panel>
+      <Panel elevated>
         <dl className="divide-y divide-border">
           <KeyValue label="סוג">
             {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}

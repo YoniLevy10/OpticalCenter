@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { AssetScanClient } from './scan-client'
@@ -13,12 +14,15 @@ export default async function AssetScanPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 stagger">
         <PageToolbar
           backHref="/ops/assets"
           backLabel="חזרה לנכסים"
+          showRefresh
+        />
+        <OpsPageHero
           title="סריקת נכסים"
-          meta="מצב נייד רציף"
+          status="מצב נייד רציף — סריקה, זיהוי ומעקב"
         />
         <AssetScanClient />
       </div>

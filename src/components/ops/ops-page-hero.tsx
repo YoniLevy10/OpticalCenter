@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 export function OpsPageHero({
   title,
   status,
+  footer,
   eyebrow = 'Optical Center · ישראל',
   showBrand = false,
   actions,
@@ -15,6 +16,8 @@ export function OpsPageHero({
   title: string
   /** One-line orientation under the title. */
   status?: React.ReactNode
+  /** Optional row below status (badges, SLA, etc.). */
+  footer?: React.ReactNode
   eyebrow?: string
   showBrand?: boolean
   actions?: React.ReactNode
@@ -56,7 +59,12 @@ export function OpsPageHero({
             {title}
           </h1>
           {status ? (
-            <p className="t-body mt-1.5 max-w-xl text-ink-2">{status}</p>
+            <div className="t-body mt-1.5 max-w-xl whitespace-pre-wrap text-ink-2">
+              {status}
+            </div>
+          ) : null}
+          {footer ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">{footer}</div>
           ) : null}
         </div>
         {actions ? (
