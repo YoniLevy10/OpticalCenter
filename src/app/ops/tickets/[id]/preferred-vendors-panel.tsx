@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Notice, Panel } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
+import {
+  buildMidragCityPickerUrl,
+  buildMidragGoogleBackupUrl,
+  buildMidragSearchUrl,
+  externalSearchCaption,
+} from '@/modules/vendors/external-search'
 
 type Match = {
   id: string
@@ -22,12 +29,14 @@ export function PreferredVendorsPanel({
   ticketId,
   category,
   regionId,
+  city,
   initialMatches,
   fixlyLabel: initialFixlyLabel,
 }: {
   ticketId: string
   category: string
   regionId: string
+  city?: string | null
   initialMatches?: Match[]
   fixlyLabel?: string
 }) {
@@ -39,6 +48,12 @@ export function PreferredVendorsPanel({
   const [loading, setLoading] = useState(!initialMatches)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const searchInput = { category, city }
+  const midragUrl = buildMidragSearchUrl(searchInput)
+  const midragCityUrl = buildMidragCityPickerUrl(searchInput)
+  const googleBackupUrl = buildMidragGoogleBackupUrl(searchInput)
+  const searchCaption = externalSearchCaption(searchInput)
 
   useEffect(() => {
     if (initialMatches) {
@@ -113,7 +128,7 @@ export function PreferredVendorsPanel({
         <Notice tone="critical">{error}</Notice>
       ) : matches.length === 0 ? (
         <Notice tone="warning">
-          אין ספק מועדף בקטגוריה זו — הוסיפו ספק למאגר או הרחיבו כיסוי אזורי.
+          אין ספק מועדף בקטגוריה זו — חפשו במידרג למטה והוסיפו למאגר.
         </Notice>
       ) : (
         <ul className="divide-y divide-border">
@@ -142,6 +157,45 @@ export function PreferredVendorsPanel({
           ))}
         </ul>
       )}
+
+      <div className="space-y-2 border-t border-border pt-3">
+        <p className="t-body-strong text-ink">חיפוש חיצוני · מידרג</p>
+        <p className="t-meta text-ink-2">
+          גיבוי כשאין ספק מועדף פנוי · {searchCaption} · נפתח בחלון חדש
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button asChild variant="secondary" size="touch">
+            <a
+              href={midragUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="ms-1 h-4 w-4" aria-hidden />
+              חיפוש במידרג
+            </a>
+          </Button>
+          {midragCityUrl ? (
+            <Button asChild variant="ghost" size="touch">
+              <a
+                href={midragCityUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                בחירת עיר במידרג
+              </a>
+            </Button>
+          ) : null}
+          <Button asChild variant="ghost" size="touch">
+            <a
+              href={googleBackupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              גיבוי · Google
+            </a>
+          </Button>
+        </div>
+      </div>
     </Panel>
   )
 }

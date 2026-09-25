@@ -197,6 +197,7 @@ export default async function TicketDetailPage({
           ticketId={ticket.id}
           category={ticket.category}
           regionId={ticket.region_id}
+          city={ticket.stores?.city ?? null}
           initialMatches={preferredMatches}
           fixlyLabel={fixlyStatusLabelHe()}
         />
