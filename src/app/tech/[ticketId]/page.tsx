@@ -102,8 +102,8 @@ export default async function TechTicketDetailPage({
         />
       }
     >
-      <div className="space-y-4">
-        <Panel>
+      <div className="space-y-4 stagger">
+        <Panel elevated>
           <StatusLabel status={ticket.status as TicketStatus} />
           <p className="t-lead mt-4 whitespace-pre-wrap leading-relaxed text-ink">
             {ticket.description || ticket.title || 'ללא תיאור'}
@@ -117,7 +117,7 @@ export default async function TechTicketDetailPage({
         </Panel>
 
         {attachments.length > 0 ? (
-          <Panel>
+          <Panel elevated>
             <p className="t-section mb-3 text-ink">תיעוד</p>
             <EvidenceGrid attachments={attachments} />
           </Panel>

@@ -1,6 +1,7 @@
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { Panel } from '@/components/ui/primitives'
 import { SimulatorForm } from './simulator-form'
 
 export const dynamic = 'force-dynamic'
@@ -8,10 +9,15 @@ export const dynamic = 'force-dynamic'
 export default function SimulatorPage() {
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar backHref="/ops/lab" backLabel="חזרה" showRefresh />
-        <PageHeader className="hidden md:flex" title="סימולטור WhatsApp" />
-        <SimulatorForm />
+        <OpsPageHero
+          title="סימולטור WhatsApp"
+          status="בדיקת intake בלי Meta — שליחה לדמו בלבד"
+        />
+        <Panel elevated className="px-4 py-5 md:px-5">
+          <SimulatorForm />
+        </Panel>
       </div>
     </OpsAppShell>
   )

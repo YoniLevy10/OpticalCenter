@@ -6,6 +6,7 @@ import {
   Panel,
   KeyValue,
 } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import {
@@ -126,28 +127,34 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq md:pb-0">
+      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq stagger md:pb-0">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
-        <header className="space-y-3">
-          <h1 className="t-display text-ink">{storeHeading}</h1>
-          <p className="t-lead whitespace-pre-wrap text-ink-2">{whatsBroken}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <StatusLabel status={ticket.status as TicketStatus} />
-            <span
-              className={cn(
-                't-body',
-                openFor.overdue
-                  ? 'text-[var(--signal-critical)]'
-                  : 'text-ink-2',
-              )}
-            >
-              {openFor.text}
-            </span>
-          </div>
-        </header>
+        <OpsPageHero
+          eyebrow={
+            ticket.display_number ||
+            (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+          }
+          title={storeHeading}
+          status={whatsBroken}
+          footer={
+            <>
+              <StatusLabel status={ticket.status as TicketStatus} />
+              <span
+                className={cn(
+                  't-body',
+                  openFor.overdue
+                    ? 'text-[var(--signal-critical)]'
+                    : 'text-ink-2',
+                )}
+              >
+                {openFor.text}
+              </span>
+            </>
+          }
+        />
 
-        <Panel>
+        <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label="נפתחה">
               {plainAgoHe(ticket.created_at)}
@@ -169,13 +176,13 @@ export default async function TicketDetailPage({
         </Panel>
 
         {attachments.length > 0 ? (
-          <Panel>
+          <Panel elevated>
             <p className="t-section mb-3 text-ink">תיעוד</p>
             <EvidenceGrid attachments={attachments} />
           </Panel>
         ) : null}
 
-        <Panel>
+        <Panel elevated>
           <p className="t-section mb-3 text-ink">מה קרה עד עכשיו</p>
           <ul className="space-y-2">
             {storyLines.map((line) => (

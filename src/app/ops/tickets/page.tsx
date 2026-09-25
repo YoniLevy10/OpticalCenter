@@ -5,11 +5,11 @@ import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   EmptyState,
-  PageHeader,
   Panel,
   ErrorState,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { QueueTabs } from './queue-tabs'
 import { PurgeDemoButton } from './purge-demo-button'
 import { TicketQueueItem } from './ticket-queue-item'
@@ -101,19 +101,27 @@ export default async function TicketsPage({
         ? `/ops/tickets?view=open&store=${encodeURIComponent(storeCode)}`
         : '/ops/tickets?view=open'
 
+  const statusLine =
+    view === 'resolved'
+      ? filtered.length === 0
+        ? 'עדיין אין תקלות שהסתיימו'
+        : `${filtered.length} תקלות שהסתיימו`
+      : filtered.length === 0
+        ? 'אין תקלות פתוחות כרגע'
+        : `${filtered.length} תקלות פתוחות — מה דורש טיפול עכשיו?`
+
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה"
           showRefresh
         />
 
-        <PageHeader
-          className="hidden md:flex"
+        <OpsPageHero
           title="תקלות"
-          meta={<span className="t-num">{filtered.length}</span>}
+          status={statusLine}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (
               <PurgeDemoButton />

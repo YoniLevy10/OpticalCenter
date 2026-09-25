@@ -2,7 +2,8 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader, Skeleton } from '@/components/ui/primitives'
+import { Skeleton } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { InboxClient } from './inbox-client'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -15,24 +16,21 @@ export default async function InboxPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה"
-          title="תיבת WhatsApp"
-          meta="השתלטות אנושית"
           showRefresh
         />
-        <PageHeader
+        <OpsPageHero
           title="תיבת WhatsApp"
-          meta="השתלטות אנושית"
-          className="hidden md:flex"
+          status="השתלטות אנושית על שיחות — בוט ממשיך בשאר"
         />
         <Suspense
           fallback={
             <div className="space-y-3">
               <Skeleton className="h-10 w-48" />
-              <Skeleton className="h-[420px] w-full" />
+              <Skeleton className="h-[420px] w-full rounded-[var(--radius-lg)]" />
             </div>
           }
         >

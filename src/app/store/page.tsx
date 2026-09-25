@@ -8,6 +8,8 @@ import { fetchStores } from '@/modules/stores/data'
 import { StatusLabel } from '@/components/ui/signal'
 import { EmptyState, Panel } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import type { QueueTicket } from '@/modules/tickets/queue'
 
 export const dynamic = 'force-dynamic'
@@ -34,47 +36,59 @@ export default async function StoreHomePage() {
     : scoped
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="t-title text-ink">התקלות שלי</h1>
-        <p className="t-body mt-1 text-ink-2">
-          דיווחים מהחנות {store ? `#${store.code} ${store.name}` : ''}
-        </p>
-      </div>
+    <div className="flex flex-col gap-5 stagger">
+      <OpsPageHero
+        eyebrow={
+          store ? `חנות #${store.code}` : 'Optical Center · חנות'
+        }
+        title="התקלות שלי"
+        status={
+          mine.length === 0
+            ? 'אין דיווחים פתוחים כרגע'
+            : `${mine.length} דיווחים מהחנות`
+        }
+      />
 
       <Button asChild variant="primary" size="block">
         <Link href="/store/report">דיווח תקלה חדשה</Link>
       </Button>
 
-      <Panel flush elevated>
+      <Panel flush elevated className="overflow-hidden">
         {mine.length === 0 ? (
           <EmptyState
             title="אין תקלות"
             description="כשתדווחו על תקלה היא תופיע כאן."
+            className="py-12"
           />
         ) : (
-          <ul className="divide-y divide-border">
+          <RowList>
             {mine.slice(0, 30).map((t) => (
-              <li key={t.id} className="px-4 py-3">
-              <Link href={`/store/tickets/${t.id}`} className="block">
-                <p className="t-body-strong t-num text-ink">
-                  {t.display_number ?? t.id.slice(0, 8)}
-                </p>
-                <p className="t-body mt-0.5 line-clamp-2 text-ink-2">
-                  {t.title || t.description}
-                </p>
-                <div className="mt-2">
-                  <StatusLabel status={t.status} />
-                  {t.status === 'resolved' ? (
-                    <span className="t-meta mr-2 text-[var(--signal-warning)]">
-                      נדרש אישור
-                    </span>
-                  ) : null}
-                </div>
-              </Link>
-            </li>
+              <OperationalRow
+                key={t.id}
+                href={`/store/tickets/${t.id}`}
+                priority={t.priority}
+                leading={
+                  <span className="t-num text-ink">
+                    {t.display_number ?? t.id.slice(0, 8)}
+                  </span>
+                }
+                title={t.title || t.description}
+                footer={
+                  <>
+                    <StatusLabel status={t.status} />
+                    {t.status === 'resolved' ? (
+                      <>
+                        <Dot />
+                        <span className="t-meta text-[var(--signal-warning)]">
+                          נדרש אישור
+                        </span>
+                      </>
+                    ) : null}
+                  </>
+                }
+              />
             ))}
-          </ul>
+          </RowList>
         )}
       </Panel>
     </div>

@@ -2,7 +2,7 @@
 
 import { ClipboardList } from 'lucide-react'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { EmptyState } from '@/components/ui/primitives'
+import { EmptyState, Panel } from '@/components/ui/primitives'
 import { StatusLabel } from '@/components/ui/signal'
 import { techHref } from '@/lib/tech-href'
 import type { TechTicketRow } from '@/modules/tickets/tech'
@@ -24,21 +24,23 @@ export function TechJobList({
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-border bg-surface">
+      <Panel flush elevated className="overflow-hidden">
         <EmptyState
           title="אין עבודות כרגע 🎉"
           description="כשמשייכים לך תקלה — היא תופיע כאן."
           icon={ClipboardList}
+          className="py-12"
         />
-      </div>
+      </Panel>
     )
   }
 
   return (
-    <div className="-mx-4 overflow-hidden border-y border-border sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border">
+    <Panel flush elevated className="-mx-4 overflow-hidden sm:mx-0">
       <RowList>
         {sorted.map((t) => {
-          const waiting = OPEN_TICKET_STATUSES.includes(t.status as never) &&
+          const waiting =
+            OPEN_TICKET_STATUSES.includes(t.status as never) &&
             t.status !== 'in_progress'
           const num =
             t.display_number ||
@@ -67,7 +69,11 @@ export function TechJobList({
                   <StatusLabel status={t.status} />
                   <Dot />
                   <span className="t-meta text-ink-2">
-                    {waiting ? 'ממתינה' : t.status === 'in_progress' ? 'בטיפול' : 'הסתיימה'}
+                    {waiting
+                      ? 'ממתינה'
+                      : t.status === 'in_progress'
+                        ? 'בטיפול'
+                        : 'הסתיימה'}
                   </span>
                 </>
               }
@@ -75,6 +81,6 @@ export function TechJobList({
           )
         })}
       </RowList>
-    </div>
+    </Panel>
   )
 }

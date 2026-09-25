@@ -223,7 +223,7 @@ export function AppShell({
   const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
 
   return (
-    <div className="dvh-screen min-w-0 overflow-x-hidden bg-canvas text-ink">
+    <div className="ops-atmosphere dvh-screen min-w-0 overflow-x-hidden text-ink">
       <SkipLink />
       {/* ---------- Desktop sidebar ---------- */}
       <aside

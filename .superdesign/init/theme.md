@@ -1,3 +1,50 @@
+# theme.md — MaintainOS tokens
+
+## Part 1 — Compact token summary
+
+**Product:** MaintainOS × Optical Center · Hebrew RTL · light-first atmospheric cool-teal canvas.
+
+**Typography:** Heebo (--font-heebo) — hebrew + latin; body letter-spacing -0.011em; line-height 1.5.
+
+### Light (:root)
+| Token | Value |
+|-------|-------|
+| canvas | #eef4f6 |
+| surface / surface-raised | #ffffff |
+| surface-sunken | #e4edef |
+| border / border-strong | #d7e3e6 / #b6cbd0 |
+| ink / ink-2 / ink-3 | #102b35 / #4c6972 / #556870 |
+| signal-critical | #c01e1e |
+| signal-warning | #8a5a12 |
+| signal-progress | #3b6cb8 |
+| signal-resolved | #187348 |
+| signal-idle | #8b90a0 |
+| **tenant (OC red)** | **#d92621** |
+| tenant-hover | #b81f1b |
+| tenant-soft / tenant-line | #fdeceb / #f5c4c2 |
+| signal-accent | #f4b860 |
+| panel-dark / panel-dark-fg | #102b35 / #ffffff |
+| radius sm/md/lg/xl | 6 / 8 / 12 / 16px |
+| row-h / topbar-h / bottomnav-h / nav-w | 44 / 52 / 64 / 216px |
+| tap target | 44px |
+| motion | dur 150/280/400ms · ease cubic-bezier(0.16,1,0.3,1) |
+
+### Dark (html.dark)
+| Token | Value |
+|-------|-------|
+| canvas | #0e1619 |
+| surface | #152025 |
+| ink | #e8f0f2 |
+| tenant | #ef4a45 |
+| (signals remapped for dark — see globals.css) |
+
+**Note:** Live tenant accent in CSS is Optical Center red #d92621. Ignore stale teal references in docs/DESIGN_SYSTEM.md Layer 3.
+
+## Part 2 — Raw sources
+
+### `src/app/globals.css`
+
+```css
 @import "tailwindcss";
 
 /* ============================================================
@@ -173,28 +220,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Atmospheric cool-teal canvas — not flat white */
-.ops-atmosphere,
-body {
-  background:
-    radial-gradient(
-      ellipse 110% 70% at 100% -10%,
-      color-mix(in srgb, var(--tenant-soft) 55%, transparent),
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at -5% 105%,
-      color-mix(in srgb, var(--signal-progress) 9%, transparent),
-      transparent 48%
-    ),
-    var(--canvas);
-  background-attachment: fixed;
-}
-
 body {
   touch-action: manipulation;
   scroll-padding-top: var(--topbar-h);
   scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;
@@ -238,12 +268,10 @@ body {
    ============================================================ */
 
 .t-display {
-  font-family: var(--font-rubik), var(--font-heebo), ui-sans-serif, system-ui,
-    sans-serif;
-  font-size: 28px;
-  line-height: 1.18;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
 .t-title {
   font-size: 20px;
@@ -702,3 +730,226 @@ html.dark .wa-empty-stage {
   clip: auto;
   white-space: normal;
 }
+
+```
+### `src/components/theme/theme-provider.tsx`
+
+```tsx
+'use client'
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import {
+  applyThemeClass,
+  readStoredThemePreference,
+  resolveDark,
+  writeStoredThemePreference,
+  type ThemePreference,
+} from '@/lib/theme'
+
+type ThemeContextValue = {
+  preference: ThemePreference
+  resolvedDark: boolean
+  setPreference: (next: ThemePreference) => void
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null)
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [preference, setPreferenceState] = useState<ThemePreference>('auto')
+  const [resolvedDark, setResolvedDark] = useState(false)
+
+  const sync = useCallback((pref: ThemePreference) => {
+    const dark = resolveDark(pref)
+    setResolvedDark(dark)
+    applyThemeClass(dark)
+  }, [])
+
+  useEffect(() => {
+    const stored = readStoredThemePreference()
+    setPreferenceState(stored)
+    sync(stored)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        sync(readStoredThemePreference())
+      }
+    }
+    const interval = window.setInterval(() => {
+      sync(readStoredThemePreference())
+    }, 60_000)
+
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.clearInterval(interval)
+    }
+  }, [sync])
+
+  const setPreference = useCallback(
+    (next: ThemePreference) => {
+      setPreferenceState(next)
+      writeStoredThemePreference(next)
+      sync(next)
+    },
+    [sync],
+  )
+
+  const value = useMemo(
+    () => ({ preference, resolvedDark, setPreference }),
+    [preference, resolvedDark, setPreference],
+  )
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext)
+  if (!ctx) {
+    throw new Error('useTheme must be used within ThemeProvider')
+  }
+  return ctx
+}
+
+```
+### `src/components/theme/theme-toggle.tsx`
+
+```tsx
+'use client'
+
+import { Moon, Sun, Sunset } from 'lucide-react'
+import { useTheme } from '@/components/theme/theme-provider'
+import { cn } from '@/lib/utils'
+import type { ThemePreference } from '@/lib/theme'
+
+const OPTIONS: {
+  id: ThemePreference
+  label: string
+  hint: string
+  icon: typeof Sun
+}[] = [
+  { id: 'light', label: 'בהיר', hint: 'תמיד בהיר', icon: Sun },
+  { id: 'dark', label: 'כהה', hint: 'תמיד כהה', icon: Moon },
+  {
+    id: 'auto',
+    label: 'אוטומטי',
+    hint: 'כהה בלילה (19:00–07:00)',
+    icon: Sunset,
+  },
+]
+
+export function ThemeToggle({
+  className,
+  compact = false,
+}: {
+  className?: string
+  /** Icon-sized control for headers / sidebars */
+  compact?: boolean
+}) {
+  const { preference, setPreference, resolvedDark } = useTheme()
+
+  if (compact) {
+    const cycle: ThemePreference[] = ['auto', 'light', 'dark']
+    const next = cycle[(cycle.indexOf(preference) + 1) % cycle.length]!
+    const Icon =
+      preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
+    const label =
+      preference === 'auto'
+        ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה עכשיו' : 'בהיר עכשיו'})`
+        : preference === 'dark'
+          ? 'ערכת נושא כהה'
+          : 'ערכת נושא בהירה'
+
+    return (
+      <button
+        type="button"
+        onClick={() => setPreference(next)}
+        aria-label={`${label}. לחצו להחלפה`}
+        title={label}
+        className={cn(
+          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors hover:bg-surface-sunken hover:text-ink',
+          className,
+        )}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </button>
+    )
+  }
+
+  return (
+    <fieldset className={cn('space-y-2', className)}>
+      <legend className="t-section text-ink">ערכת נושא</legend>
+      <p className="t-caption text-ink-3">
+        מצב אוטומטי עובר לכהה לפי השעון המקומי (19:00–07:00) — נוח יותר בלילה.
+      </p>
+      <div
+        role="radiogroup"
+        aria-label="ערכת נושא"
+        className="grid grid-cols-3 gap-2"
+      >
+        {OPTIONS.map((opt) => {
+          const Icon = opt.icon
+          const selected = preference === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setPreference(opt.id)}
+              className={cn(
+                'flex flex-col items-start gap-1 rounded-[var(--radius-md)] border px-3 py-2.5 text-start transition-colors',
+                selected
+                  ? 'border-[var(--tenant-line)] bg-[var(--tenant-soft)] text-[var(--tenant)]'
+                  : 'border-border bg-surface text-ink-2 hover:bg-surface-sunken hover:text-ink',
+              )}
+            >
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="t-body-strong">{opt.label}</span>
+              <span className="t-caption opacity-80">{opt.hint}</span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
+/** Compact control styled for the dark desktop sidebar. */
+export function ThemeToggleOnDark({ className }: { className?: string }) {
+  const { preference, setPreference, resolvedDark } = useTheme()
+  const cycle: ThemePreference[] = ['auto', 'light', 'dark']
+  const next = cycle[(cycle.indexOf(preference) + 1) % cycle.length]!
+  const Icon =
+    preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
+  const label =
+    preference === 'auto'
+      ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה' : 'בהיר'})`
+      : preference === 'dark'
+        ? 'כהה'
+        : 'בהיר'
+
+  return (
+    <button
+      type="button"
+      onClick={() => setPreference(next)}
+      aria-label={`ערכת נושא: ${label}. לחצו להחלפה`}
+      title={`ערכת נושא: ${label}`}
+      className={cn(
+        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white/70 transition-colors hover:bg-white/10 hover:text-white',
+        className,
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
+  )
+}
+
+```

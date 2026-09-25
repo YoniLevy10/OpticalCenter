@@ -2,8 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader, Panel, EmptyState, Notice } from '@/components/ui/primitives'
+import { Panel, EmptyState, Notice } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { PrintQrClient } from './print-qr-client'
 import { fetchStores } from '@/modules/stores/data'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
@@ -26,15 +27,15 @@ export default async function PrintQrBatchPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4 print:p-0">
+      <div className="flex flex-col gap-5 stagger print:gap-0 print:p-0">
         <PageToolbar backHref="/ops/stores" backLabel="חזרה" />
-        <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <PageHeader
-            className="hidden md:flex"
+        <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
+          <OpsPageHero
+            className="min-w-0 flex-1"
             title="הדפסת QR"
-            meta={<span className="t-num">{active.length}</span>}
+            status={`${active.length} סניפים פעילים — קישור WhatsApp לכל חנות`}
+            actions={phoneReady ? <PrintQrClient /> : undefined}
           />
-          {phoneReady ? <PrintQrClient /> : null}
         </div>
 
         {!phoneReady ? (

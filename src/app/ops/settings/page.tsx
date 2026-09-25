@@ -1,8 +1,9 @@
+import Link from 'next/link'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageHeader, Panel, KeyValue } from '@/components/ui/primitives'
+import { Panel, KeyValue } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { SettingsForm } from './settings-form'
 import { getSettings } from '@/modules/settings/service'
-import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,12 +12,15 @@ export default async function SettingsPage() {
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <PageHeader className="hidden md:flex" title="הגדרות" />
+      <div className="mx-auto flex max-w-3xl flex-col gap-5 stagger">
+        <OpsPageHero
+          title="הגדרות"
+          status={`${settings.brand_name} · ${settings.country_label}`}
+        />
 
         <SettingsForm initial={settings} />
 
-        <Panel>
+        <Panel elevated>
           <h2 className="t-section mb-3 text-ink">פריסה</h2>
           <dl className="divide-y divide-border">
             <KeyValue label="מוצר">MaintainOS</KeyValue>
@@ -26,7 +30,7 @@ export default async function SettingsPage() {
           </dl>
         </Panel>
 
-        <Panel>
+        <Panel elevated>
           <h2 className="t-section text-ink">בריאות המערכת</h2>
           <Link
             href="/ops/status"

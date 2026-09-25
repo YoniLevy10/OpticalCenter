@@ -7,6 +7,7 @@ import {
   KeyValue,
 } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { getStoreByCode } from '@/modules/stores/service'
@@ -15,6 +16,7 @@ import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { listTickets } from '@/modules/tickets/service'
 import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
+import { regionLabelHe } from '@/modules/stores/regions'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,19 +62,26 @@ export default async function StoreDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-xl flex-col gap-5">
+      <div className="mx-auto flex max-w-xl flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/stores"
           backLabel="חזרה לחנויות"
           showRefresh
         />
 
-        <header>
-          <p className="t-caption t-num text-ink-3">#{store.code}</p>
-          <h1 className="t-display mt-1 text-ink">{store.name}</h1>
-        </header>
+        <OpsPageHero
+          eyebrow={`#${store.code} · ${regionLabelHe(store.region_id)}`}
+          title={store.name}
+          status={
+            openCount > 0
+              ? `${openCount} תקלות פתוחות בחנות זו`
+              : store.is_active === false
+                ? 'חנות מושבתת'
+                : 'אין תקלות פתוחות'
+          }
+        />
 
-        <Panel>
+        <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
             <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
@@ -82,7 +91,7 @@ export default async function StoreDetailPage({
           </dl>
         </Panel>
 
-        <Button asChild variant="secondary" size="touch" className="w-full">
+        <Button asChild variant="primary" size="touch" className="w-full">
           <Link
             href={`/ops/tickets?view=open&store=${encodeURIComponent(store.code)}`}
           >
@@ -90,13 +99,13 @@ export default async function StoreDetailPage({
           </Link>
         </Button>
 
-        <Panel className="overflow-hidden" id="store-qr">
+        <Panel elevated className="overflow-hidden" id="store-qr">
           <p className="t-section mb-3 text-ink">הורדת QR</p>
           <StoreQrPanel code={store.code} deepLink={deepLink} />
         </Panel>
 
         {canEdit ? (
-          <Panel id="store-edit">
+          <Panel elevated id="store-edit">
             <p className="t-section mb-3 text-ink">עריכה</p>
             <StoreEditControls
               id={store.id}

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
-import { Heebo } from 'next/font/google'
+import { Heebo, Rubik } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
 import { THEME_BOOT_SCRIPT } from '@/lib/theme'
@@ -10,6 +10,13 @@ const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
   variable: '--font-heebo',
   display: 'swap',
+})
+
+const rubik = Rubik({
+  subsets: ['hebrew', 'latin'],
+  variable: '--font-rubik',
+  display: 'swap',
+  weight: ['600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -58,7 +65,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className={`${heebo.variable} font-sans antialiased`}>
+      <body className={`${heebo.variable} ${rubik.variable} font-sans antialiased`}>
         <Script
           id="maintainos-theme-boot"
           strategy="beforeInteractive"

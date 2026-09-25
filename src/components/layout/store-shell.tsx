@@ -24,7 +24,7 @@ export function StoreShell({
   ]
 
   return (
-    <div className="dvh-screen bg-canvas text-ink">
+    <div className="ops-atmosphere dvh-screen text-ink">
       <header className="safe-pt border-b border-border bg-surface shadow-[var(--shadow-1)]">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
