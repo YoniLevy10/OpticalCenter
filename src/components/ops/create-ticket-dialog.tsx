@@ -109,7 +109,7 @@ export function CreateTicketDialog({
           onOpenChange={onOpenChange}
           title={title}
           description={description}
-          className="w-[min(92vw,520px)] max-h-[90dvh] overflow-y-auto"
+          className="w-[min(92vw,520px)]"
         >
           {open ? form : null}
         </Modal>
