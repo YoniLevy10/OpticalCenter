@@ -12,11 +12,11 @@ const heebo = Heebo({
   display: 'swap',
 })
 
+/** Variable face — avoids brittle per-weight Google CSS fetches in CI. */
 const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
   variable: '--font-rubik',
   display: 'swap',
-  weight: ['600', '700'],
 })
 
 export const metadata: Metadata = {
