@@ -471,7 +471,7 @@ export function InboxClient() {
     <Panel
       flush
       elevated
-      className="flex min-h-[min(72vh,640px)] flex-col overflow-hidden lg:min-h-0"
+      className="flex min-h-[min(62vh,520px)] flex-col overflow-hidden lg:h-full lg:min-h-0"
     >
       {!active ? (
         <div className="flex flex-1 items-center justify-center wa-empty-stage">
@@ -587,7 +587,7 @@ export function InboxClient() {
                 <EmptyState title="אין הודעות" description="השיחה תופיע כאן" />
               </div>
             ) : (
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5">
+              <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
                 {threadItems.map((item) =>
                   item.kind === 'day' ? (
                     <div key={item.key} className="my-2 flex justify-center">
@@ -700,7 +700,8 @@ export function InboxClient() {
         )}
       </div>
 
-      <div className="hidden min-h-[640px] gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_240px]">
+      {/* Desktop: fixed WhatsApp-like stage — not full content bleed */}
+      <div className="mx-auto hidden h-[min(640px,72vh)] w-full max-w-[920px] gap-3 lg:grid lg:grid-cols-[240px_minmax(0,1fr)_200px]">
         {listPanel}
         {conversationPanel}
         {contextPanel ?? (

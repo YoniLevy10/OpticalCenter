@@ -16,7 +16,7 @@ export default async function InboxPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5 stagger">
+      <div className="mx-auto flex w-full max-w-[960px] flex-col gap-4 stagger">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה"
