@@ -126,28 +126,42 @@ export default async function TicketDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq md:pb-0">
+      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq stagger md:pb-0">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
-        <header className="space-y-3">
-          <h1 className="t-display text-ink">{storeHeading}</h1>
-          <p className="t-lead whitespace-pre-wrap text-ink-2">{whatsBroken}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <StatusLabel status={ticket.status as TicketStatus} />
-            <span
-              className={cn(
-                't-body',
-                openFor.overdue
-                  ? 'text-[var(--signal-critical)]'
-                  : 'text-ink-2',
-              )}
-            >
-              {openFor.text}
-            </span>
+        <header className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-[var(--shadow-1)] md:px-6 md:py-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-90"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 90% at 100% 0%, color-mix(in srgb, var(--tenant-soft) 55%, transparent), transparent 55%)',
+            }}
+          />
+          <div className="relative space-y-3">
+            <p className="t-caption t-num text-ink-3">
+              {ticket.display_number ||
+                (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))}
+            </p>
+            <h1 className="t-display text-ink">{storeHeading}</h1>
+            <p className="t-lead whitespace-pre-wrap text-ink-2">{whatsBroken}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusLabel status={ticket.status as TicketStatus} />
+              <span
+                className={cn(
+                  't-body',
+                  openFor.overdue
+                    ? 'text-[var(--signal-critical)]'
+                    : 'text-ink-2',
+                )}
+              >
+                {openFor.text}
+              </span>
+            </div>
           </div>
         </header>
 
-        <Panel>
+        <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label="נפתחה">
               {plainAgoHe(ticket.created_at)}
@@ -169,13 +183,13 @@ export default async function TicketDetailPage({
         </Panel>
 
         {attachments.length > 0 ? (
-          <Panel>
+          <Panel elevated>
             <p className="t-section mb-3 text-ink">תיעוד</p>
             <EvidenceGrid attachments={attachments} />
           </Panel>
         ) : null}
 
-        <Panel>
+        <Panel elevated>
           <p className="t-section mb-3 text-ink">מה קרה עד עכשיו</p>
           <ul className="space-y-2">
             {storyLines.map((line) => (

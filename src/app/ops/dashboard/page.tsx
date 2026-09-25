@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
-import { BrandMark } from '@/components/brand/brand-mark'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { PulseTile } from '@/components/ops/pulse-tile'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -26,48 +27,6 @@ import { DashboardSoftRefresh } from './dashboard-soft-refresh'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
-
-function PulseTile({
-  href,
-  value,
-  label,
-  tone = 'neutral',
-}: {
-  href: string
-  value: number | string
-  label: string
-  tone?: 'neutral' | 'critical' | 'warning' | 'ok'
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'group flex min-h-[5.25rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border px-4 py-3 transition-[background,border-color,box-shadow] duration-[var(--dur-1)] active:opacity-90 md:hover:shadow-[var(--shadow-1)]',
-        tone === 'critical' &&
-          'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
-        tone === 'warning' &&
-          'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
-        tone === 'ok' &&
-          'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
-        tone === 'neutral' &&
-          'border-border/80 bg-surface md:hover:bg-surface-sunken/40',
-      )}
-    >
-      <span
-        className={cn(
-          't-display t-num leading-none tracking-tight',
-          tone === 'critical' && 'text-[var(--signal-critical)]',
-          tone === 'warning' && 'text-[var(--signal-warning)]',
-          tone === 'ok' && 'text-[var(--signal-resolved)]',
-          tone === 'neutral' && 'text-ink',
-        )}
-      >
-        {value}
-      </span>
-      <span className="t-caption text-ink-2">{label}</span>
-    </Link>
-  )
-}
 
 export default async function OpsDashboardPage() {
   const actor = await getServerActor()
@@ -111,31 +70,12 @@ export default async function OpsDashboardPage() {
     <OpsAppShell>
       <DashboardSoftRefresh />
       <div className="flex flex-col gap-6 stagger">
-        {/* Hero — one job: orient the operator */}
-        <header className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-[var(--shadow-1)] md:px-7 md:py-6">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-90"
-            style={{
-              background:
-                'radial-gradient(ellipse 70% 90% at 100% 0%, color-mix(in srgb, var(--tenant-soft) 70%, transparent), transparent 55%), radial-gradient(ellipse 50% 60% at 0% 100%, color-mix(in srgb, var(--signal-progress) 10%, transparent), transparent 50%)',
-            }}
-          />
-          <div className="relative flex items-start gap-3.5">
-            <BrandMark
-              size={48}
-              priority
-              className="mt-0.5 rounded-[var(--radius-md)] shadow-[var(--shadow-2)]"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="t-caption text-ink-3">Optical Center · ישראל</p>
-              <h1 className="t-display mt-1 text-ink">מה קורה עכשיו?</h1>
-              <p className="t-body mt-1.5 max-w-xl text-ink-2">{statusLine}</p>
-            </div>
-          </div>
-        </header>
+        <OpsPageHero
+          showBrand
+          title="מה קורה עכשיו?"
+          status={statusLine}
+        />
 
-        {/* Primary pulse — 4 decisions only */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <PulseTile
             href="/ops/tickets?view=open"
@@ -163,7 +103,6 @@ export default async function OpsDashboardPage() {
           />
         </div>
 
-        {/* Compact secondary pulse — no cards */}
         <p className="t-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-3">
           <span>
             ללא אחראי{' '}

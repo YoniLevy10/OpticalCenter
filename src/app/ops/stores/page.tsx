@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Store } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageHeader, Panel, EmptyState } from '@/components/ui/primitives'
+import { Panel, EmptyState } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { OperationalRow, RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { fetchStores } from '@/modules/stores/data'
@@ -88,52 +90,52 @@ export default async function StoresPage({
     return qs ? `/ops/stores?${qs}` : '/ops/stores'
   }
 
+  const openStores = filtered.filter(
+    (s) => (openCountByStore.get(s.id) ?? 0) > 0,
+  ).length
+
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
-        <PageHeader
-          className="hidden md:flex"
+      <div className="flex flex-col gap-5 stagger">
+        <OpsPageHero
           title="חנויות"
-          meta={<span className="t-num">{filtered.length}</span>}
+          status={`פריסה ארצית · ${activeCount} סניפים פעילים${
+            openStores > 0 ? ` · ${openStores} עם תקלות פתוחות` : ''
+          }`}
           actions={canMutate ? <StoreCreateForm /> : undefined}
         />
 
-        <Panel className="space-y-3">
-          <p className="t-body-strong text-ink">
-            פריסה ארצית · {activeCount} סניפים ב־6 מחוזות
-          </p>
-          <p className="t-meta text-ink-2">
-            לכל חנות מיקום, תקלות, היסטוריה וסטטוס — הגיאוגרפיה לא מגבילה את
-            המערכת.
-          </p>
-          <div className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label="סינון לפי מחוז"
+          className="flex flex-wrap gap-1.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/40 p-1.5"
+        >
+          <Link
+            href={regionHref('')}
+            className={cn(
+              't-caption rounded-[var(--radius-sm)] px-3 py-2 transition-colors',
+              !regionFilter
+                ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                : 'text-ink-3 hover:text-ink',
+            )}
+          >
+            הכל · {activeCount}
+          </Link>
+          {IL_REGION_CODES.map((code) => (
             <Link
-              href={regionHref('')}
+              key={code}
+              href={regionHref(code)}
               className={cn(
-                't-caption rounded-md border px-3 py-1.5',
-                !regionFilter
-                  ? 'border-ink bg-ink text-surface'
-                  : 'border-border text-ink-2 hover:bg-surface-sunken/40',
+                't-caption rounded-[var(--radius-sm)] px-3 py-2 transition-colors',
+                regionFilter === code
+                  ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
+                  : 'text-ink-3 hover:text-ink',
               )}
             >
-              הכל · {activeCount}
+              {IL_REGION_LABELS_HE[code]} · {byRegion.get(code) ?? 0}
             </Link>
-            {IL_REGION_CODES.map((code) => (
-              <Link
-                key={code}
-                href={regionHref(code)}
-                className={cn(
-                  't-caption rounded-md border px-3 py-1.5',
-                  regionFilter === code
-                    ? 'border-ink bg-ink text-surface'
-                    : 'border-border text-ink-2 hover:bg-surface-sunken/40',
-                )}
-              >
-                {IL_REGION_LABELS_HE[code]} · {byRegion.get(code) ?? 0}
-              </Link>
-            ))}
-          </div>
-        </Panel>
+          ))}
+        </div>
 
         <StoreSearch initialQ={sp.q ?? ''} />
 
@@ -145,42 +147,41 @@ export default async function StoresPage({
               icon={Store}
             />
           ) : (
-            <ul className="divide-y divide-border">
+            <RowList>
               {filtered.map((s) => {
                 const openCount = openCountByStore.get(s.id) ?? 0
                 return (
-                  <li key={s.id}>
-                    <Link
-                      href={`/ops/stores/${encodeURIComponent(s.code)}`}
-                      className="flex min-h-[var(--tap)] items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-sunken/40"
-                    >
-                      <span className="t-body-strong t-num w-12 shrink-0 text-ink">
-                        #{s.code}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="t-body-strong block truncate text-ink">
-                          {s.name}
-                        </span>
-                        <span className="t-meta mt-0.5 block truncate text-ink-2">
-                          {regionLabelHe(s.region_id)}
-                          {s.city ? ` · ${s.city}` : ''}
-                          {s.address ? ` · ${s.address}` : ''}
-                        </span>
-                      </span>
-                      {openCount > 0 ? (
-                        <span
-                          className={cn(
-                            't-caption t-num shrink-0 text-[var(--signal-critical)]',
-                          )}
-                        >
+                  <OperationalRow
+                    key={s.id}
+                    href={`/ops/stores/${encodeURIComponent(s.code)}`}
+                    priority={openCount > 0 ? 'high' : 'medium'}
+                    leading={
+                      <span className="t-num text-ink">#{s.code}</span>
+                    }
+                    trailing={
+                      openCount > 0 ? (
+                        <span className="t-caption t-num text-[var(--signal-critical)]">
                           {openCount} פתוחות
                         </span>
-                      ) : null}
-                    </Link>
-                  </li>
+                      ) : (
+                        <span className="t-caption text-ink-3">שקט</span>
+                      )
+                    }
+                    title={s.name}
+                    subtitle={
+                      [regionLabelHe(s.region_id), s.city, s.address]
+                        .filter(Boolean)
+                        .join(' · ') || undefined
+                    }
+                    footer={
+                      s.is_active === false ? (
+                        <span className="t-meta text-ink-3">מושבת</span>
+                      ) : undefined
+                    }
+                  />
                 )
               })}
-            </ul>
+            </RowList>
           )}
         </Panel>
 

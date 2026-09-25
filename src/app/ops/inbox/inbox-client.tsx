@@ -347,7 +347,7 @@ export function InboxClient() {
                   type="button"
                   onClick={() => openConversation(s.wa_id)}
                   className={cn(
-                    'flex w-full items-center gap-3 px-3 py-3 text-start transition-colors hover:bg-canvas',
+                    'flex min-h-[80px] w-full items-center gap-3 px-4 py-3.5 text-start transition-colors hover:bg-surface-sunken/40',
                     priorityEdgeClass(s.priority),
                     priorityRowClass(s.priority),
                     selectedRow && 'bg-[var(--tenant-soft)]',
@@ -355,7 +355,7 @@ export function InboxClient() {
                 >
                   <span
                     aria-hidden
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--tenant)_22%,white)] text-sm font-semibold text-[var(--tenant)]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-sm font-semibold text-[var(--tenant)] ring-1 ring-[var(--tenant-line)]"
                   >
                     {initialsFrom(title)}
                   </span>

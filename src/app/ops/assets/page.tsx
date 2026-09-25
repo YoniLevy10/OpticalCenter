@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
-import { PageHeader } from '@/components/ui/primitives'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { AssetsAdmin, type AssetTicketHint } from './assets-admin'
 import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
@@ -36,18 +36,15 @@ export default async function AssetsPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/settings"
           backLabel="חזרה להגדרות"
-          title="נכסים"
-          meta="ציוד לפי סניף"
           showRefresh
         />
-        <PageHeader
-          title="נכסים"
-          meta="ציוד לפי סניף"
-          className="hidden md:flex"
+        <OpsPageHero
+          title="ציוד"
+          status="נכסים לפי סניף — סריקה, תוויות ומעקב תקלות"
         />
         <AssetsAdmin
           stores={stores.map((s) => ({

@@ -49,7 +49,7 @@ export function TechShell({
   )
 
   return (
-    <div className="dvh-screen bg-canvas text-ink">
+    <div className="ops-atmosphere dvh-screen text-ink">
       <SkipLink />
       <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">

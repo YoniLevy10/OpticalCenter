@@ -6,12 +6,13 @@ import {
   Panel,
   PanelHeader,
   EmptyState,
-  PageHeader,
 } from '@/components/ui/primitives'
 import { Table, TBody, TD, TH, THead, TR, RowLink } from '@/components/ui/table'
 import { StatusLabel, priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { LiveAge } from '@/components/ui/time'
 import { Button } from '@/components/ui/button'
+import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { PulseTile } from '@/components/ops/pulse-tile'
 import { ReportsFilters } from './reports-filters'
 import { ReportsExportActions } from './reports-export'
 import { ReportsSaveButton } from './reports-save'
@@ -151,58 +152,65 @@ export default async function ReportsPage({
     {
       label: 'תקלות בטווח',
       value: String(all.length),
-      href: null as string | null,
+      href: undefined as string | undefined,
+      tone: 'neutral' as const,
     },
     {
       label: 'פתוחות',
       value: String(kpis.open),
       href: queueHref({ view: 'open', sort: 'urgency' }),
+      tone:
+        kpis.open === 0
+          ? ('ok' as const)
+          : kpis.breached > 0
+            ? ('critical' as const)
+            : ('warning' as const),
     },
     {
       label: 'חריגות SLA',
       value: String(kpis.breached),
       href: queueHref({ view: 'attention', sort: 'urgency' }),
-      warn: kpis.breached > 0,
+      tone: kpis.breached > 0 ? ('critical' as const) : ('neutral' as const),
     },
     {
       label: 'נפתרו',
       value: String(kpis.resolvedCount),
       href: queueHref({ view: 'resolved', sort: 'newest' }),
+      tone: 'ok' as const,
     },
     {
       label: 'ממוצע פתרון',
       value:
         kpis.avgResolveHours != null ? `${kpis.avgResolveHours} שע׳` : '—',
-      href: null as string | null,
+      href: undefined as string | undefined,
+      tone: 'neutral' as const,
     },
     {
       label: 'בתוך SLA',
       value: sla.pctWithinSla != null ? `${sla.pctWithinSla}%` : '—',
-      href: null as string | null,
+      href: undefined as string | undefined,
+      tone: 'neutral' as const,
     },
   ]
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 stagger">
         <PageToolbar
           backHref="/ops/dashboard"
           backLabel="חזרה"
-          title="דוחות"
-          meta={
-            ticketResult.backend === 'supabase'
-              ? `${rangeLabel}${statusLabel}`
-              : 'מצב דמו'
-          }
           showRefresh
           actions={<ReportsExportActions query={exportQuery} count={all.length} />}
         />
 
-        <PageHeader
-          className="hidden md:flex"
+        <OpsPageHero
           title="דוחות"
-          description={`סיכום תפעולי לפי טווח תאריכים · ${rangeLabel}${statusLabel}`}
-          actions={<ReportsExportActions query={exportQuery} count={all.length} />}
+          status={`סיכום תפעולי · ${rangeLabel}${statusLabel}${
+            ticketResult.backend === 'supabase' ? '' : ' · מצב דמו'
+          }`}
+          actions={
+            <ReportsExportActions query={exportQuery} count={all.length} />
+          }
         />
 
         <ReportsFilters from={from} to={to} status={status} />
@@ -224,34 +232,15 @@ export default async function ReportsPage({
         </Panel>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          {metrics.map((c) => {
-            const inner = (
-              <>
-                <p className="t-caption text-ink-3">{c.label}</p>
-                <p
-                  className={cn(
-                    't-title t-num mt-1',
-                    c.warn ? 'text-[var(--signal-critical)]' : 'text-ink',
-                  )}
-                >
-                  {c.value}
-                </p>
-              </>
-            )
-            return c.href ? (
-              <Link
-                key={c.label}
-                href={c.href}
-                className="block rounded-[var(--radius-lg)] border border-border bg-surface p-4 shadow-[var(--shadow-1)] transition-colors hover:border-border-strong hover:bg-surface-sunken/40"
-              >
-                {inner}
-              </Link>
-            ) : (
-              <Panel key={c.label} elevated className="!p-4">
-                {inner}
-              </Panel>
-            )
-          })}
+          {metrics.map((c) => (
+            <PulseTile
+              key={c.label}
+              href={c.href}
+              value={c.value}
+              label={c.label}
+              tone={c.tone}
+            />
+          ))}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
