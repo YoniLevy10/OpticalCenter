@@ -10,6 +10,7 @@ import {
   HardHat,
   Inbox,
   LayoutDashboard,
+  Menu,
   MessageSquare,
   QrCode,
   ScrollText,
@@ -23,12 +24,12 @@ import {
 } from 'lucide-react'
 import type { NavTool } from '@/lib/auth/nav-access'
 import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
-import { BottomSheet } from '@/components/ui/overlay'
+import { SideDrawer } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
-import { ThemeToggle, ThemeToggleOnDark } from '@/components/theme/theme-toggle'
+import { ThemeToggleOnDark } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
@@ -183,6 +184,42 @@ function SidebarNavLink({
   )
 }
 
+function DrawerNavLink({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem
+  pathname: string
+  onNavigate: () => void
+}) {
+  const active = isActive(pathname, item.match)
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? 'page' : undefined}
+      onClick={onNavigate}
+      className={cn(
+        't-body flex min-h-[var(--tap)] items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors',
+        active
+          ? 'bg-[var(--tenant-soft)] text-[var(--tenant)]'
+          : 'text-ink hover:bg-surface-sunken',
+      )}
+    >
+      <Icon
+        className={cn(
+          'h-4 w-4 shrink-0',
+          active ? 'text-[var(--tenant)]' : 'text-ink-3',
+        )}
+        aria-hidden
+      />
+      {item.label}
+    </Link>
+  )
+}
+
 function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/dashboard')) return 'ראשי'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
@@ -219,11 +256,13 @@ export function AppShell({
   tools?: NavTool[]
 }) {
   const pathname = usePathname() ?? ''
-  const [moreOpen, setMoreOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
+  const fillMain = pathname.startsWith('/ops/inbox')
+  const closeMenu = () => setMenuOpen(false)
 
   return (
-    <div className="ops-atmosphere dvh-screen min-w-0 overflow-x-hidden text-ink">
+    <div className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden">
       <SkipLink />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
@@ -291,7 +330,7 @@ export function AppShell({
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="safe-pt sticky top-0 z-30 border-b border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden">
+      <header className="safe-pt z-30 shrink-0 border-b border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden">
         <div
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
@@ -302,18 +341,37 @@ export function AppShell({
               {pageTitle(pathname)}
             </h1>
           </div>
-          <ThemeToggle compact className="shrink-0" />
-          <span className="t-caption hidden shrink-0 text-ink-3 sm:inline">Optical Center · ישראל</span>
+          <button
+            type="button"
+            aria-label="תפריט ניווט"
+            aria-expanded={menuOpen}
+            aria-haspopup="dialog"
+            onClick={() => setMenuOpen(true)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink transition-colors hover:bg-surface-sunken"
+          >
+            <Menu className="h-5 w-5" aria-hidden />
+          </button>
         </div>
       </header>
 
       {/* ---------- Content ---------- */}
-      <div className="min-w-0 md:ps-[var(--nav-w)]">
-        <PullToRefresh>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:block md:ps-[var(--nav-w)]">
+        <PullToRefresh
+          disabled={fillMain}
+          className={cn(
+            'flex min-h-0 flex-1 flex-col md:block',
+            fillMain && 'md:min-h-0',
+          )}
+        >
           <main
             id="main-content"
             tabIndex={-1}
-            className="pb-nav mx-auto min-w-0 w-full max-w-[1280px] px-4 pt-5 outline-none md:px-8 md:pt-7"
+            className={cn(
+              'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
+              fillMain
+                ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
+                : 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7',
+            )}
           >
             <div className="mb-4 hidden justify-end md:flex">
               <SystemStatusBanner compact />
@@ -352,9 +410,10 @@ export function AppShell({
           <li className="flex-1">
             <button
               type="button"
-              aria-expanded={moreOpen}
+              aria-expanded={menuOpen}
               aria-haspopup="dialog"
-              onClick={() => setMoreOpen(true)}
+              aria-label="עוד"
+              onClick={() => setMenuOpen(true)}
               className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-colors duration-[var(--dur-1)]"
             >
               <Ellipsis className="h-5 w-5" aria-hidden />
@@ -364,51 +423,39 @@ export function AppShell({
         </ul>
       </nav>
 
-      <BottomSheet
-        open={moreOpen}
-        onOpenChange={setMoreOpen}
-        title="כלים והגדרות"
-      >
+      <SideDrawer open={menuOpen} onOpenChange={setMenuOpen} title="ניווט">
+        <p className="t-caption mb-1.5 px-3 text-ink-3">מרכז שליטה</p>
+        <ul className="mb-4 flex flex-col gap-0.5">
+          {PRIMARY.map((item) => (
+            <li key={item.href}>
+              <DrawerNavLink
+                item={item}
+                pathname={pathname}
+                onNavigate={closeMenu}
+              />
+            </li>
+          ))}
+        </ul>
         {toolGroups.map((group) => (
-          <div key={group.label} className="mb-5 last:mb-0">
-            <p className="t-caption mb-2 text-ink-3">{group.label}</p>
-            <ul className="divide-y divide-border">
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const active = isActive(pathname, item.match)
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        't-body flex min-h-[var(--tap)] items-center gap-2.5 transition-colors',
-                        active ? 'text-[var(--tenant)]' : 'text-ink',
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          'h-4 w-4 shrink-0',
-                          active ? 'text-[var(--tenant)]' : 'text-ink-3',
-                        )}
-                        aria-hidden
-                      />
-                      {item.label}
-                    </Link>
-                  </li>
-                )
-              })}
+          <div key={group.label} className="mb-4">
+            <p className="t-caption mb-1.5 px-3 text-ink-3">{group.label}</p>
+            <ul className="flex flex-col gap-0.5">
+              {group.items.map((item) => (
+                <li key={item.href}>
+                  <DrawerNavLink
+                    item={item}
+                    pathname={pathname}
+                    onNavigate={closeMenu}
+                  />
+                </li>
+              ))}
             </ul>
           </div>
         ))}
-        <div className="mt-4">
+        <div className="mt-2 border-t border-border px-1 pt-3">
           <LogoutButton size="touch" variant="secondary" className="w-full" />
         </div>
-        <p className="t-caption mt-4 text-ink-3">
-          Optical Center · פיילוט ישראל
-        </p>
-        <p className="t-caption mt-1 text-ink-3">מצב הדגמה</p>
-      </BottomSheet>
+      </SideDrawer>
     </div>
   )
 }

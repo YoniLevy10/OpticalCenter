@@ -20,10 +20,7 @@ export default async function AssetScanPage() {
           backLabel="חזרה לנכסים"
           showRefresh
         />
-        <OpsPageHero
-          title="סריקת נכסים"
-          status="מצב נייד רציף — סריקה, זיהוי ומעקב"
-        />
+        <OpsPageHero title="סריקת נכסים" />
         <AssetScanClient />
       </div>
     </OpsAppShell>

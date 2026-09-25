@@ -99,7 +99,7 @@ export default async function StoresPage({
       <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
           title="חנויות"
-          status={`פריסה ארצית · ${activeCount} סניפים פעילים${
+          status={`${activeCount} סניפים פעילים${
             openStores > 0 ? ` · ${openStores} עם תקלות פתוחות` : ''
           }`}
           actions={canMutate ? <StoreCreateForm /> : undefined}

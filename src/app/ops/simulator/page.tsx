@@ -11,10 +11,7 @@ export default function SimulatorPage() {
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
         <PageToolbar backHref="/ops/lab" backLabel="חזרה" showRefresh />
-        <OpsPageHero
-          title="סימולטור WhatsApp"
-          status="בדיקת intake בלי Meta — שליחה לדמו בלבד"
-        />
+        <OpsPageHero title="סימולטור WhatsApp" />
         <Panel elevated className="px-4 py-5 md:px-5">
           <SimulatorForm />
         </Panel>

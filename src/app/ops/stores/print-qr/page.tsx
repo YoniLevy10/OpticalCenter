@@ -33,7 +33,7 @@ export default async function PrintQrBatchPage() {
           <OpsPageHero
             className="min-w-0 flex-1"
             title="הדפסת QR"
-            status={`${active.length} סניפים פעילים — קישור WhatsApp לכל חנות`}
+            status={`${active.length} סניפים פעילים`}
             actions={phoneReady ? <PrintQrClient /> : undefined}
           />
         </div>
