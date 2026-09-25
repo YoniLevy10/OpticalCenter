@@ -97,6 +97,36 @@ export const BottomSheetDefault: Story = {
   },
 }
 
+export const ModalTallScroll: Story = {
+  name: 'Modal tall (scroll)',
+  render: function ModalTallStory() {
+    const [open, setOpen] = useState(true)
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>מודל ארוך</Button>
+        <Modal
+          open={open}
+          onOpenChange={setOpen}
+          title="ספק חדש"
+          description="טופס ארוך — חייב לגלול"
+          className="w-[min(92vw,520px)]"
+        >
+          <div className="space-y-3">
+            {Array.from({ length: 24 }, (_, i) => (
+              <p key={i} className="t-body text-ink-2">
+                שורת תוכן {i + 1} — בדיקת גלילה בתוך המודל.
+              </p>
+            ))}
+            <Button variant="primary" onClick={() => setOpen(false)}>
+              סגור
+            </Button>
+          </div>
+        </Modal>
+      </>
+    )
+  },
+}
+
 export const ClosedEmpty: Story = {
   name: 'Closed (empty trigger)',
   render: function ClosedStory() {

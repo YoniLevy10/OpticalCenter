@@ -18,6 +18,11 @@ function CloseButton() {
   )
 }
 
+/**
+ * Centered modal. Body is scrollable; header stays pinned.
+ * Radix locks document scroll while open — without max-h + overflow on the
+ * body region, tall forms (ספק חדש, משתמש, נכס…) cannot scroll.
+ */
 export function Modal({
   open,
   onOpenChange,
@@ -39,12 +44,12 @@ export function Modal({
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
           className={cn(
-            'fixed start-1/2 top-1/2 z-50 w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 animate-scale-in rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-pop)] rtl:translate-x-1/2',
+            'fixed start-1/2 top-1/2 z-50 flex max-h-[min(90dvh,720px)] w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 flex-col animate-scale-in overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-pop)] rtl:translate-x-1/2',
             className,
           )}
         >
-          <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-3.5">
-            <div>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-3.5">
+            <div className="min-w-0">
               <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="t-meta mt-0.5 text-ink-2">
@@ -54,7 +59,9 @@ export function Modal({
             </div>
             <CloseButton />
           </div>
-          <div className="p-5">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+            {children}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -83,14 +90,14 @@ export function BottomSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-slide-up flex-col rounded-t-[var(--radius-xl)] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-slide-up flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
           style={{ paddingBottom: 'var(--safe-b)' }}
         >
-          <div className="flex justify-center pt-2.5" aria-hidden>
+          <div className="flex shrink-0 justify-center pt-2.5" aria-hidden>
             <span className="h-1 w-10 rounded-full bg-border-strong" />
           </div>
-          <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-2">
-            <div>
+          <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-2">
+            <div className="min-w-0">
               <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="t-meta mt-0.5 text-ink-2">
@@ -100,7 +107,9 @@ export function BottomSheet({
             </div>
             <CloseButton />
           </div>
-          <div className="flex-1 overflow-y-auto px-5 pb-5">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
+            {children}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
