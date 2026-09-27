@@ -11,13 +11,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { QueueTabs } from './queue-tabs'
+import { TicketSearch } from './ticket-search'
+import { TicketFilters } from './ticket-filters'
 import { PurgeDemoButton } from './purge-demo-button'
 import { TicketQueueItem } from './ticket-queue-item'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import {
   applyQueue,
+  parseQueueParams,
+  queueHref,
   type QueueTicket,
+  type QueueView,
 } from '@/modules/tickets/queue'
+import { Suspense } from 'react'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -41,11 +47,11 @@ export default async function TicketsPage({
   searchParams: Promise<Record<string, string | undefined>>
 }) {
   const sp = await searchParams
-  const viewRaw = (sp.view ?? 'open').trim()
-  const view = viewRaw === 'resolved' ? 'resolved' : 'open'
+  const parsed = parseQueueParams(sp)
+  const view: QueueView = parsed.view === 'resolved' ? 'resolved' : 'open'
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
   // Silent deep-link from store detail — no filter UI.
-  const storeCode = (sp.store ?? '').trim() || undefined
+  const storeCode = parsed.store || (sp.store ?? '').trim() || undefined
 
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -83,23 +89,22 @@ export default async function TicketsPage({
       ? String(ticketResult.error)
       : null
 
-  // Newest → oldest; sequential OC-N numbers shown on each row.
-  const filtered = applyQueue(all, {
+  const queueFilters = {
+    ...parsed,
     view,
-    sort: 'newest',
+    sort: 'newest' as const,
+    store: storeCode,
     includeDemo: false,
-  })
+  }
+
+  // Newest → oldest; sequential OC-N numbers shown on each row.
+  const filtered = applyQueue(all, queueFilters)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
-  const baseHref =
-    view === 'resolved'
-      ? '/ops/tickets?view=resolved'
-      : storeCode
-        ? `/ops/tickets?view=open&store=${encodeURIComponent(storeCode)}`
-        : '/ops/tickets?view=open'
+  const baseHref = queueHref(queueFilters)
 
   const statusLine =
     view === 'resolved'
@@ -120,6 +125,7 @@ export default async function TicketsPage({
         />
 
         <OpsPageHero
+          largeTitle
           title="תקלות"
           status={statusLine}
           actions={
@@ -130,6 +136,17 @@ export default async function TicketsPage({
         />
 
         <QueueTabs active={view} />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <Suspense fallback={null}>
+              <TicketSearch initialQ={parsed.q ?? ''} />
+            </Suspense>
+          </div>
+          <Suspense fallback={null}>
+            <TicketFilters />
+          </Suspense>
+        </div>
 
         {listError ? (
           <ErrorState
@@ -186,7 +203,11 @@ export default async function TicketsPage({
                 size="sm"
                 className={current <= 1 ? 'pointer-events-none opacity-40' : ''}
               >
-                <Link href={`${baseHref}&page=${current - 1}`}>הקודם</Link>
+                <Link
+                  href={`${baseHref}${baseHref.includes('?') ? '&' : '?'}page=${current - 1}`}
+                >
+                  הקודם
+                </Link>
               </Button>
               <Button
                 asChild
@@ -196,7 +217,11 @@ export default async function TicketsPage({
                   current >= totalPages ? 'pointer-events-none opacity-40' : ''
                 }
               >
-                <Link href={`${baseHref}&page=${current + 1}`}>הבא</Link>
+                <Link
+                  href={`${baseHref}${baseHref.includes('?') ? '&' : '?'}page=${current + 1}`}
+                >
+                  הבא
+                </Link>
               </Button>
             </div>
           </nav>

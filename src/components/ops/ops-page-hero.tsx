@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils'
 
 /**
  * Shared page hero matching the ops dashboard — one job orientation per screen.
+ * On mobile, pairs with LargeTitleScrollSync: the display title collapses into
+ * the glass top bar as the operator scrolls.
  */
 export function OpsPageHero({
   title,
@@ -12,6 +14,7 @@ export function OpsPageHero({
   showBrand = false,
   actions,
   className,
+  largeTitle = false,
 }: {
   title: string
   /** One-line orientation under the title. */
@@ -22,11 +25,16 @@ export function OpsPageHero({
   showBrand?: boolean
   actions?: React.ReactNode
   className?: string
+  /** Mobile large-title collapse (dashboard / tickets / stores). */
+  largeTitle?: boolean
 }) {
   return (
     <header
       className={cn(
-        'relative overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-[var(--shadow-1)] md:px-7 md:py-6',
+        'relative overflow-hidden',
+        largeTitle
+          ? 'rounded-none border-0 bg-transparent px-0 py-1 shadow-none md:rounded-[var(--radius-xl)] md:border md:border-border/70 md:bg-surface md:px-7 md:py-6 md:shadow-[var(--shadow-1)]'
+          : 'rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-[var(--shadow-1)] md:px-7 md:py-6',
         className,
       )}
     >
@@ -35,17 +43,27 @@ export function OpsPageHero({
           <BrandMark
             size={48}
             priority
-            className="mt-0.5 rounded-[var(--radius-md)] shadow-[var(--shadow-2)]"
+            className="mt-0.5 hidden rounded-[var(--radius-md)] shadow-[var(--shadow-2)] md:block"
           />
         ) : null}
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="t-caption text-ink-3">{eyebrow}</p>
+            <p
+              className={cn(
+                't-caption text-ink-3',
+                largeTitle && 'md:block',
+                largeTitle && 'hidden',
+              )}
+            >
+              {eyebrow}
+            </p>
           ) : null}
           <h1
             className={cn(
               't-display text-ink',
-              eyebrow ? 'mt-1' : undefined,
+              eyebrow && !largeTitle ? 'mt-1' : undefined,
+              largeTitle && 'text-[1.75rem] leading-tight tracking-tight md:mt-1 md:text-[length:inherit] md:leading-[inherit]',
+              largeTitle && 'large-title-hero-title',
             )}
           >
             {title}

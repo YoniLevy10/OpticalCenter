@@ -1,9 +1,19 @@
+'use client'
+
 import Link from 'next/link'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 /**
  * One tab language for the whole product. Views are URL-driven (link form) so
  * the operator can bookmark and share a queue; local tabs use the button form.
+ * Sliding surface pill mirrors iOS UISegmentedControl.
  */
 
 type Segment = {
@@ -13,26 +23,101 @@ type Segment = {
   href?: string
 }
 
-function segmentClass(active: boolean) {
-  return cn(
-    't-control inline-flex h-11 min-h-[var(--tap)] min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-3.5 transition-all duration-[var(--dur-1)] md:h-9 md:min-h-0',
-    active
-      ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-      : 'text-ink-2 hover:bg-[var(--surface-sunken)]/40 hover:text-ink',
+function Count({ value }: { value: number }) {
+  return (
+    <span className={cn('t-caption t-num text-ink-3', value === 0 && 'opacity-45')}>
+      {value}
+    </span>
   )
 }
 
-function Count({ value, active }: { value: number; active: boolean }) {
+function useSlidingPill(activeKey: string, keys: string[]) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
+  const [pill, setPill] = useState({ x: 0, w: 0, ready: false })
+
+  const measure = useCallback(() => {
+    const track = trackRef.current
+    const el = itemRefs.current.get(activeKey)
+    if (!track || !el) return
+    const tr = track.getBoundingClientRect()
+    const er = el.getBoundingClientRect()
+    // Logical inline-start offset works for both LTR and RTL.
+    const x = er.left - tr.left
+    setPill({ x, w: er.width, ready: true })
+  }, [activeKey])
+
+  useLayoutEffect(() => {
+    measure()
+  }, [measure, keys.join('|')])
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(track)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [measure])
+
+  const setItemRef = useCallback((key: string, node: HTMLElement | null) => {
+    if (node) itemRefs.current.set(key, node)
+    else itemRefs.current.delete(key)
+  }, [])
+
+  return { trackRef, setItemRef, pill }
+}
+
+function segmentClass(active: boolean) {
+  return cn(
+    'relative z-[1] t-control inline-flex h-11 min-h-[var(--tap)] min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-3.5 transition-colors duration-[var(--dur-1)] md:h-9 md:min-h-0',
+    active ? 'text-ink' : 'text-ink-2 hover:text-ink',
+  )
+}
+
+function Track({
+  className,
+  fill,
+  scrollable,
+  children,
+  trackRef,
+  pill,
+  ...rest
+}: {
+  className?: string
+  fill?: boolean
+  scrollable?: boolean
+  children: React.ReactNode
+  trackRef: React.RefObject<HTMLDivElement | null>
+  pill: { x: number; w: number; ready: boolean }
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <span
+    <div
+      ref={trackRef}
       className={cn(
-        't-caption t-num',
-        active ? 'text-ink-3' : 'text-ink-3',
-        value === 0 && 'opacity-45',
+        'relative inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
+        fill && 'flex w-full',
+        scrollable && 'max-w-full overflow-x-auto [scrollbar-width:none]',
+        className,
       )}
+      {...rest}
     >
-      {value}
-    </span>
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute top-1 bottom-1 rounded-[var(--radius-sm)] bg-surface shadow-[var(--shadow-1)] transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease)]',
+          !pill.ready && 'opacity-0',
+        )}
+        style={{
+          width: pill.w,
+          transform: `translateX(${pill.x}px)`,
+        }}
+      />
+      {children}
+    </div>
   )
 }
 
@@ -41,38 +126,53 @@ export function SegmentedLinks({
   activeKey,
   className,
   scrollable,
+  fill,
+  mode = 'nav',
+  'aria-label': ariaLabel,
 }: {
   segments: Segment[]
   activeKey: string
   className?: string
   /** Horizontal scroll on narrow screens instead of wrapping. */
   scrollable?: boolean
+  fill?: boolean
+  /** `tabs` restores WAI-ARIA tablist semantics (queue open/resolved). */
+  mode?: 'nav' | 'tabs'
+  'aria-label'?: string
 }) {
+  const keys = segments.map((s) => s.key)
+  const { trackRef, setItemRef, pill } = useSlidingPill(activeKey, keys)
+  const isTabs = mode === 'tabs'
+
   return (
-    <div
-      className={cn(
-        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
-        scrollable && 'max-w-full overflow-x-auto [scrollbar-width:none]',
-        className,
-      )}
+    <Track
+      trackRef={trackRef}
+      pill={pill}
+      className={className}
+      scrollable={scrollable}
+      fill={fill}
+      role={isTabs ? 'tablist' : undefined}
+      aria-label={ariaLabel}
+      aria-orientation={isTabs ? 'horizontal' : undefined}
     >
       {segments.map((s) => {
         const active = s.key === activeKey
         return (
           <Link
             key={s.key}
+            ref={(node) => setItemRef(s.key, node)}
             href={s.href ?? '#'}
-            aria-current={active ? 'page' : undefined}
-            className={cn(segmentClass(active), 'shrink-0')}
+            role={isTabs ? 'tab' : undefined}
+            aria-selected={isTabs ? active : undefined}
+            aria-current={!isTabs && active ? 'page' : undefined}
+            className={cn(segmentClass(active), 'shrink-0', fill && 'flex-1')}
           >
             {s.label}
-            {typeof s.count === 'number' ? (
-              <Count value={s.count} active={active} />
-            ) : null}
+            {typeof s.count === 'number' ? <Count value={s.count} /> : null}
           </Link>
         )
       })}
-    </div>
+    </Track>
   )
 }
 
@@ -96,16 +196,17 @@ export function SegmentedButtons({
   mode?: 'tabs' | 'toggle'
 }) {
   const isTabs = mode === 'tabs' && panelIdPrefix
+  const keys = segments.map((s) => s.key)
+  const { trackRef, setItemRef, pill } = useSlidingPill(activeKey, keys)
 
   return (
-    <div
+    <Track
+      trackRef={trackRef}
+      pill={pill}
+      className={className}
+      fill={fill}
       role={isTabs ? 'tablist' : 'group'}
       aria-orientation={isTabs ? 'horizontal' : undefined}
-      className={cn(
-        'inline-flex gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1',
-        fill && 'flex w-full',
-        className,
-      )}
     >
       {segments.map((s) => {
         const active = s.key === activeKey
@@ -113,6 +214,7 @@ export function SegmentedButtons({
         return (
           <button
             key={s.key}
+            ref={(node) => setItemRef(s.key, node)}
             type="button"
             role={isTabs ? 'tab' : undefined}
             id={isTabs ? `${panelIdPrefix}-tab-${s.key}` : undefined}
@@ -124,12 +226,10 @@ export function SegmentedButtons({
             className={cn(segmentClass(active), fill && 'flex-1')}
           >
             {s.label}
-            {typeof s.count === 'number' ? (
-              <Count value={s.count} active={active} />
-            ) : null}
+            {typeof s.count === 'number' ? <Count value={s.count} /> : null}
           </button>
         )
       })}
-    </div>
+    </Track>
   )
 }
