@@ -31,6 +31,7 @@ import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
+import { LargeTitleScrollSync } from '@/components/ops/large-title'
 import { cn } from '@/lib/utils'
 
 /**
@@ -257,6 +258,7 @@ export function AppShell({
   return (
     <div className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden">
       <SkipLink />
+      <LargeTitleScrollSync />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label="תפריט צד"
@@ -335,7 +337,7 @@ export function AppShell({
             <TenantMark />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="t-body-strong truncate text-ink">
+            <h1 className="large-title-bar t-body-strong truncate text-ink">
               {pageTitle(pathname)}
             </h1>
           </div>

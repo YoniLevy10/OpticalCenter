@@ -72,6 +72,7 @@ export default async function OpsDashboardPage() {
       <div className="flex flex-col gap-6 stagger">
         <OpsPageHero
           showBrand
+          largeTitle
           title="מה קורה עכשיו?"
           status={statusLine}
         />

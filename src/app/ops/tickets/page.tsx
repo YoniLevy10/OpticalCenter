@@ -120,6 +120,7 @@ export default async function TicketsPage({
         />
 
         <OpsPageHero
+          largeTitle
           title="תקלות"
           status={statusLine}
           actions={
