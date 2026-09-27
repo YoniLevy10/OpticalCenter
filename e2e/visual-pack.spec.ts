@@ -12,8 +12,8 @@ const VIEWPORTS = [
   { name: 'w390', width: 390, height: 844, desktop: false },
   { name: 'w430', width: 430, height: 932, desktop: false },
   // Stay well above Tailwind `md` (768px). Linux Chromium classic scrollbars
-  // shrink `window.innerWidth` and can leave 800px viewports stuck in the
-  // mobile shell (no dark sidebar) — use 960 so md still matches after chrome.
+  // shrink `window.innerWidth` and can leave ~800px viewports in the mobile
+  // shell — use 960 so `md:` layout still matches after chrome.
   { name: 'w960', width: 960, height: 1024, desktop: true },
   { name: 'w1024', width: 1024, height: 768, desktop: true },
   { name: 'w1440', width: 1440, height: 900, desktop: true },
