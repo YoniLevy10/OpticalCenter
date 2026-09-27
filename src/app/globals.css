@@ -272,7 +272,8 @@ body {
   letter-spacing: -0.011em;
   font-feature-settings: "ss01" 1, "cv01" 1;
   overscroll-behavior-x: none;
-  overscroll-behavior-y: none;
+  /* Allow nested #main-content / panes to scroll both directions */
+  overscroll-behavior-y: contain;
   overflow-x: hidden;
   line-height: 1.5;
 }

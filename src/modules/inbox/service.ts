@@ -10,13 +10,17 @@ import {
   memUpsertSession,
   memAddInboxMessage,
   memListInboxMessages,
+  memDeleteSession,
   memListTickets,
   memListStores,
   MEM_COUNTRY_ID,
   supabaseReady,
   type MemSession,
 } from '@/lib/data/memory-store'
-import { sendWhatsAppText } from '@/modules/whatsapp/send'
+import {
+  sendWhatsAppText,
+  sendWhatsAppTemplate,
+} from '@/modules/whatsapp/send'
 import { resolveWhatsAppPhoneNumberId } from '@/modules/whatsapp/phone-number-id'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { DEMO_STORES } from '@/modules/stores/data'
@@ -217,6 +221,7 @@ function enrichSession(
     priority: pickHighestPriority(ctx.openPriorities),
     /** waiting = private ops window active for this chat only */
     inbox_status: paused ? 'waiting' : 'handled',
+    care_window_open: isCareWindowOpen(session.last_inbound),
   }
 }
 
@@ -231,6 +236,17 @@ export type InboxSessionView = InboxSession & {
   priority: string | null
   /** Derived: waiting = private ops window active; handled = bot on. */
   inbox_status: 'waiting' | 'handled'
+  /** False when last inbound is older than 24h — free-form reply blocked. */
+  care_window_open: boolean
+}
+
+export function isCareWindowOpen(
+  lastInboundAt: string | null | undefined,
+): boolean {
+  if (!lastInboundAt) return true
+  const lastMs = Date.parse(lastInboundAt)
+  if (!Number.isFinite(lastMs)) return true
+  return Date.now() - lastMs <= CUSTOMER_CARE_WINDOW_MS
 }
 
 export type InboxMessage = {
@@ -924,6 +940,138 @@ export async function replyToSession(input: {
       meta_message_id: send.waMessageId,
       ticket_id: ticketId,
     })
+  }
+
+  return {
+    message: {
+      id: data.id,
+      direction: 'outbound',
+      body: data.body,
+      created_at: data.created_at,
+      ticket_id: data.ticket_id,
+    },
+    send,
+  }
+}
+
+/** Remove a conversation from the ops inbox (does not delete Meta history). */
+export async function clearInboxSession(
+  waIdRaw: string,
+): Promise<{ cleared: boolean; backend: 'memory' | 'supabase' }> {
+  const waId = waIdRaw.replace(/\D/g, '') || waIdRaw
+  if (!waId) throw new Error('מזהה WhatsApp חסר')
+
+  if (!(await supabaseReady())) {
+    const cleared = memDeleteSession(waId)
+    return { cleared, backend: 'memory' }
+  }
+
+  const supabase = createSystemClient('inbox_clear_session')
+  await supabase.from('inbox_messages').delete().eq('wa_id', waId)
+  const { error } = await supabase
+    .from('intake_sessions')
+    .delete()
+    .eq('wa_id', waId)
+
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      const cleared = memDeleteSession(waId)
+      return { cleared, backend: 'memory' }
+    }
+    throw new Error(error.message)
+  }
+
+  memDeleteSession(waId)
+  return { cleared: true, backend: 'supabase' }
+}
+
+/**
+ * Send an approved Meta template when the 24h care window has closed.
+ * Template name: WHATSAPP_SESSION_TEMPLATE (default hello_world).
+ */
+export async function sendSessionTemplate(input: {
+  waId: string
+  templateName?: string
+  ticketId?: string | null
+}): Promise<{
+  message: InboxMessage
+  send: Awaited<ReturnType<typeof sendWhatsAppTemplate>>
+}> {
+  const waId = input.waId.replace(/\D/g, '') || input.waId
+  if (!waId) throw new Error('מזהה WhatsApp חסר')
+
+  const templateName =
+    input.templateName?.trim() ||
+    process.env.WHATSAPP_SESSION_TEMPLATE?.trim() ||
+    'hello_world'
+  const ticketId = sanitizeOptionalUuid(input.ticketId ?? undefined) ?? null
+  const label = `[תבנית] ${templateName}`
+
+  if (!(await supabaseReady())) {
+    const send = await sendWhatsAppTemplate({
+      toWaId: waId,
+      templateName,
+      ticketId,
+      purpose: 'ops_reply',
+      forceDryRun: true,
+    })
+    const message = memAddInboxMessage({
+      wa_id: waId,
+      direction: 'outbound',
+      body: label,
+      ticket_id: ticketId,
+    })
+    return { message, send }
+  }
+
+  const supabase = createSystemClient('inbox_template')
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(null)
+  const send = await sendWhatsAppTemplate({
+    toWaId: waId,
+    templateName,
+    phoneNumberId,
+    ticketId,
+    supabase,
+    purpose: 'ops_reply',
+  })
+
+  if (!send.ok || send.dryRun) {
+    throw new Error(
+      send.error
+        ? `שליחת תבנית נכשלה: ${send.error}`
+        : send.dryRun
+          ? 'שליחת תבנית לא בוצעה (מצב הדמיה / חסרים פרטי Meta)'
+          : 'שליחת תבנית נכשלה',
+    )
+  }
+
+  const countryId = MEM_COUNTRY_ID
+  const { data, error } = await supabase
+    .from('inbox_messages')
+    .insert({
+      country_id: countryId,
+      wa_id: waId,
+      direction: 'outbound',
+      body: label,
+      ticket_id: ticketId,
+    })
+    .select('id, direction, body, created_at, ticket_id')
+    .single()
+
+  if (error) {
+    if (
+      isMissingTableError(error, 'inbox_messages') ||
+      isSupabaseSchemaError(error)
+    ) {
+      const message = memAddInboxMessage({
+        wa_id: waId,
+        direction: 'outbound',
+        body: label,
+        ticket_id: ticketId,
+      })
+      return { message, send }
+    }
+    throw new Error(error.message)
   }
 
   return {

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import {
   BarChart3,
   Box,
+  CheckSquare,
   Ellipsis,
   HardHat,
   Inbox,
@@ -14,7 +15,6 @@ import {
   MessageSquare,
   QrCode,
   ScrollText,
-  Server,
   Settings,
   Smartphone,
   Store,
@@ -56,18 +56,24 @@ const PRIMARY: NavItem[] = [
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
   {
+    href: '/ops/tasks',
+    label: 'משימות',
+    icon: CheckSquare,
+    match: '/ops/tasks',
+  },
+  {
     href: '/ops/inbox',
     label: 'WhatsApp',
     icon: MessageSquare,
     match: '/ops/inbox',
   },
-  { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
 ]
 
 const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'תפעול',
     items: [
+      { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
       { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
@@ -92,18 +98,6 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'מערכת',
     items: [
-      {
-        href: '/ops/status',
-        label: 'מצב המערכת',
-        icon: Server,
-        match: '/ops/status',
-      },
-      {
-        href: '/ops/settings',
-        label: 'הגדרות',
-        icon: Settings,
-        match: '/ops/settings',
-      },
       { href: '/ops/users', label: 'משתמשים', icon: Users, match: '/ops/users' },
       {
         href: '/ops/stores/print-qr',
@@ -129,6 +123,13 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         icon: HardHat,
         match: '/tech',
       },
+      /** Always last in the system group */
+      {
+        href: '/ops/settings',
+        label: 'הגדרות',
+        icon: Settings,
+        match: '/ops/settings',
+      },
     ],
   },
 ]
@@ -139,6 +140,9 @@ function isActive(pathname: string, match: string) {
 
 function filterToolGroups(tools: NavTool[]) {
   const allowed = new Set(tools.map((t) => t.href))
+  // Always keep core operational links that live outside ALL_NAV_TOOLS.
+  allowed.add('/ops/stores')
+  allowed.add('/tech')
   return TOOL_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => allowed.has(item.href)),
@@ -217,12 +221,12 @@ function DrawerNavLink({
 function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/dashboard')) return 'ראשי'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
+  if (pathname.startsWith('/ops/tasks')) return 'משימות'
   if (pathname.startsWith('/ops/stores/print-qr')) return 'הדפסת QR'
   if (pathname.startsWith('/ops/stores')) return 'חנויות'
   if (pathname.startsWith('/ops/assets')) return 'ציוד'
   if (pathname.startsWith('/ops/vendors')) return 'ספקים'
   if (pathname.startsWith('/ops/activity')) return 'יומן פעילות'
-  if (pathname.startsWith('/ops/status')) return 'מצב המערכת'
   if (pathname.startsWith('/ops/inbox')) return 'WhatsApp'
   if (pathname.startsWith('/ops/reports')) return 'דוחות'
   if (pathname.startsWith('/ops/users')) return 'משתמשים'
@@ -370,7 +374,7 @@ export function AppShell({
               'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
               fillMain
                 ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
-                : 'scroll-edge-fade min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
+                : 'scroll-edge-fade min-h-0 flex-1 overflow-y-auto overscroll-y-auto px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
             )}
           >
             <div className="mb-4 hidden justify-end md:flex">

@@ -6,8 +6,10 @@ import {
 } from '@/lib/auth/request-actor'
 import { AuthError } from '@/lib/auth/types'
 import {
+  clearInboxSession,
   listSessionMessages,
   replyToSession,
+  sendSessionTemplate,
 } from '@/modules/inbox/service'
 import { captureError } from '@/lib/monitoring'
 
@@ -55,6 +57,22 @@ const replySchema = z.object({
   countryId: z.any().optional(),
 })
 
+const templateSchema = z.object({
+  template: z.literal(true),
+  templateName: z.string().min(1).max(128).optional(),
+  ticketId: z.preprocess((value) => {
+    if (
+      value == null ||
+      value === '' ||
+      value === 'null' ||
+      value === 'undefined'
+    ) {
+      return null
+    }
+    return value
+  }, z.string().uuid().nullable().optional()),
+})
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ waId: string }> },
@@ -67,6 +85,16 @@ export async function POST(
       body = await request.json()
     } catch {
       return NextResponse.json({ error: 'גוף בקשה לא תקין (JSON)' }, { status: 400 })
+    }
+
+    const asTemplate = templateSchema.safeParse(body)
+    if (asTemplate.success) {
+      const result = await sendSessionTemplate({
+        waId,
+        templateName: asTemplate.data.templateName,
+        ticketId: asTemplate.data.ticketId ?? null,
+      })
+      return NextResponse.json(result)
     }
 
     const parsed = replySchema.safeParse(body)
@@ -93,6 +121,24 @@ export async function POST(
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'POST /api/inbox/sessions/[waId]' })
+    const message = err instanceof Error ? err.message : 'שגיאה'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}
+
+/** Clear chat from ops inbox (session + stored messages). */
+export async function DELETE(
+  request: Request,
+  ctx: { params: Promise<{ waId: string }> },
+) {
+  try {
+    await requireActor(request)
+    const { waId } = await ctx.params
+    const result = await clearInboxSession(waId)
+    return NextResponse.json(result)
+  } catch (err) {
+    if (err instanceof AuthError) return authErrorResponse(err)
+    captureError(err, { route: 'DELETE /api/inbox/sessions/[waId]' })
     const message = err instanceof Error ? err.message : 'שגיאה'
     return NextResponse.json({ error: message }, { status: 400 })
   }

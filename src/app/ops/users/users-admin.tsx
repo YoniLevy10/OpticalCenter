@@ -64,6 +64,10 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editUser, setEditUser] = useState<UserRow | null>(null)
+  const [editPhone, setEditPhone] = useState('')
+  const [editRole, setEditRole] = useState<MemberRole>('internal_technician')
+  const [editStoreId, setEditStoreId] = useState('')
   const [confirmRole, setConfirmRole] = useState<{
     user: UserRow
     nextRole: MemberRole
@@ -81,7 +85,6 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
   const [role, setRole] = useState<MemberRole>('internal_technician')
   const [countryId, setCountryId] = useState<string>(IL_COUNTRY)
   const [storeId, setStoreId] = useState<string>('')
-  const [phoneDrafts, setPhoneDrafts] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -182,6 +185,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'עדכון נכשל')
       setNotice('התפקיד עודכן')
+      setEditUser(null)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'עדכון נכשל')
@@ -216,41 +220,59 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     }
   }
 
-  async function savePhone(user: UserRow, nextPhone: string) {
-    const current = (user.phone ?? '').trim()
-    const next = nextPhone.trim()
-    if (next === current) return
+  function openEdit(u: UserRow) {
+    setEditUser(u)
+    setEditPhone(u.phone ?? '')
+    setEditRole((u.memberships[0]?.role as MemberRole) || 'internal_technician')
+    setEditStoreId(u.memberships[0]?.store_id ?? '')
+    setError(null)
+  }
+
+  async function saveEditCard() {
+    if (!editUser) return
     setBusy(true)
     setError(null)
     setNotice(null)
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: next || null }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'עדכון טלפון נכשל')
-      setNotice(
-        next
-          ? 'מספר הטלפון נשמר — הודעות שיוך יישלחו אליו'
-          : 'מספר הטלפון הוסר',
-      )
-      setPhoneDrafts((d) => {
-        const copy = { ...d }
-        delete copy[user.id]
-        return copy
-      })
+      const phoneChanged =
+        (editPhone.trim() || '') !== (editUser.phone ?? '').trim()
+      if (phoneChanged) {
+        const res = await fetch(`/api/users/${editUser.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: editPhone.trim() || null }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'עדכון טלפון נכשל')
+      }
+      const m = editUser.memberships[0]
+      const storeChanged = m && (editStoreId || null) !== (m.store_id || null)
+      if (storeChanged) {
+        const res = await fetch(`/api/users/${editUser.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            membership_id: m?.id,
+            store_id: editStoreId || null,
+          }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'עדכון סניף נכשל')
+      }
+      const roleChanged = m && editRole !== m.role
+      if (roleChanged) {
+        setConfirmRole({ user: editUser, nextRole: editRole })
+        setBusy(false)
+        return
+      }
+      setNotice('הכרטיס עודכן')
+      setEditUser(null)
       await load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'עדכון טלפון נכשל')
+      setError(err instanceof Error ? err.message : 'עדכון נכשל')
     } finally {
       setBusy(false)
     }
-  }
-
-  function phoneValue(u: UserRow) {
-    return phoneDrafts[u.id] ?? u.phone ?? ''
   }
 
   function scopeLabel(m?: Membership) {
@@ -336,48 +358,33 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                 const m = u.memberships[0]
                 const active = u.active !== false
                 return (
-                  <AdminRow
+                  <button
                     key={u.id}
-                    title={u.full_name || '—'}
-                    subtitle={u.email || '—'}
-                    footer={
-                      <div className="flex flex-col gap-2">
+                    type="button"
+                    onClick={() => openEdit(u)}
+                    className="block w-full text-start transition-colors hover:bg-surface-sunken/40"
+                  >
+                    <AdminRow
+                      title={u.full_name || '—'}
+                      subtitle={u.email || '—'}
+                      footer={
                         <span className="t-caption text-ink-3">
                           {ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
                             m?.role}{' '}
                           · {branchLabel(m)} ·{' '}
                           {active ? 'פעיל' : 'לא פעיל'} ·{' '}
-                          {formatLastLogin(u.last_login_at)}
+                          {(u.phone || 'ללא טלפון') +
+                            ' · ' +
+                            formatLastLogin(u.last_login_at)}
                         </span>
-                        <label className="flex flex-col gap-1">
-                          <span className="t-caption text-ink-3">
-                            טלפון להודעות שיוך
-                          </span>
-                          <Input
-                            dir="ltr"
-                            inputMode="tel"
-                            className="t-num max-w-[14rem]"
-                            placeholder="05… / 9725…"
-                            value={phoneValue(u)}
-                            disabled={busy}
-                            aria-label={`טלפון של ${u.full_name || u.email || u.id}`}
-                            onChange={(e) =>
-                              setPhoneDrafts((d) => ({
-                                ...d,
-                                [u.id]: e.target.value,
-                              }))
-                            }
-                            onBlur={() => void savePhone(u, phoneValue(u))}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.currentTarget.blur()
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    }
-                  />
+                      }
+                      trailing={
+                        <span className="t-caption text-[var(--tenant)]">
+                          עריכה
+                        </span>
+                      }
+                    />
+                  </button>
                 )
               })}
             </AdminRowList>
@@ -397,7 +404,11 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                     const m = u.memberships[0]
                     const active = u.active !== false
                     return (
-                      <TR key={u.id}>
+                      <TR
+                        key={u.id}
+                        className="cursor-pointer transition-colors hover:bg-surface-sunken/40"
+                        onClick={() => openEdit(u)}
+                      >
                         <TD>
                           <span className="t-body-strong block text-ink">
                             {u.full_name || '—'}
@@ -407,82 +418,22 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                           </span>
                         </TD>
                         <TD>
-                          <select
-                            className="t-control h-8 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
-                            value={m?.role ?? 'internal_technician'}
-                            disabled={busy}
-                            aria-label={`תפקיד של ${u.full_name || u.email || u.id}`}
-                            title={
-                              ROLE_HELP[m?.role ?? ''] ??
-                              'בחרו תפקיד בשפה עסקית'
-                            }
-                            onChange={(e) =>
-                              setConfirmRole({
-                                user: u,
-                                nextRole: e.target.value as MemberRole,
-                              })
-                            }
-                          >
-                            {ROLE_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                            {m?.role &&
-                            !ROLE_OPTIONS.some((o) => o.value === m.role) ? (
-                              <option value={m.role}>
-                                {roleLabelHe(m.role)}
-                              </option>
-                            ) : null}
-                          </select>
+                          <span className="t-body text-ink">
+                            {ROLE_OPTIONS.find((o) => o.value === m?.role)
+                              ?.label ??
+                              (m?.role ? roleLabelHe(m.role) : '—')}
+                          </span>
                           <p className="t-caption mt-1 text-ink-3">
-                            {ROLE_HELP[m?.role ?? ''] ??
-                              (m?.role ? roleLabelHe(m.role) : scopeLabel(m))}
+                            {ROLE_HELP[m?.role ?? ''] ?? scopeLabel(m)}
                           </p>
                         </TD>
                         <TD>
-                          <Input
-                            dir="ltr"
-                            inputMode="tel"
-                            className="t-num h-8 max-w-[9.5rem] px-2"
-                            placeholder="05… / 9725…"
-                            value={phoneValue(u)}
-                            disabled={busy}
-                            aria-label={`טלפון של ${u.full_name || u.email || u.id}`}
-                            title="מספר לטלפון/WhatsApp — הודעות שיוך לתקלה"
-                            onChange={(e) =>
-                              setPhoneDrafts((d) => ({
-                                ...d,
-                                [u.id]: e.target.value,
-                              }))
-                            }
-                            onBlur={() => void savePhone(u, phoneValue(u))}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.currentTarget.blur()
-                              }
-                            }}
-                          />
+                          <span dir="ltr" className="t-num t-body text-ink">
+                            {u.phone || '—'}
+                          </span>
                         </TD>
                         <TD>
-                          <select
-                            className="t-control h-8 max-w-[10rem] rounded-[var(--radius-md)] border border-border bg-surface px-2 text-ink"
-                            value={m?.store_id ?? ''}
-                            disabled={busy}
-                            aria-label={`סניף של ${u.full_name || u.id}`}
-                            onChange={(e) =>
-                              void onScopeChange(u, {
-                                store_id: e.target.value || null,
-                              })
-                            }
-                          >
-                            <option value="">—</option>
-                            {stores.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.code} · {s.name}
-                              </option>
-                            ))}
-                          </select>
+                          <span className="t-body text-ink">{branchLabel(m)}</span>
                         </TD>
                         <TD>
                           <span
@@ -500,7 +451,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                             {formatLastLogin(u.last_login_at)}
                           </span>
                         </TD>
-                        <TD>
+                        <TD onClick={(e) => e.stopPropagation()}>
                           <TechFieldLinkCopy userId={u.id} role={m?.role ?? ''} />
                         </TD>
                       </TR>
@@ -646,6 +597,91 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(editUser)}
+        onOpenChange={(open) => {
+          if (!open) setEditUser(null)
+        }}
+        title={editUser?.full_name || 'כרטיס משתמש'}
+        description={editUser?.email || undefined}
+      >
+        {editUser ? (
+          <div className="space-y-3">
+            <Field label="טלפון להודעות שיוך" htmlFor="edit-phone">
+              <Input
+                id="edit-phone"
+                dir="ltr"
+                inputMode="tel"
+                className="t-num"
+                placeholder="05… / 9725…"
+                value={editPhone}
+                disabled={busy}
+                onChange={(e) => setEditPhone(e.target.value)}
+              />
+            </Field>
+            <Field label="תפקיד" htmlFor="edit-role">
+              <Select
+                id="edit-role"
+                value={editRole}
+                disabled={busy}
+                onChange={(e) => setEditRole(e.target.value as MemberRole)}
+              >
+                {ROLE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+              {ROLE_HELP[editRole] ? (
+                <p className="t-caption mt-1 text-ink-3">{ROLE_HELP[editRole]}</p>
+              ) : null}
+            </Field>
+            <Field label="סניף" htmlFor="edit-store">
+              <Select
+                id="edit-store"
+                value={editStoreId}
+                disabled={busy}
+                onChange={(e) => setEditStoreId(e.target.value)}
+              >
+                <option value="">כל הסניפים בהיקף</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} · {s.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="rounded-[var(--radius-md)] border border-border bg-surface-sunken/40 px-3 py-2">
+              <p className="t-caption text-ink-3">התחברות אחרונה</p>
+              <p className="t-body text-ink">
+                {formatLastLogin(editUser.last_login_at)}
+              </p>
+            </div>
+            <TechFieldLinkCopy
+              userId={editUser.id}
+              role={editUser.memberships[0]?.role ?? ''}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setEditUser(null)}
+              >
+                ביטול
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={busy}
+                onClick={() => void saveEditCard()}
+              >
+                {busy ? 'שומר…' : 'שמירה'}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
 
       <Modal

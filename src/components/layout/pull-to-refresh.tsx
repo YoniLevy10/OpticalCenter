@@ -8,6 +8,34 @@ import { cn } from '@/lib/utils'
 const THRESHOLD = 72
 const MAX_PULL = 96
 
+/** Prefer the ops shell scroller; fall back to document. */
+function scrollTopOf(target: EventTarget | null): number {
+  if (typeof document === 'undefined') return 0
+  const main = document.getElementById('main-content')
+  if (main && main.scrollHeight > main.clientHeight + 1) {
+    return main.scrollTop
+  }
+  // Nested scrollable ancestor (inbox panes, etc.)
+  let el =
+    target instanceof Element
+      ? target
+      : target instanceof Node
+        ? target.parentElement
+        : null
+  while (el && el !== document.body) {
+    const style = window.getComputedStyle(el)
+    const oy = style.overflowY
+    if (
+      (oy === 'auto' || oy === 'scroll' || oy === 'overlay') &&
+      el.scrollHeight > el.clientHeight + 1
+    ) {
+      return el.scrollTop
+    }
+    el = el.parentElement
+  }
+  return window.scrollY || document.documentElement.scrollTop || 0
+}
+
 export function PullToRefresh({
   children,
   onRefresh,
@@ -39,7 +67,10 @@ export function PullToRefresh({
   const onTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (disabled || refreshing) return
-      if (typeof window !== 'undefined' && window.scrollY > 0) return
+      if (scrollTopOf(e.target) > 0) {
+        pulling.current = false
+        return
+      }
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       startY.current = e.touches[0]?.clientY ?? 0
       pulling.current = true
@@ -50,11 +81,20 @@ export function PullToRefresh({
   const onTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (!pulling.current || disabled || refreshing) return
-      const y = e.touches[0]?.clientY ?? 0
-      const delta = Math.max(0, Math.min(MAX_PULL, y - startY.current))
-      if (delta > 0 && window.scrollY <= 0) {
-        setPull(delta)
+      // Abort if the user scrolled away from the top mid-gesture.
+      if (scrollTopOf(e.target) > 0) {
+        pulling.current = false
+        setPull(0)
+        return
       }
+      const y = e.touches[0]?.clientY ?? 0
+      const delta = y - startY.current
+      // Only pull-to-refresh when dragging downward from the top.
+      if (delta <= 0) {
+        setPull(0)
+        return
+      }
+      setPull(Math.min(MAX_PULL, delta))
     },
     [disabled, refreshing],
   )
@@ -94,7 +134,9 @@ export function PullToRefresh({
       <div
         className="flex h-full min-h-0 min-w-0 flex-1 flex-col transition-transform duration-[var(--dur-1)]"
         style={{
-          transform: active ? `translateY(${refreshing ? 24 : pull * 0.35}px)` : undefined,
+          transform: active
+            ? `translateY(${refreshing ? 24 : pull * 0.35}px)`
+            : undefined,
         }}
       >
         {children}

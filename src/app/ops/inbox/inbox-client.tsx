@@ -10,7 +10,13 @@ import {
   useRef,
   useState,
 } from 'react'
-import { ArrowRight, CheckCheck, ExternalLink, SendHorizontal } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCheck,
+  ExternalLink,
+  SendHorizontal,
+  Trash2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import {
@@ -46,6 +52,8 @@ type Session = {
   unread?: boolean
   priority?: string | null
   inbox_status?: 'waiting' | 'handled'
+  /** False when last inbound is older than 24h — free-form reply blocked. */
+  care_window_open?: boolean
   updated_at: string
   country_id?: string
 }
@@ -259,6 +267,15 @@ export function InboxClient() {
     }
   }
 
+  function linkedTicketId(): string | null {
+    const rawTicket = ticketIds[0] ?? openTickets[0]?.id ?? null
+    return rawTicket &&
+      rawTicket !== 'null' &&
+      /^[0-9a-f-]{36}$/i.test(rawTicket)
+      ? rawTicket
+      : null
+  }
+
   async function sendReply() {
     if (!selected || !reply.trim()) return
     setBusy(true)
@@ -266,14 +283,6 @@ export function InboxClient() {
     setError(null)
     try {
       // Israel-only pilot: do not send countryId (server defaults to IL).
-      const rawTicket = ticketIds[0] ?? openTickets[0]?.id ?? null
-      const ticketId =
-        rawTicket &&
-        rawTicket !== 'null' &&
-        /^[0-9a-f-]{36}$/i.test(rawTicket)
-          ? rawTicket
-          : null
-
       const res = await fetch(
         `/api/inbox/sessions/${encodeURIComponent(selected)}`,
         {
@@ -281,7 +290,7 @@ export function InboxClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: reply.trim(),
-            ticketId,
+            ticketId: linkedTicketId(),
           }),
         },
       )
@@ -308,6 +317,70 @@ export function InboxClient() {
     }
   }
 
+  async function sendTemplate() {
+    if (!selected) return
+    setBusy(true)
+    setNotice(null)
+    setError(null)
+    try {
+      const res = await fetch(
+        `/api/inbox/sessions/${encodeURIComponent(selected)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            template: true,
+            ticketId: linkedTicketId(),
+          }),
+        },
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'שליחת תבנית נכשלה')
+      if (json.send && json.send.ok === false) {
+        throw new Error(json.send.error || 'שליחת תבנית נכשלה')
+      }
+      setNotice(
+        'תבנית נשלחה — הלקוח יכול להשיב ולפתוח מחדש את חלון 24 השעות.',
+      )
+      await Promise.all([loadThread(selected), loadSessions()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שליחת תבנית נכשלה')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function clearChat() {
+    if (!selected) return
+    if (
+      !window.confirm(
+        'למחוק את השיחה מתיבת ה־Ops? ההיסטוריה ב־WhatsApp של הלקוח לא תימחק.',
+      )
+    ) {
+      return
+    }
+    setBusy(true)
+    setNotice(null)
+    setError(null)
+    try {
+      const res = await fetch(
+        `/api/inbox/sessions/${encodeURIComponent(selected)}`,
+        { method: 'DELETE' },
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'מחיקה נכשלה')
+      setSelected(null)
+      setMessages([])
+      setMobileShowThread(false)
+      setNotice('השיחה הוסרה מתיבת ה־Ops')
+      await loadSessions()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'מחיקה נכשלה')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const active = sessions.find((s) => s.wa_id === selected) ?? null
   const linkedTickets = openTickets.length
     ? openTickets
@@ -327,6 +400,7 @@ export function InboxClient() {
   const pauseUntilLabel = waiting
     ? formatPauseUntilLabel(active?.human_takeover_until)
     : null
+  const careWindowOpen = active?.care_window_open !== false
 
   const threadItems = useMemo(() => buildThreadItems(messages), [messages])
 
@@ -508,6 +582,17 @@ export function InboxClient() {
                 type="button"
                 size="sm"
                 disabled={busy}
+                variant="ghost"
+                aria-label="מחק שיחה מתיבת Ops"
+                className="h-8 border-0 px-2 text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]"
+                onClick={() => void clearChat()}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
                 variant={waiting ? 'secondary' : 'ghost'}
                 className={cn(
                   'h-8 border-0 px-2.5 text-[12px]',
@@ -641,40 +726,58 @@ export function InboxClient() {
             )}
           </div>
 
-          <div className="wa-composer-bar flex shrink-0 items-end gap-2 px-2 py-2 sm:px-3">
-            <label className="sr-only" htmlFor="inbox-reply">
-              הודעה ללקוח
-            </label>
-            <Textarea
-              ref={composerRef}
-              id="inbox-reply"
-              rows={1}
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  void sendReply()
-                }
-              }}
-              placeholder="כתבו הודעה ללקוח…"
-              disabled={busy}
-              className="wa-composer-input max-h-32 min-h-[42px] flex-1 resize-none rounded-[22px] border-0 px-4 py-2.5 shadow-sm focus:ring-1 focus:ring-[color-mix(in_srgb,var(--tenant)_35%,transparent)]"
-            />
-            <button
-              type="button"
-              disabled={busy || !reply.trim()}
-              onClick={() => void sendReply()}
-              aria-label={busy ? 'שולח' : 'שליחה'}
-              className={cn(
-                'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity',
-                'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]',
-                'hover:bg-[var(--tenant-hover)] disabled:opacity-40',
-              )}
-            >
-              <SendHorizontal className="h-5 w-5 -scale-x-100" aria-hidden />
-            </button>
-          </div>
+          {!careWindowOpen ? (
+            <div className="shrink-0 border-t border-border bg-surface-sunken/50 px-3 py-3">
+              <p className="t-caption mb-2 text-ink-2">
+                חלון 24 השעות פג — לא ניתן לשלוח טקסט חופשי. שלחו תבנית
+                מאושרת (Meta) כדי לפתוח מחדש את השיחה.
+              </p>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={busy}
+                onClick={() => void sendTemplate()}
+              >
+                שליחת תבנית
+              </Button>
+            </div>
+          ) : (
+            <div className="wa-composer-bar flex shrink-0 items-end gap-2 px-2 py-2 sm:px-3">
+              <label className="sr-only" htmlFor="inbox-reply">
+                הודעה ללקוח
+              </label>
+              <Textarea
+                ref={composerRef}
+                id="inbox-reply"
+                rows={1}
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    void sendReply()
+                  }
+                }}
+                placeholder="כתבו הודעה ללקוח…"
+                disabled={busy}
+                className="wa-composer-input max-h-32 min-h-[42px] flex-1 resize-none rounded-[22px] border-0 px-4 py-2.5 shadow-sm focus:ring-1 focus:ring-[color-mix(in_srgb,var(--tenant)_35%,transparent)]"
+              />
+              <button
+                type="button"
+                disabled={busy || !reply.trim()}
+                onClick={() => void sendReply()}
+                aria-label={busy ? 'שולח' : 'שליחה'}
+                className={cn(
+                  'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity',
+                  'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]',
+                  'hover:bg-[var(--tenant-hover)] disabled:opacity-40',
+                )}
+              >
+                <SendHorizontal className="h-5 w-5 -scale-x-100" aria-hidden />
+              </button>
+            </div>
+          )}
         </>
       )}
     </Panel>

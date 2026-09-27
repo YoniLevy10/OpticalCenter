@@ -82,12 +82,13 @@ export function TR({
   children,
   className,
   edgeClass,
+  ...rest
 }: {
   children: React.ReactNode
   className?: string
   /** Priority leading edge, applied via the `.edge` pseudo-element. */
   edgeClass?: string
-}) {
+} & React.HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
       className={cn(
@@ -96,6 +97,7 @@ export function TR({
         className,
       )}
       style={{ height: 'var(--row-h)' }}
+      {...rest}
     >
       {children}
     </tr>
@@ -106,11 +108,12 @@ export function TD({
   children,
   className,
   align = 'start',
+  ...rest
 }: {
   children: React.ReactNode
   className?: string
   align?: 'start' | 'end'
-}) {
+} & Omit<React.TdHTMLAttributes<HTMLTableCellElement>, 'align'>) {
   return (
     <td
       className={cn(
@@ -118,6 +121,7 @@ export function TD({
         align === 'end' ? 'text-end' : 'text-start',
         className,
       )}
+      {...rest}
     >
       {children}
     </td>

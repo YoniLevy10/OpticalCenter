@@ -16,7 +16,7 @@ const OPTIONS: {
   {
     id: 'auto',
     label: 'אוטומטי',
-    hint: 'כהה בלילה (19:00–07:00)',
+    hint: 'כהה בלילה לפי שעון ישראל (19:00–07:00)',
     icon: Sunset,
   },
 ]
@@ -63,7 +63,8 @@ export function ThemeToggle({
     <fieldset className={cn('space-y-2', className)}>
       <legend className="t-section text-ink">ערכת נושא</legend>
       <p className="t-caption text-ink-3">
-        מצב אוטומטי עובר לכהה לפי השעון המקומי (19:00–07:00) — נוח יותר בלילה.
+        מצב אוטומטי עובר לכהה לפי שעון ישראל (Asia/Jerusalem), 19:00–07:00 —
+        ביום נשאר בהיר.
       </p>
       <div
         role="radiogroup"

@@ -336,7 +336,10 @@ export type MemSettings = {
 const DEFAULT_SETTINGS: MemSettings = {
   brand_name: 'Optical Center',
   country_label: 'ישראל · עברית',
-  wa_business_phone: process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE ?? '',
+  // Optical Center WA bot: 055-281-9086 → E.164 digits
+  wa_business_phone:
+    process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE?.replace(/\D/g, '') ||
+    '972552819086',
   sla_respond_hours_critical: 2,
   sla_respond_hours_high: 4,
   sla_respond_hours_medium: 8,
@@ -955,6 +958,14 @@ export function memListSessions(): MemSession[] {
   return [...store().sessions.values()].sort((a, b) =>
     b.updated_at.localeCompare(a.updated_at),
   )
+}
+
+/** Remove a chat from the ops inbox (session + local messages). */
+export function memDeleteSession(waId: string): boolean {
+  const mem = store()
+  const had = mem.sessions.delete(waId)
+  mem.inboxMessages?.delete(waId)
+  return had
 }
 
 export function memSetSessionTakeover(
