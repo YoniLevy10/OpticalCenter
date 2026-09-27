@@ -216,6 +216,7 @@ export function TicketQueueItem({
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title={`עדכון ${displayNum(ticket)}`}
+        detent="half"
       >
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">

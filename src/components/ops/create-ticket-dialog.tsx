@@ -97,7 +97,7 @@ export function CreateTicketDialog({
           variant="primary"
           onClick={openDialog}
           aria-label="תקלה חדשה"
-          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] end-4 z-30 h-14 w-14 rounded-full p-0 shadow-[var(--shadow-pop)] md:hidden"
+          className="press-scale fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] end-4 z-30 h-14 w-14 rounded-full p-0 shadow-[var(--shadow-pop)] md:hidden"
         >
           <Plus className="h-6 w-6" aria-hidden />
         </Button>
@@ -121,6 +121,7 @@ export function CreateTicketDialog({
           onOpenChange={onOpenChange}
           title={title}
           description={description}
+          detent="full"
         >
           {open ? form : null}
         </BottomSheet>

@@ -9,12 +9,12 @@ import { cn } from '@/lib/utils'
  * `critical` is a SIGNAL colour and never a tenant colour.
  */
 const buttonVariants = cva(
-  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity,box-shadow] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
+  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity,box-shadow,transform] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
   {
     variants: {
       variant: {
         primary:
-          'bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),var(--shadow-1)] hover:bg-[var(--tenant-hover)]',
+          'press-scale bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),var(--shadow-1)] hover:bg-[var(--tenant-hover)]',
         secondary:
           'border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken/50',
         ghost: 'text-ink-2 hover:bg-surface-sunken hover:text-ink',

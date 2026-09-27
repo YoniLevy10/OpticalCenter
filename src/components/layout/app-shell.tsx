@@ -368,7 +368,7 @@ export function AppShell({
               'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
               fillMain
                 ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
-                : 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7',
+                : 'scroll-edge-fade min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
             )}
           >
             <div className="mb-4 hidden justify-end md:flex">
@@ -398,7 +398,7 @@ export function AppShell({
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
+                    'press-scale flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
                     active ? 'nav-pill-active' : 'text-ink-3',
                   )}
                 >

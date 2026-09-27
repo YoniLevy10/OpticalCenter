@@ -50,6 +50,11 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
 
+  /* ---------- Liquid glass chrome ---------- */
+  --glass-blur: 28px;
+  --glass-sat: 1.55;
+  --large-title-progress: 0;
+
   /* ---------- Elevation — soft charcoal depth (not pure black) ---------- */
   --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.05), 0 1px 3px rgba(43, 43, 40, 0.04);
   --shadow-2: 0 2px 8px rgba(43, 43, 40, 0.06), 0 1px 2px rgba(43, 43, 40, 0.04);
@@ -197,8 +202,8 @@ body {
 /* Liquid-glass chrome: frosted, soft edge, light specular. Content panels stay opaque. */
 .apple-glass {
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-  -webkit-backdrop-filter: blur(28px) saturate(1.55);
-  backdrop-filter: blur(28px) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   box-shadow:
     inset 0 0.5px 0 color-mix(in srgb, white 80%, transparent),
     inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 8%, transparent),
@@ -214,8 +219,45 @@ html.dark .apple-glass {
 
 .apple-sidebar {
   background: color-mix(in srgb, var(--surface) 82%, var(--canvas));
-  -webkit-backdrop-filter: blur(28px) saturate(1.4);
-  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+/* Soft fade where content scrolls under glass chrome */
+.scroll-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 20px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 20px),
+    transparent 100%
+  );
+}
+
+/* Press feedback — CTA / nav only; never queue rows */
+.press-scale {
+  transition: transform var(--dur-1) var(--ease);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Large-title collapse progress (0 = expanded, 1 = compact top bar) */
+.large-title-bar {
+  opacity: var(--large-title-progress);
+  transform: translateY(calc((1 - var(--large-title-progress)) * -4px));
+  transition: opacity var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.large-title-hero-title {
+  opacity: calc(1 - var(--large-title-progress));
+  transform: translateY(calc(var(--large-title-progress) * -6px));
 }
 
 body {
@@ -561,16 +603,16 @@ textarea:focus-visible,
   animation: mo-fade-in var(--dur-2) var(--ease);
 }
 .animate-sheet {
-  animation: mo-sheet-in var(--dur-2) var(--ease);
+  animation: mo-sheet-in var(--dur-2) var(--ease-spring);
 }
 .animate-slide-up {
-  animation: mo-slide-up var(--dur-2) var(--ease);
+  animation: mo-slide-up var(--dur-2) var(--ease-spring);
 }
 .animate-drawer-in {
   animation: mo-drawer-in var(--dur-2) var(--ease);
 }
 .animate-scale-in {
-  animation: mo-scale-in var(--dur-2) var(--ease);
+  animation: mo-scale-in var(--dur-2) var(--ease-spring);
 }
 .animate-shimmer {
   animation: mo-pulse 1.6s var(--ease) infinite;
@@ -624,6 +666,13 @@ main {
   ::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+  .press-scale:active {
+    transform: none;
+  }
+  .large-title-bar,
+  .large-title-hero-title {
+    transition: none;
   }
 }
 
