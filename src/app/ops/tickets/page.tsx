@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { PartyPopper } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
@@ -23,7 +24,7 @@ import {
   type QueueTicket,
   type QueueView,
 } from '@/modules/tickets/queue'
-import { Suspense } from 'react'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -32,6 +33,8 @@ import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
+/** Cap DB fetch; view filters open vs resolved at the query when possible. */
+const FETCH_LIMIT = 200
 
 function technicianName(
   id: string | null | undefined,
@@ -52,6 +55,7 @@ export default async function TicketsPage({
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
   // Silent deep-link from store detail — no filter UI.
   const storeCode = parsed.store || (sp.store ?? '').trim() || undefined
+  const q = parsed.q || (sp.q ?? '').trim() || undefined
 
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -60,10 +64,17 @@ export default async function TicketsPage({
 
   const resolved = await resolveTicketsSupabase(actor)
 
+  const statuses =
+    view === 'resolved'
+      ? ['resolved', 'closed']
+      : [...OPEN_TICKET_STATUSES]
+
   const [ticketResult, techRows] = await Promise.all([
     listTickets({
-      limit: 1000,
+      limit: FETCH_LIMIT,
       storeCode,
+      statuses,
+      q,
       client: resolved?.client,
     }).catch((err) => ({
       tickets: [] as Awaited<ReturnType<typeof listTickets>>['tickets'],
@@ -95,6 +106,7 @@ export default async function TicketsPage({
     sort: 'newest' as const,
     store: storeCode,
     includeDemo: false,
+    q,
   }
 
   // Newest → oldest; sequential OC-N numbers shown on each row.
@@ -135,12 +147,12 @@ export default async function TicketsPage({
           }
         />
 
-        <QueueTabs active={view} />
+        <QueueTabs active={view} filters={queueFilters} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <Suspense fallback={null}>
-              <TicketSearch initialQ={parsed.q ?? ''} />
+              <TicketSearch initialQ={q ?? ''} />
             </Suspense>
           </div>
           <Suspense fallback={null}>

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   assign,
   getById,
+  getTicketForMutation,
   listInternalTechnicians,
   updateStatus,
   type TicketRecord,
@@ -78,7 +79,7 @@ export async function PATCH(
     }
 
     const { id } = await context.params
-    const existing = await getById(id)
+    const existing = await getTicketForMutation(id)
     if (!existing) {
       return NextResponse.json({ error: 'תקלה לא נמצאה' }, { status: 404 })
     }

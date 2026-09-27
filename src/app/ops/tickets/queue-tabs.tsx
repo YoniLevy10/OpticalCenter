@@ -3,19 +3,30 @@
 import { useRouter } from 'next/navigation'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import {
+  queueHref,
+  type QueueFilters,
+} from '@/modules/tickets/queue'
 
 type Tab = 'open' | 'resolved'
 
-const TABS: { key: Tab; label: string; href: string }[] = [
-  { key: 'open', label: 'פתוחות', href: '/ops/tickets?view=open' },
-  { key: 'resolved', label: 'הסתיימו', href: '/ops/tickets?view=resolved' },
+const TAB_LABELS: { key: Tab; label: string }[] = [
+  { key: 'open', label: 'פתוחות' },
+  { key: 'resolved', label: 'הסתיימו' },
 ]
 
 /**
  * Queue open/resolved control — native tab semantics (not Next Link) so
  * role=tab is never stripped; sliding pill matches Segmented craft.
+ * Preserves search/store filters when switching views.
  */
-export function QueueTabs({ active }: { active: Tab }) {
+export function QueueTabs({
+  active,
+  filters = {},
+}: {
+  active: Tab
+  filters?: Partial<QueueFilters>
+}) {
   const router = useRouter()
   const trackRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
@@ -46,7 +57,7 @@ export function QueueTabs({ active }: { active: Tab }) {
         )}
         style={{ width: pill.w, transform: `translateX(${pill.x}px)` }}
       />
-      {TABS.map((tab) => {
+      {TAB_LABELS.map((tab) => {
         const selected = tab.key === active
         return (
           <button
@@ -59,7 +70,9 @@ export function QueueTabs({ active }: { active: Tab }) {
               if (node) itemRefs.current.set(tab.key, node)
               else itemRefs.current.delete(tab.key)
             }}
-            onClick={() => router.push(tab.href)}
+            onClick={() =>
+              router.push(queueHref(filters, { view: tab.key }))
+            }
             className={cn(
               'relative z-[1] t-control flex flex-1 items-center justify-center rounded-[var(--radius-sm)] py-2.5 transition-colors duration-[var(--dur-1)]',
               selected ? 'text-ink' : 'text-ink-3',

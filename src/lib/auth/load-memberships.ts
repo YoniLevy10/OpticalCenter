@@ -45,8 +45,10 @@ export async function actorFromProfileId(
   profileId: string,
   authVia: Actor['authVia'],
 ): Promise<Actor> {
-  const profile = await loadProfile(profileId)
-  const memberships = await loadMemberships(profileId)
+  const [profile, memberships] = await Promise.all([
+    loadProfile(profileId),
+    loadMemberships(profileId),
+  ])
   return {
     id: profileId,
     email: profile.email,

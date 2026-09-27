@@ -76,6 +76,7 @@ export function TicketActions({
     null
 
   async function patch(body: Record<string, unknown>, successText: string) {
+    if (busy || pending) return false
     setError(null)
     setBusy(true)
     try {

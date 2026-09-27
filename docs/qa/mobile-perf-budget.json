@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-09-27T18:13:55.890Z",
+  "scenario": "memory-shaped payload budgets (iPhone / cellular)",
+  "timings_ms": {
+    "synth_1000": 5.49,
+    "filter_compare": 0.54,
+    "total": 6.03
+  },
+  "before_after": [
+    {
+      "flow": "ops/tickets open list",
+      "before": {
+        "rows": 1000,
+        "bytes": 622375,
+        "note": "limit 1000, all statuses, full store address"
+      },
+      "after": {
+        "rows": 200,
+        "bytes": 112642,
+        "note": "limit 200 + open statuses + slim store"
+      },
+      "reduction_pct": 81.9
+    },
+    {
+      "flow": "ops/dashboard KPI load",
+      "before": {
+        "rows": 500,
+        "bytes": 311017,
+        "poll_s": 60
+      },
+      "after": {
+        "rows": 230,
+        "bytes": 131260,
+        "poll_s": 180
+      },
+      "reduction_pct": 57.8
+    },
+    {
+      "flow": "ticket detail tech open-counts",
+      "before": {
+        "rows": 500,
+        "bytes": 311017,
+        "note": "listTickets(500) full rows"
+      },
+      "after": {
+        "rows": 286,
+        "bytes": 7151,
+        "note": "assigned_to only for open tickets"
+      },
+      "reduction_pct": 97.7
+    }
+  ],
+  "budgets": {
+    "queue_list_kb_max": 120,
+    "dashboard_kb_max": 140,
+    "detail_counts_kb_max": 20
+  },
+  "pass": true
+}
