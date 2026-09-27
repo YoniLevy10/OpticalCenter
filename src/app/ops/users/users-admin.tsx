@@ -398,6 +398,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                   <TH>סטטוס</TH>
                   <TH>התחברות אחרונה</TH>
                   <TH>קישור שטח</TH>
+                  <TH align="end"> </TH>
                 </THead>
                 <TBody>
                   {filtered.map((u) => {
@@ -453,6 +454,20 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
                         </TD>
                         <TD onClick={(e) => e.stopPropagation()}>
                           <TechFieldLinkCopy userId={u.id} role={m?.role ?? ''} />
+                        </TD>
+                        <TD
+                          align="end"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            aria-label={`עריכת ${u.full_name || u.email || 'משתמש'}`}
+                            onClick={() => openEdit(u)}
+                          >
+                            עריכה
+                          </Button>
                         </TD>
                       </TR>
                     )
