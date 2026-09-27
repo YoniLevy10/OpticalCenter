@@ -127,6 +127,8 @@ export function SegmentedLinks({
   className,
   scrollable,
   fill,
+  mode = 'nav',
+  'aria-label': ariaLabel,
 }: {
   segments: Segment[]
   activeKey: string
@@ -134,9 +136,13 @@ export function SegmentedLinks({
   /** Horizontal scroll on narrow screens instead of wrapping. */
   scrollable?: boolean
   fill?: boolean
+  /** `tabs` restores WAI-ARIA tablist semantics (queue open/resolved). */
+  mode?: 'nav' | 'tabs'
+  'aria-label'?: string
 }) {
   const keys = segments.map((s) => s.key)
   const { trackRef, setItemRef, pill } = useSlidingPill(activeKey, keys)
+  const isTabs = mode === 'tabs'
 
   return (
     <Track
@@ -145,6 +151,9 @@ export function SegmentedLinks({
       className={className}
       scrollable={scrollable}
       fill={fill}
+      role={isTabs ? 'tablist' : undefined}
+      aria-label={ariaLabel}
+      aria-orientation={isTabs ? 'horizontal' : undefined}
     >
       {segments.map((s) => {
         const active = s.key === activeKey
@@ -153,7 +162,9 @@ export function SegmentedLinks({
             key={s.key}
             ref={(node) => setItemRef(s.key, node)}
             href={s.href ?? '#'}
-            aria-current={active ? 'page' : undefined}
+            role={isTabs ? 'tab' : undefined}
+            aria-selected={isTabs ? active : undefined}
+            aria-current={!isTabs && active ? 'page' : undefined}
             className={cn(segmentClass(active), 'shrink-0', fill && 'flex-1')}
           >
             {s.label}

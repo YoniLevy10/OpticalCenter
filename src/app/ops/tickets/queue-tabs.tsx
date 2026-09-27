@@ -8,6 +8,8 @@ export function QueueTabs({ active }: { active: Tab }) {
   return (
     <SegmentedLinks
       fill
+      mode="tabs"
+      aria-label="סינון תקלות"
       className="w-full"
       activeKey={active}
       segments={[
