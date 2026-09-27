@@ -1,19 +1,19 @@
-# MaintainOS — Operational Quiet + Bamakor Pulse
+# MaintainOS — Optical Center
 
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
 **Applies to:** every surface in `src/app/**`.
-**Pulse reference:** live Bamakor CSS (`#f9f9fb` / `#1a1a2e` / `#e8e8ed`) — adapted;
-**never** copy Bamakor product blue `#0066FF`.
+**Brand:** near-black ink, warm white canvas, official diamond red `#d92621`.
+Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or a page-wide color wash.
 
 ---
 
 ## 0. Principle
 
-> **Color is a signal, not a surface — but quiet still needs a pulse.**
+> **Color is a signal, not a surface.**
 
 Ink and space carry hierarchy. Color is spent where a decision is required.
-Pulse = luminous canvas, navy ink, soft elevation, tenant-soft active chrome.
+The product reads as Optical Center: black type, white panels, diamond red on the mark and the primary action. Active nav may use `--tenant-soft`. The page background stays flat `--canvas`.
 
 Two supporting rules:
 
@@ -26,7 +26,7 @@ Two supporting rules:
 
 **Allowed “wow” moments:**
 
-1. **Login** — raised brand tile + soft tenant glow + `--shadow-pop`
+1. **Login** — official mark on a white panel + `--shadow-pop` on the form card
 2. **Elevated panels** — `Panel elevated`, stat strip, exception hero (`--shadow-1`)
 3. **Modal** — `animate-scale-in` entrance
 
@@ -64,15 +64,15 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 
 | Token | Value | Use |
 |---|---|---|
-| `--canvas` | `#f5f6fa` | app background (Bamakor luminous family) |
+| `--canvas` | `#f6f6f4` | app background (warm showroom white) |
 | `--surface` | `#ffffff` | panels, rows, sheets |
-| `--surface-sunken` | `#eef0f5` | table headers, inert fills |
+| `--surface-sunken` | `#eeeee9` | table headers, inert fills |
 | `--surface-raised` | `#ffffff` | floating surfaces (popover / dropdown) |
-| `--border` | `#e8e8ed` | Bamakor hairline |
-| `--border-strong` | `#d2d4dc` | emphasis |
-| `--ink` | `#1a1a2e` | primary text (Bamakor navy) |
-| `--ink-2` | `#5c6070` | secondary text |
-| `--ink-3` | `#556870` | tertiary / metadata |
+| `--border` | `#e4e4df` | hairline |
+| `--border-strong` | `#cfcfc8` | emphasis |
+| `--ink` | `#141414` | primary text (logo black) |
+| `--ink-2` | `#5a5a56` | secondary text |
+| `--ink-3` | `#5f5f5b` | tertiary / metadata |
 
 ### Layer 2 — Signal (identical for every tenant)
 
@@ -88,10 +88,10 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 
 | Token | Value |
 |---|---|
-| `--tenant` | `#0d7a72` |
-| `--tenant-hover` | `#0a6660` |
-| `--tenant-soft` | `#e3f6f3` |
-| `--tenant-line` | `#b8e5df` |
+| `--tenant` | `#d92621` |
+| `--tenant-hover` | `#b31c18` |
+| `--tenant-soft` | `#f8ebea` |
+| `--tenant-line` | `#f0c9c7` |
 | `--tenant-contrast` | `#ffffff` |
 
 Permitted: logo mark · primary action fill · active nav (soft fill + indicator).

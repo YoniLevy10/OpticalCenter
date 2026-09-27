@@ -25,7 +25,7 @@ export function StoreShell({
 
   return (
     <div className="ops-atmosphere dvh-screen text-ink">
-      <header className="safe-pt border-b border-border bg-surface shadow-[var(--shadow-1)]">
+      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-white/50">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark size={32} className="rounded-[var(--radius-md)]" alt="" />
@@ -44,7 +44,7 @@ export function StoreShell({
             <LogoutButton size="sm" variant="secondary" />
           </div>
         </div>
-        <nav className="flex border-t border-border">
+        <nav className="flex px-2">
           {links.map((item) => {
             const active =
               pathname === item.match || pathname.startsWith(`${item.match}/`)
@@ -53,10 +53,10 @@ export function StoreShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  't-control flex-1 py-3 text-center transition-colors',
+                  't-control mx-1 mb-2 flex-1 rounded-md py-2.5 text-center transition-colors',
                   active
-                    ? 'border-b-2 border-[var(--tenant)] text-[var(--tenant)]'
-                    : 'text-ink-3 hover:text-ink',
+                    ? 'bg-tenant-soft text-tenant'
+                    : 'text-ink-3 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
                 )}
               >
                 {item.label}

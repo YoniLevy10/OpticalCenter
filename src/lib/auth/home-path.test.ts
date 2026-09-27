@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveHomePath, shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import {
+  postLoginNext,
+  resolveHomePath,
+  shouldAllowDemoEntry,
+} from '@/lib/auth/home-path'
 import type { Actor, Membership, MemberRole } from '@/lib/auth/types'
 
 const ORG = '11111111-1111-1111-1111-111111111111'
@@ -44,6 +48,21 @@ describe('resolveHomePath', () => {
 
   it('defaults empty memberships to ops', () => {
     expect(resolveHomePath(actor([]))).toBe('/ops/dashboard')
+  })
+})
+
+describe('postLoginNext', () => {
+  it('drops the tickets queue so sign-in opens the dashboard', () => {
+    expect(postLoginNext('/ops/tickets')).toBeNull()
+    expect(postLoginNext('/ops/tickets/')).toBeNull()
+    expect(postLoginNext('/ops/tickets?view=open')).toBeNull()
+  })
+
+  it('keeps a specific ticket and other sections', () => {
+    expect(postLoginNext('/ops/tickets/abc')).toBe('/ops/tickets/abc')
+    expect(postLoginNext('/ops/dashboard')).toBe('/ops/dashboard')
+    expect(postLoginNext('/tech')).toBe('/tech')
+    expect(postLoginNext('https://evil.example')).toBeNull()
   })
 })
 

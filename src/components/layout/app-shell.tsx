@@ -29,7 +29,7 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
-import { ThemeToggleOnDark } from '@/components/theme/theme-toggle'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { cn } from '@/lib/utils'
 
@@ -159,23 +159,16 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        't-control relative flex h-10 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
         active
-          ? 'bg-white/10 text-white'
-          : 'text-white/70 hover:bg-white/5 hover:text-white',
+          ? 'bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] text-ink'
+          : 'text-ink-2 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-block-2 w-[2px] rounded-full start-0',
-          active ? 'bg-[var(--tenant)]' : 'bg-transparent',
-        )}
-      />
       <Icon
         className={cn(
           'h-4 w-4 shrink-0',
-          active ? 'text-[var(--tenant)]' : undefined,
+          active ? 'text-[var(--tenant)]' : 'text-ink-3',
         )}
         aria-hidden
       />
@@ -242,7 +235,7 @@ function TenantMark() {
   return (
     <BrandMark
       size={36}
-      className="h-9 w-9 rounded-[var(--radius-md)] ring-1 ring-white/15"
+      className="h-9 w-9 rounded-[var(--radius-md)] shadow-[var(--shadow-1)]"
       alt=""
     />
   )
@@ -267,26 +260,29 @@ export function AppShell({
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label="תפריט צד"
-        className="fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-border bg-[var(--panel-dark)] text-[var(--panel-dark-fg)] shadow-[var(--shadow-pop)] start-0 border-e md:flex"
+        className="apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e border-border/80 text-ink start-0 md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
         <div
-          className="border-b border-white/10 bg-[var(--panel-dark)] px-5"
+          className="border-b border-border/70 px-5"
           style={{ height: 'var(--topbar-h)' }}
         >
-          <div className="flex h-full items-center gap-2.5">
+          <Link
+            href="/ops/dashboard"
+            className="flex h-full items-center gap-2.5 rounded-[var(--radius-md)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+          >
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-white">MaintainOS</p>
-              <p className="t-caption truncate text-white/55">
+              <p className="t-body-strong truncate text-ink">MaintainOS</p>
+              <p className="t-caption truncate text-ink-3">
                 Optical Center · ישראל
               </p>
             </div>
-          </div>
+          </Link>
         </div>
 
         <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-white/50">מרכז שליטה</p>
+          <p className="t-caption mb-2 px-2.5 text-ink-3">מרכז שליטה</p>
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
@@ -297,7 +293,7 @@ export function AppShell({
 
           {toolGroups.map((group) => (
             <div key={group.label} className="mt-6">
-              <p className="t-caption mb-2 px-2.5 text-white/50">{group.label}</p>
+              <p className="t-caption mb-2 px-2.5 text-ink-3">{group.label}</p>
               <ul className="flex flex-col gap-1">
                 {group.items.map((item) => (
                   <li key={item.href}>
@@ -309,20 +305,20 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t border-border/70 p-3">
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
-            <span className="t-caption text-white/50">ערכת נושא</span>
-            <ThemeToggleOnDark />
+            <span className="t-caption text-ink-3">ערכת נושא</span>
+            <ThemeToggle compact />
           </div>
           <div className="px-2.5">
-            <LogoutButton className="w-full justify-start px-0 text-white/80 hover:text-white" />
+            <LogoutButton className="w-full justify-start px-0 text-ink-2 hover:text-ink" />
           </div>
           <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
             <span
               aria-hidden
               className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
             />
-            <span className="t-caption truncate text-white/50">
+            <span className="t-caption truncate text-ink-3">
               Optical Center · ישראל
             </span>
           </div>
@@ -330,12 +326,14 @@ export function AppShell({
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="safe-pt z-30 shrink-0 border-b border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden">
+      <header className="apple-glass safe-pt z-30 shrink-0 border-b border-white/50 md:hidden">
         <div
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
-          <TenantMark />
+          <Link href="/ops/dashboard" aria-label="ראשי" className="shrink-0">
+            <TenantMark />
+          </Link>
           <div className="min-w-0 flex-1">
             <h1 className="t-body-strong truncate text-ink">
               {pageTitle(pathname)}
@@ -384,10 +382,13 @@ export function AppShell({
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
         aria-label="ניווט תחתון"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 shadow-[var(--shadow-1)] backdrop-blur-md md:hidden"
-        style={{ paddingBottom: 'var(--safe-b)' }}
+        className="fixed inset-x-3 z-30 md:hidden"
+        style={{ bottom: 'calc(var(--safe-b) + var(--bottomnav-gap))' }}
       >
-        <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
+        <ul
+          className="apple-glass flex overflow-hidden rounded-[28px]"
+          style={{ height: 'var(--bottomnav-h)' }}
+        >
           {PRIMARY.map((item) => {
             const active = isActive(pathname, item.match)
             const Icon = item.icon
