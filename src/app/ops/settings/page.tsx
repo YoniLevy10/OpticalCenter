@@ -1,7 +1,11 @@
 import Link from 'next/link'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { Panel, KeyValue } from '@/components/ui/primitives'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import {
+  GroupedList,
+  GroupedRow,
+  GroupedSection,
+} from '@/components/ui/grouped-list'
 import { SettingsForm } from './settings-form'
 import { getSettings } from '@/modules/settings/service'
 
@@ -14,31 +18,43 @@ export default async function SettingsPage() {
     <OpsAppShell>
       <div className="mx-auto flex max-w-3xl flex-col gap-5 stagger">
         <OpsPageHero
+          largeTitle
           title="הגדרות"
           status={`${settings.brand_name} · ${settings.country_label}`}
         />
 
         <SettingsForm initial={settings} />
 
-        <Panel elevated>
-          <h2 className="t-section mb-3 text-ink">פריסה</h2>
-          <dl className="divide-y divide-border">
-            <KeyValue label="מוצר">MaintainOS</KeyValue>
-            <KeyValue label="לקוח">{settings.brand_name}</KeyValue>
-            <KeyValue label="מדינה">{settings.country_label}</KeyValue>
-            <KeyValue label="ערוץ דיווח">WhatsApp</KeyValue>
-          </dl>
-        </Panel>
-
-        <Panel elevated>
-          <h2 className="t-section text-ink">בריאות המערכת</h2>
-          <Link
-            href="/ops/status"
-            className="t-body mt-2 inline-block text-[var(--signal-progress)] hover:underline"
-          >
-            מצב המערכת
-          </Link>
-        </Panel>
+        <GroupedList>
+          <GroupedSection title="פריסה">
+            <GroupedRow className="justify-between">
+              <span className="t-body text-ink-2">מוצר</span>
+              <span className="t-body text-ink">MaintainOS</span>
+            </GroupedRow>
+            <GroupedRow className="justify-between">
+              <span className="t-body text-ink-2">לקוח</span>
+              <span className="t-body text-ink">{settings.brand_name}</span>
+            </GroupedRow>
+            <GroupedRow className="justify-between">
+              <span className="t-body text-ink-2">מדינה</span>
+              <span className="t-body text-ink">{settings.country_label}</span>
+            </GroupedRow>
+            <GroupedRow className="justify-between">
+              <span className="t-body text-ink-2">ערוץ דיווח</span>
+              <span className="t-body text-ink">WhatsApp</span>
+            </GroupedRow>
+          </GroupedSection>
+          <GroupedSection title="בריאות המערכת">
+            <GroupedRow>
+              <Link
+                href="/ops/status"
+                className="t-body text-[var(--signal-progress)] hover:underline"
+              >
+                מצב המערכת
+              </Link>
+            </GroupedRow>
+          </GroupedSection>
+        </GroupedList>
       </div>
     </OpsAppShell>
   )
