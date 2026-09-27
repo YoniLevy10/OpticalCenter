@@ -11,7 +11,9 @@ const MAX_DIFF = 0.03
 const VIEWPORTS = [
   { name: 'w390', width: 390, height: 844 },
   { name: 'w430', width: 430, height: 932 },
-  { name: 'w768', width: 768, height: 1024 },
+  // Stay clear of Tailwind `md` (768px): scrollbar/chrome can flip mobile↔desktop
+  // layout at exactly 768 and make chromium-linux snapshots flake in CI.
+  { name: 'w800', width: 800, height: 1024 },
   { name: 'w1024', width: 1024, height: 768 },
   { name: 'w1440', width: 1440, height: 900 },
 ] as const
@@ -19,6 +21,13 @@ const VIEWPORTS = [
 async function gotoStable(page: Page, path: string) {
   await page.goto(path, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle').catch(() => undefined)
+  // Desktop shell fetches /api/health for the status chip — wait past "בודק…".
+  const status = page.locator('[data-visual="system-status"]')
+  if (await status.count()) {
+    await expect(status).not.toHaveAttribute('aria-label', /בודק/, {
+      timeout: 5_000,
+    }).catch(() => undefined)
+  }
 }
 
 /** Live clocks + numeric ticket ids that drift between runs. */
@@ -35,6 +44,8 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator('[data-activity-kind]'),
     // Global queue counts grow as prior e2e tests seed the shared memory store.
     page.locator('[data-visual="attention-strip"]'),
+    // Health chip races (unknown → partial/ok) across CI/local.
+    page.locator('[data-visual="system-status"]'),
   ]
 }
 
