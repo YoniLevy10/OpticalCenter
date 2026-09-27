@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createSystemClient } from '@/lib/supabase/system'
-import { resolveHomePath } from '@/lib/auth/home-path'
+import { postLoginNext, resolveHomePath } from '@/lib/auth/home-path'
 import type { Actor } from '@/lib/auth/types'
 import { memListMemberships } from '@/lib/auth/memory-memberships'
 import { ensurePilotAccessForAuthUser } from '@/lib/auth/seed-pilot-user'
@@ -101,9 +101,7 @@ export async function GET(request: Request) {
     }
 
     const home = resolveHomePath({ memberships })
-    const nextPath = url.searchParams.get('next')
-    const safeNext =
-      nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null
+    const safeNext = postLoginNext(url.searchParams.get('next'))
     return NextResponse.redirect(`${origin}${safeNext ?? home}`)
   } catch {
     return NextResponse.redirect(`${origin}/login?error=auth`)

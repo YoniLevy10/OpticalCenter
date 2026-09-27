@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MaintainOS — Operational Quiet + Bamakor Pulse
-   Substrate/ink/elevation calibrated from live Bamakor CSS
-   (bamakor.vercel.app). Product accent stays Optical Center
-   burgundy — never Bamakor #0066FF.
+   MaintainOS — Optical Center
+   Showroom palette: near-black ink, warm white canvas, and the
+   official diamond red (#d92621). Color is a signal, not a tint.
+   Do not restyle toward Bamakor blue, iOS gray, or teal.
    See docs/DESIGN_SYSTEM.md
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (Bamakor luminosity, OC warmth) ---------- */
-  --canvas: #eef4f6;
+  /* ---------- Layer 1 — SUBSTRATE (showroom white, logo black) ---------- */
+  --canvas: #f6f6f4;
   --surface: #ffffff;
-  --surface-sunken: #e4edef;
+  --surface-sunken: #eeeee9;
   --surface-raised: #ffffff;
-  --border: #d7e3e6;
-  --border-strong: #b6cbd0;
-  --ink: #102b35;
-  --ink-2: #4c6972;
-  /* Darkened for WCAG AA ≥4.5:1 on --canvas (#eef4f6) and white */
-  --ink-3: #556870;
+  --border: #e4e4df;
+  --border-strong: #cfcfc8;
+  --ink: #141414;
+  --ink-2: #5a5a56;
+  /* WCAG AA ≥4.5:1 on --canvas (#f6f6f4) and white */
+  --ink-3: #5f5f5b;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
   --signal-critical: #c01e1e;
@@ -35,28 +35,28 @@
   --signal-idle: #8b90a0;
   --signal-idle-soft: #f5f6fa;
 
-  /* ---------- Layer 3 — TENANT (Optical Center logo red) ---------- */
+  /* ---------- Layer 3 — TENANT (Optical Center diamond red) ---------- */
   --tenant: #d92621;
-  --tenant-hover: #b81f1b;
-  --tenant-soft: #fdeceb;
-  --tenant-line: #f5c4c2;
+  --tenant-hover: #b31c18;
+  --tenant-soft: #f8ebea;
+  --tenant-line: #f0c9c7;
   --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
 
-  /* ---------- Radius ---------- */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* ---------- Radius — continuous corners, closer to iOS ---------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
 
   /* ---------- Elevation — Bamakor-soft depth ---------- */
-  --shadow-1: 0 1px 2px rgba(26, 26, 46, 0.05), 0 1px 3px rgba(26, 26, 46, 0.04);
-  --shadow-2: 0 2px 8px rgba(26, 26, 46, 0.06), 0 1px 2px rgba(26, 26, 46, 0.04);
-  --shadow-hover: 0 6px 18px rgba(26, 26, 46, 0.08), 0 2px 4px rgba(26, 26, 46, 0.04);
-  --shadow-pop: 0 14px 40px rgba(26, 26, 46, 0.12), 0 4px 12px rgba(26, 26, 46, 0.06);
+  --shadow-1: 0 1px 2px rgba(20, 20, 20, 0.05), 0 1px 3px rgba(20, 20, 20, 0.04);
+  --shadow-2: 0 2px 8px rgba(20, 20, 20, 0.06), 0 1px 2px rgba(20, 20, 20, 0.04);
+  --shadow-hover: 0 6px 18px rgba(20, 20, 20, 0.08), 0 2px 4px rgba(20, 20, 20, 0.04);
+  --shadow-pop: 0 14px 40px rgba(20, 20, 20, 0.12), 0 4px 12px rgba(20, 20, 20, 0.06);
 
-  /* Intentional dark chrome (sidebar / OS heroes) — stays dark in both themes */
-  --panel-dark: #102b35;
+  /* Intentional dark chrome — logo black, stays dark in both themes */
+  --panel-dark: #141414;
   --panel-dark-fg: #ffffff;
 
   /* ---------- Motion — smoother, iOS-like ---------- */
@@ -70,7 +70,8 @@
   --row-h: 44px;
   --nav-w: 216px;
   --topbar-h: 52px;
-  --bottomnav-h: 64px;
+  --bottomnav-h: 58px;
+  --bottomnav-gap: 12px;
   --hq-actions-dock-h: 220px;
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
@@ -85,16 +86,16 @@
 html.dark {
   color-scheme: dark;
 
-  --canvas: #0e1619;
-  --surface: #152025;
-  --surface-sunken: #0a1012;
-  --surface-raised: #1c2a30;
-  --border: #2a3c42;
-  --border-strong: #3d545c;
-  --ink: #e8f0f2;
-  --ink-2: #a9bec4;
-  /* ≥4.5:1 on --canvas (#0e1619) */
-  --ink-3: #8aa0a7;
+  --canvas: #111111;
+  --surface: #1c1c1c;
+  --surface-sunken: #0a0a0a;
+  --surface-raised: #242424;
+  --border: #2e2e2e;
+  --border-strong: #424242;
+  --ink: #f5f5f3;
+  --ink-2: #c2c2be;
+  /* ≥4.5:1 on --canvas (#111111) */
+  --ink-3: #a3a39e;
 
   --signal-critical: #f07171;
   --signal-critical-soft: #3a1818;
@@ -111,8 +112,8 @@ html.dark {
 
   --tenant: #ef4a45;
   --tenant-hover: #f56b66;
-  --tenant-soft: #3a1818;
-  --tenant-line: #6b2e2e;
+  --tenant-soft: #3a1c1b;
+  --tenant-line: #6b3330;
   --signal-accent: #f4b860;
   --tenant-contrast: #1a0606;
 
@@ -121,8 +122,8 @@ html.dark {
   --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
 
-  --panel-dark: #080e11;
-  --panel-dark-fg: #e8f0f2;
+  --panel-dark: #0a0a0a;
+  --panel-dark-fg: #f5f5f3;
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -173,28 +174,40 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Atmospheric cool-teal canvas — not flat white */
+/* Flat showroom canvas. Brand red stays on actions and the mark, not on the page. */
 .ops-atmosphere,
 body {
-  background:
-    radial-gradient(
-      ellipse 110% 70% at 100% -10%,
-      color-mix(in srgb, var(--tenant-soft) 55%, transparent),
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at -5% 105%,
-      color-mix(in srgb, var(--signal-progress) 9%, transparent),
-      transparent 48%
-    ),
-    var(--canvas);
-  background-attachment: fixed;
+  background: var(--canvas);
+}
+
+/* Liquid-glass chrome: frosted, darkened edge, soft specular. Content panels stay opaque. */
+.apple-glass {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+  backdrop-filter: blur(28px) saturate(1.7);
+  box-shadow:
+    inset 0 0.5px 0 color-mix(in srgb, white 80%, transparent),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 10px 30px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+html.dark .apple-glass {
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  box-shadow:
+    inset 0 0.5px 0 color-mix(in srgb, white 16%, transparent),
+    inset 0 0 0 0.5px color-mix(in srgb, white 12%, transparent),
+    0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.apple-sidebar {
+  background: color-mix(in srgb, var(--surface) 76%, var(--canvas));
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(28px) saturate(1.5);
 }
 
 body {
   touch-action: manipulation;
   scroll-padding-top: var(--topbar-h);
-  scroll-padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  scroll-padding-bottom: calc(var(--bottomnav-h) + var(--bottomnav-gap) + var(--safe-b));
   color: var(--ink);
   font-family: var(--font-heebo), "Inter", "SF Pro Display", ui-sans-serif,
     system-ui, sans-serif;
@@ -337,7 +350,7 @@ textarea:focus-visible,
 }
 
 .pb-nav {
-  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b) + 16px);
+  padding-bottom: calc(var(--bottomnav-h) + var(--bottomnav-gap) + var(--safe-b) + 16px);
 }
 @media (min-width: 768px) {
   .pb-nav {
@@ -355,12 +368,12 @@ textarea:focus-visible,
 
 .pb-actions-hq {
   padding-bottom: calc(
-    var(--hq-actions-dock-h) + var(--bottomnav-h) + var(--safe-b) + 16px
+    var(--hq-actions-dock-h) + var(--bottomnav-h) + var(--bottomnav-gap) + var(--safe-b) + 16px
   );
 }
 /* HQ ticket detail — fixed action dock sits above bottom nav (nav z-30, dock z-40) */
 .hq-ticket-dock {
-  bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  bottom: calc(var(--bottomnav-h) + var(--bottomnav-gap) + var(--safe-b));
   z-index: 40;
 }
 @media (min-width: 768px) {
@@ -398,7 +411,7 @@ textarea:focus-visible,
   flex-direction: column;
   overflow: hidden;
   padding-top: 0;
-  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+  padding-bottom: calc(var(--bottomnav-h) + var(--bottomnav-gap) + var(--safe-b));
 }
 @media (min-width: 768px) {
   .ops-main-fill {
@@ -416,10 +429,14 @@ textarea:focus-visible,
 .nav-pill-active::before {
   content: "";
   position: absolute;
-  inset: 6px 4px;
-  border-radius: var(--radius-md);
-  background: var(--tenant-soft);
-  z-index: -1;
+  inset: 4px 6px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tenant-soft) 88%, var(--surface));
+  z-index: 0;
+}
+.nav-pill-active > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Login split — brand hero panel (design-system wow moment) */
@@ -427,18 +444,7 @@ textarea:focus-visible,
   background: var(--canvas);
 }
 .login-brand-panel {
-  background:
-    radial-gradient(
-      ellipse 90% 70% at 100% 0%,
-      color-mix(in srgb, var(--tenant-soft) 85%, var(--surface)),
-      transparent 58%
-    ),
-  linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--tenant-soft) 55%, var(--surface)) 0%,
-    var(--surface) 48%,
-    var(--canvas) 100%
-  );
+  background: var(--surface);
   border-inline-end: 1px solid var(--border);
 }
 
@@ -613,12 +619,12 @@ main {
   background-image:
     radial-gradient(
       circle at 12% 18%,
-      rgb(16 43 53 / 4%) 0.9px,
+      rgb(20 20 20 / 4%) 0.9px,
       transparent 1.2px
     ),
     radial-gradient(
       circle at 72% 64%,
-      rgb(16 43 53 / 3.5%) 0.8px,
+      rgb(20 20 20 / 3.5%) 0.8px,
       transparent 1.1px
     ),
     linear-gradient(

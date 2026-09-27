@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState } from '@/components/ui/primitives'
 import { LiveRegion } from '@/components/ui/a11y'
+import { postLoginNext } from '@/lib/auth/home-path'
 import { createClient } from '@/lib/supabase/client'
 
 const PILOT_DEMO_EMAIL = 'OpsBrain1@gmail.com'
@@ -25,7 +26,7 @@ function safeNextPath(raw: string | null): string | null {
   ) {
     return null
   }
-  return raw
+  return postLoginNext(raw)
 }
 
 const VALUE_PROPS = [
@@ -73,7 +74,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
     setError(null)
     try {
       const supabase = createClient()
-      const next = searchParams.get('next') || '/ops/dashboard'
+      const next = postLoginNext(searchParams.get('next')) || '/ops/dashboard'
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -147,15 +148,6 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
         aria-label="MaintainOS"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-24 top-1/4 h-80 w-80 rounded-full bg-[var(--tenant)] opacity-[0.12] blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -start-16 bottom-0 h-64 w-64 rounded-full bg-surface opacity-40 blur-3xl"
-        />
-
         <div className="relative">
           <BrandLogoFull priority className="mb-6 w-[132px] rounded-[var(--radius-lg)] shadow-[var(--shadow-2)]" />
           <p className="t-title text-ink">MaintainOS</p>

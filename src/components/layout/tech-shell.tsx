@@ -51,7 +51,7 @@ export function TechShell({
   return (
     <div className="ops-atmosphere dvh-screen text-ink">
       <SkipLink />
-      <header className="safe-pt sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-md">
+      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-white/50">
         <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">
           {backHref ? <BackButton href={backHref} label={backLabel} /> : null}
           {!backHref ? (
@@ -77,10 +77,10 @@ export function TechShell({
       {actions ? (
         <div
           aria-label="פעולות עבודה"
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/90 backdrop-blur-md"
-          style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}
+          className="apple-glass fixed inset-x-3 z-40 rounded-xl border border-white/50"
+          style={{ bottom: 'calc(var(--safe-b) + 12px)' }}
         >
-          <div className="mx-auto w-full max-w-xl px-4 pt-3">{actions}</div>
+          <div className="mx-auto w-full max-w-xl px-3 py-3">{actions}</div>
         </div>
       ) : null}
     </div>

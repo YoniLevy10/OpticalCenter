@@ -44,7 +44,7 @@ export function Modal({
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
           className={cn(
-            'fixed start-1/2 top-1/2 z-50 flex max-h-[min(90dvh,720px)] w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 flex-col animate-scale-in overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-pop)] rtl:translate-x-1/2',
+            'fixed start-1/2 top-1/2 z-50 flex max-h-[min(90dvh,720px)] w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 flex-col animate-scale-in overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)] rtl:translate-x-1/2',
             className,
           )}
         >
@@ -90,8 +90,11 @@ export function BottomSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] animate-slide-up flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-t border-border bg-surface shadow-[var(--shadow-pop)]"
-          style={{ paddingBottom: 'var(--safe-b)' }}
+          className="fixed inset-x-3 z-50 flex max-h-[88dvh] animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
+          style={{
+            bottom: 'calc(var(--safe-b) + 10px)',
+            paddingBottom: '8px',
+          }}
         >
           <div className="flex shrink-0 justify-center pt-2.5" aria-hidden>
             <span className="h-1 w-10 rounded-full bg-border-strong" />
@@ -135,7 +138,7 @@ export function SideDrawer({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="safe-pt safe-pb fixed inset-y-0 start-0 z-50 flex w-[min(88vw,300px)] animate-drawer-in flex-col overflow-hidden border-e border-border bg-surface shadow-[var(--shadow-pop)] outline-none"
+          className="apple-glass safe-pt safe-pb fixed inset-y-3 start-3 z-50 flex w-[min(86vw,320px)] animate-drawer-in flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/50 outline-none"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
             <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>

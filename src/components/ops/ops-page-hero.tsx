@@ -30,14 +30,6 @@ export function OpsPageHero({
         className,
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-90"
-        style={{
-          background:
-            'radial-gradient(ellipse 70% 90% at 100% 0%, color-mix(in srgb, var(--tenant-soft) 70%, transparent), transparent 55%), radial-gradient(ellipse 50% 60% at 0% 100%, color-mix(in srgb, var(--signal-progress) 10%, transparent), transparent 50%)',
-        }}
-      />
       <div className="relative flex items-start gap-3.5">
         {showBrand ? (
           <BrandMark

@@ -24,7 +24,8 @@ export function Panel({
     <section
       className={cn(
         'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
-        elevated && 'shadow-[var(--shadow-1)]',
+        elevated &&
+          'shadow-[inset_0_1px_0_rgba(255,255,255,0.7),var(--shadow-1)]',
         !flush && 'p-5',
         className,
       )}

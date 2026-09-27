@@ -4,7 +4,7 @@
   "description": "תחזוקה תפעולית — Optical Center",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/ops/tickets",
+  "start_url": "/ops/dashboard",
   "scope": "/ops",
   "id": "/ops",
   "display": "standalone",

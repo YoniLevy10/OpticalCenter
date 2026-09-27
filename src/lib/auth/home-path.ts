@@ -44,6 +44,18 @@ export function resolveHomePath(actor: Pick<Actor, 'memberships'>): HomePath {
 }
 
 /**
+ * After sign-in, return the user to a deep link when they had one.
+ * The tickets queue is the old app entry — signing in opens the role home
+ * (HQ dashboard) instead of that list. A specific ticket is still honored.
+ */
+export function postLoginNext(raw: string | null): string | null {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
+  const path = raw.split('?')[0]?.replace(/\/+$/, '') || '/'
+  if (path === '/ops/tickets') return null
+  return raw
+}
+
+/**
  * Demo / E2E entry: FORCE_MEMORY or ALLOW_TEST_AUTH skip real session gate.
  */
 export function shouldAllowDemoEntry(): boolean {
