@@ -1,0 +1,670 @@
+{
+  "generated_at": "2026-09-27T18:51:39.879Z",
+  "device": "iPhone 13 (Playwright)",
+  "base": "http://localhost:3000",
+  "metrics": [
+    {
+      "name": "login_first",
+      "ms": 1439.9,
+      "result": "http://localhost:3000/login"
+    },
+    {
+      "name": "demo_session",
+      "ms": 258.2,
+      "result": 200
+    },
+    {
+      "name": "dashboard",
+      "ms": 1957.8,
+      "result": 1
+    },
+    {
+      "name": "tickets_list",
+      "ms": 1877.6,
+      "result": {
+        "hasSearch": 1,
+        "rows": 2
+      }
+    },
+    {
+      "name": "tickets_search",
+      "ms": 1733.7,
+      "result": {
+        "hasDoor": true,
+        "hasLighting": false
+      }
+    },
+    {
+      "name": "ticket_detail",
+      "ms": 3650.1,
+      "result": {
+        "assignCount": 1,
+        "closeCount": 1,
+        "sheetOpenCounts": true
+      }
+    },
+    {
+      "name": "assign_write",
+      "ms": 284.5,
+      "result": {
+        "status": 200,
+        "ticketStatus": "assigned"
+      }
+    },
+    {
+      "name": "status_write",
+      "ms": 286.5,
+      "result": {
+        "status": 200,
+        "ticketStatus": "in_progress"
+      }
+    }
+  ],
+  "network_sample": [
+    {
+      "url": "/login",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088115.999,
+        "domainLookupStart": 0.211,
+        "domainLookupEnd": 0.291,
+        "connectStart": 0.291,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.494,
+        "requestStart": 0.596,
+        "responseStart": 167.271,
+        "responseEnd": 190.204
+      }
+    },
+    {
+      "url": "/_next/static/media/1c9ef42b327f16c7-s.p.045a486d.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088294.668,
+        "domainLookupStart": 0.116,
+        "domainLookupEnd": 0.125,
+        "connectStart": 0.125,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.263,
+        "requestStart": 0.313,
+        "responseStart": 7.24,
+        "responseEnd": 17.499
+      }
+    },
+    {
+      "url": "/_next/static/media/86c8c58929c52757-s.p.5e0b3770.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088296.0269,
+        "domainLookupStart": 0.1,
+        "domainLookupEnd": 0.111,
+        "connectStart": 0.111,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.588,
+        "requestStart": 0.646,
+        "responseStart": 7.394,
+        "responseEnd": 14.268
+      }
+    },
+    {
+      "url": "/_next/static/media/87c7f5b5afcd23bd-s.p.c91099f6.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088296.328,
+        "domainLookupStart": 0.052,
+        "domainLookupEnd": 0.056,
+        "connectStart": 0.056,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.285,
+        "requestStart": 0.396,
+        "responseStart": 8.544,
+        "responseEnd": 14.284
+      }
+    },
+    {
+      "url": "/_next/static/media/c9f6ebf08ddd616b-s.p.8e1a882d.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088296.51,
+        "domainLookupStart": 0.045,
+        "domainLookupEnd": 0.048,
+        "connectStart": 0.048,
+        "secureConnectionStart": -1,
+        "connectEnd": 0.103,
+        "requestStart": 0.242,
+        "responseStart": 9.35,
+        "responseEnd": 14.371
+      }
+    },
+    {
+      "url": "/_next/image?url=%2Fbrand%2Foc-logo-full.png&w=640&q=75",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088301.412,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 6.596,
+        "responseStart": 13.189,
+        "responseEnd": 18.541
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Broot-of-the-server%5D__9a1e0050._.css",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088301.0938,
+        "domainLookupStart": 0.103,
+        "domainLookupEnd": 0.112,
+        "connectStart": 0.112,
+        "secureConnectionStart": -1,
+        "connectEnd": 1.36,
+        "requestStart": 5.085,
+        "responseStart": 14.702,
+        "responseEnd": 31.272
+      }
+    },
+    {
+      "url": "/_next/image?url=%2Fbrand%2Foc-mark.png&w=128&q=75",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088307.71,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.41,
+        "responseStart": 8.775,
+        "responseEnd": 20.25
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_57d40746._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088308.1511,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.105,
+        "responseStart": 9.817,
+        "responseEnd": 21.598
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_compiled_5150ccfd._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088315.091,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.091,
+        "responseStart": 15.626,
+        "responseEnd": 50.477
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_%40swc_helpers_cjs_b3dc30d6._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088328.018,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.115,
+        "responseStart": 11.847,
+        "responseEnd": 44.519
+      }
+    },
+    {
+      "url": "/_next/static/chunks/_a0ff3932._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088341.903,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.115,
+        "responseStart": 8.622,
+        "responseEnd": 53.746
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_b0daae9a._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088318.331,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.09,
+        "responseStart": 12.895,
+        "responseEnd": 47.281
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_app_favicon_ico_mjs_243aa161._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088350.868,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.083,
+        "responseStart": 14.306,
+        "responseEnd": 71.738
+      }
+    },
+    {
+      "url": "/_next/static/chunks/turbopack-_cdba956c._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088344.384,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.09,
+        "responseStart": 18.935,
+        "responseEnd": 73.673
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_8db7fb1f._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088347.5251,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.094,
+        "responseStart": 14.202,
+        "responseEnd": 74.037
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088308.2148,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.087,
+        "responseStart": 10.658,
+        "responseEnd": 74.56
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_client_cf1d9188._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088316.872,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.092,
+        "responseStart": 14.081,
+        "responseEnd": 74.09
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_app_layout_tsx_0a548d63._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088371.6272,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.291,
+        "responseStart": 7.522,
+        "responseEnd": 82.476
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_28b0870d._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088371.225,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.484,
+        "responseStart": 10.186,
+        "responseEnd": 85.235
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_app_not-found_tsx_9c535a0f._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088371.739,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.248,
+        "responseStart": 9.956,
+        "responseEnd": 84.996
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_ad9f2179._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088370.842,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.448,
+        "responseStart": 11.278,
+        "responseEnd": 97.727
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_c2ad5bda._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088371.6687,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.292,
+        "responseStart": 10.314,
+        "responseEnd": 101.892
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_ba54278c._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088381.861,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.51,
+        "responseStart": 11.669,
+        "responseEnd": 102.307
+      }
+    },
+    {
+      "url": "/_next/static/chunks/src_app_login_page_tsx_9c535a0f._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088399.508,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.201,
+        "responseStart": 10.454,
+        "responseEnd": 113.188
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_client_components_builtin_global-error_9c535a0f.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088399.743,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.057,
+        "responseStart": 10.603,
+        "responseEnd": 113.257
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_30244baa._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088382.4968,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.094,
+        "responseStart": 16.341,
+        "responseEnd": 117.41
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088308.22,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.087,
+        "responseStart": 12.058,
+        "responseEnd": 118.45
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088382.552,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.074,
+        "responseStart": 20.206,
+        "responseEnd": 123.528
+      }
+    },
+    {
+      "url": "/_next/static/chunks/node_modules_89f80ca7._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088395.052,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.125,
+        "responseStart": 17.799,
+        "responseEnd": 135.725
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088569.248,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.253,
+        "responseStart": 4.716,
+        "responseEnd": 5.926
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_285433b7._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535088569.0479,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.153,
+        "responseStart": 3.607,
+        "responseEnd": 4.804
+      }
+    },
+    {
+      "url": "/ops/dashboard",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535089813.487,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.206,
+        "responseStart": 245.353,
+        "responseEnd": 405.878
+      }
+    },
+    {
+      "url": "/_next/static/media/1c9ef42b327f16c7-s.p.045a486d.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090067.7769,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 0.059,
+        "responseEnd": 0.059
+      }
+    },
+    {
+      "url": "/_next/static/media/86c8c58929c52757-s.p.5e0b3770.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090067.861,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 0.024,
+        "responseEnd": 0.024
+      }
+    },
+    {
+      "url": "/_next/static/media/87c7f5b5afcd23bd-s.p.c91099f6.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090067.901,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 0.025,
+        "responseEnd": 0.025
+      }
+    },
+    {
+      "url": "/_next/static/media/c9f6ebf08ddd616b-s.p.8e1a882d.woff2",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090067.936,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 0.022,
+        "responseEnd": 0.022
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Broot-of-the-server%5D__9a1e0050._.css",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090068.3,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.161,
+        "responseStart": 9.58,
+        "responseEnd": 17.072
+      }
+    },
+    {
+      "url": "/_next/image?url=%2Fbrand%2Foc-mark.png&w=96&q=75",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090073.2778,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.328,
+        "responseStart": 5.966,
+        "responseEnd": 6.743
+      }
+    },
+    {
+      "url": "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_57d40746._.js",
+      "status": 200,
+      "timing": {
+        "startTime": 1790535090075.388,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.121,
+        "responseStart": 9.072,
+        "responseEnd": 12.121
+      }
+    }
+  ],
+  "notes": [
+    "Demo tickets (source=demo) intentionally hidden from open queue.",
+    "Double TicketActions mount removed — assignCount should be 1.",
+    "Search uses URL debounce; server filters via listTickets q + applyQueue."
+  ]
+}
