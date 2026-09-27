@@ -124,8 +124,8 @@ html.dark {
   --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.32), 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.24);
 
-  --panel-dark: #1c1c1a;
-  --panel-dark-fg: #f2f2ef;
+  --panel-dark: #222220;
+  --panel-dark-fg: #f3f3f0;
 
   --background: var(--canvas);
   --foreground: var(--ink);

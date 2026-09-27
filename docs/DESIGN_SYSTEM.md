@@ -166,6 +166,12 @@ Plain `--ink-2`. Markers only for blocked / resolved states.
 
 Time remaining, right-aligned. Warning ≤20% window; critical when breached.
 
+### PulseTile / KPI squares
+
+Containers stay neutral (`bg-surface` + `border-border`). Signal hue lives only on
+the value and an optional 6px status dot — never soft-fill the whole tile.
+Soft signal fills remain for Notices, banners, and destructive buttons.
+
 ---
 
 ## 5. Navigation
