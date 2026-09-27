@@ -123,9 +123,12 @@ export function TicketReportForm({
         return
       }
       let preview = ''
+      let uploadFile = file
       if (check.kind === 'image') {
         try {
+          // Compress once — reuse for preview + upload (avoid double encode on mobile).
           preview = await fileToCompressedDataUrl(file)
+          uploadFile = await dataUrlToFile(preview, file.name)
         } catch {
           setError('לא ניתן לעבד את התמונה')
           return
@@ -136,9 +139,7 @@ export function TicketReportForm({
       next.push({
         id: `${file.name}-${file.lastModified}`,
         preview,
-        file: check.kind === 'image'
-          ? await dataUrlToFile(await fileToCompressedDataUrl(file), file.name)
-          : file,
+        file: uploadFile,
         kind: check.kind,
       })
     }
@@ -153,6 +154,8 @@ export function TicketReportForm({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    // Guard double-tap before React re-renders disabled state (cellular lag).
+    if (busy || ticketId) return
     setBusy(true)
     setError(null)
     try {

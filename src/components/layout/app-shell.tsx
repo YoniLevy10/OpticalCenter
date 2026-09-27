@@ -31,6 +31,7 @@ import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
+import { LargeTitleScrollSync } from '@/components/ops/large-title'
 import { cn } from '@/lib/utils'
 
 /**
@@ -257,6 +258,7 @@ export function AppShell({
   return (
     <div className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden">
       <SkipLink />
+      <LargeTitleScrollSync />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label="תפריט צד"
@@ -335,7 +337,7 @@ export function AppShell({
             <TenantMark />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="t-body-strong truncate text-ink">
+            <h1 className="large-title-bar t-body-strong truncate text-ink">
               {pageTitle(pathname)}
             </h1>
           </div>
@@ -368,7 +370,7 @@ export function AppShell({
               'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
               fillMain
                 ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
-                : 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7',
+                : 'scroll-edge-fade min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
             )}
           >
             <div className="mb-4 hidden justify-end md:flex">
@@ -398,7 +400,7 @@ export function AppShell({
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
+                    'press-scale flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
                     active ? 'nav-pill-active' : 'text-ink-3',
                   )}
                 >

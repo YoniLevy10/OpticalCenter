@@ -17,7 +17,7 @@ import {
 } from '@/lib/data/memory-store'
 import { memListUsers } from '@/lib/auth/memory-memberships'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
-import { TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
+import { OPEN_TICKET_STATUSES, TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
 import { computeSlaTimestamps } from '@/modules/tickets/sla'
 import { assertTransition, isTicketStatus } from '@/modules/tickets/transitions'
 import type { TicketRow } from '@/modules/stores/data'
@@ -148,6 +148,8 @@ function memToRecord(t: MemTicket): TicketRecord {
 export type ListTicketsQuery = {
   limit?: number
   status?: string
+  /** Multi-status filter (PostgREST `.in`). Takes precedence over `status`. */
+  statuses?: string[]
   priority?: string
   storeCode?: string
   /** Profile id, or `none` for unassigned. */
@@ -157,10 +159,19 @@ export type ListTicketsQuery = {
   client?: SupabaseClient
 }
 
+/** Columns needed for queue / dashboard rows — skip city/address bloat. */
+const LIST_SELECT_BASE =
+  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at'
+
+/** Lean row for lifecycle mutations / RBAC — no messages or events. */
+const MUTATION_SELECT =
+  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, reporter_phone, reporter_name, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, closed_at, language, stores ( id, code, name, city, address )'
+
 async function queryTicketsList(
   supabase: SupabaseClient,
   filters: {
     status?: string
+    statuses?: string[]
     priority?: string
     storeCode?: string
     assignedTo?: string
@@ -169,17 +180,20 @@ async function queryTicketsList(
   limit: number,
 ): Promise<{ rows: TicketRow[]; error: string | null }> {
   const storeJoin = filters.storeCode
-    ? 'stores!inner(code, name, city, address)'
-    : 'stores(code, name, city, address)'
+    ? 'stores!inner(code, name, city)'
+    : 'stores(code, name, city)'
   let query = supabase
     .from('tickets')
-    .select(
-      `id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, ${storeJoin}`,
-    )
+    .select(`${LIST_SELECT_BASE}, ${storeJoin}`)
     .order('created_at', { ascending: false })
-    .limit(Math.min(Math.max(limit * (filters.q ? 4 : 1), 1), 2000))
+    // Search still filters in memory — fetch a modest oversample, not 4×.
+    .limit(Math.min(Math.max(limit * (filters.q ? 2 : 1), 1), 1000))
 
-  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.statuses && filters.statuses.length > 0) {
+    query = query.in('status', filters.statuses)
+  } else if (filters.status) {
+    query = query.eq('status', filters.status)
+  }
   if (filters.priority) query = query.eq('priority', filters.priority)
   if (filters.storeCode) query = query.eq('stores.code', filters.storeCode)
   if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
@@ -193,7 +207,16 @@ async function queryTicketsList(
       q: filters.q,
     }) as unknown as TicketRow[]
   }
-  return { rows: rows.slice(0, limit), error: null }
+  // Cap description length for list/dashboard payloads (detail page uses getById).
+  rows = rows.slice(0, limit).map(slimListTicketRow)
+  return { rows, error: null }
+}
+
+/** Keep list rows scannable on cellular — full text lives on the detail page. */
+function slimListTicketRow(row: TicketRow): TicketRow {
+  const desc = row.description ?? ''
+  if (desc.length <= 160) return row
+  return { ...row, description: `${desc.slice(0, 157)}…` }
 }
 
 export async function listTickets(
@@ -209,6 +232,7 @@ export async function listTickets(
   const limit = opts.limit ?? 100
   const filters = {
     status: opts.status,
+    statuses: opts.statuses,
     priority: opts.priority,
     storeCode: opts.storeCode,
     assignedTo: opts.assignedTo,
@@ -260,7 +284,9 @@ export async function listTickets(
     }
   }
 
-  const memRows = memFilterTickets(memListTickets(), filters).slice(0, limit)
+  const memRows = memFilterTickets(memListTickets(), filters)
+    .slice(0, limit)
+    .map((t) => slimListTicketRow(t as unknown as TicketRow))
   return {
     tickets: memRows as unknown as TicketRow[],
     backend: 'memory',
@@ -345,6 +371,90 @@ export async function getById(
   }
 }
 
+/**
+ * Lean ticket fetch for mutations / RBAC — skips messages + events.
+ * Use `getById` when the full thread timeline is needed.
+ */
+export async function getTicketForMutation(
+  id: string,
+  opts?: { client?: SupabaseClient },
+): Promise<
+  | (TicketRecord & {
+      stores: TicketDetail['stores']
+      assignee: TicketDetail['assignee']
+      backend?: 'supabase' | 'memory'
+    })
+  | null
+> {
+  if (await supabaseReady()) {
+    const supabase = opts?.client ?? createSystemClient('tickets_service')
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .select(MUTATION_SELECT)
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    if (!ticket) return null
+    let assignee: TicketDetail['assignee'] = null
+    if (ticket.assigned_to) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone')
+        .eq('id', ticket.assigned_to)
+        .maybeSingle()
+      assignee = (data as TicketDetail['assignee']) ?? null
+    }
+    return {
+      ...(ticket as unknown as TicketRecord & {
+        stores: TicketDetail['stores']
+      }),
+      assignee,
+      backend: 'supabase',
+    }
+  }
+  const mem = memGet(id)
+  if (!mem) return null
+  return {
+    ...memToRecord(mem as unknown as MemTicket),
+    stores: mem.stores,
+    assignee: mem.assignee,
+    backend: 'memory',
+  }
+}
+
+/** Open-ticket load per technician — assigned_to only (tiny payload). */
+export async function countOpenTicketsByAssignee(opts?: {
+  client?: SupabaseClient
+}): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  if (await supabaseReady()) {
+    const supabase = opts?.client ?? createSystemClient('tickets_service')
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('assigned_to')
+      .in('status', [...OPEN_TICKET_STATUSES])
+      .not('assigned_to', 'is', null)
+      .limit(2000)
+    if (error) {
+      console.error('[tickets:open-count] failed', { error: error.message })
+      return counts
+    }
+    for (const row of data ?? []) {
+      const id = row.assigned_to as string | null
+      if (!id) continue
+      counts.set(id, (counts.get(id) ?? 0) + 1)
+    }
+    return counts
+  }
+
+  for (const t of memListTickets()) {
+    if (!t.assigned_to) continue
+    if (!OPEN_TICKET_STATUSES.includes(t.status as TicketStatus)) continue
+    counts.set(t.assigned_to, (counts.get(t.assigned_to) ?? 0) + 1)
+  }
+  return counts
+}
+
 export async function createTicket(input: CreateTicketInput): Promise<TicketRecord> {
   const description = input.description?.trim()
   if (!description) throw new Error('תיאור התקלה נדרש')
@@ -401,14 +511,20 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
     }
     if (error || !data) throw new Error(error?.message || 'יצירה נכשלה')
     const display_number = formatDisplayNumber(data.number)
+    const postInsert: PromiseLike<unknown>[] = []
     if (display_number) {
-      await supabase.from('tickets').update({ display_number }).eq('id', data.id)
+      postInsert.push(
+        supabase.from('tickets').update({ display_number }).eq('id', data.id),
+      )
     }
-    await supabase.from('ticket_events').insert({
-      ticket_id: data.id,
-      event_type: 'created',
-      payload: { source: input.source ?? 'web_fallback' },
-    })
+    postInsert.push(
+      supabase.from('ticket_events').insert({
+        ticket_id: data.id,
+        event_type: 'created',
+        payload: { source: input.source ?? 'web_fallback' },
+      }),
+    )
+    await Promise.all(postInsert)
     return { ...(data as TicketRecord), display_number }
   }
 
@@ -507,7 +623,7 @@ export async function updateStatus(
   if (!isTicketStatus(nextStatus)) throw new Error(`סטטוס לא חוקי: ${nextStatus}`)
 
   if (await supabaseReady()) {
-    const current = await getById(id)
+    const current = await getTicketForMutation(id)
     if (!current) throw new Error('תקלה לא נמצאה')
     const from = current.status as TicketStatus
     assertTransition(from, nextStatus)
@@ -546,7 +662,7 @@ export async function assign(
   if (!assignedTo?.trim()) throw new Error('מזהה טכנאי נדרש')
 
   if (await supabaseReady()) {
-    const current = await getById(id)
+    const current = await getTicketForMutation(id)
     if (!current) throw new Error('תקלה לא נמצאה')
     const from = current.status as TicketStatus
     const patch: Record<string, unknown> = { assigned_to: assignedTo.trim() }
@@ -564,16 +680,21 @@ export async function assign(
       .select('*')
       .single()
     if (error) throw new Error(error.message)
-    await appendEvent(id, 'assigned', actorId ?? null, {
-      assigned_to: assignedTo.trim(),
-      previous: current.assigned_to,
-    })
+    const events: Promise<TicketEvent>[] = [
+      appendEvent(id, 'assigned', actorId ?? null, {
+        assigned_to: assignedTo.trim(),
+        previous: current.assigned_to,
+      }),
+    ]
     if (statusChanged) {
-      await appendEvent(id, 'status_changed', actorId ?? null, {
-        from,
-        to: 'assigned',
-      })
+      events.push(
+        appendEvent(id, 'status_changed', actorId ?? null, {
+          from,
+          to: 'assigned',
+        }),
+      )
     }
+    await Promise.all(events)
     return data as TicketRecord
   }
 

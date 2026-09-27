@@ -2,6 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const overlayClass =
@@ -68,9 +69,16 @@ export function Modal({
   )
 }
 
+export type SheetDetent = 'half' | 'full'
+
+const DETENT_MAX: Record<SheetDetent, string> = {
+  half: '50dvh',
+  full: '88dvh',
+}
+
 /**
  * Mobile bottom sheet. Respects the home indicator and caps at 88dvh so the
- * sheet never fights the keyboard.
+ * sheet never fights the keyboard. Optional half/full detents with grabber drag.
  */
 export function BottomSheet({
   open,
@@ -78,25 +86,79 @@ export function BottomSheet({
   title,
   description,
   children,
+  detent = 'full',
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   title: string
   description?: string
   children: React.ReactNode
+  /** half ≈ 50dvh (filters / quick update); full ≈ 88dvh (forms). */
+  detent?: SheetDetent
 }) {
+  const [current, setCurrent] = useState<SheetDetent>(detent)
+  const [dragY, setDragY] = useState(0)
+  const startY = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      setCurrent(detent)
+      setDragY(0)
+    }
+  }, [open, detent])
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    startY.current = e.clientY
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }, [])
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (startY.current == null) return
+    const delta = e.clientY - startY.current
+    setDragY(Math.max(0, delta))
+  }, [])
+
+  const onPointerUp = useCallback(() => {
+    if (startY.current == null) return
+    const delta = dragY
+    startY.current = null
+    setDragY(0)
+    if (delta > 120) {
+      onOpenChange(false)
+      return
+    }
+    if (delta > 48 && current === 'full' && detent === 'half') {
+      setCurrent('half')
+      return
+    }
+    if (delta < -40 || (delta < 48 && current === 'half')) {
+      setCurrent(detent === 'half' ? 'half' : 'full')
+    }
+  }, [current, detent, dragY, onOpenChange])
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-3 z-50 flex max-h-[88dvh] animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
+          className="fixed inset-x-3 z-50 flex animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
           style={{
             bottom: 'calc(var(--safe-b) + 10px)',
             paddingBottom: '8px',
+            maxHeight: DETENT_MAX[current],
+            height: current === 'half' ? DETENT_MAX.half : undefined,
+            transform: dragY ? `translateY(${dragY}px)` : undefined,
+            transition: dragY ? 'none' : 'max-height var(--dur-2) var(--ease)',
           }}
         >
-          <div className="flex shrink-0 justify-center pt-2.5" aria-hidden>
+          <div
+            className="flex shrink-0 cursor-grab justify-center pt-2.5 active:cursor-grabbing touch-none"
+            aria-hidden
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+          >
             <span className="h-1 w-10 rounded-full bg-border-strong" />
           </div>
           <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-2">

@@ -356,62 +356,76 @@ export async function listInboxSessions(): Promise<{
   ] as string[]
 
   const storeMap = new Map<string, { name: string; code: string }>()
-  if (storeIds.length > 0) {
-    const { data: stores } = await supabase
-      .from('stores')
-      .select('id, code, name')
-      .in('id', storeIds)
-    for (const s of stores ?? []) {
-      storeMap.set(s.id, { name: s.name, code: s.code })
-    }
-  }
-
   const ticketByPhone = new Map<
     string,
     { priorities: string[]; customerName: string | null }
   >()
-  if (waIds.length > 0) {
-    const { data: tickets } = await supabase
-      .from('tickets')
-      .select('id, reporter_phone, reporter_name, priority, status')
-      .in('reporter_phone', waIds)
-      .in('status', [...OPEN_TICKET_STATUSES])
-      .limit(200)
-
-    for (const t of tickets ?? []) {
-      const phone = t.reporter_phone as string | null
-      if (!phone) continue
-      const cur = ticketByPhone.get(phone) ?? {
-        priorities: [],
-        customerName: null,
-      }
-      if (t.priority) cur.priorities.push(t.priority)
-      if (!cur.customerName && t.reporter_name) {
-        cur.customerName = t.reporter_name as string
-      }
-      ticketByPhone.set(phone, cur)
-    }
-  }
-
   const lastMsgByWa = new Map<
     string,
     { body: string; direction: 'inbound' | 'outbound' }
   >()
-  if (waIds.length > 0) {
-    const { data: recent } = await supabase
-      .from('inbox_messages')
-      .select('wa_id, body, direction, created_at')
-      .in('wa_id', waIds)
-      .order('created_at', { ascending: false })
-      .limit(300)
 
-    for (const m of recent ?? []) {
-      if (lastMsgByWa.has(m.wa_id)) continue
-      lastMsgByWa.set(m.wa_id, {
-        body: m.body,
-        direction: m.direction === 'outbound' ? 'outbound' : 'inbound',
-      })
+  const [storesRes, ticketsRes, recentRes] = await Promise.all([
+    storeIds.length > 0
+      ? supabase.from('stores').select('id, code, name').in('id', storeIds)
+      : Promise.resolve({ data: [] as { id: string; code: string; name: string }[] }),
+    waIds.length > 0
+      ? supabase
+          .from('tickets')
+          .select('id, reporter_phone, reporter_name, priority, status')
+          .in('reporter_phone', waIds)
+          .in('status', [...OPEN_TICKET_STATUSES])
+          .limit(200)
+      : Promise.resolve({
+          data: [] as {
+            id: string
+            reporter_phone: string | null
+            reporter_name: string | null
+            priority: string
+            status: string
+          }[],
+        }),
+    waIds.length > 0
+      ? supabase
+          .from('inbox_messages')
+          .select('wa_id, body, direction, created_at')
+          .in('wa_id', waIds)
+          .order('created_at', { ascending: false })
+          .limit(300)
+      : Promise.resolve({
+          data: [] as {
+            wa_id: string
+            body: string
+            direction: string
+            created_at: string
+          }[],
+        }),
+  ])
+
+  for (const s of storesRes.data ?? []) {
+    storeMap.set(s.id, { name: s.name, code: s.code })
+  }
+
+  for (const t of ticketsRes.data ?? []) {
+    const phone = t.reporter_phone as string | null
+    if (!phone) continue
+    const cur = ticketByPhone.get(phone) ?? {
+      priorities: [],
+      customerName: null,
     }
+    if (t.priority) cur.priorities.push(t.priority)
+    if (!cur.customerName && t.reporter_name) {
+      cur.customerName = t.reporter_name as string
+    }
+    ticketByPhone.set(phone, cur)
+  }
+
+  for (const m of recentRes.data ?? []) {
+    if (lastMsgByWa.has(m.wa_id)) continue
+    lastMsgByWa.set(m.wa_id, {
+      body: m.body,
+      direction: m.direction === 'outbound' ? 'outbound' : 'inbound',
+    })
   }
 
   const views = sessions.map((session) => {
@@ -578,11 +592,27 @@ export async function listSessionMessages(waId: string): Promise<{
   }
 
   const supabase = createSystemClient('inbox_messages_list')
-  const { data: inboxRows, error } = await supabase
-    .from('inbox_messages')
-    .select('id, direction, body, created_at, ticket_id')
-    .eq('wa_id', waId)
-    .order('created_at', { ascending: true })
+  const [inboxResult, ticketsResult, sessionResult] = await Promise.all([
+    supabase
+      .from('inbox_messages')
+      .select('id, direction, body, created_at, ticket_id')
+      .eq('wa_id', waId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('tickets')
+      .select(
+        'id, display_number, title, status, priority, description, reporter_name, store_id, stores(code, name)',
+      )
+      .eq('reporter_phone', waId)
+      .limit(20),
+    supabase
+      .from('intake_sessions')
+      .select('store_id, store_code')
+      .eq('wa_id', waId)
+      .maybeSingle(),
+  ])
+
+  const { data: inboxRows, error } = inboxResult
 
   if (error) {
     if (
@@ -617,16 +647,10 @@ export async function listSessionMessages(waId: string): Promise<{
     throw new Error(error.message)
   }
 
-  const { data: tickets } = await supabase
-    .from('tickets')
-    .select(
-      'id, display_number, title, status, priority, description, reporter_name, store_id, stores(code, name)',
-    )
-    .eq('reporter_phone', waId)
-    .limit(20)
+  const tickets = ticketsResult.data ?? []
 
-  const ticketIds = (tickets ?? []).map((t) => t.id)
-  const openTickets: InboxOpenTicket[] = (tickets ?? [])
+  const ticketIds = tickets.map((t) => t.id)
+  const openTickets: InboxOpenTicket[] = tickets
     .filter((t) =>
       OPEN_TICKET_STATUSES.includes(
         t.status as (typeof OPEN_TICKET_STATUSES)[number],
@@ -687,18 +711,14 @@ export async function listSessionMessages(waId: string): Promise<{
   // Ops replies are stored in both inbox_messages and ticket_messages.
   const messages = dedupeThreadMessages(combined)
 
-  const { data: sessionRow } = await supabase
-    .from('intake_sessions')
-    .select('store_id, store_code')
-    .eq('wa_id', waId)
-    .maybeSingle()
+  const sessionRow = sessionResult.data
 
   const store_name = resolveStoreName(
     (sessionRow?.store_id as string | null) ?? null,
     (sessionRow?.store_code as string | null) ?? null,
   )
   const customer_name =
-    (tickets ?? []).find((t) => t.reporter_name)?.reporter_name ?? null
+    tickets.find((t) => t.reporter_name)?.reporter_name ?? null
 
   return {
     messages,

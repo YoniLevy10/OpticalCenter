@@ -299,8 +299,7 @@ export function InboxClient() {
       setNotice(
         `הודעה נשלחה · נפתח חלון שיחה פרטית ל־${HUMAN_PAUSE_WINDOW_MINUTES} דקות בשיחה זו בלבד (בוט ממשיך בשאר השיחות). לחצו «החזר לבוט» כשתסיימו.`,
       )
-      await loadThread(selected)
-      await loadSessions()
+      await Promise.all([loadThread(selected), loadSessions()])
       composerRef.current?.focus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שליחה נכשלה')

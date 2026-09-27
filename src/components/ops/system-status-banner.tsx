@@ -58,6 +58,7 @@ export function SystemStatusBanner({
     <Link
       href="/ops/status"
       aria-label={`סטטוס מערכת: ${label}`}
+      data-visual="system-status"
       className={cn(
         'inline-flex items-center gap-2 rounded-[var(--radius-md)] transition-colors duration-[var(--dur-1)]',
         compact
