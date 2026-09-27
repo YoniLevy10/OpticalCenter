@@ -3,8 +3,8 @@
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
 **Applies to:** every surface in `src/app/**`.
-**Brand:** near-black ink, warm white canvas, official diamond red `#d92621`.
-Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or a page-wide color wash.
+**Brand:** soft charcoal ink (not pure black), warm white canvas, official diamond red `#d92621`.
+Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or pure-black voids.
 
 ---
 
@@ -13,7 +13,7 @@ Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or a
 > **Color is a signal, not a surface.**
 
 Ink and space carry hierarchy. Color is spent where a decision is required.
-The product reads as Optical Center: black type, white panels, diamond red on the mark and the primary action. Active nav may use `--tenant-soft`. The page background stays flat `--canvas`.
+The product reads as Optical Center: soft charcoal type, white panels, diamond red on the mark and the primary action. Active nav may use `--tenant-soft`. Canvas stays warm white with a light OC-red breath — charcoal and red balance each other.
 
 Two supporting rules:
 
@@ -64,15 +64,15 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 
 | Token | Value | Use |
 |---|---|---|
-| `--canvas` | `#f6f6f4` | app background (warm showroom white) |
+| `--canvas` | `#f7f6f2` | app background (warm showroom white) |
 | `--surface` | `#ffffff` | panels, rows, sheets |
-| `--surface-sunken` | `#eeeee9` | table headers, inert fills |
+| `--surface-sunken` | `#f0efe9` | table headers, inert fills |
 | `--surface-raised` | `#ffffff` | floating surfaces (popover / dropdown) |
-| `--border` | `#e4e4df` | hairline |
-| `--border-strong` | `#cfcfc8` | emphasis |
-| `--ink` | `#141414` | primary text (logo black) |
-| `--ink-2` | `#5a5a56` | secondary text |
-| `--ink-3` | `#5f5f5b` | tertiary / metadata |
+| `--border` | `#e5e4de` | hairline |
+| `--border-strong` | `#d0cfc8` | emphasis |
+| `--ink` | `#2b2b28` | primary text (soft charcoal) |
+| `--ink-2` | `#5e5e59` | secondary text |
+| `--ink-3` | `#6f6f69` | tertiary / metadata |
 
 ### Layer 2 — Signal (identical for every tenant)
 
@@ -90,7 +90,7 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 |---|---|
 | `--tenant` | `#d92621` |
 | `--tenant-hover` | `#b31c18` |
-| `--tenant-soft` | `#f8ebea` |
+| `--tenant-soft` | `#faf0ef` |
 | `--tenant-line` | `#f0c9c7` |
 | `--tenant-contrast` | `#ffffff` |
 
