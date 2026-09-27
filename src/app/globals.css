@@ -2,24 +2,25 @@
 
 /* ============================================================
    MaintainOS — Optical Center
-   Showroom palette: near-black ink, warm white canvas, and the
-   official diamond red (#d92621). Color is a signal, not a tint.
-   Do not restyle toward Bamakor blue, iOS gray, or teal.
+   Balanced showroom palette: soft charcoal ink (not pure black),
+   warm white canvas, diamond red (#d92621). Red and charcoal
+   balance each other — never Bamakor blue or page-wide teal.
    See docs/DESIGN_SYSTEM.md
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (showroom white, logo black) ---------- */
-  --canvas: #f6f6f4;
+  /* ---------- Layer 1 — SUBSTRATE (warm white + soft charcoal) ---------- */
+  --canvas: #f7f6f2;
   --surface: #ffffff;
-  --surface-sunken: #eeeee9;
+  --surface-sunken: #f0efe9;
   --surface-raised: #ffffff;
-  --border: #e4e4df;
-  --border-strong: #cfcfc8;
-  --ink: #141414;
-  --ink-2: #5a5a56;
-  /* WCAG AA ≥4.5:1 on --canvas (#f6f6f4) and white */
-  --ink-3: #5f5f5b;
+  --border: #e5e4de;
+  --border-strong: #d0cfc8;
+  /* Soft charcoal — readable without pure-black harshness */
+  --ink: #2b2b28;
+  --ink-2: #5e5e59;
+  /* WCAG AA ≥4.5:1 on --canvas (#f7f6f2) and white */
+  --ink-3: #6f6f69;
 
   /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
   --signal-critical: #c01e1e;
@@ -38,7 +39,7 @@
   /* ---------- Layer 3 — TENANT (Optical Center diamond red) ---------- */
   --tenant: #d92621;
   --tenant-hover: #b31c18;
-  --tenant-soft: #f8ebea;
+  --tenant-soft: #faf0ef;
   --tenant-line: #f0c9c7;
   --signal-accent: #f4b860;
   --tenant-contrast: #ffffff;
@@ -49,14 +50,19 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
 
-  /* ---------- Elevation — Bamakor-soft depth ---------- */
-  --shadow-1: 0 1px 2px rgba(20, 20, 20, 0.05), 0 1px 3px rgba(20, 20, 20, 0.04);
-  --shadow-2: 0 2px 8px rgba(20, 20, 20, 0.06), 0 1px 2px rgba(20, 20, 20, 0.04);
-  --shadow-hover: 0 6px 18px rgba(20, 20, 20, 0.08), 0 2px 4px rgba(20, 20, 20, 0.04);
-  --shadow-pop: 0 14px 40px rgba(20, 20, 20, 0.12), 0 4px 12px rgba(20, 20, 20, 0.06);
+  /* ---------- Liquid glass chrome ---------- */
+  --glass-blur: 28px;
+  --glass-sat: 1.55;
+  --large-title-progress: 0;
 
-  /* Intentional dark chrome — logo black, stays dark in both themes */
-  --panel-dark: #141414;
+  /* ---------- Elevation — soft charcoal depth (not pure black) ---------- */
+  --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.05), 0 1px 3px rgba(43, 43, 40, 0.04);
+  --shadow-2: 0 2px 8px rgba(43, 43, 40, 0.06), 0 1px 2px rgba(43, 43, 40, 0.04);
+  --shadow-hover: 0 6px 18px rgba(43, 43, 40, 0.08), 0 2px 4px rgba(43, 43, 40, 0.04);
+  --shadow-pop: 0 14px 40px rgba(43, 43, 40, 0.12), 0 4px 12px rgba(43, 43, 40, 0.06);
+
+  /* Dark chrome — lifted charcoal, never pure black */
+  --panel-dark: #2b2b28;
   --panel-dark-fg: #ffffff;
 
   /* ---------- Motion — smoother, iOS-like ---------- */
@@ -86,16 +92,17 @@
 html.dark {
   color-scheme: dark;
 
-  --canvas: #111111;
-  --surface: #1c1c1c;
-  --surface-sunken: #0a0a0a;
-  --surface-raised: #242424;
-  --border: #2e2e2e;
-  --border-strong: #424242;
-  --ink: #f5f5f3;
-  --ink-2: #c2c2be;
-  /* ≥4.5:1 on --canvas (#111111) */
-  --ink-3: #a3a39e;
+  /* Lifted warm charcoal — mid-tones, not a black void */
+  --canvas: #222220;
+  --surface: #2e2e2b;
+  --surface-sunken: #1a1a18;
+  --surface-raised: #383835;
+  --border: #42423e;
+  --border-strong: #565650;
+  --ink: #f3f3f0;
+  --ink-2: #bcbcb6;
+  /* ≥4.5:1 on --canvas (#222220) */
+  --ink-3: #9e9e97;
 
   --signal-critical: #f07171;
   --signal-critical-soft: #3a1818;
@@ -117,13 +124,13 @@ html.dark {
   --signal-accent: #f4b860;
   --tenant-contrast: #1a0606;
 
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
-  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.16);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.32), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.24);
 
-  --panel-dark: #0a0a0a;
-  --panel-dark-fg: #f5f5f3;
+  --panel-dark: #222220;
+  --panel-dark-fg: #f3f3f0;
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -174,34 +181,83 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Flat showroom canvas. Brand red stays on actions and the mark, not on the page. */
+/* Warm canvas with a soft OC-red breath — balances charcoal ink without teal wash. */
 .ops-atmosphere,
 body {
-  background: var(--canvas);
+  background:
+    radial-gradient(
+      ellipse 100% 60% at 100% -8%,
+      color-mix(in srgb, var(--tenant-soft) 70%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 0% 100%,
+      color-mix(in srgb, var(--signal-accent) 8%, transparent),
+      transparent 50%
+    ),
+    var(--canvas);
+  background-attachment: fixed;
 }
 
-/* Liquid-glass chrome: frosted, darkened edge, soft specular. Content panels stay opaque. */
+/* Liquid-glass chrome: frosted, soft edge, light specular. Content panels stay opaque. */
 .apple-glass {
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  backdrop-filter: blur(28px) saturate(1.7);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   box-shadow:
     inset 0 0.5px 0 color-mix(in srgb, white 80%, transparent),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 10%, transparent),
-    0 10px 30px color-mix(in srgb, var(--ink) 8%, transparent);
+    inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 10px 28px color-mix(in srgb, var(--ink) 6%, transparent);
 }
 html.dark .apple-glass {
-  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
   box-shadow:
-    inset 0 0.5px 0 color-mix(in srgb, white 16%, transparent),
-    inset 0 0 0 0.5px color-mix(in srgb, white 12%, transparent),
-    0 12px 32px rgba(0, 0, 0, 0.4);
+    inset 0 0.5px 0 color-mix(in srgb, white 14%, transparent),
+    inset 0 0 0 0.5px color-mix(in srgb, white 10%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.28);
 }
 
 .apple-sidebar {
-  background: color-mix(in srgb, var(--surface) 76%, var(--canvas));
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  backdrop-filter: blur(28px) saturate(1.5);
+  background: color-mix(in srgb, var(--surface) 82%, var(--canvas));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+/* Soft fade where content scrolls under glass chrome */
+.scroll-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 20px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 20px),
+    transparent 100%
+  );
+}
+
+/* Press feedback — CTA / nav only; never queue rows */
+.press-scale {
+  transition: transform var(--dur-1) var(--ease);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Large-title collapse progress (0 = expanded, 1 = compact top bar) */
+.large-title-bar {
+  opacity: var(--large-title-progress);
+  transform: translateY(calc((1 - var(--large-title-progress)) * -4px));
+  transition: opacity var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.large-title-hero-title {
+  opacity: calc(1 - var(--large-title-progress));
+  transform: translateY(calc(var(--large-title-progress) * -6px));
 }
 
 body {
@@ -547,16 +603,16 @@ textarea:focus-visible,
   animation: mo-fade-in var(--dur-2) var(--ease);
 }
 .animate-sheet {
-  animation: mo-sheet-in var(--dur-2) var(--ease);
+  animation: mo-sheet-in var(--dur-2) var(--ease-spring);
 }
 .animate-slide-up {
-  animation: mo-slide-up var(--dur-2) var(--ease);
+  animation: mo-slide-up var(--dur-2) var(--ease-spring);
 }
 .animate-drawer-in {
   animation: mo-drawer-in var(--dur-2) var(--ease);
 }
 .animate-scale-in {
-  animation: mo-scale-in var(--dur-2) var(--ease);
+  animation: mo-scale-in var(--dur-2) var(--ease-spring);
 }
 .animate-shimmer {
   animation: mo-pulse 1.6s var(--ease) infinite;
@@ -610,6 +666,13 @@ main {
   ::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+  .press-scale:active {
+    transform: none;
+  }
+  .large-title-bar,
+  .large-title-hero-title {
+    transition: none;
   }
 }
 

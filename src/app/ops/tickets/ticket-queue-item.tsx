@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/toast'
 import { OperationalRow, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
 import { priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
+import { SwipeActions } from '@/components/ui/swipe-actions'
 import { cn } from '@/lib/utils'
 import {
   plainOpenForHe,
@@ -104,6 +105,21 @@ export function TicketQueueItem({
     }
   }
 
+  function openUpdateSheet() {
+    setStatus(
+      HQ_STATUS_OPTIONS.includes(ticket.status as TicketStatus)
+        ? (ticket.status as TicketStatus)
+        : 'in_progress',
+    )
+    setNote('')
+    setSheetOpen(true)
+  }
+
+  async function resolveTicket() {
+    const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
+    if (ok) startTransition(() => router.refresh())
+  }
+
   if (!open) {
     return (
       <OperationalRow
@@ -132,91 +148,111 @@ export function TicketQueueItem({
     )
   }
 
+  const rowLink = (
+    <Link
+      href={`/ops/tickets/${ticket.id}`}
+      className={cn(
+        'flex min-h-[80px] min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-colors duration-[var(--dur-1)] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
+        priorityEdgeClass(ticket.priority),
+      )}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="t-caption t-num text-ink-3" data-live="ticket-no">
+          <span className="text-ink">{displayNum(ticket)}</span>
+          <span className="mx-1.5" aria-hidden>
+            ·
+          </span>
+          {storeLabel(ticket.stores)}
+        </span>
+        <span
+          className={cn(
+            't-meta shrink-0',
+            openFor.overdue
+              ? 'text-[var(--signal-critical)]'
+              : 'text-ink-3',
+          )}
+        >
+          {openFor.text}
+        </span>
+      </div>
+      <span className="t-lead line-clamp-2 text-ink">
+        {ticket.title || ticket.description}
+      </span>
+      <div className="mt-0.5 flex items-center gap-2">
+        <StatusLabel status={ticket.status} />
+        <Dot />
+        <span className="t-meta truncate text-ink-2">{assigneeLabel}</span>
+      </div>
+    </Link>
+  )
+
+  const desktopActions = (
+    <div className="hidden shrink-0 items-center gap-2 border-t border-border px-4 py-2.5 md:flex md:w-44 md:flex-col md:justify-center md:border-s md:border-t-0 md:px-3">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="min-h-[var(--tap)] w-full"
+        disabled={disabled}
+        onClick={() => void resolveTicket()}
+      >
+        <Check className="h-3.5 w-3.5" aria-hidden />
+        סגור
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="min-h-[var(--tap)] w-full"
+        disabled={disabled}
+        onClick={openUpdateSheet}
+      >
+        <MessageSquareText className="h-3.5 w-3.5" aria-hidden />
+        עדכון
+      </Button>
+    </div>
+  )
+
+  const swipeButtons = (
+    <div className="flex h-full w-full">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => void resolveTicket()}
+        className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--signal-resolved)] text-white t-caption"
+      >
+        <Check className="h-4 w-4" aria-hidden />
+        סגור
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={openUpdateSheet}
+        className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--signal-progress)] text-white t-caption"
+      >
+        <MessageSquareText className="h-4 w-4" aria-hidden />
+        עדכון
+      </button>
+    </div>
+  )
+
   return (
     <div
       className={cn(
-        'flex flex-col gap-0 border-b border-border last:border-b-0 md:flex-row md:items-stretch',
+        'border-b border-border last:border-b-0 md:flex md:flex-row md:items-stretch',
         priorityRowClass(ticket.priority),
       )}
     >
-      <Link
-        href={`/ops/tickets/${ticket.id}`}
-        className={cn(
-          'flex min-h-[80px] min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-colors duration-[var(--dur-1)] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
-          priorityEdgeClass(ticket.priority),
-        )}
-      >
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="t-caption t-num text-ink-3" data-live="ticket-no">
-            <span className="text-ink">{displayNum(ticket)}</span>
-            <span className="mx-1.5" aria-hidden>
-              ·
-            </span>
-            {storeLabel(ticket.stores)}
-          </span>
-          <span
-            className={cn(
-              't-meta shrink-0',
-              openFor.overdue
-                ? 'text-[var(--signal-critical)]'
-                : 'text-ink-3',
-            )}
-          >
-            {openFor.text}
-          </span>
-        </div>
-        <span className="t-lead line-clamp-2 text-ink">
-          {ticket.title || ticket.description}
-        </span>
-        <div className="mt-0.5 flex items-center gap-2">
-          <StatusLabel status={ticket.status} />
-          <Dot />
-          <span className="t-meta truncate text-ink-2">{assigneeLabel}</span>
-        </div>
-      </Link>
-
-      <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-2.5 md:w-44 md:flex-col md:justify-center md:border-s md:border-t-0 md:px-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="min-h-[var(--tap)] flex-1 md:w-full"
-          disabled={disabled}
-          onClick={() =>
-            void (async () => {
-              const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
-              if (ok) startTransition(() => router.refresh())
-            })()
-          }
-        >
-          <Check className="h-3.5 w-3.5" aria-hidden />
-          סגור
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="min-h-[var(--tap)] flex-1 md:w-full"
-          disabled={disabled}
-          onClick={() => {
-            setStatus(
-              HQ_STATUS_OPTIONS.includes(ticket.status as TicketStatus)
-                ? (ticket.status as TicketStatus)
-                : 'in_progress',
-            )
-            setNote('')
-            setSheetOpen(true)
-          }}
-        >
-          <MessageSquareText className="h-3.5 w-3.5" aria-hidden />
-          עדכון
-        </Button>
-      </div>
+      <SwipeActions actions={swipeButtons} disabled={disabled} className="md:flex-1">
+        {rowLink}
+      </SwipeActions>
+      {desktopActions}
 
       <BottomSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title={`עדכון ${displayNum(ticket)}`}
+        detent="half"
       >
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">

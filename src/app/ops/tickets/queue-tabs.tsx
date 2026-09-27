@@ -1,59 +1,87 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import {
+  queueHref,
+  type QueueFilters,
+} from '@/modules/tickets/queue'
 
 type Tab = 'open' | 'resolved'
 
+const TAB_LABELS: { key: Tab; label: string }[] = [
+  { key: 'open', label: 'פתוחות' },
+  { key: 'resolved', label: 'הסתיימו' },
+]
+
+/**
+ * Queue open/resolved control — native tab semantics (not Next Link) so
+ * role=tab is never stripped; sliding pill matches Segmented craft.
+ * Preserves search/store filters when switching views.
+ */
 export function QueueTabs({
   active,
-  q,
-  storeCode,
+  filters = {},
 }: {
   active: Tab
-  q?: string
-  storeCode?: string
+  filters?: Partial<QueueFilters>
 }) {
-  function href(view: Tab) {
-    const params = new URLSearchParams()
-    params.set('view', view)
-    if (q?.trim()) params.set('q', q.trim())
-    if (storeCode) params.set('store', storeCode)
-    return `/ops/tickets?${params.toString()}`
-  }
+  const router = useRouter()
+  const trackRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
+  const [pill, setPill] = useState({ x: 0, w: 0, ready: false })
+
+  useLayoutEffect(() => {
+    const track = trackRef.current
+    const el = itemRefs.current.get(active)
+    if (!track || !el) return
+    const tr = track.getBoundingClientRect()
+    const er = el.getBoundingClientRect()
+    setPill({ x: er.left - tr.left, w: er.width, ready: true })
+  }, [active])
 
   return (
     <div
+      ref={trackRef}
       role="tablist"
       aria-label="סינון תקלות"
-      className="flex gap-1 rounded-[var(--radius-md)] border border-border bg-surface-sunken/50 p-1"
+      aria-orientation="horizontal"
+      className="relative flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
     >
-      <Link
-        role="tab"
-        aria-selected={active === 'open'}
-        href={href('open')}
+      <span
+        aria-hidden
         className={cn(
-          'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
-          active === 'open'
-            ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-            : 'text-ink-3',
+          'pointer-events-none absolute top-1 bottom-1 rounded-[var(--radius-sm)] bg-surface shadow-[var(--shadow-1)] transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease)]',
+          !pill.ready && 'opacity-0',
         )}
-      >
-        פתוחות
-      </Link>
-      <Link
-        role="tab"
-        aria-selected={active === 'resolved'}
-        href={href('resolved')}
-        className={cn(
-          'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
-          active === 'resolved'
-            ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-            : 'text-ink-3',
-        )}
-      >
-        הסתיימו
-      </Link>
+        style={{ width: pill.w, transform: `translateX(${pill.x}px)` }}
+      />
+      {TAB_LABELS.map((tab) => {
+        const selected = tab.key === active
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            tabIndex={selected ? 0 : -1}
+            ref={(node) => {
+              if (node) itemRefs.current.set(tab.key, node)
+              else itemRefs.current.delete(tab.key)
+            }}
+            onClick={() =>
+              router.push(queueHref(filters, { view: tab.key }))
+            }
+            className={cn(
+              'relative z-[1] t-control flex flex-1 items-center justify-center rounded-[var(--radius-sm)] py-2.5 transition-colors duration-[var(--dur-1)]',
+              selected ? 'text-ink' : 'text-ink-3',
+            )}
+          >
+            {tab.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

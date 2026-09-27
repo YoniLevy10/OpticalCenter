@@ -98,6 +98,7 @@ export default async function StoresPage({
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
+          largeTitle
           title="חנויות"
           status={`${activeCount} סניפים פעילים${
             openStores > 0 ? ` · ${openStores} עם תקלות פתוחות` : ''

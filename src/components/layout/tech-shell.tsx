@@ -40,7 +40,7 @@ export function TechShell({
       id="main-content"
       tabIndex={-1}
       className={cn(
-        'mx-auto w-full max-w-xl px-4 pt-5 outline-none',
+        'scroll-edge-fade mx-auto w-full max-w-xl px-4 pt-5 outline-none',
         actions ? 'pb-actions scroll-pb-actions' : 'pb-8',
       )}
     >
