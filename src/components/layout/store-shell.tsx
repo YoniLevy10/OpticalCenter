@@ -53,7 +53,7 @@ export function StoreShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  't-control mx-1 mb-2 flex-1 rounded-md py-2.5 text-center transition-colors',
+                  'press-scale t-control mx-1 mb-2 flex-1 rounded-md py-2.5 text-center transition-colors',
                   active
                     ? 'bg-tenant-soft text-tenant'
                     : 'text-ink-3 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
@@ -65,7 +65,10 @@ export function StoreShell({
           })}
         </nav>
       </header>
-      <main id="main-content" className="safe-pb mx-auto max-w-lg px-4 py-5">
+      <main
+        id="main-content"
+        className="safe-pb scroll-edge-fade mx-auto max-w-lg px-4 py-5"
+      >
         {children}
       </main>
     </div>

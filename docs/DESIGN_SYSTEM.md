@@ -189,7 +189,30 @@ Technicians: TechShell only — no HQ chrome.
 
 ---
 
-## 6. Component rules
+## 6. Apple craft (allowed vs forbidden)
+
+Chase Apple **craft** (Mail / Settings / Reminders), not Apple marketing chrome.
+
+**Allowed**
+- `.apple-glass` / `.apple-sidebar` on shell chrome only (header, bottom nav pill, drawer, tech action dock)
+- Large-title collapse via `--large-title-progress` (hero → glass top bar)
+- `BottomSheet` detents (`half` | `full`) with grabber drag
+- Sliding `Segmented*` pill indicator
+- Mail-style `SwipeActions` on ticket rows (mobile)
+- Settings-style `GroupedList` / `GroupedSection` inset lists
+- `.press-scale` on primary CTA, FAB, and bottom-nav / store-nav tabs
+- `--ease-spring` on sheet / modal entrance only
+- `.scroll-edge-fade` under glass chrome when content scrolls
+
+**Forbidden**
+- Glass / frosted fills on data tables, PulseTiles, or queue rows
+- iOS gray `#f2f2f7`, SF Pro as primary face, Bamakor blue, teal ink
+- Bounce / scale on queue rows or daily list stagger
+- Tenant red on status, priority, SLA, charts
+
+---
+
+## 7. Component rules
 
 One system in `src/components/ui/`. Storybook for changed primitives.
 
@@ -200,17 +223,17 @@ Rules:
 - Mobile controls ≥ `--tap` (44px); inputs 16px on mobile.
 - Motion communicates; daily queues do not stagger or bounce.
 - Toast may use `animate-slide-up`; modal uses `animate-scale-in`; sheets use
-  `animate-slide-up`.
+  `animate-slide-up` (spring easing via `--ease-spring`).
 
 ---
 
-## 7. Non-happy path
+## 8. Non-happy path
 
 Every route: `loading` (skeleton), empty, error. Offline honesty on tech surfaces.
 
 ---
 
-## 8. RTL
+## 9. RTL
 
 Logical properties only (`ms/me`, `ps/pe`, `start/end`). Priority edge uses
 `inline-start`. Latin IDs / phones / URLs: `dir="ltr"`.
