@@ -75,6 +75,7 @@ export function TicketQueueItem({
   const disabled = busy || pending
 
   async function patch(body: Record<string, unknown>, successText: string) {
+    if (busy || pending) return false
     setBusy(true)
     try {
       const res = await fetch(`/api/tickets/${ticket.id}`, {

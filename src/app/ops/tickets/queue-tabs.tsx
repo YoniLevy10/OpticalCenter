@@ -5,7 +5,23 @@ import { cn } from '@/lib/utils'
 
 type Tab = 'open' | 'resolved'
 
-export function QueueTabs({ active }: { active: Tab }) {
+export function QueueTabs({
+  active,
+  q,
+  storeCode,
+}: {
+  active: Tab
+  q?: string
+  storeCode?: string
+}) {
+  function href(view: Tab) {
+    const params = new URLSearchParams()
+    params.set('view', view)
+    if (q?.trim()) params.set('q', q.trim())
+    if (storeCode) params.set('store', storeCode)
+    return `/ops/tickets?${params.toString()}`
+  }
+
   return (
     <div
       role="tablist"
@@ -15,7 +31,7 @@ export function QueueTabs({ active }: { active: Tab }) {
       <Link
         role="tab"
         aria-selected={active === 'open'}
-        href="/ops/tickets?view=open"
+        href={href('open')}
         className={cn(
           'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
           active === 'open'
@@ -28,7 +44,7 @@ export function QueueTabs({ active }: { active: Tab }) {
       <Link
         role="tab"
         aria-selected={active === 'resolved'}
-        href="/ops/tickets?view=resolved"
+        href={href('resolved')}
         className={cn(
           'flex-1 rounded-[var(--radius-sm)] py-2.5 text-center t-control transition-colors',
           active === 'resolved'

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
@@ -14,7 +13,11 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from '@/modules/tickets/constants'
-import { getById, listInternalTechnicians, listTickets } from '@/modules/tickets/service'
+import {
+  getById,
+  listInternalTechnicians,
+  countOpenTicketsByAssignee,
+} from '@/modules/tickets/service'
 import {
   fetchTicketAttachments,
   mergeEvidence,
@@ -34,7 +37,6 @@ import {
   storeLabel,
 } from '@/components/ops/plain-labels'
 import { cn } from '@/lib/utils'
-import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,37 +53,26 @@ export default async function TicketDetailPage({
   }
 
   const resolvedClient = await resolveTicketsSupabase(actor)
-  let ticket
-  try {
-    ticket = await getById(id, { client: resolvedClient?.client })
-  } catch {
-    ticket = null
-  }
+
+  const [ticket, technicians, storedAttachments, openCountByTech] =
+    await Promise.all([
+      getById(id, { client: resolvedClient?.client }).catch(() => null),
+      listInternalTechnicians().catch(() => []),
+      fetchTicketAttachments(id).catch(() => []),
+      countOpenTicketsByAssignee({ client: resolvedClient?.client }).catch(
+        () => new Map<string, number>(),
+      ),
+    ])
+
   if (!ticket) notFound()
   if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
-  const [technicians, storedAttachments, openTicketsResult, vendorSuggest] =
-    await Promise.all([
-      listInternalTechnicians().catch(() => []),
-      fetchTicketAttachments(ticket.id),
-      listTickets({ limit: 500, client: resolvedClient?.client }).catch(() => ({
-        tickets: [],
-      })),
-      suggestVendorsForTicket({
-        category: ticket.category,
-        regionId: ticket.region_id,
-      }).catch(() => ({ matches: [] })),
-    ])
-
-  const openCountByTech = new Map<string, number>()
-  for (const t of openTicketsResult.tickets ?? []) {
-    if (!t.assigned_to) continue
-    if (!OPEN_TICKET_STATUSES.includes(t.status as never)) continue
-    openCountByTech.set(
-      t.assigned_to,
-      (openCountByTech.get(t.assigned_to) ?? 0) + 1,
-    )
-  }
+  const vendorSuggestResolved = await suggestVendorsForTicket({
+    category: ticket.category,
+    regionId: ticket.region_id,
+  }).catch(() => ({ matches: [] as Awaited<
+    ReturnType<typeof suggestVendorsForTicket>
+  >['matches'] }))
 
   const techOptions = technicians.map((t) => ({
     id: t.id,
@@ -90,7 +81,7 @@ export default async function TicketDetailPage({
     openCount: openCountByTech.get(t.id) ?? 0,
   }))
 
-  const preferredMatches = vendorSuggest.matches.slice(0, 4).map((m) => ({
+  const preferredMatches = vendorSuggestResolved.matches.slice(0, 4).map((m) => ({
     id: m.id,
     name: m.name,
     specialties: m.specialties,
@@ -202,20 +193,8 @@ export default async function TicketDetailPage({
           fixlyLabel={fixlyStatusLabelHe()}
         />
 
-        <div className="hidden md:block">
-          <TicketActions
-            ticketId={ticket.id}
-            status={ticket.status as TicketStatus}
-            assignedTo={ticket.assigned_to}
-            assigneeName={
-              assignee?.full_name || assignee?.email || null
-            }
-            technicians={techOptions}
-          />
-        </div>
-
-        {/* Mobile sticky action dock above bottom nav */}
-        <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:hidden">
+        {/* Single mount: sticky dock on mobile, inline panel on md+ */}
+        <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:static md:inset-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
           <TicketActions
             ticketId={ticket.id}
             status={ticket.status as TicketStatus}

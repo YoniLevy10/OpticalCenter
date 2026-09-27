@@ -502,20 +502,51 @@ export function memReset() {
   return mem
 }
 
+/** Process-lifetime probe cache — avoid N stores.select probes per navigation. */
+let supabaseReadyCache: { value: boolean; checkedAt: number } | null = null
+let supabaseReadyInflight: Promise<boolean> | null = null
+const SUPABASE_READY_TTL_MS = 60_000
+
+/** Test / ops helper — clears the readiness memo. */
+export function resetSupabaseReadyCache() {
+  supabaseReadyCache = null
+  supabaseReadyInflight = null
+}
+
 export async function supabaseReady(): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return false
   // Prefer memory when explicitly requested (local demo without migrations).
   if (process.env.MAINTAINOS_FORCE_MEMORY === '1') return false
-  try {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('stores').select('id').limit(1)
-    return !error
-  } catch {
-    return false
+
+  const now = Date.now()
+  if (
+    supabaseReadyCache &&
+    now - supabaseReadyCache.checkedAt < SUPABASE_READY_TTL_MS
+  ) {
+    return supabaseReadyCache.value
   }
+
+  if (supabaseReadyInflight) return supabaseReadyInflight
+
+  supabaseReadyInflight = (async () => {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const supabase = createAdminClient()
+      const { error } = await supabase.from('stores').select('id').limit(1)
+      const value = !error
+      supabaseReadyCache = { value, checkedAt: Date.now() }
+      return value
+    } catch {
+      supabaseReadyCache = { value: false, checkedAt: Date.now() }
+      return false
+    } finally {
+      supabaseReadyInflight = null
+    }
+  })()
+
+  return supabaseReadyInflight
 }
 
 export function memDemoTechnicians() {
@@ -1265,6 +1296,7 @@ export function memFilterTickets(
   tickets: MemTicket[],
   filters: {
     status?: string
+    statuses?: string[]
     priority?: string
     storeCode?: string
     assignedTo?: string
@@ -1272,8 +1304,13 @@ export function memFilterTickets(
   },
 ): MemTicket[] {
   const q = filters.q?.trim().toLowerCase()
+  const statusSet =
+    filters.statuses && filters.statuses.length > 0
+      ? new Set(filters.statuses)
+      : null
   return tickets.filter((t) => {
-    if (filters.status && t.status !== filters.status) return false
+    if (statusSet && !statusSet.has(t.status)) return false
+    if (!statusSet && filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
     if (filters.storeCode && t.stores?.code !== filters.storeCode) return false
     if (filters.assignedTo === 'none' && t.assigned_to) return false

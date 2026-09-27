@@ -24,7 +24,10 @@ export default async function StoreHomePage() {
     ? stores.find((s) => s.id === storeId)
     : stores.find((s) => s.code === '172') ?? stores[0]
 
-  const result = await listTickets({ limit: 200 }).catch(() => ({
+  const result = await listTickets({
+    limit: 50,
+    storeCode: store?.code,
+  }).catch(() => ({
     tickets: [] as QueueTicket[],
   }))
   const scoped = actor

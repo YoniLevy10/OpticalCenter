@@ -47,20 +47,34 @@ export async function POST(
       return NextResponse.json({ error: 'עד 3 קבצים' }, { status: 400 })
     }
 
-    const urls: string[] = []
-    for (const file of files) {
-      const check = validateMediaFile(file)
-      if (!check.ok) {
-        return NextResponse.json({ error: check.error }, { status: 400 })
-      }
-      const url = await uploadTicketMediaFile(ticketId, file, check.kind)
-      await persistTicketAttachment(ticketId, url, check.kind)
-      urls.push(url)
-    }
+    const urls = await Promise.all(
+      files.map(async (file) => {
+        const check = validateMediaFile(file)
+        if (!check.ok) {
+          throw new Error(check.error)
+        }
+        const url = await uploadTicketMediaFile(ticketId, file, check.kind)
+        await persistTicketAttachment(ticketId, url, check.kind)
+        return url
+      }),
+    )
 
     return NextResponse.json({ ok: true, urls }, { status: 201 })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
+    if (err instanceof Error && err.message && !err.message.includes('supabase')) {
+      // Media validation / persist errors — surface message when safe.
+      const msg = err.message
+      if (
+        msg.includes('קובץ') ||
+        msg.includes('גודל') ||
+        msg.includes('סוג') ||
+        msg.includes('תמונה') ||
+        msg.includes('וידאו')
+      ) {
+        return NextResponse.json({ error: msg }, { status: 400 })
+      }
+    }
     captureError(err, { route: 'POST /api/tickets/[id]/attachments' })
     return NextResponse.json({ error: 'שגיאה' }, { status: 500 })
   }

@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import {
@@ -18,6 +19,9 @@ function isProfileUuid(value: string): boolean {
 /**
  * Resolve the signed-in actor for Server Components / pages.
  *
+ * Deduped per React request via `cache()` so layout + page + shell share one
+ * auth resolution (avoids repeated getUser / membership waterfalls).
+ *
  * Order:
  * 1) mos_test_actor cookie when test auth is allowed (memory / E2E)
  * 2) Supabase session via cookie-backed user client
@@ -26,7 +30,7 @@ function isProfileUuid(value: string): boolean {
  * Prefer createUserClient() from `@/lib/supabase/scoped` for user-facing
  * ticket reads when authVia === 'supabase_session' (phase 6+).
  */
-export async function getServerActor(): Promise<Actor | null> {
+export const getServerActor = cache(async (): Promise<Actor | null> => {
   const cookieStore = await cookies()
 
   if (testAuthAllowed()) {
@@ -51,7 +55,7 @@ export async function getServerActor(): Promise<Actor | null> {
   } catch {
     return null
   }
-}
+})
 
 /**
  * Tech SSR identity: session actor first; query `techId` only for demo/E2E

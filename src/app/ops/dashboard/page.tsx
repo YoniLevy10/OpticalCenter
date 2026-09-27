@@ -19,6 +19,7 @@ import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import { listVendors } from '@/modules/vendors/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import {
   plainOpenForHe,
   storeLabel,
@@ -34,15 +35,26 @@ export default async function OpsDashboardPage() {
     redirect('/login')
   }
 
-  const [ticketResult, techRows, vendorResult] = await Promise.all([
-    listTickets(500).catch(() => ({ tickets: [], backend: 'memory' as const })),
+  const [openResult, doneResult, techRows, vendorResult] = await Promise.all([
+    listTickets({
+      limit: 150,
+      statuses: [...OPEN_TICKET_STATUSES],
+    }).catch(() => ({ tickets: [], backend: 'memory' as const })),
+    // KPIs need resolved (awaiting store confirm) + recent closed.
+    listTickets({
+      limit: 80,
+      statuses: ['resolved', 'closed'],
+    }).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
     listVendors({ activeOnly: true, preferredOnly: true }).catch(() => ({
       vendors: [],
     })),
   ])
 
-  const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
+  const fetched = [
+    ...(openResult.tickets ?? []),
+    ...(doneResult.tickets ?? []),
+  ] as unknown as QueueTicket[]
   const all = actor ? scopeTicketsForActor(actor, fetched) : fetched
   const technicians = techRows.map((t) => ({
     id: t.id,
@@ -51,7 +63,8 @@ export default async function OpsDashboardPage() {
   const kpis = computeDashboardKpis(all, technicians)
   const topUrgent = kpis.exceptions.slice(0, 5)
   const awaitingConfirm = kpis.awaitingStoreConfirmTickets.slice(0, 5)
-  const isDemo = ticketResult.backend === 'memory'
+  const isDemo =
+    openResult.backend === 'memory' || doneResult.backend === 'memory'
   const hasOpen = kpis.open > 0
   const urgentCount = kpis.urgent
   const needsAri = kpis.needsAri

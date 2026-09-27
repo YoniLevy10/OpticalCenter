@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { QueueTabs } from './queue-tabs'
+import { QueueSearch } from './queue-search'
 import { PurgeDemoButton } from './purge-demo-button'
 import { TicketQueueItem } from './ticket-queue-item'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
@@ -18,6 +19,7 @@ import {
   applyQueue,
   type QueueTicket,
 } from '@/modules/tickets/queue'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -26,6 +28,8 @@ import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
+/** Cap DB fetch; view filters open vs resolved at the query when possible. */
+const FETCH_LIMIT = 200
 
 function technicianName(
   id: string | null | undefined,
@@ -46,6 +50,7 @@ export default async function TicketsPage({
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
   // Silent deep-link from store detail — no filter UI.
   const storeCode = (sp.store ?? '').trim() || undefined
+  const q = (sp.q ?? '').trim() || undefined
 
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
@@ -54,10 +59,17 @@ export default async function TicketsPage({
 
   const resolved = await resolveTicketsSupabase(actor)
 
+  const statuses =
+    view === 'resolved'
+      ? ['resolved', 'closed']
+      : [...OPEN_TICKET_STATUSES]
+
   const [ticketResult, techRows] = await Promise.all([
     listTickets({
-      limit: 1000,
+      limit: FETCH_LIMIT,
       storeCode,
+      statuses,
+      q,
       client: resolved?.client,
     }).catch((err) => ({
       tickets: [] as Awaited<ReturnType<typeof listTickets>>['tickets'],
@@ -88,18 +100,17 @@ export default async function TicketsPage({
     view,
     sort: 'newest',
     includeDemo: false,
+    q,
   })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
 
-  const baseHref =
-    view === 'resolved'
-      ? '/ops/tickets?view=resolved'
-      : storeCode
-        ? `/ops/tickets?view=open&store=${encodeURIComponent(storeCode)}`
-        : '/ops/tickets?view=open'
+  const baseHrefParts = [`view=${view}`]
+  if (storeCode) baseHrefParts.push(`store=${encodeURIComponent(storeCode)}`)
+  if (q) baseHrefParts.push(`q=${encodeURIComponent(q)}`)
+  const baseHref = `/ops/tickets?${baseHrefParts.join('&')}`
 
   const statusLine =
     view === 'resolved'
@@ -129,7 +140,8 @@ export default async function TicketsPage({
           }
         />
 
-        <QueueTabs active={view} />
+        <QueueTabs active={view} q={q} storeCode={storeCode} />
+        <QueueSearch view={view} initialQ={q ?? ''} storeCode={storeCode} />
 
         {listError ? (
           <ErrorState
