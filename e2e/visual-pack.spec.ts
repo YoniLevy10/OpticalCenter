@@ -9,18 +9,36 @@ import {
 const MAX_DIFF = 0.03
 
 const VIEWPORTS = [
-  { name: 'w390', width: 390, height: 844 },
-  { name: 'w430', width: 430, height: 932 },
-  // Stay clear of Tailwind `md` (768px): scrollbar/chrome can flip mobile↔desktop
-  // layout at exactly 768 and make chromium-linux snapshots flake in CI.
-  { name: 'w800', width: 800, height: 1024 },
-  { name: 'w1024', width: 1024, height: 768 },
-  { name: 'w1440', width: 1440, height: 900 },
+  { name: 'w390', width: 390, height: 844, desktop: false },
+  { name: 'w430', width: 430, height: 932, desktop: false },
+  // Stay well above Tailwind `md` (768px). Linux Chromium classic scrollbars
+  // shrink `window.innerWidth` and can leave 800px viewports stuck in the
+  // mobile shell (no dark sidebar) — use 960 so md still matches after chrome.
+  { name: 'w960', width: 960, height: 1024, desktop: true },
+  { name: 'w1024', width: 1024, height: 768, desktop: true },
+  { name: 'w1440', width: 1440, height: 900, desktop: true },
 ] as const
 
-async function gotoStable(page: Page, path: string) {
+async function gotoStable(
+  page: Page,
+  path: string,
+  opts?: { desktop?: boolean },
+) {
   await page.goto(path, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle').catch(() => undefined)
+
+  if (opts?.desktop) {
+    // Wait until CSS `md` layout is actually active (Linux scrollbars can
+    // briefly leave innerWidth under 768 after a resize from mobile).
+    await page.waitForFunction(
+      () =>
+        window.matchMedia('(min-width: 768px)').matches &&
+        window.innerWidth >= 768,
+      undefined,
+      { timeout: 5_000 },
+    )
+  }
+
   // Desktop shell fetches /api/health for the status chip — wait past "בודק…".
   const status = page.locator('[data-visual="system-status"]')
   if (await status.count()) {
@@ -101,8 +119,24 @@ test.describe('Visual regression pack', () => {
 
     for (const vp of VIEWPORTS) {
       await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          ),
+      )
       for (const route of routes) {
-        await gotoStable(page, route.path)
+        await gotoStable(page, route.path, { desktop: vp.desktop })
+        if (vp.desktop) {
+          const layout = await page.evaluate(() => ({
+            innerWidth: window.innerWidth,
+            md: window.matchMedia('(min-width: 768px)').matches,
+          }))
+          expect(
+            layout.md,
+            `desktop viewport ${vp.name} should match md (innerWidth=${layout.innerWidth})`,
+          ).toBe(true)
+        }
         await shot(page, `${route.key}-${vp.name}.png`)
       }
     }
