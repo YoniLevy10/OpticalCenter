@@ -24,7 +24,6 @@ export default function DashboardLoading() {
             />
           ))}
         </div>
-        <Skeleton className="h-4 w-80 max-w-full" />
         <Panel flush elevated className="overflow-hidden">
           <div className="h-10 border-b border-border bg-surface-sunken/35" />
           <RowSkeleton rows={5} />

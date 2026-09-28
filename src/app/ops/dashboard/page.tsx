@@ -17,7 +17,6 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
-import { listVendors } from '@/modules/vendors/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import {
@@ -35,7 +34,7 @@ export default async function OpsDashboardPage() {
     redirect('/login')
   }
 
-  const [openResult, doneResult, techRows, vendorResult] = await Promise.all([
+  const [openResult, doneResult, techRows] = await Promise.all([
     listTickets({
       limit: 150,
       statuses: [...OPEN_TICKET_STATUSES],
@@ -46,9 +45,6 @@ export default async function OpsDashboardPage() {
       statuses: ['resolved', 'closed'],
     }).catch(() => ({ tickets: [], backend: 'memory' as const })),
     listInternalTechnicians().catch(() => []),
-    listVendors({ activeOnly: true, preferredOnly: true }).catch(() => ({
-      vendors: [],
-    })),
   ])
 
   const fetched = [
@@ -69,7 +65,6 @@ export default async function OpsDashboardPage() {
   const urgentCount = kpis.urgent
   const needsAri = kpis.needsAri
   const awaitingCount = kpis.awaitingStoreConfirm
-  const preferredCount = vendorResult.vendors.length
 
   const statusLine = !hasOpen
     ? 'הכל שקט — אין תקלות פתוחות כרגע'
@@ -117,72 +112,6 @@ export default async function OpsDashboardPage() {
           />
         </div>
 
-        <p className="t-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-3">
-          <span>
-            ללא אחראי{' '}
-            <span className="t-num text-ink-2">{kpis.unassigned}</span>
-          </span>
-          <span aria-hidden>·</span>
-          <span>
-            בטיפול <span className="t-num text-ink-2">{kpis.inProgress}</span>
-          </span>
-          <span aria-hidden>·</span>
-          <span>
-            חריגות SLA{' '}
-            <span
-              className={cn(
-                't-num',
-                kpis.breached > 0
-                  ? 'text-[var(--signal-critical)]'
-                  : 'text-ink-2',
-              )}
-            >
-              {kpis.breached}
-            </span>
-          </span>
-          <span aria-hidden>·</span>
-          <span>
-            ספקים מועדפים{' '}
-            <span className="t-num text-ink-2">{preferredCount}</span>
-          </span>
-        </p>
-
-        <Panel
-          elevated
-          className={cn(
-            'px-5 py-4',
-            !hasOpen &&
-              'border-[color-mix(in_srgb,var(--signal-resolved)_28%,transparent)] bg-[var(--signal-resolved-soft)]',
-            hasOpen &&
-              urgentCount > 0 &&
-              'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
-            hasOpen &&
-              urgentCount === 0 &&
-              'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
-          )}
-        >
-          {!hasOpen ? (
-            <div className="flex items-center gap-3">
-              <CheckCircle2
-                className="h-7 w-7 shrink-0 text-[var(--signal-resolved)]"
-                aria-hidden
-                strokeWidth={1.5}
-              />
-              <p className="t-lead text-[var(--signal-resolved)]">
-                הכל תקין — אין תקלות פתוחות
-              </p>
-            </div>
-          ) : (
-            <div>
-              <p className="t-body-strong text-ink">ארי נכנס רק לחריגים</p>
-              <p className="t-meta mt-1 text-ink-2">
-                שיוך חסר, חריגת SLA או חלקים — המערכת רודפת אחרי חנות וטכנאי בשאר
-                המקרים.
-              </p>
-            </div>
-          )}
-        </Panel>
-
         <Panel flush elevated className="overflow-hidden">
           <PanelHeader
             title="דורש את ארי"
@@ -199,7 +128,6 @@ export default async function OpsDashboardPage() {
           {topUrgent.length === 0 ? (
             <EmptyState
               title="אין חריגים כרגע"
-              description="ארי נכנס רק כשאין שיוך, יש חריגת SLA או ממתינים לחלקים."
               icon={ThumbsUp}
               className="py-12"
             />
@@ -263,7 +191,6 @@ export default async function OpsDashboardPage() {
           {awaitingConfirm.length === 0 ? (
             <EmptyState
               title="אין ממתינות לאישור"
-              description="כשטכנאי מסיים — החנות מאשרת והתקלה נסגרת אוטומטית."
               icon={CheckCircle2}
               className="py-12"
             />
