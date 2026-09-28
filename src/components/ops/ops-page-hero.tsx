@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils'
 /**
  * Fixed page-title template for every ops / store screen.
  *
- * One composition: eyebrow → bold display title → one-line status → optional
- * footer / actions. On mobile the title collapses into the glass top bar via
+ * One composition with a reserved vertical rhythm so every screen’s title
+ * band sits at the same height: eyebrow → display title → accent rule →
+ * one-line status. On mobile the title collapses into the glass top bar via
  * LargeTitleScrollSync (`--large-title-progress`).
  */
 export function OpsPageHero({
@@ -34,9 +35,9 @@ export function OpsPageHero({
     <header
       className={cn(
         'ops-page-hero relative overflow-hidden',
-        // Mobile: edge-to-edge large title (iOS-style). Desktop: soft elevated band.
+        // Mobile: edge-to-edge large title. Desktop: soft elevated band.
         'rounded-none border-0 bg-transparent px-0 py-1 shadow-none',
-        'md:rounded-[var(--radius-xl)] md:border md:border-border/70 md:bg-surface md:px-7 md:py-6 md:shadow-[var(--shadow-1)]',
+        'md:rounded-[var(--radius-xl)] md:border md:border-border/70 md:bg-surface md:px-7 md:py-5 md:shadow-[var(--shadow-1)]',
         className,
       )}
     >
@@ -44,42 +45,46 @@ export function OpsPageHero({
         aria-hidden
         className="ops-page-hero-accent pointer-events-none absolute inset-y-3 end-0 hidden w-1 rounded-full md:block"
       />
-      <div className="relative flex items-start gap-3.5">
+      <div className="ops-page-hero-row relative flex items-center gap-3.5">
         {showBrand ? (
           <BrandMark
             size={48}
             priority
-            className="mt-0.5 hidden rounded-[var(--radius-md)] shadow-[var(--shadow-2)] md:block"
+            className="ops-page-hero-brand hidden shrink-0 rounded-[var(--radius-md)] shadow-[var(--shadow-2)] md:block"
           />
         ) : null}
-        <div className="min-w-0 flex-1">
-          {eyebrow ? (
-            <p className="t-caption hidden text-ink-3 md:block">{eyebrow}</p>
-          ) : null}
-          <h1 className="ops-page-hero-title large-title-hero-title text-ink md:mt-1">
+        <div className="ops-page-hero-copy min-w-0 flex-1">
+          <p
+            className={cn(
+              // Slot always reserved (same title Y on every page). Text shows from md up.
+              'ops-page-hero-eyebrow t-caption text-ink-3 max-md:invisible',
+              !eyebrow && 'invisible',
+            )}
+          >
+            {eyebrow || '\u00a0'}
+          </p>
+          <h1 className="ops-page-hero-title large-title-hero-title text-ink">
             {title}
           </h1>
           <span
             aria-hidden
-            className="ops-page-hero-rule mt-2.5 block h-1 w-10 rounded-full md:mt-3"
+            className="ops-page-hero-rule mt-2 block h-1 w-10 rounded-full md:mt-2.5"
           />
-          {status ? (
-            <div className="t-body mt-2 max-w-xl whitespace-pre-wrap text-ink-2 md:mt-2.5">
-              {status}
-            </div>
-          ) : null}
+          <div className="ops-page-hero-status t-body mt-1.5 truncate text-ink-2 md:mt-2">
+            {status ?? '\u00a0'}
+          </div>
           {footer ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3">{footer}</div>
+            <div className="mt-2.5 flex flex-wrap items-center gap-3">{footer}</div>
           ) : null}
         </div>
         {actions ? (
-          <div className="relative hidden shrink-0 items-center gap-2 md:flex">
+          <div className="relative hidden shrink-0 items-center gap-2 self-center md:flex">
             {actions}
           </div>
         ) : null}
       </div>
       {actions ? (
-        <div className="relative mt-4 flex flex-wrap gap-2 md:hidden">
+        <div className="relative mt-3 flex flex-wrap gap-2 md:hidden">
           {actions}
         </div>
       ) : null}

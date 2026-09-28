@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { VendorsAdmin, type VendorRow } from './vendors-admin'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -79,7 +78,6 @@ export default async function VendorsPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
         <OpsPageHero
           title="ספקים"
           status={`${activeCount} פעילים · ${preferredCount} מועדפים`}

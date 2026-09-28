@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   Panel,
   PanelHeader,
@@ -196,13 +195,6 @@ export default async function ReportsPage({
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <PageToolbar
-          backHref="/ops/dashboard"
-          backLabel="חזרה"
-          showRefresh
-          actions={<ReportsExportActions query={exportQuery} count={all.length} />}
-        />
-
         <OpsPageHero
           title="דוחות"
           status={`${rangeLabel}${statusLabel}${

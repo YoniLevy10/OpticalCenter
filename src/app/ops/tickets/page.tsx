@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { PartyPopper } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   EmptyState,
   Panel,
@@ -130,12 +129,6 @@ export default async function TicketsPage({
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <PageToolbar
-          backHref="/ops/dashboard"
-          backLabel="חזרה"
-          showRefresh
-        />
-
         <OpsPageHero
           largeTitle
           title="תקלות"
