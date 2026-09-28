@@ -1,7 +1,8 @@
 /* Minimal MaintainOS service worker — app shell offline fallback */
-const CACHE = 'maintainos-shell-v6'
+const CACHE = 'maintainos-shell-v7'
 const SHELL = [
   '/ops/dashboard',
+  '/ops/dashboard?source=pwa',
   '/tech',
   '/offline.html',
   '/manifest.webmanifest',

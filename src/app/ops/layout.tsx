@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { actorIsStoreEmployeeOnly, shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { HqHomeLaunch } from '@/components/layout/hq-home-launch'
 
 /** Block store-only staff from HQ shell routes. */
 export default async function OpsLayout({
@@ -13,5 +14,10 @@ export default async function OpsLayout({
   if (actor && actorIsStoreEmployeeOnly(actor)) {
     redirect('/store')
   }
-  return children
+  return (
+    <>
+      <HqHomeLaunch />
+      {children}
+    </>
+  )
 }

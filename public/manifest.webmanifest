@@ -4,14 +4,17 @@
   "description": "תחזוקה תפעולית — Optical Center",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/ops/dashboard",
+  "start_url": "/ops/dashboard?source=pwa",
   "scope": "/ops",
-  "id": "/ops",
+  "id": "/ops/dashboard",
   "display": "standalone",
   "display_override": [
     "standalone",
     "browser"
   ],
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  },
   "orientation": "portrait-primary",
   "background_color": "#f7f6f2",
   "theme_color": "#f7f6f2",
@@ -23,7 +26,7 @@
     {
       "name": "לוח בקרה",
       "short_name": "ראשי",
-      "url": "/ops/dashboard"
+      "url": "/ops/dashboard?source=pwa"
     },
     {
       "name": "משימות",
