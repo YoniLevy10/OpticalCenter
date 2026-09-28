@@ -51,7 +51,11 @@ export function resolveHomePath(actor: Pick<Actor, 'memberships'>): HomePath {
 export function postLoginNext(raw: string | null): string | null {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
   const path = raw.split('?')[0]?.replace(/\/+$/, '') || '/'
+  // Tickets queue was the old app home — always open role home instead.
+  // A specific ticket detail (/ops/tickets/:id) is still honored.
   if (path === '/ops/tickets') return null
+  // Legacy PWA launch query — treat as home.
+  if (path === '/ops/dashboard') return '/ops/dashboard'
   return raw
 }
 
