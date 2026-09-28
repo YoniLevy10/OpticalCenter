@@ -41,10 +41,12 @@ test.describe('Navigation & layout', () => {
     const bottomNav = page.locator('nav.fixed')
     await expect(bottomNav.getByText('ראשי')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
+    await expect(bottomNav.getByText('משימות')).toBeVisible()
     await expect(bottomNav.getByText('WhatsApp')).toBeVisible()
-    await expect(bottomNav.getByText('חנויות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
-    await expect(page.getByRole('dialog').getByRole('link', { name: 'הגדרות' })).toBeVisible()
+    const more = page.getByRole('dialog')
+    await expect(more.getByRole('link', { name: 'חנויות' })).toBeVisible()
+    await expect(more.getByRole('link', { name: 'הגדרות' })).toBeVisible()
   })
 
   test('deep link ticket + refresh', async ({ page, request }) => {
