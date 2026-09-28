@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { ISRAEL_STORES } from '@/modules/stores/israel-stores'
+import { TICKET_CATEGORIES } from '@/modules/tickets/constants'
 import {
   buildMidragSearchUrl,
   buildMidragCityPickerUrl,
   buildMidragGoogleBackupUrl,
   externalSearchCaption,
   midragCityMatchForCity,
+  midragServiceMatchForCategory,
 } from './external-search'
 
 describe('buildMidragSearchUrl', () => {
-  it('maps HVAC + Tel Aviv to Results with serviceId and cityId', () => {
+  it('maps HVAC + Tel Aviv to Results with general AC serviceId and cityId', () => {
     const url = buildMidragSearchUrl({ category: 'hvac', city: 'תל אביב' })
     expect(url).toContain('midrag.co.il/Search/Results')
-    expect(url).toContain('serviceId=286')
+    expect(url).toContain('serviceId=284')
     expect(url).toContain('cityId=1243')
     expect(url).not.toContain('areaId=')
   })
@@ -27,6 +29,18 @@ describe('buildMidragSearchUrl', () => {
     expect(
       buildMidragSearchUrl({ category: 'plumbing', city: 'נתניה' }),
     ).toContain('cityId=900')
+  })
+
+  it('uses general trade serviceIds (not narrow sub-services)', () => {
+    expect(buildMidragSearchUrl({ category: 'plumbing', city: 'חיפה' })).toContain(
+      'serviceId=119',
+    )
+    expect(
+      buildMidragSearchUrl({ category: 'electrical', city: 'חיפה' }),
+    ).toContain('serviceId=152')
+    expect(buildMidragSearchUrl({ category: 'cleaning', city: 'חיפה' })).toContain(
+      'serviceId=1249',
+    )
   })
 
   it('omits cityId when city unknown (no Tel Aviv default)', () => {
@@ -57,13 +71,32 @@ describe('buildMidragCityPickerUrl', () => {
       city: 'יישוב לא קיים',
     })
     expect(url).toContain('InCity')
-    expect(url).toContain('serviceId=286')
+    expect(url).toContain('serviceId=284')
   })
 
   it('returns null when city is already mapped', () => {
     expect(
       buildMidragCityPickerUrl({ category: 'hvac', city: 'חיפה' }),
     ).toBeNull()
+  })
+})
+
+describe('midragServiceMatchForCategory', () => {
+  it('maps every ticket category except other', () => {
+    for (const cat of TICKET_CATEGORIES) {
+      if (cat === 'other') {
+        expect(midragServiceMatchForCategory(cat)).toBeNull()
+      } else {
+        expect(midragServiceMatchForCategory(cat)?.serviceId).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('exposes Midrag labels for ops UI', () => {
+    expect(midragServiceMatchForCategory('hvac')?.midragLabel).toBe('תיקון מזגן')
+    expect(midragServiceMatchForCategory('plumbing')?.midragLabel).toBe(
+      'אינסטלציה',
+    )
   })
 })
 
@@ -80,7 +113,7 @@ describe('midragCityMatchForCity + OC store coverage', () => {
     expect(missing).toEqual([])
   })
 
-  it('builds google backup and caption with Midrag label', () => {
+  it('builds google backup and caption with Midrag trade + city labels', () => {
     expect(buildMidragGoogleBackupUrl({ category: 'hvac', city: 'נתניה' })).toContain(
       'google.com/search',
     )

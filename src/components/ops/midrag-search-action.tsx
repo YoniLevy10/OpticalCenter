@@ -16,7 +16,7 @@ import {
   buildMidragSearchUrl,
   externalSearchCaption,
   midragCityMatchForCity,
-  tradeLabelHe,
+  midragServiceMatchForCategory,
 } from '@/modules/vendors/external-search'
 import { cn } from '@/lib/utils'
 
@@ -71,6 +71,7 @@ export function MidragSearchAction({
   const googleBackupUrl = buildMidragGoogleBackupUrl(searchInput)
   const caption = externalSearchCaption(searchInput)
   const cityMatch = midragCityMatchForCity(searchInput.city)
+  const serviceMatch = midragServiceMatchForCategory(searchInput.category)
 
   function openSheet() {
     setDraftCategory(normalizeCategory(category))
@@ -126,6 +127,15 @@ export function MidragSearchAction({
                 </option>
               ))}
             </select>
+            {serviceMatch ? (
+              <span className="t-caption text-ink-3">
+                ממופה למידרג: {serviceMatch.midragLabel}
+              </span>
+            ) : (
+              <span className="t-caption text-amber-700">
+                אין מקצוע ממופה — ייפתח בוחר תחום במידרג
+              </span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1.5">
@@ -152,7 +162,8 @@ export function MidragSearchAction({
           <Button asChild variant="primary" size="touch" className="w-full">
             <a href={midragUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" aria-hidden />
-              פתח תוצאות במידרג · {tradeLabelHe(draftCategory)}
+              פתח תוצאות במידרג
+              {serviceMatch ? ` · ${serviceMatch.midragLabel}` : ''}
               {cityMatch ? ` · ${cityMatch.midragLabel}` : ''}
             </a>
           </Button>
