@@ -15,6 +15,7 @@ import {
   buildMidragGoogleBackupUrl,
   buildMidragSearchUrl,
   externalSearchCaption,
+  midragCityMatchForCity,
   tradeLabelHe,
 } from '@/modules/vendors/external-search'
 import { cn } from '@/lib/utils'
@@ -69,6 +70,7 @@ export function MidragSearchAction({
   const midragCityUrl = buildMidragCityPickerUrl(searchInput)
   const googleBackupUrl = buildMidragGoogleBackupUrl(searchInput)
   const caption = externalSearchCaption(searchInput)
+  const cityMatch = midragCityMatchForCity(searchInput.city)
 
   function openSheet() {
     setDraftCategory(normalizeCategory(category))
@@ -105,7 +107,8 @@ export function MidragSearchAction({
       >
         <div className="flex flex-col gap-4">
           <p className="t-meta text-ink-2">
-            בוחרים מקצוע ועיר לפי התקלה — התוצאות נפתחות במידרג בחלון חדש.
+            בוחרים מקצוע ועיר לפי הסניף של התקלה — התוצאות נפתחות במידרג
+            בעיר המדויקת, בחלון חדש.
           </p>
 
           <label className="flex flex-col gap-1.5">
@@ -126,13 +129,22 @@ export function MidragSearchAction({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">עיר (אופציונלי)</span>
+            <span className="t-caption text-ink-2">עיר הסניף</span>
             <Input
               value={draftCity}
               onChange={(e) => setDraftCity(e.target.value)}
-              placeholder="למשל תל אביב"
+              placeholder="למשל חיפה, אשדוד, נתניה"
               autoComplete="address-level2"
             />
+            {cityMatch ? (
+              <span className="t-caption text-ink-3">
+                ממופה למידרג: {cityMatch.midragLabel}
+              </span>
+            ) : draftCity.trim() ? (
+              <span className="t-caption text-amber-700">
+                העיר לא ממופה — ייפתח בוחר עיר במידרג
+              </span>
+            ) : null}
           </label>
 
           <p className="t-caption text-ink-3">{caption}</p>
@@ -141,6 +153,7 @@ export function MidragSearchAction({
             <a href={midragUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" aria-hidden />
               פתח תוצאות במידרג · {tradeLabelHe(draftCategory)}
+              {cityMatch ? ` · ${cityMatch.midragLabel}` : ''}
             </a>
           </Button>
 
