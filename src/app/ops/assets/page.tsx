@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { AssetsAdmin, type AssetTicketHint } from './assets-admin'
 import { fetchStores } from '@/modules/stores/data'
@@ -37,11 +36,6 @@ export default async function AssetsPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <PageToolbar
-          backHref="/ops/settings"
-          backLabel="חזרה להגדרות"
-          showRefresh
-        />
         <OpsPageHero
           title="ציוד"
           status="נכסים מקושרים לסניפים ולתקלות"

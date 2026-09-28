@@ -261,20 +261,31 @@ html.dark .apple-glass {
   transition: opacity var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
 }
 
-/* Fixed ops page-title template — bold, consistent on every screen */
+/* Fixed ops page-title template — same band height on every screen */
+.ops-page-hero-eyebrow {
+  min-height: 1.25rem;
+  line-height: 1.25rem;
+}
 .ops-page-hero-title {
   font-family: var(--font-rubik), var(--font-heebo), ui-sans-serif, system-ui,
     sans-serif;
   font-size: 2rem; /* 32px — prominent mobile large title */
-  line-height: 1.12;
+  line-height: 1.15;
+  min-height: calc(2rem * 1.15); /* one line — keeps Y stable across pages */
   font-weight: 700;
   letter-spacing: -0.035em;
 }
 @media (min-width: 768px) {
   .ops-page-hero-title {
     font-size: 2.125rem; /* 34px desktop band */
+    line-height: 1.15;
+    min-height: calc(2.125rem * 1.15);
     letter-spacing: -0.04em;
   }
+}
+.ops-page-hero-status {
+  min-height: 1.5em; /* always one status line slot */
+  line-height: 1.5;
 }
 .ops-page-hero-rule {
   background: var(--tenant);

@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { ActivityLog } from './activity-log'
 import { getServerActor } from '@/lib/auth/server-actor'
@@ -18,7 +17,6 @@ export default async function ActivityPage() {
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
-        <PageToolbar backHref="/ops/dashboard" backLabel="חזרה" showRefresh />
         <OpsPageHero
           title="יומן פעילות"
           status={

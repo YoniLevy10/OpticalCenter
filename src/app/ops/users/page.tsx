@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { PageToolbar } from '@/components/layout/page-toolbar'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { UsersAdmin } from './users-admin'
 import { fetchStores } from '@/modules/stores/data'
@@ -17,7 +16,6 @@ export default async function UsersPage() {
   return (
     <OpsAppShell>
       <div className="flex max-w-5xl flex-col gap-5 stagger">
-        <PageToolbar backHref="/ops/settings" backLabel="חזרה" showRefresh />
         <OpsPageHero
           title="משתמשים"
           status="ניהול גישה, תפקידים וסניפים"
