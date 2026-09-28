@@ -6,6 +6,7 @@ Goal: keep WhatsApp spend near-zero for fault reporting.
 1. Employee scans QR/NFC → opens WhatsApp → **employee writes first** (user-initiated).
 2. Bot replies inside the **24h service window**: ask store/description, confirm ticket `#OC-…`.
 3. Optional one follow-up question in the same window.
+4. **Outside 24h:** one approved Utility template (`maintainos_followup`) from Ops inbox to reopen the session — see [`META_WHATSAPP_TEMPLATE_FOLLOWUP.md`](./META_WHATSAPP_TEMPLATE_FOLLOWUP.md).
 
 ## Avoid (paid / high cost)
 1. Business-initiated template blasts to all stores.

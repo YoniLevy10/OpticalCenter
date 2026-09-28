@@ -5,6 +5,10 @@ import {
   normalizeWhatsAppRecipient,
   resolveWhatsAppPhoneNumberId,
 } from './phone-number-id'
+import {
+  defaultSessionTemplateLang,
+  defaultSessionTemplateName,
+} from './templates'
 
 export type SendWhatsAppParams = {
   toWaId: string
@@ -258,9 +262,11 @@ export async function sendWhatsAppText(
 
 export type SendWhatsAppTemplateParams = {
   toWaId: string
-  /** Approved Meta template name (e.g. hello_world or maintainos_reopen). */
+  /** Approved Meta template name (e.g. maintainos_followup). */
   templateName: string
   languageCode?: string
+  /** Positional body variables for templates with {{1}}, {{2}}, … */
+  bodyParameters?: string[]
   phoneNumberId?: string | null
   ticketId?: string | null
   supabase?: SupabaseClient
@@ -294,13 +300,12 @@ export async function sendWhatsAppTemplate(
     : process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
   const phoneNumberId = resolveWhatsAppPhoneNumberId(params.phoneNumberId)
   const templateName =
-    params.templateName.trim() ||
-    process.env.WHATSAPP_SESSION_TEMPLATE?.trim() ||
-    'hello_world'
+    params.templateName.trim() || defaultSessionTemplateName()
   const languageCode =
-    params.languageCode?.trim() ||
-    process.env.WHATSAPP_SESSION_TEMPLATE_LANG?.trim() ||
-    'he'
+    params.languageCode?.trim() || defaultSessionTemplateLang()
+  const bodyParameters = (params.bodyParameters ?? [])
+    .map((p) => p.trim())
+    .filter(Boolean)
 
   if (!params.forceDryRun) {
     if (!token) {
@@ -353,6 +358,19 @@ export async function sendWhatsAppTemplate(
             template: {
               name: templateName,
               language: { code: languageCode },
+              ...(bodyParameters.length > 0
+                ? {
+                    components: [
+                      {
+                        type: 'body',
+                        parameters: bodyParameters.map((text) => ({
+                          type: 'text',
+                          text,
+                        })),
+                      },
+                    ],
+                  }
+                : {}),
             },
           }),
         },
@@ -407,6 +425,7 @@ export async function sendWhatsAppTemplate(
         error: error ?? null,
         templateName,
         languageCode,
+        bodyParameters,
         purpose,
       },
     })
