@@ -2,16 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Notice, Panel } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
-import {
-  buildMidragCityPickerUrl,
-  buildMidragGoogleBackupUrl,
-  buildMidragSearchUrl,
-  externalSearchCaption,
-} from '@/modules/vendors/external-search'
+import { MidragSearchAction } from '@/components/ops/midrag-search-action'
+import { externalSearchCaption } from '@/modules/vendors/external-search'
 
 type Match = {
   id: string
@@ -49,11 +44,7 @@ export function PreferredVendorsPanel({
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const searchInput = { category, city }
-  const midragUrl = buildMidragSearchUrl(searchInput)
-  const midragCityUrl = buildMidragCityPickerUrl(searchInput)
-  const googleBackupUrl = buildMidragGoogleBackupUrl(searchInput)
-  const searchCaption = externalSearchCaption(searchInput)
+  const searchCaption = externalSearchCaption({ category, city })
 
   useEffect(() => {
     if (initialMatches) {
@@ -161,40 +152,9 @@ export function PreferredVendorsPanel({
       <div className="space-y-2 border-t border-border pt-3">
         <p className="t-body-strong text-ink">חיפוש חיצוני · מידרג</p>
         <p className="t-meta text-ink-2">
-          גיבוי כשאין ספק מועדף פנוי · {searchCaption} · נפתח בחלון חדש
+          גיבוי כשאין ספק מועדף פנוי · {searchCaption}
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button asChild variant="secondary" size="touch">
-            <a
-              href={midragUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="ms-1 h-4 w-4" aria-hidden />
-              חיפוש במידרג
-            </a>
-          </Button>
-          {midragCityUrl ? (
-            <Button asChild variant="ghost" size="touch">
-              <a
-                href={midragCityUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                בחירת עיר במידרג
-              </a>
-            </Button>
-          ) : null}
-          <Button asChild variant="ghost" size="touch">
-            <a
-              href={googleBackupUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              גיבוי · Google
-            </a>
-          </Button>
-        </div>
+        <MidragSearchAction category={category} city={city} />
       </div>
     </Panel>
   )

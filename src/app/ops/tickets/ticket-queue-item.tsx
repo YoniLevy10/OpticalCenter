@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { Check, MessageSquareText } from 'lucide-react'
+import { Check, MessageSquareText, Search } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import {
   OPEN_TICKET_STATUSES,
@@ -17,6 +17,7 @@ import { OperationalRow, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
 import { priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
 import { SwipeActions } from '@/components/ui/swipe-actions'
+import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { cn } from '@/lib/utils'
 import {
   plainOpenForHe,
@@ -36,6 +37,7 @@ type RowTicket = {
   display_number?: string | null
   status: string
   priority: string
+  category?: string | null
   description: string
   title?: string | null
   assigned_to?: string | null
@@ -66,14 +68,18 @@ export function TicketQueueItem({
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [midragOpen, setMidragOpen] = useState(false)
   const [status, setStatus] = useState<TicketStatus>(
     (ticket.status as TicketStatus) || 'assigned',
   )
   const [note, setNote] = useState('')
 
   const open = OPEN_TICKET_STATUSES.includes(ticket.status as TicketStatus)
+  const unassigned = !ticket.assigned_to
   const openFor = plainOpenForHe(ticket.created_at, ticket)
   const disabled = busy || pending
+  const midragCategory = ticket.category?.trim() || 'other'
+  const midragCity = ticket.stores?.city ?? null
 
   async function patch(body: Record<string, unknown>, successText: string) {
     if (busy || pending) return false
@@ -187,7 +193,19 @@ export function TicketQueueItem({
   )
 
   const desktopActions = (
-    <div className="hidden shrink-0 items-center gap-2 border-t border-border px-4 py-2.5 md:flex md:w-44 md:flex-col md:justify-center md:border-s md:border-t-0 md:px-3">
+    <div className="hidden shrink-0 items-center gap-2 border-t border-border px-4 py-2.5 md:flex md:w-48 md:flex-col md:justify-center md:border-s md:border-t-0 md:px-3">
+      {unassigned ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="min-h-[var(--tap)] w-full"
+          onClick={() => setMidragOpen(true)}
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden />
+          מידרג
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="secondary"
@@ -215,6 +233,16 @@ export function TicketQueueItem({
 
   const swipeButtons = (
     <div className="flex h-full w-full">
+      {unassigned ? (
+        <button
+          type="button"
+          onClick={() => setMidragOpen(true)}
+          className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--ink)] text-white t-caption"
+        >
+          <Search className="h-4 w-4" aria-hidden />
+          מידרג
+        </button>
+      ) : null}
       <button
         type="button"
         disabled={disabled}
@@ -243,10 +271,40 @@ export function TicketQueueItem({
         priorityRowClass(ticket.priority),
       )}
     >
-      <SwipeActions actions={swipeButtons} disabled={disabled} className="md:flex-1">
-        {rowLink}
-      </SwipeActions>
+      <div className="min-w-0 flex-1 md:flex md:min-h-0 md:flex-col">
+        <SwipeActions
+          actions={swipeButtons}
+          disabled={disabled}
+          className="md:flex-1"
+        >
+          {rowLink}
+        </SwipeActions>
+        {unassigned ? (
+          <div className="border-t border-border px-4 py-2 md:hidden">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="min-h-[var(--tap)] w-full"
+              onClick={() => setMidragOpen(true)}
+            >
+              <Search className="h-3.5 w-3.5" aria-hidden />
+              חיפוש איש מקצוע במידרג
+            </Button>
+          </div>
+        ) : null}
+      </div>
       {desktopActions}
+
+      {unassigned ? (
+        <MidragSearchAction
+          category={midragCategory}
+          city={midragCity}
+          hideTrigger
+          open={midragOpen}
+          onOpenChange={setMidragOpen}
+        />
+      ) : null}
 
       <BottomSheet
         open={sheetOpen}
