@@ -233,6 +233,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/settings')) return 'הגדרות'
   if (pathname.startsWith('/ops/lab')) return 'מעבדה'
   if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
+  if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
   return 'MaintainOS'
 }
 
@@ -341,7 +342,15 @@ export function AppShell({
             <TenantMark />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="large-title-bar t-body-strong truncate text-ink">
+            <h1
+              className={cn(
+                't-body-strong truncate text-ink',
+                // Inbox fills the viewport (no scroll) — keep the title always on.
+                fillMain
+                  ? 'opacity-100'
+                  : 'large-title-bar',
+              )}
+            >
               {pageTitle(pathname)}
             </h1>
           </div>
