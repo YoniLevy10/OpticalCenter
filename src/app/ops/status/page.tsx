@@ -8,7 +8,10 @@ export default function OpsStatusPage() {
   return (
     <OpsAppShell>
       <div className="mx-auto flex max-w-2xl flex-col gap-5 stagger">
-        <OpsPageHero title="סטטוס מערכת" />
+        <OpsPageHero
+          title="סטטוס מערכת"
+          status="בריאות השירותים בזמן אמת"
+        />
         <StatusHealthPanel />
       </div>
     </OpsAppShell>

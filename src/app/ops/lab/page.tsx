@@ -11,7 +11,10 @@ export default function LabPage() {
   return (
     <OpsAppShell>
       <div className="mx-auto flex max-w-3xl flex-col gap-5 stagger">
-        <OpsPageHero title="מעבדה" />
+        <OpsPageHero
+          title="מעבדה"
+          status="כלי בדיקה והדגמה פנימיים"
+        />
 
         <Panel elevated>
           <h2 className="t-section text-ink">סימולטור WhatsApp</h2>
