@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -54,16 +53,17 @@ export function SystemStatusBanner({
 
   const label = LEVEL_LABEL[level]
 
+  // Status page removed from product nav — keep a quiet health chip only.
   return (
-    <Link
-      href="/ops/status"
+    <span
+      role="status"
       aria-label={`סטטוס מערכת: ${label}`}
       data-visual="system-status"
       className={cn(
-        'inline-flex items-center gap-2 rounded-[var(--radius-md)] transition-colors duration-[var(--dur-1)]',
+        'inline-flex items-center gap-2 rounded-[var(--radius-md)]',
         compact
-          ? 'px-2.5 py-1.5 hover:bg-surface-sunken/60'
-          : 'border border-border bg-surface px-3.5 py-2.5 shadow-[var(--shadow-1)] hover:bg-surface-sunken/40',
+          ? 'px-2.5 py-1.5'
+          : 'border border-border bg-surface px-3.5 py-2.5 shadow-[var(--shadow-1)]',
         className,
       )}
     >
@@ -88,6 +88,6 @@ export function SystemStatusBanner({
       >
         {compact ? label : `סטטוס מערכת · ${label}`}
       </span>
-    </Link>
+    </span>
   )
 }

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import {
@@ -42,16 +41,6 @@ export default async function SettingsPage() {
             <GroupedRow className="justify-between">
               <span className="t-body text-ink-2">ערוץ דיווח</span>
               <span className="t-body text-ink">WhatsApp</span>
-            </GroupedRow>
-          </GroupedSection>
-          <GroupedSection title="בריאות המערכת">
-            <GroupedRow>
-              <Link
-                href="/ops/status"
-                className="t-body text-[var(--signal-progress)] hover:underline"
-              >
-                מצב המערכת
-              </Link>
             </GroupedRow>
           </GroupedSection>
         </GroupedList>

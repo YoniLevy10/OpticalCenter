@@ -152,7 +152,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                     dir="ltr"
                     value={form.wa_business_phone}
                     onChange={(e) => set('wa_business_phone', e.target.value)}
-                    placeholder="9725…"
+                    placeholder="972552819086"
                   />
                 </Field>
               </GroupedRow>

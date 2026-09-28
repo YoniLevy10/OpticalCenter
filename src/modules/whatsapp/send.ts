@@ -255,3 +255,172 @@ export async function sendWhatsAppText(
     toWaId,
   }
 }
+
+export type SendWhatsAppTemplateParams = {
+  toWaId: string
+  /** Approved Meta template name (e.g. hello_world or maintainos_reopen). */
+  templateName: string
+  languageCode?: string
+  phoneNumberId?: string | null
+  ticketId?: string | null
+  supabase?: SupabaseClient
+  forceDryRun?: boolean
+  purpose?: OutboundPurpose
+}
+
+/**
+ * Send an approved WhatsApp utility/marketing template.
+ * Required outside the 24h customer-care window.
+ */
+export async function sendWhatsAppTemplate(
+  params: SendWhatsAppTemplateParams,
+): Promise<SendWhatsAppResult> {
+  const purpose = params.purpose ?? 'ops_reply'
+  if (!shouldSendWhatsApp(purpose)) {
+    logEvent('whatsapp:send', 'info', 'template_skipped_by_cost_policy', {
+      purpose,
+    })
+    return {
+      ok: true,
+      dryRun: true,
+      waMessageId: null,
+      skippedByPolicy: true,
+    }
+  }
+
+  const toWaId = normalizeWhatsAppRecipient(params.toWaId)
+  const token = params.forceDryRun
+    ? null
+    : process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(params.phoneNumberId)
+  const templateName =
+    params.templateName.trim() ||
+    process.env.WHATSAPP_SESSION_TEMPLATE?.trim() ||
+    'hello_world'
+  const languageCode =
+    params.languageCode?.trim() ||
+    process.env.WHATSAPP_SESSION_TEMPLATE_LANG?.trim() ||
+    'he'
+
+  if (!params.forceDryRun) {
+    if (!token) {
+      return {
+        ok: false,
+        dryRun: false,
+        waMessageId: null,
+        error:
+          'חסר WHATSAPP_ACCESS_TOKEN — לא ניתן לשלוח תבנית מחוץ לחלון 24 השעות',
+        phoneNumberId,
+        toWaId,
+      }
+    }
+    if (!phoneNumberId) {
+      return {
+        ok: false,
+        dryRun: false,
+        waMessageId: null,
+        error: 'חסר Phone Number ID תקין של Meta לשליחת תבנית',
+        phoneNumberId,
+        toWaId,
+      }
+    }
+  }
+
+  let waMessageId: string | null = null
+  let dryRun = true
+  let ok = true
+  let error: string | undefined
+  let errorCode: number | null = null
+  let errorSubcode: number | null = null
+  let fbtraceId: string | null = null
+
+  if (token && phoneNumberId) {
+    dryRun = false
+    try {
+      const res = await fetch(
+        `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: toWaId,
+            type: 'template',
+            template: {
+              name: templateName,
+              language: { code: languageCode },
+            },
+          }),
+        },
+      )
+      const json = (await res.json()) as GraphErrorBody
+      if (res.ok) {
+        waMessageId = json.messages?.[0]?.id ?? null
+        logEvent('whatsapp:send', 'info', 'template_graph_ok', {
+          to: toWaId,
+          phoneNumberId,
+          templateName,
+          waMessageId,
+        })
+      } else {
+        ok = false
+        errorCode = json.error?.code ?? null
+        errorSubcode = json.error?.error_subcode ?? null
+        fbtraceId = json.error?.fbtrace_id ?? null
+        error = hebrewGraphError(json, res.status)
+        logEvent('whatsapp:send', 'error', 'template_graph_failed', {
+          status: res.status,
+          code: errorCode,
+          error,
+          templateName,
+          to: toWaId,
+        })
+      }
+    } catch (e) {
+      ok = false
+      error = e instanceof Error ? e.message : 'template send failed'
+    }
+  } else {
+    dryRun = true
+    waMessageId = `dryrun_tpl_${Date.now()}`
+    logEvent('whatsapp:send', 'info', 'template_dry_run', {
+      to: toWaId,
+      templateName,
+      phoneNumberId,
+    })
+  }
+
+  if (params.ticketId && params.supabase) {
+    await params.supabase.from('ticket_messages').insert({
+      ticket_id: params.ticketId,
+      channel: 'whatsapp',
+      direction: 'outbound',
+      body: `[תבנית] ${templateName}`,
+      wa_message_id: waMessageId,
+      raw: {
+        dryRun,
+        ok,
+        error: error ?? null,
+        templateName,
+        languageCode,
+        purpose,
+      },
+    })
+  }
+
+  return {
+    ok,
+    dryRun,
+    waMessageId,
+    error,
+    errorCode,
+    errorSubcode,
+    fbtraceId,
+    phoneNumberId,
+    toWaId,
+  }
+}

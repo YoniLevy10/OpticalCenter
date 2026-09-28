@@ -8,7 +8,10 @@ import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { OperationalRow, RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
+import { StoreQrAccordion } from './store-qr-accordion'
 import { fetchStores } from '@/modules/stores/data'
+import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
+import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { listTickets } from '@/modules/tickets/service'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -38,7 +41,10 @@ export default async function StoresPage({
   const regionFilter = (sp.region ?? '').trim().toUpperCase() as
     | IlRegionCode
     | ''
-  const { stores } = await fetchStores({ includeInactive: true })
+  const [{ stores }, businessPhone] = await Promise.all([
+    fetchStores({ includeInactive: true }),
+    resolveWhatsAppBusinessPhone(),
+  ])
 
   const { tickets } = await listTickets(500).catch(() => ({
     tickets: [],
@@ -186,8 +192,21 @@ export default async function StoresPage({
           )}
         </Panel>
 
+        <StoreQrAccordion
+          stores={filtered
+            .filter((s) => s.is_active !== false)
+            .map((s) => ({
+              id: s.id,
+              code: s.code,
+              name: s.name,
+              deepLink: businessPhone
+                ? storeWhatsAppDeepLink(s.code, businessPhone)
+                : null,
+            }))}
+        />
+
         <Button asChild variant="ghost" size="touch" className="self-start">
-          <Link href="/ops/stores/print-qr">הדפסת QR</Link>
+          <Link href="/ops/stores/print-qr">הדפסת כל ה־QR</Link>
         </Button>
       </div>
     </OpsAppShell>

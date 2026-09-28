@@ -13,8 +13,8 @@
     "browser"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#f5f6fa",
-  "theme_color": "#ffffff",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
   "categories": [
     "business",
     "productivity"
@@ -22,18 +22,18 @@
   "shortcuts": [
     {
       "name": "לוח בקרה",
-      "short_name": "לוח",
+      "short_name": "ראשי",
       "url": "/ops/dashboard"
     },
     {
-      "name": "תקלות",
-      "short_name": "תקלות",
-      "url": "/ops/tickets"
+      "name": "משימות",
+      "short_name": "משימות",
+      "url": "/ops/tasks"
     },
     {
-      "name": "דורש תשומת לב",
-      "short_name": "חריגים",
-      "url": "/ops/tickets?view=attention"
+      "name": "WhatsApp",
+      "short_name": "WhatsApp",
+      "url": "/ops/inbox"
     },
     {
       "name": "חנויות",

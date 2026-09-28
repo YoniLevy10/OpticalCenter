@@ -23,16 +23,17 @@ function isProductionRuntime(): boolean {
 
 export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
+  { id: 'tasks', href: '/ops/tasks', label: 'משימות' },
   { id: 'assets', href: '/ops/assets', label: 'נכסים' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
   { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
   { id: 'reports', href: '/ops/reports', label: 'דוחות' },
-  { id: 'status', href: '/ops/status', label: 'סטטוס מערכת' },
-  { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
   { id: 'users', href: '/ops/users', label: 'משתמשים' },
   { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
   { id: 'lab', href: '/ops/lab', label: 'מעבדה' },
   { id: 'simulator', href: '/ops/simulator', label: 'סימולטור WhatsApp' },
+  /** Last — always at bottom of tools */
+  { id: 'settings', href: '/ops/settings', label: 'הגדרות' },
 ]
 
 export function canAccessUsers(actor: Actor | null): boolean {
@@ -60,18 +61,26 @@ export function canAccessSettings(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
-export function canAccessStatus(actor: Actor | null): boolean {
-  return canAccessSettings(actor)
+/** System status page removed from OC product nav. */
+export function canAccessStatus(_actor: Actor | null): boolean {
+  return false
 }
 
 export function canAccessSimulator(actor: Actor | null): boolean {
+  // Demo / lab tooling stays off unless explicitly forced for local QA.
   if (isProductionRuntime()) return false
+  if (process.env.MAINTAINOS_FORCE_MEMORY !== '1') return false
   if (!actor) return true
   return hasHq(actor)
 }
 
 export function canAccessLab(actor: Actor | null): boolean {
   return canAccessSimulator(actor)
+}
+
+export function canAccessTasks(actor: Actor | null): boolean {
+  if (!actor) return true
+  return hasHq(actor)
 }
 
 export function canAccessInbox(actor: Actor | null): boolean {
@@ -91,6 +100,7 @@ export function canAccessPrintQr(actor: Actor | null): boolean {
 
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   inbox: canAccessInbox,
+  tasks: canAccessTasks,
   assets: canAccessAssets,
   vendors: canAccessVendors,
   activity: canAccessActivity,
