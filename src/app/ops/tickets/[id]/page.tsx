@@ -203,6 +203,8 @@ export default async function TicketDetailPage({
               assignee?.full_name || assignee?.email || null
             }
             technicians={techOptions}
+            category={ticket.category}
+            city={ticket.stores?.city ?? null}
           />
         </div>
       </div>

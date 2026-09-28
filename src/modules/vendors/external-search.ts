@@ -31,8 +31,10 @@ export const MIDRAG_AREA_ID_BY_CITY: Record<string, number> = {
   'תל אביב': 1,
   תלאביב: 1,
   'תל-אביב': 1,
+  'תל אביב יפו': 1,
   הרצליה: 12,
   'רמת השרון': 12,
+  // Nationwide fallback (areaId=0) for other OC cities until verified Midrag IDs land.
 }
 
 const MIDRAG_RESULTS = 'https://www.midrag.co.il/Search/Results'
