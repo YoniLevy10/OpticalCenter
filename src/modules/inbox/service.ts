@@ -22,6 +22,7 @@ import {
   sendWhatsAppTemplate,
 } from '@/modules/whatsapp/send'
 import { resolveWhatsAppPhoneNumberId } from '@/modules/whatsapp/phone-number-id'
+import { defaultSessionTemplateName } from '@/modules/whatsapp/templates'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { DEMO_STORES } from '@/modules/stores/data'
 import { dedupeThreadMessages } from './dedupe-messages'
@@ -987,12 +988,14 @@ export async function clearInboxSession(
 
 /**
  * Send an approved Meta template when the 24h care window has closed.
- * Template name: WHATSAPP_SESSION_TEMPLATE (default hello_world).
+ * Template name: WHATSAPP_SESSION_TEMPLATE (default maintainos_followup).
+ * @see docs/META_WHATSAPP_TEMPLATE_FOLLOWUP.md
  */
 export async function sendSessionTemplate(input: {
   waId: string
   templateName?: string
   ticketId?: string | null
+  bodyParameters?: string[]
 }): Promise<{
   message: InboxMessage
   send: Awaited<ReturnType<typeof sendWhatsAppTemplate>>
@@ -1001,16 +1004,16 @@ export async function sendSessionTemplate(input: {
   if (!waId) throw new Error('מזהה WhatsApp חסר')
 
   const templateName =
-    input.templateName?.trim() ||
-    process.env.WHATSAPP_SESSION_TEMPLATE?.trim() ||
-    'hello_world'
+    input.templateName?.trim() || defaultSessionTemplateName()
   const ticketId = sanitizeOptionalUuid(input.ticketId ?? undefined) ?? null
+  const bodyParameters = input.bodyParameters
   const label = `[תבנית] ${templateName}`
 
   if (!(await supabaseReady())) {
     const send = await sendWhatsAppTemplate({
       toWaId: waId,
       templateName,
+      bodyParameters,
       ticketId,
       purpose: 'ops_reply',
       forceDryRun: true,
@@ -1029,6 +1032,7 @@ export async function sendSessionTemplate(input: {
   const send = await sendWhatsAppTemplate({
     toWaId: waId,
     templateName,
+    bodyParameters,
     phoneNumberId,
     ticketId,
     supabase,
