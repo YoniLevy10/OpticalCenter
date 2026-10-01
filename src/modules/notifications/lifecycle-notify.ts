@@ -20,6 +20,7 @@ import {
   type LifecycleTicket,
 } from './lifecycle'
 import { storeConfirmUrl } from '@/modules/tickets/store-confirm'
+import { notifyTechnicianAssignedPush } from '@/modules/push/send'
 
 const LIFECYCLE_AI_SITUATION: Record<LifecycleEvent, WhatsAppAiSituation> = {
   assigned: 'lifecycle_assigned',
@@ -234,6 +235,21 @@ export async function notifyTechnicianAssigned(
       forceDryRun: !ready,
       purpose: 'status_update',
     })
+
+    const techProfileId = tech?.id ?? ticket.assigned_to ?? null
+    if (techProfileId) {
+      void notifyTechnicianAssignedPush({
+        profileId: techProfileId,
+        ticketId: ticket.id,
+        displayNumber: display,
+        storeName,
+      }).catch((e) => {
+        logEvent('lifecycle:tech_notify', 'error', 'push_failed', {
+          ticketId: ticket.id,
+          error: e instanceof Error ? e.message : String(e),
+        })
+      })
+    }
 
     if (!ready || !supabase) {
       await persistOutbound(ticket.id, text, result.waMessageId, {

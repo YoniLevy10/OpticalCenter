@@ -1,0 +1,34 @@
+---
+description: MaintainOS product differentiation — operational OS for multi-branch retail; reject generic ticket-CRUD and building-management bleed
+alwaysApply: true
+---
+
+# MaintainOS — product differentiation
+
+Canonical source: `docs/DIFFERENTIATION.md`. These principles govern every product, design, architecture, and engineering decision.
+
+## What MaintainOS is
+
+An **operational OS for multi-branch retail networks**. The goal is for network leadership to understand **why** faults happen, their **true cost**, and **what prevents** the next one — via a shared core and a per-store operational Digital Twin.
+
+Optical Center = first tenant / Israel pilot — not the product definition.
+
+## What it is not
+
+- Another ticketing system (ticket is a means, not the product)
+- Per-client forks or hand-custom projects
+- Generic CMMS / full inventory unless it feeds Twin or network insights
+- Technician marketplace (vendors are optional execution layer)
+- Building-management / vaad features from Bino (residents, collections, attendance shifts, calendar-as-core)
+
+## Decision gate (required before building)
+
+A feature / screen / report succeeds only if it strengthens at least one of:
+
+1. **Root cause** — why the fault happens
+2. **True cost** — what we paid / will pay
+3. **Prevention** — what reduces the next fault
+
+Layers: SharedCore · TenantConfigOnly (branding / roles / fault types / SLA) · StoreDigitalTwin · NetworkIntelligence.
+
+If the answer is “only better ticket CRUD / generic SaaS / building-domain bleed” → do not ship as a priority unless the user explicitly overrides.
