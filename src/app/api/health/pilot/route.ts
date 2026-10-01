@@ -79,6 +79,51 @@ export async function GET() {
     owner: 'meta',
   })
 
+  const sessionTpl = (
+    process.env.WHATSAPP_SESSION_TEMPLATE?.trim() || 'maintainos_followup'
+  ).toLowerCase()
+  const sessionTplOk =
+    Boolean(sessionTpl) &&
+    sessionTpl !== 'hello_world' &&
+    /^[a-z0-9_]+$/.test(sessionTpl)
+  checks.push({
+    id: 'wa_session_template',
+    ok: sessionTplOk,
+    level: 'should',
+    message: sessionTplOk
+      ? `תבנית session: ${sessionTpl}`
+      : 'הגדירו WHATSAPP_SESSION_TEMPLATE=maintainos_followup (לא hello_world)',
+    owner: 'meta',
+  })
+
+  let sessionTplInDb = false
+  if (ready) {
+    try {
+      const supabase = createSystemClient('pilot_health_tpl')
+      const { data: tplRow } = await supabase
+        .from('whatsapp_templates')
+        .select('id, meta_name, is_active')
+        .eq('meta_name', sessionTpl)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+      sessionTplInDb = Boolean(tplRow?.id)
+    } catch {
+      /* ignore */
+    }
+  }
+  checks.push({
+    id: 'wa_session_template_db',
+    ok: !ready || sessionTplInDb,
+    level: 'should',
+    message: !ready
+      ? 'DB לא מחובר — דילוג על בדיקת whatsapp_templates'
+      : sessionTplInDb
+        ? `תבנית ${sessionTpl} פעילה ב־whatsapp_templates`
+        : `חסרה רשומה פעילה עם meta_name=${sessionTpl} ב־whatsapp_templates`,
+    owner: 'ops',
+  })
+
   const businessPhone = (await resolveWhatsAppBusinessPhone()) || ''
   checks.push({
     id: 'wa_business_phone',

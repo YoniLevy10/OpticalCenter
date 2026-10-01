@@ -14,6 +14,7 @@ import {
   GroupedSection,
 } from '@/components/ui/grouped-list'
 import type { MemSettings } from '@/lib/data/memory-store'
+import { CountryWhatsAppForm } from './country-whatsapp-form'
 
 type SectionId = 'profile' | 'notifications' | 'permissions' | 'whatsapp' | 'system'
 
@@ -144,31 +145,39 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
           ) : null}
 
           {section === 'whatsapp' ? (
-            <GroupedSection title="WhatsApp Business">
-              <GroupedRow as="label" className="flex-col items-stretch gap-1.5">
-                <Field label="מספר עסקי WhatsApp" htmlFor="wa">
-                  <Input
-                    id="wa"
-                    dir="ltr"
-                    value={form.wa_business_phone}
-                    onChange={(e) => set('wa_business_phone', e.target.value)}
-                    placeholder="972552819086"
-                  />
-                </Field>
-              </GroupedRow>
-              <GroupedRow className="flex-col items-stretch">
-                {!form.wa_business_phone?.replace(/\D/g, '') ? (
-                  <Notice tone="warning">
-                    בלי מספר עסקי לא ניתן להדפיס QR תקין לחנויות. הזינו את מספר
-                    ה־WhatsApp Business ואז הדפיסו מחדש מ־/ops/stores/print-qr.
-                  </Notice>
-                ) : (
-                  <Notice tone="progress">
-                    המספר משמש לקישורי QR/NFC. אחרי שינוי — הדפיסו QR מחדש.
-                  </Notice>
-                )}
-              </GroupedRow>
-            </GroupedSection>
+            <>
+              <GroupedSection title="WhatsApp Business">
+                <GroupedRow as="label" className="flex-col items-stretch gap-1.5">
+                  <Field label="מספר עסקי WhatsApp" htmlFor="wa">
+                    <Input
+                      id="wa"
+                      dir="ltr"
+                      value={form.wa_business_phone}
+                      onChange={(e) => set('wa_business_phone', e.target.value)}
+                      placeholder="972552819086"
+                    />
+                  </Field>
+                </GroupedRow>
+                <GroupedRow className="flex-col items-stretch gap-2">
+                  {!form.wa_business_phone?.replace(/\D/g, '') ? (
+                    <Notice tone="warning">
+                      בלי מספר עסקי לא ניתן להדפיס QR תקין לחנויות. הזינו את מספר
+                      ה־WhatsApp Business ואז הדפיסו מחדש מ־/ops/stores/print-qr.
+                    </Notice>
+                  ) : (
+                    <Notice tone="progress">
+                      המספר משמש לקישורי QR/NFC. אחרי שינוי — הדפיסו QR מחדש.
+                    </Notice>
+                  )}
+                  <Button asChild variant="secondary">
+                    <Link href="/ops/settings/whatsapp-templates">
+                      ניהול תבניות Meta
+                    </Link>
+                  </Button>
+                </GroupedRow>
+              </GroupedSection>
+              <CountryWhatsAppForm />
+            </>
           ) : null}
 
           {section === 'system' ? (
@@ -212,7 +221,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                     <ComingSoonBadge />
                   </p>
                   <ul className="t-caption space-y-1 text-ink-3">
-                    <li>Web Push לטכנאים</li>
+                    <li>Web Push — פעיל ב־/tech כש־VAPID מוגדר</li>
                     <li>תמיכה בצרפת (i18n)</li>
                   </ul>
                 </GroupedRow>

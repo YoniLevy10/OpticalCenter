@@ -1,0 +1,22 @@
+---
+description: Auth and middleware safety — avoid login lockouts; privileged tenant lookups use service role
+alwaysApply: true
+---
+
+# Auth / middleware safety (MaintainOS)
+
+Lessons adapted from Bino production lockout incidents. Apply to middleware, auth helpers, and API gates.
+
+## Rules
+
+1. **Privileged tenant / membership resolution** that must succeed for routing (e.g. role → home path, country WA credentials) should use the **service-role / system client** on the server — not the user JWT client when RLS or missing grants can return empty and lock users out.
+2. **Never wipe or invalidate sessions** solely because a DB read failed, timed out, or returned a schema error. Prefer fail-open to a safe default or retry; log with `captureError`.
+3. **API routes** continue to use `requireActor` for authorization; do not expose service-role keys to the browser.
+4. **Cron / webhook** paths use their own secrets (`CRON_SECRET`, Meta signature) — not session cookies.
+5. On Supabase schema-missing errors, fall back to memory/demo paths where the product already supports them — do not treat as auth failure.
+
+## Do not
+
+- Call `signOut` / clear cookies from middleware when Supabase is briefly unreachable
+- Use anon client for admin-only lookups that gate access to the whole app
+- Block `/login` or auth callback on secondary data fetches

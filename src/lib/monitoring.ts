@@ -1,10 +1,9 @@
 /**
- * Lightweight error monitoring.
- *
- * Always logs to the console. When `SENTRY_DSN` is set, posts a minimal
- * Sentry-compatible event envelope via fetch (no @sentry/nextjs dependency —
- * keeps Next 15 builds working without the wizard).
+ * Error monitoring — prefers @sentry/nextjs when DSN is set; falls back to
+ * a minimal envelope POST so builds without the wizard still work.
  */
+
+import * as Sentry from '@sentry/nextjs'
 
 export function captureError(
   err: unknown,
@@ -14,12 +13,21 @@ export function captureError(
   const stack = err instanceof Error ? err.stack : undefined
   console.error('[maintainos]', message, context ?? {}, stack ?? '')
 
-  const dsn = process.env.SENTRY_DSN?.trim()
+  const dsn =
+    process.env.SENTRY_DSN?.trim() ||
+    process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()
   if (!dsn) return
 
-  void sendToSentry(dsn, message, stack, context).catch((sendErr) => {
-    console.error('[maintainos] sentry send failed', sendErr)
-  })
+  try {
+    Sentry.captureException(err instanceof Error ? err : new Error(message), {
+      extra: context,
+    })
+    return
+  } catch {
+    void sendToSentry(dsn, message, stack, context).catch((sendErr) => {
+      console.error('[maintainos] sentry send failed', sendErr)
+    })
+  }
 }
 
 async function sendToSentry(
@@ -28,7 +36,6 @@ async function sendToSentry(
   stack: string | undefined,
   context?: Record<string, unknown>,
 ) {
-  // DSN: https://<key>@<host>/<projectId>
   let parsed: URL
   try {
     parsed = new URL(dsn)
@@ -39,38 +46,33 @@ async function sendToSentry(
   const projectId = parsed.pathname.replace(/^\//, '')
   if (!publicKey || !projectId) return
 
-  const ingest = `${parsed.protocol}//${parsed.host}/api/${projectId}/store/?sentry_key=${encodeURIComponent(publicKey)}&sentry_version=7`
+  const url = `${parsed.protocol}//${parsed.host}/api/${projectId}/store/`
   const event = {
     event_id: crypto.randomUUID().replace(/-/g, ''),
     timestamp: Date.now() / 1000,
-    platform: 'node',
+    platform: 'javascript',
     level: 'error',
     message,
     exception: stack
       ? {
           values: [
             {
-              type: errType(message),
+              type: 'Error',
               value: message,
-              stacktrace: { frames: [{ filename: 'app', function: stack.slice(0, 500) }] },
+              stacktrace: { frames: [{ filename: 'app', function: stack }] },
             },
           ],
         }
       : undefined,
-    tags: { app: 'maintainos' },
-    extra: context ?? {},
+    extra: context,
   }
 
-  await fetch(ingest, {
+  await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=maintainos-thin/1.0, sentry_key=${publicKey}`,
+      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_client=maintainos/1.0`,
     },
     body: JSON.stringify(event),
   })
-}
-
-function errType(message: string) {
-  return message.split(':')[0]?.slice(0, 64) || 'Error'
 }

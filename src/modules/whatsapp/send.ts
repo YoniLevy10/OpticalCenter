@@ -9,6 +9,15 @@ import {
   defaultSessionTemplateLang,
   defaultSessionTemplateName,
 } from './templates'
+import {
+  enqueueWhatsAppSendFailure,
+  shouldEnqueueWhatsAppFailure,
+} from './send-failures'
+
+function resolveAccessToken(forceDryRun?: boolean): string | null {
+  if (forceDryRun) return null
+  return process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
+}
 
 export type SendWhatsAppParams = {
   toWaId: string
@@ -20,6 +29,8 @@ export type SendWhatsAppParams = {
   /** Force dry-run (simulator / tests) even if access token is present. */
   forceDryRun?: boolean
   purpose?: OutboundPurpose
+  /** When true, do not write to the durable retry queue (cron retries). */
+  skipFailureQueue?: boolean
 }
 
 export type SendWhatsAppResult = {
@@ -93,10 +104,9 @@ export async function sendWhatsAppText(
   }
 
   const toWaId = normalizeWhatsAppRecipient(params.toWaId)
-  const token = params.forceDryRun
-    ? null
-    : process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
+  const token = resolveAccessToken(params.forceDryRun)
   const phoneNumberId = resolveWhatsAppPhoneNumberId(params.phoneNumberId)
+  let lastHttpStatus: number | undefined
 
   // intake_reply must also fail loudly — silent dry-run looked like "bot
   // received the message but never answered" in production WhatsApp chats.
@@ -162,6 +172,7 @@ export async function sendWhatsAppText(
           },
         )
         const json = (await res.json()) as GraphErrorBody
+        lastHttpStatus = res.status
         if (res.ok) {
           ok = true
           error = undefined
@@ -210,6 +221,7 @@ export async function sendWhatsAppText(
         await new Promise((r) => setTimeout(r, backoffMs))
       } catch (e) {
         ok = false
+        lastHttpStatus = 0
         error = e instanceof Error ? e.message : 'send failed'
         if (attempt === maxAttempts) break
         const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 8000)
@@ -247,6 +259,29 @@ export async function sendWhatsAppText(
     })
   }
 
+  if (
+    !params.skipFailureQueue &&
+    shouldEnqueueWhatsAppFailure({
+      ok,
+      dryRun,
+      skippedByPolicy: false,
+      errorCode,
+      httpStatus: lastHttpStatus,
+    })
+  ) {
+    await enqueueWhatsAppSendFailure({
+      toWaId,
+      purpose,
+      sendKind: 'text',
+      payload: { text: params.text },
+      phoneNumberId,
+      ticketId: params.ticketId,
+      metaErrorCode: errorCode,
+      metaErrorMessage: error,
+      supabase: params.supabase,
+    })
+  }
+
   return {
     ok,
     dryRun,
@@ -272,6 +307,7 @@ export type SendWhatsAppTemplateParams = {
   supabase?: SupabaseClient
   forceDryRun?: boolean
   purpose?: OutboundPurpose
+  skipFailureQueue?: boolean
 }
 
 /**
@@ -295,9 +331,7 @@ export async function sendWhatsAppTemplate(
   }
 
   const toWaId = normalizeWhatsAppRecipient(params.toWaId)
-  const token = params.forceDryRun
-    ? null
-    : process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null
+  const token = resolveAccessToken(params.forceDryRun)
   const phoneNumberId = resolveWhatsAppPhoneNumberId(params.phoneNumberId)
   const templateName =
     params.templateName.trim() || defaultSessionTemplateName()
@@ -306,6 +340,7 @@ export async function sendWhatsAppTemplate(
   const bodyParameters = (params.bodyParameters ?? [])
     .map((p) => p.trim())
     .filter(Boolean)
+  let lastHttpStatus: number | undefined
 
   if (!params.forceDryRun) {
     if (!token) {
@@ -376,6 +411,7 @@ export async function sendWhatsAppTemplate(
         },
       )
       const json = (await res.json()) as GraphErrorBody
+      lastHttpStatus = res.status
       if (res.ok) {
         waMessageId = json.messages?.[0]?.id ?? null
         logEvent('whatsapp:send', 'info', 'template_graph_ok', {
@@ -400,6 +436,7 @@ export async function sendWhatsAppTemplate(
       }
     } catch (e) {
       ok = false
+      lastHttpStatus = 0
       error = e instanceof Error ? e.message : 'template send failed'
     }
   } else {
@@ -428,6 +465,33 @@ export async function sendWhatsAppTemplate(
         bodyParameters,
         purpose,
       },
+    })
+  }
+
+  if (
+    !params.skipFailureQueue &&
+    shouldEnqueueWhatsAppFailure({
+      ok,
+      dryRun,
+      skippedByPolicy: false,
+      errorCode,
+      httpStatus: lastHttpStatus,
+    })
+  ) {
+    await enqueueWhatsAppSendFailure({
+      toWaId,
+      purpose,
+      sendKind: 'template',
+      payload: {
+        templateName,
+        languageCode,
+        bodyParameters,
+      },
+      phoneNumberId,
+      ticketId: params.ticketId,
+      metaErrorCode: errorCode,
+      metaErrorMessage: error,
+      supabase: params.supabase,
     })
   }
 
