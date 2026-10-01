@@ -33,7 +33,6 @@ export async function GET(request: Request) {
     const { rows, backend } = await listPendingWhatsAppFailures(40)
     let sent = 0
     let failed = 0
-    let exhausted = 0
 
     for (const row of rows) {
       const purpose = (row.purpose || 'ops_reply') as OutboundPurpose
@@ -78,7 +77,6 @@ export async function GET(request: Request) {
       pending: rows.length,
       sent,
       failed,
-      exhausted,
     })
 
     return NextResponse.json({
