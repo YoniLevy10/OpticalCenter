@@ -71,7 +71,7 @@ export async function listProfessionals(opts?: {
   }
 
   const supabase = createSystemClient('professionals_list')
-  let query = supabase
+  const query = supabase
     .from('professionals')
     .select('*')
     .is('deleted_at', null)
