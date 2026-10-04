@@ -28,7 +28,7 @@ export default async function SettingsPage() {
           <GroupedSection title="פריסה">
             <GroupedRow className="justify-between">
               <span className="t-body text-ink-2">מוצר</span>
-              <span className="t-body text-ink">MaintainOS</span>
+              <span className="t-body text-ink">MILO</span>
             </GroupedRow>
             <GroupedRow className="justify-between">
               <span className="t-body text-ink-2">לקוח</span>
