@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   UserRound,
-  Users,
 } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
@@ -64,8 +63,20 @@ export default async function OpsDashboardPage() {
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
   const kpis = computeDashboardKpis(all, technicians)
-  const topUrgent = kpis.exceptions.slice(0, 6)
-  const awaitingConfirm = kpis.awaitingStoreConfirmTickets.slice(0, 5)
+  // One attention queue: exceptions + awaiting store confirm, newest → oldest.
+  const attentionById = new Map<string, QueueTicket>()
+  for (const t of [
+    ...kpis.exceptions,
+    ...kpis.awaitingStoreConfirmTickets,
+  ]) {
+    attentionById.set(t.id, t)
+  }
+  const attentionQueue = [...attentionById.values()]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 12)
   const isDemo =
     openResult.backend === 'memory' || doneResult.backend === 'memory'
   const hasOpen = kpis.open > 0
@@ -151,7 +162,11 @@ export default async function OpsDashboardPage() {
         <Panel flush elevated className="overflow-hidden">
           <PanelHeader
             title="דורש טיפול"
-            meta={topUrgent.length > 0 ? String(topUrgent.length) : undefined}
+            meta={
+              attentionQueue.length > 0
+                ? String(attentionQueue.length)
+                : undefined
+            }
             action={
               <Link
                 href="/ops/tickets?view=open"
@@ -161,16 +176,17 @@ export default async function OpsDashboardPage() {
               </Link>
             }
           />
-          {topUrgent.length === 0 ? (
+          {attentionQueue.length === 0 ? (
             <EmptyState
-              title="אין חריגים כרגע"
+              title="אין תקלות שדורשות טיפול"
               icon={CheckCircle2}
               className="py-12"
             />
           ) : (
             <RowList>
-              {topUrgent.map((t) => {
+              {attentionQueue.map((t) => {
                 const openFor = plainOpenForHe(t.created_at, t)
+                const awaitingStore = t.status === 'resolved'
                 const num =
                   t.display_number ||
                   (t.number != null ? `OC-${t.number}` : null)
@@ -197,57 +213,7 @@ export default async function OpsDashboardPage() {
                             : 'text-ink-3',
                         )}
                       >
-                        {openFor.text}
-                      </span>
-                    }
-                    title={t.title || t.description}
-                    footer={
-                      <>
-                        <StatusLabel status={t.status} />
-                        <Dot />
-                        <span className="t-meta text-ink-2">לטפל ←</span>
-                      </>
-                    }
-                  />
-                )
-              })}
-            </RowList>
-          )}
-        </Panel>
-
-        <Panel flush elevated className="overflow-hidden">
-          <PanelHeader
-            title="ממתינות לאישור חנות"
-            meta={
-              awaitingConfirm.length > 0
-                ? String(awaitingConfirm.length)
-                : undefined
-            }
-          />
-          {awaitingConfirm.length === 0 ? (
-            <EmptyState
-              title="אין ממתינות לאישור"
-              icon={Users}
-              className="py-12"
-            />
-          ) : (
-            <RowList>
-              {awaitingConfirm.map((t) => {
-                const num =
-                  t.display_number ||
-                  (t.number != null ? `OC-${t.number}` : null)
-                return (
-                  <OperationalRow
-                    key={t.id}
-                    href={`/ops/tickets/${t.id}`}
-                    priority={t.priority}
-                    leading={
-                      <span className="inline-flex items-center gap-2">
-                        {num ? (
-                          <span className="t-num text-ink">{num}</span>
-                        ) : null}
-                        {num ? <span aria-hidden>·</span> : null}
-                        <span>{storeLabel(t.stores)}</span>
+                        {awaitingStore ? 'ממתינה לאישור' : openFor.text}
                       </span>
                     }
                     title={t.title || t.description}
@@ -256,7 +222,7 @@ export default async function OpsDashboardPage() {
                         <StatusLabel status={t.status} />
                         <Dot />
                         <span className="t-meta text-ink-2">
-                          ממתין לאישור סניף
+                          {awaitingStore ? 'אישור סניף' : 'לטפל ←'}
                         </span>
                       </>
                     }

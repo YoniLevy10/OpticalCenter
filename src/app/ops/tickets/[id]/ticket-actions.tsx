@@ -10,7 +10,6 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { ErrorState } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { isTicketResolved } from '@/components/ops/plain-labels'
-import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 
 type Technician = {
   id: string
@@ -25,8 +24,6 @@ export function TicketActions({
   assignedTo,
   assigneeName,
   technicians,
-  category = 'other',
-  city = null,
 }: {
   ticketId: string
   status: TicketStatus
@@ -35,7 +32,7 @@ export function TicketActions({
   technicians: Technician[]
   /** Kept for call-site compatibility; unused in the simplified UI. */
   assigneeFieldId?: string
-  /** For Midrag fallback when no internal tech is assigned */
+  /** @deprecated Midrag search removed from ticket actions — use אנשי מקצוע. */
   category?: string
   city?: string | null
 }) {
@@ -180,18 +177,9 @@ export function TicketActions({
 
       {sortedTechs.length === 0 && unassigned ? (
         <p className="t-body text-ink-2">
-          אין טכנאים זמינים. חפשו איש מקצוע במידרג או הוסיפו טכנאים במסך
-          המשתמשים.
+          אין טכנאים זמינים. הוסיפו טכנאים במסך המשתמשים, או שמרו אנשי מקצוע
+          בלשונית «אנשי מקצוע».
         </p>
-      ) : null}
-
-      {unassigned && open ? (
-        <div className="space-y-1.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/40 p-3">
-          <p className="t-caption text-ink-2">
-            אין למי לשייך פנימית? חפשו ספק חיצוני לפי סוג התקלה והעיר.
-          </p>
-          <MidragSearchAction category={category} city={city} />
-        </div>
       ) : null}
 
       {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}

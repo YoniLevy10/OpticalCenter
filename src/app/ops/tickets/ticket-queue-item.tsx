@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { Check, MessageSquareText, Search } from 'lucide-react'
+import { Check, MessageSquareText } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import {
   OPEN_TICKET_STATUSES,
@@ -15,7 +15,6 @@ import { Textarea } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { OperationalRow, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
-import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { cn } from '@/lib/utils'
 import {
   plainOpenForHe,
@@ -66,18 +65,14 @@ export function TicketQueueItem({
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [midragOpen, setMidragOpen] = useState(false)
   const [status, setStatus] = useState<TicketStatus>(
     (ticket.status as TicketStatus) || 'assigned',
   )
   const [note, setNote] = useState('')
 
   const open = OPEN_TICKET_STATUSES.includes(ticket.status as TicketStatus)
-  const unassigned = !ticket.assigned_to
   const openFor = plainOpenForHe(ticket.created_at, ticket)
   const disabled = busy || pending
-  const midragCategory = ticket.category?.trim() || 'other'
-  const midragCity = ticket.stores?.city ?? null
   const critical =
     ticket.priority === 'critical' || ticket.priority === 'high' || openFor.overdue
 
@@ -199,18 +194,6 @@ export function TicketQueueItem({
         </Link>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:w-[7.5rem]">
-          {unassigned ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="min-h-[40px] flex-1 sm:w-full"
-              onClick={() => setMidragOpen(true)}
-            >
-              <Search className="h-3.5 w-3.5" aria-hidden />
-              מידרג
-            </Button>
-          ) : null}
           <Button
             type="button"
             variant="secondary"
@@ -235,16 +218,6 @@ export function TicketQueueItem({
           </Button>
         </div>
       </div>
-
-      {unassigned ? (
-        <MidragSearchAction
-          category={midragCategory}
-          city={midragCity}
-          hideTrigger
-          open={midragOpen}
-          onOpenChange={setMidragOpen}
-        />
-      ) : null}
 
       <BottomSheet
         open={sheetOpen}
