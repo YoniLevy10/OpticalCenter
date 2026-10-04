@@ -3,89 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MaintainOS — UX Preview</title>
+  <title>MILO — UX Preview · Penpot</title>
   <link rel="stylesheet" href="preview.css" />
 </head>
-<body>
+<body class="bg-alive">
   <main class="gallery">
     <header class="gallery-hero">
-      <div class="brand">
-        <div class="brand-mark">MO</div>
+      <div class="brand" style="display:flex;gap:12px;align-items:center">
+        <div class="brand-mark">ML</div>
         <div>
-          <strong class="t-section">MaintainOS</strong>
-          <span class="t-caption" style="display:block">Optical Center · פיילוט ישראל</span>
+          <strong class="t-section">MILO</strong>
+          <span class="t-caption" style="display:block">Maintenance Intelligence &amp; Logistics Operations</span>
         </div>
       </div>
-      <h1>תצוגת UX/UI חדשה</h1>
-      <p>
-        מרכז שליטה תפעולי יומי — Operational Quiet + Bamakor Pulse.
-        היקף ממוקד לפי תוכנית השיפור: Shell, Dashboard, Tickets, Inbox, Stores,
-        ואז Login / Store / Tech. פתוח לייבוא ל־Penpot כפריימים.
+      <h1>תצוגת UX ל־Penpot</h1>
+      <p class="t-lead" style="color:var(--ink-2);max-width:36rem">
+        כיוון Alive · חוויית iPhone מוכרת (Liquid Glass) · Optical Center כפיילוט.
+        פתחו מסכים בדפדפן, או ייבאו ל־Penpot אחרי חיבור MCP.
       </p>
       <div class="gallery-meta">
-        <span class="chip tenant">Tenant · OC Red</span>
+        <span class="chip active">MILO</span>
         <span class="chip">RTL · Heebo</span>
-        <span class="chip">Design System v1</span>
-        <span class="chip">docs/UX_IMPROVEMENT_PLAN.md</span>
+        <span class="chip">iOS-native feel</span>
+        <span class="chip">Penpot-ready</span>
       </div>
     </header>
 
-    <div class="section-label">HQ Ops — מרכז שליטה</div>
-    <div class="screen-grid">
-      <a class="screen-card" href="screens/dashboard.html">
-        <div class="thumb"></div>
-        <h2>Dashboard</h2>
-        <p>קונסולת פעולה יומית — KPI, חריגים, מה דורש טיפול עכשיו</p>
-      </a>
-      <a class="screen-card" href="screens/tickets.html">
-        <div class="thumb"></div>
-        <h2>Tickets</h2>
-        <p>תור צפוף בסגנון Linear — סינונים, SLA, פעולה ראשית</p>
-      </a>
-      <a class="screen-card" href="screens/ticket-detail.html">
-        <div class="thumb"></div>
-        <h2>Ticket Detail</h2>
-        <p>מטא, ציר זמן, פעולות בזרימת המסמך</p>
-      </a>
-      <a class="screen-card" href="screens/inbox.html">
-        <div class="thumb"></div>
-        <h2>WhatsApp Inbox</h2>
-        <p>רשימה → שיחה, human takeover, קישור לתקלה</p>
-      </a>
-      <a class="screen-card" href="screens/stores.html">
-        <div class="thumb"></div>
-        <h2>Stores</h2>
-        <p>מדריך סניפים — חיפוש, אזור, תקלות פתוחות</p>
-      </a>
-      <a class="screen-card" href="screens/store-detail.html">
-        <div class="thumb"></div>
-        <h2>Store Detail</h2>
-        <p>פרטי סניף, QR, תקלות פתוחות</p>
-      </a>
-    </div>
+    <section style="margin-bottom:28px" class="glass panel" >
+      <div class="panel-head">
+        <strong>איך עולים ל־Penpot</strong>
+      </div>
+      <ol class="t-body" style="margin:0;padding:0 18px 18px 18px;color:var(--ink-2);line-height:1.7">
+        <li>פתחו קובץ ב־<a href="https://design.penpot.app" target="_blank" rel="noopener"><u>design.penpot.app</u></a></li>
+        <li>Account → Integrations → MCP Server → הפעלה + העתקת URL (עם userToken)</li>
+        <li>הוסיפו את השרת ל־Cursor MCP, ובקובץ: File → MCP Server → Connect</li>
+        <li>חזרו לסוכן עם «ה־MCP מחובר» — ואז נבנה את המסכים ישירות ב־Penpot</li>
+      </ol>
+      <p class="t-caption" style="padding:0 18px 16px">
+        בינתיים: כל המסכים כאן זמינים לצפייה / צילום / ייבוא ידני כ־reference frames.
+      </p>
+    </section>
 
-    <div class="section-label">כניסה ופורטלים</div>
-    <div class="screen-grid">
-      <a class="screen-card" href="screens/login.html">
-        <div class="thumb"></div>
-        <h2>Login</h2>
-        <p>רגע מותג — raised tile + soft tenant glow</p>
-      </a>
-      <a class="screen-card" href="screens/store-portal.html">
-        <div class="thumb mobile"></div>
-        <h2>Store Portal</h2>
-        <p>עובד סניף — התקלות שלי + דיווח חדש</p>
-      </a>
-      <a class="screen-card" href="screens/tech-home.html">
-        <div class="thumb mobile"></div>
-        <h2>Tech · Jobs</h2>
-        <p>PWA שטח — רשימת משימות משויכות</p>
-      </a>
-      <a class="screen-card" href="screens/tech-job.html">
-        <div class="thumb mobile"></div>
-        <h2>Tech · Job Detail</h2>
-        <p>התקדמות, הערות, צילומי ראיה, סיום</p>
-      </a>
+    <div class="gallery-grid">
+      <a class="gallery-card glass" href="screens/dashboard.html"><strong>Dashboard</strong><span class="t-meta">קונסולת פעולה · Desktop</span></a>
+      <a class="gallery-card glass" href="screens/tickets.html"><strong>Tickets</strong><span class="t-meta">תור צפוף · Linear-like</span></a>
+      <a class="gallery-card glass" href="screens/ticket-detail.html"><strong>Ticket Detail</strong><span class="t-meta">מטא + פעולות + מידרג</span></a>
+      <a class="gallery-card glass" href="screens/inbox.html"><strong>WhatsApp Inbox</strong><span class="t-meta">רשימה → שיחה</span></a>
+      <a class="gallery-card glass" href="screens/stores.html"><strong>Stores</strong><span class="t-meta">מדריך סניפים</span></a>
+      <a class="gallery-card glass" href="screens/login.html"><strong>Login</strong><span class="t-meta">רגע מותג MILO</span></a>
+      <a class="gallery-card glass" href="screens/store-portal.html"><strong>Store</strong><span class="t-meta">מובייל סניף</span></a>
+      <a class="gallery-card glass" href="screens/tech-home.html"><strong>Tech</strong><span class="t-meta">PWA טכנאי · iOS tabs</span></a>
     </div>
   </main>
 </body>

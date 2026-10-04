@@ -1,47 +1,48 @@
-# MaintainOS — UX/UI Preview
+# MILO — UX Preview (Penpot)
 
-Preview אינטראקטיבי (HTML/RTL) לכיוון ה־UX החדש, לפי [`UX_IMPROVEMENT_PLAN.md`](../UX_IMPROVEMENT_PLAN.md) ו־[`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md).
+Preview אינטראקטיבי (HTML/RTL) לכיוון **Alive Ops** של MILO.  
+מיועד לצפייה מיידית ולייבוא / בניה ב־[Penpot](https://penpot.app).
 
-**למה לא Penpot ישירות?** אין אינטגרציית Penpot בסביבת הסוכן. ה־preview הזה הוא מקור ויזואלי מלא לייבוא ל־[Penpot](https://penpot.app) (פריימים / צילומי מסך / שכפול ידני), וגם לצפייה מיידית בדפדפן.
+**Figma הקודם:** נשאר כארכיון — מעכשיו העבודה הוויזואלית עוברת ל־Penpot.
 
 ## פתיחה מקומית
-
-משורש הריפו:
 
 ```bash
 npx --yes serve docs/ux-preview -p 4173
 ```
 
-ואז: [http://localhost:4173](http://localhost:4173)
+[http://localhost:4173](http://localhost:4173)
 
-או פתיחה ישירה של `docs/ux-preview/index.html` בדפדפן.
+## מסכים
 
-## מסכים (היקף ממוקד)
+| מסך | קובץ |
+|------|------|
+| גלריה | `index.html` |
+| Dashboard | `screens/dashboard.html` |
+| Tickets | `screens/tickets.html` |
+| Login | `screens/login.html` |
+| Tech (mobile) | `screens/tech-home.html` |
+| (+ ישנים) | inbox, stores, store-portal, ticket-detail… |
 
-| מסך | קובץ | תפקיד |
-|------|------|--------|
-| גלריה | `index.html` | מפת מסכים |
-| Dashboard | `screens/dashboard.html` | קונסולת פעולה יומית |
-| Tickets | `screens/tickets.html` | תור צפוף |
-| Ticket Detail | `screens/ticket-detail.html` | מטא + ציר זמן + פעולות |
-| WhatsApp Inbox | `screens/inbox.html` | רשימה → שיחה |
-| Stores / Detail | `screens/stores.html`, `store-detail.html` | מדריך סניפים |
-| Login | `screens/login.html` | רגע מותג |
-| Store Portal | `screens/store-portal.html` | עובד סניף (מובייל) |
-| Tech Jobs / Detail | `screens/tech-home.html`, `tech-job.html` | PWA טכנאי |
+## העלאה ל־Penpot (כמו Figma MCP)
 
-מחוץ להיקף בשלב זה (לפי סדר התוכנית): Assets, Vendors, Activity, Reports, Users, Settings, Status, Simulator, Print QR — אפשר להרחיב באותו מבנה.
+בסביבת הסוכן **אין** Penpot MCP מחובר כברירת מחדל. כדי שהסוכן יבנה מסכים ישירות ב־`design.penpot.app`:
 
-## ייבוא ל־Penpot
+1. היכנסו ל־[design.penpot.app](https://design.penpot.app) וצרו קובץ `MILO Design`.
+2. **Your account → Integrations → MCP Server** — הפעילו, צרו MCP key, העתיקו את ה־URL (כולל `userToken`).
+3. הוסיפו את השרת ל־Cursor (MCP settings / `npx -y add-mcp -g -n penpot <URL>`).
+4. בקובץ הפתוח: **File → MCP Server → Connect** (הטאב חייב להישאר פעיל).
+5. כתבו לסוכן: «Penpot מחובר — בנה את מסכי MILO ב־Penpot».
 
-1. פתחו פרויקט חדש ב־[design.penpot.app](https://design.penpot.app) או בשרת Penpot עצמי.
-2. צרו Board לכל מסך (Desktop 1280×800 ל־Ops; Mobile 390×844 ל־Store/Tech).
-3. לכל מסך: פתחו את ה־HTML ב־serve, צלמו / ייצאו SVG/PNG, והדביקו כ־reference frame — או שכפלו ידנית עם הטוקנים מ־`preview.css`.
-4. טוקנים מרכזיים: `--canvas #eef4f6`, `--ink #102b35`, `--tenant #d92621`, אותות critical/warning/progress/resolved.
+### בלי MCP (ייבוא ידני)
 
-## עקרונות שמוצגים כאן
+1. Board לכל מסך (Desktop 1280×800 / Mobile 390×844).
+2. פתחו את ה־HTML ב־serve, צלמו / ייצאו PNG כ־reference.
+3. שכפלו עם הטוקנים מ־`preview.css` (tenant `#e11d2e`, signals Apple-like, glass panels).
 
-- Dashboard = מסך עבודה (חריגים + SLA), לא דשבורד סטטיסטיקות
-- צבע = אות תפעולי בלבד; tenant אדום OC לפעולות ו־nav פעיל
-- Sidebar דסקטופ + bottom nav במובייל
-- RTL + Heebo; מספרים ב־`t-num` / `dir=ltr`
+## טוקנים מרכזיים
+
+- Canvas atmosphere: `#eef3f8` → warm → soft red breath  
+- Tenant: `#e11d2e`  
+- Signals: blue `#007aff` · orange `#ff9f0a` · green `#34c759` · red `#ff3b30`  
+- Glass chrome + capsule CTAs · RTL · Heebo
