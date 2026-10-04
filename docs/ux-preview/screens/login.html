@@ -3,37 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login · MaintainOS Preview</title>
+  <title>Login · MILO Preview</title>
   <link rel="stylesheet" href="../preview.css" />
 </head>
 <body>
-  <div class="preview-bar">
+  <div class="preview-bar" style="background:#fff">
     <a href="../index.html">← גלריה</a>
     <a class="active" href="login.html">Login</a>
-    <a href="store-portal.html">Store</a>
-    <a href="tech-home.html">Tech</a>
     <span class="spacer"></span>
-    <span class="tag">UX Preview · Brand moment</span>
+    <span class="tag">MILO · brand moment</span>
   </div>
 
   <div class="login-page">
-    <div class="login-card">
-      <div class="brand-mark">MO</div>
-      <h1>MaintainOS</h1>
-      <p class="sub">מערכת תפעול לרשת Optical Center</p>
+    <div class="login-card glass">
+      <div class="brand-mark" style="margin:0 auto 14px;width:48px;height:48px;font-size:16px">ML</div>
+      <div class="t-title">MILO</div>
+      <p class="t-meta" style="margin:6px 0 0">Maintenance Intelligence &amp; Logistics Operations</p>
+      <p class="t-caption" style="margin:8px 0 20px">כניסה · Optical Center</p>
 
       <div class="field">
-        <label for="email">אימייל</label>
-        <input id="email" type="email" placeholder="you@opticalcenter.co.il" autocomplete="username" />
+        <label>אימייל</label>
+        <input class="input" value="you@opticalcenter.co.il" readonly />
       </div>
       <div class="field">
-        <label for="pass">סיסמה</label>
-        <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <label>סיסמה</label>
+        <input class="input" value="••••••••" readonly />
       </div>
-      <button class="btn btn-primary btn-lg" onclick="location.href='dashboard.html'">כניסה</button>
-
-      <div class="divider">או</div>
-      <button class="btn btn-secondary btn-lg">המשך עם Google</button>
+      <button class="btn btn-primary t-control" style="width:100%;margin-top:8px">כניסה למערכת</button>
     </div>
   </div>
 </body>

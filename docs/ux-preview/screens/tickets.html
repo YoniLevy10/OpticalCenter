@@ -3,141 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tickets · MaintainOS Preview</title>
+  <title>Tickets · MILO Preview</title>
   <link rel="stylesheet" href="../preview.css" />
 </head>
-<body>
+<body class="bg-alive">
   <div class="preview-bar">
     <a href="../index.html">← גלריה</a>
     <a href="dashboard.html">Dashboard</a>
     <a class="active" href="tickets.html">Tickets</a>
-    <a href="ticket-detail.html">Detail</a>
-    <a href="inbox.html">Inbox</a>
-    <a href="stores.html">Stores</a>
     <span class="spacer"></span>
-    <span class="tag">UX Preview</span>
+    <span class="tag">MILO · queue</span>
   </div>
 
   <div class="app">
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="brand-mark">MO</div>
-        <div><strong>MaintainOS</strong><span>Optical Center</span></div>
-      </div>
-      <nav class="nav-group">
-        <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span> לוח בקרה</a>
-        <a class="nav-item active" href="tickets.html"><span class="nav-icon">☰</span> תקלות</a>
-        <a class="nav-item" href="inbox.html"><span class="nav-icon">💬</span> WhatsApp</a>
-        <a class="nav-item" href="stores.html"><span class="nav-icon">⌂</span> סניפים</a>
-      </nav>
-      <div class="sidebar-footer">
-        <a class="nav-item" href="#"><span class="nav-icon">⚙</span> הגדרות</a>
-      </div>
-    </aside>
-
     <div class="main">
       <header class="topbar">
-        <h1>תקלות</h1>
-        <div class="topbar-actions">
-          <button class="btn btn-primary t-control">תקלה חדשה</button>
+        <div>
+          <h1>תקלות</h1>
+          <p class="t-meta" style="margin:4px 0 0">תור צפוף · צבע = עדיפות / SLA</p>
         </div>
+        <button class="btn btn-primary t-control">תקלה חדשה</button>
       </header>
 
-      <div class="content">
-        <div class="toolbar">
-          <div class="seg">
-            <button class="active">הכל · 41</button>
-            <button>שלי · 6</button>
-            <button>דחופות · 4</button>
-            <button>ללא אחראי · 7</button>
-          </div>
-          <input class="search" type="search" placeholder="חיפוש מספר, סניף, תיאור…" />
-          <button class="btn btn-secondary t-control">סטטוס</button>
-          <button class="btn btn-secondary t-control">אזור</button>
-        </div>
+      <div class="filters" style="margin-bottom:14px">
+        <span class="chip active">הכל</span>
+        <span class="chip">שלי</span>
+        <span class="chip">דחופות</span>
+        <span class="chip">ללא אחראי</span>
+      </div>
 
-        <div class="panel elevated">
-          <div class="table-wrap">
-            <table class="dense">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>מס׳</th>
-                  <th>תקלה</th>
-                  <th>סניף</th>
-                  <th>סטטוס</th>
-                  <th>אחראי</th>
-                  <th>SLA</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr onclick="location.href='ticket-detail.html'" style="cursor:pointer">
-                  <td><span class="prio critical" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10482</td>
-                  <td class="t-body-strong">מזגן לא מקרר</td>
-                  <td>דיזנגוף · <span class="t-num">112</span></td>
-                  <td><span class="badge critical">חריגה</span></td>
-                  <td class="t-meta">—</td>
-                  <td class="row-sla breach t-num">−1:12</td>
-                </tr>
-                <tr>
-                  <td><span class="prio critical" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10479</td>
-                  <td class="t-body-strong">דלף מים בחדר מדידה</td>
-                  <td>רמת אביב · <span class="t-num">118</span></td>
-                  <td><span class="badge progress">בטיפול</span></td>
-                  <td>דני כ.</td>
-                  <td class="row-sla breach t-num">−0:38</td>
-                </tr>
-                <tr>
-                  <td><span class="prio high" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10471</td>
-                  <td class="t-body-strong">תאורת חלון כבויה</td>
-                  <td>באר שבע · <span class="t-num">204</span></td>
-                  <td><span class="badge warning">ממתינה</span></td>
-                  <td class="t-meta">—</td>
-                  <td class="row-sla warn t-num">0:22</td>
-                </tr>
-                <tr>
-                  <td><span class="prio medium" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10465</td>
-                  <td class="t-body-strong">מדפסת תוויות</td>
-                  <td>אשדוד · <span class="t-num">172</span></td>
-                  <td><span class="badge progress">בטיפול</span></td>
-                  <td>נועה ל.</td>
-                  <td class="row-sla t-num">2:40</td>
-                </tr>
-                <tr>
-                  <td><span class="prio medium" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10458</td>
-                  <td class="t-body-strong">דלת כניסה נתקעת</td>
-                  <td>חיפה · <span class="t-num">301</span></td>
-                  <td><span class="badge idle">פתוחה</span></td>
-                  <td>איתי מ.</td>
-                  <td class="row-sla t-num">5:10</td>
-                </tr>
-                <tr>
-                  <td><span class="prio low" style="display:inline-block;height:28px"></span></td>
-                  <td class="t-num" dir="ltr">#10440</td>
-                  <td class="t-body-strong">החלפת נורות ויטרינה</td>
-                  <td>נתניה · <span class="t-num">155</span></td>
-                  <td><span class="badge resolved">הושלם</span></td>
-                  <td>דני כ.</td>
-                  <td class="t-meta">—</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="panel-pad" style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)">
-            <span class="t-meta">מציג 1–6 מתוך 41</span>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-secondary t-control">הקודם</button>
-              <button class="btn btn-secondary t-control">הבא</button>
-            </div>
-          </div>
+      <div class="table glass">
+        <div class="thead">
+          <span>מס׳</span><span>תקלה</span><span>עדיפות</span><span>סטטוס</span><span>גיל</span>
+        </div>
+        <div class="trow">
+          <span class="t-caption t-num">#OC-1042</span>
+          <div><div class="t-body-strong">מזגן אולם תצוגה</div><div class="t-caption">דיזנגוף</div></div>
+          <span class="badge critical">קריטי</span>
+          <span class="t-meta">פתוח</span>
+          <span class="t-caption t-num">2ש׳</span>
+        </div>
+        <div class="trow">
+          <span class="t-caption t-num">#OC-1038</span>
+          <div><div class="t-body-strong">תאורת ויטרינה</div><div class="t-caption">רמת אביב</div></div>
+          <span class="badge warning">גבוה</span>
+          <span class="t-meta">ממתין</span>
+          <span class="t-caption t-num">55ד׳</span>
+        </div>
+        <div class="trow">
+          <span class="t-caption t-num">#OC-1031</span>
+          <div><div class="t-body-strong">מדפסת קבלות</div><div class="t-caption">אשדוד</div></div>
+          <span class="badge progress">גבוה</span>
+          <span class="t-meta">בטיפול</span>
+          <span class="t-caption t-num">3ש׳</span>
         </div>
       </div>
     </div>
+
+    <aside class="sidebar glass">
+      <div class="logo">
+        <div class="brand-mark">ML</div>
+        <div><strong class="t-body-strong">MILO</strong></div>
+      </div>
+      <a class="nav-item" href="dashboard.html"><span class="dot"></span>לוח בקרה</a>
+      <a class="nav-item active" href="tickets.html"><span class="dot"></span>תקלות</a>
+      <a class="nav-item" href="inbox.html"><span class="dot"></span>WhatsApp</a>
+    </aside>
   </div>
 </body>
 </html>
