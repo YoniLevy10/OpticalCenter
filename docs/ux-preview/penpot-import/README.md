@@ -1,12 +1,13 @@
-# MILO → Penpot import pack
+# MILO → Penpot — רואים מסכים עכשיו
 
-PNG boards + SVG frames לשימוש בקובץ **MILO** ב־Penpot.
+PNG + SVG לקובץ **MILO** ב־Penpot.  
+מדריך מלא: [`docs/PENPOT_SETUP.md`](../../PENPOT_SETUP.md)
 
-## ייבוא מהיר (בלי MCP)
+## ייבוא מהיר (בלי MCP) — זה מה שצריך כדי לראות מסכים
 
 1. פתחו את קובץ **MILO** ב־[design.penpot.app](https://design.penpot.app)
 2. `File → Import` או גררו את ה־PNG / SVG מתיקייה זו
-3. סדרו לפי הסדר: `00-gallery` → `01-dashboard` … `07-store-portal`
+3. סדרו: `01-dashboard` → … → `07-store-portal`
 
 | קובץ | גודל | תפקיד |
 |------|------|--------|
