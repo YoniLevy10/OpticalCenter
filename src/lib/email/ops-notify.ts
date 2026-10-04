@@ -82,7 +82,7 @@ export async function notifySlaBreach(input: {
 }): Promise<void> {
   const label = input.displayNumber ?? input.ticketId.slice(0, 8)
   await sendOpsNotifyEmail({
-    subject: `MILO · [${label}] הפרת SLA`,
+    subject: `MILO · הפרת SLA · ${label}`,
     html: `
       <div dir="rtl" style="font-family:sans-serif;line-height:1.5">
         <h2>הפרת SLA</h2>
