@@ -33,7 +33,8 @@ export default async function ProfessionalsPage() {
           }
         />
 
-        <Notice tone="info" title="מידרג — כל המקצועות">
+        <Notice tone="progress">
+          <strong className="text-ink">מידרג — כל המקצועות.</strong>{' '}
           בקטלוג יש {sectors.length} מקצועות. מתוך תקלה: «מידרג» → בחרו מקצוע →
           פתיחה באתר → שמירה לספר הטלפונים כאן.
         </Notice>
