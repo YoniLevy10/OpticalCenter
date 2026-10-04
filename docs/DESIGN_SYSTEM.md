@@ -1,4 +1,4 @@
-# MaintainOS — Optical Center
+# MILO — Optical Center
 
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
@@ -129,7 +129,7 @@ Semantic roles only — **no arbitrary `text-[Npx]` in application code.**
 | `.t-meta` | 12 / 1.4 | 400 | secondary metadata |
 | `.t-caption` | 11 / 1.35, `0.01em` | 500 | labels |
 | `.t-control` | 13.5 / 1 | 500 | buttons, tabs |
-| `.t-control-lg` | 15 / 1 | 500 | touch / block actions |
+| `.t-control-lg` | 15 / 1 | 500 | touch / form actions |
 
 `.t-num` = tabular nums + slashed zero. Mandatory on ticket numbers, store codes,
 SLA, age, counts, phones.
