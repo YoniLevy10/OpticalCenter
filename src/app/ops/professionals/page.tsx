@@ -16,10 +16,20 @@ export default async function ProfessionalsPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
-  const [{ professionals, backend }, sectors] = await Promise.all([
-    listProfessionals({ limit: 100 }),
-    Promise.resolve(midragSectorsForSelect()),
-  ])
+  const sectors = midragSectorsForSelect()
+  let professionals: Awaited<
+    ReturnType<typeof listProfessionals>
+  >['professionals'] = []
+  let backend: 'memory' | 'supabase' = 'memory'
+  try {
+    const result = await listProfessionals({ limit: 100 })
+    professionals = result.professionals
+    backend = result.backend
+  } catch {
+    // Page must still render Midrag search even if the book fails to load.
+    professionals = []
+    backend = 'memory'
+  }
 
   return (
     <OpsAppShell>
@@ -40,7 +50,10 @@ export default async function ProfessionalsPage() {
           שם+טלפון ושומרים כאן לחיוג מהיר בפעם הבאה.
         </Notice>
 
-        <ProfessionalsMidrag />
+        <Panel elevated className="space-y-3">
+          <p className="t-body-strong text-ink">חיפוש במידרג</p>
+          <ProfessionalsMidrag />
+        </Panel>
 
         <Panel flush elevated className="overflow-hidden">
           {professionals.length === 0 ? (

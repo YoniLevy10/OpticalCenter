@@ -23,6 +23,7 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
+import { TicketMidragPanel } from './ticket-midrag-panel'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -161,6 +162,12 @@ export default async function TicketDetailPage({
             ))}
           </ul>
         </Panel>
+
+        {/* Midrag is body content — not next to assign/close */}
+        <TicketMidragPanel
+          category={ticket.category}
+          city={ticket.stores?.city ?? null}
+        />
 
         {/* Single mount: sticky dock on mobile, inline panel on md+ */}
         <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:static md:inset-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
