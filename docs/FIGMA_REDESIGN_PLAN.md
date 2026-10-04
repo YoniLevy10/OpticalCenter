@@ -1,7 +1,8 @@
 # תוכנית עיצוב מחדש ב־Figma — MaintainOS
 
-**סטטוס:** טיוטת תוכנית לאישור · לפני בניית מסכים ב־Figma  
+**סטטוס:** Preview חי ב־Figma · ממשיכים לפי משוב  
 **מוצר:** MaintainOS (Optical Center = דייר ראשון)  
+**Figma Preview:** https://www.figma.com/design/g2dW3BXCSohnIGYbLBxuOC  
 **יישור:** [`DIFFERENTIATION.md`](./DIFFERENTIATION.md) · [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) · [`UX_IMPROVEMENT_PLAN.md`](./UX_IMPROVEMENT_PLAN.md)  
 **כלי:** Figma MCP (מחובר) · Code Connect · יישום בקוד אחרי אישור ויזואלי  
 
