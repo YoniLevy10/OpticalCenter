@@ -17,6 +17,15 @@ const toneValue: Record<PulseTone, string> = {
   neutral: 'text-ink',
 }
 
+const toneSurface: Record<PulseTone, string> = {
+  critical:
+    'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)]',
+  warning:
+    'border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)]',
+  ok: 'border-[var(--signal-resolved)]/25 bg-[var(--signal-resolved-soft)]',
+  neutral: 'border-border/80 bg-surface',
+}
+
 export function PulseTile({
   href,
   value,
@@ -30,9 +39,10 @@ export function PulseTile({
   tone?: PulseTone
 }) {
   const className = cn(
-    'flex min-h-[5.25rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border border-border/80 bg-surface px-4 py-3 transition-[background,border-color,box-shadow] duration-[var(--dur-1)]',
+    'flex min-h-[5.25rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border px-4 py-3 shadow-[var(--shadow-1)] transition-[background,border-color,box-shadow,transform] duration-[var(--dur-1)]',
+    toneSurface[tone],
     href &&
-      'group active:opacity-90 md:hover:bg-surface-sunken/40 md:hover:shadow-[var(--shadow-1)]',
+      'group active:opacity-90 md:hover:shadow-[var(--shadow-2)] md:hover:-translate-y-0.5',
   )
 
   const inner = (

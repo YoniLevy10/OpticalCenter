@@ -37,13 +37,21 @@ export function OpsPageHero({
         'ops-page-hero relative overflow-hidden',
         // Mobile: edge-to-edge large title. Desktop: soft elevated band.
         'rounded-none border-0 bg-transparent px-0 py-1 shadow-none',
-        'md:rounded-[var(--radius-xl)] md:border md:border-border/70 md:bg-surface md:px-7 md:py-5 md:shadow-[var(--shadow-1)]',
+        'md:rounded-[var(--radius-xl)] md:border md:border-[color-mix(in_srgb,var(--tenant)_18%,var(--border))] md:bg-[color-mix(in_srgb,var(--surface)_92%,var(--tenant-soft))] md:px-7 md:py-5 md:shadow-[var(--shadow-2)]',
         className,
       )}
     >
       <div
         aria-hidden
-        className="ops-page-hero-accent pointer-events-none absolute inset-y-3 end-0 hidden w-1 rounded-full md:block"
+        className="pointer-events-none absolute inset-0 hidden opacity-90 md:block"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 90% at 100% 0%, color-mix(in srgb, var(--tenant) 10%, transparent), transparent 55%)',
+        }}
+      />
+      <div
+        aria-hidden
+        className="ops-page-hero-accent pointer-events-none absolute inset-y-3 end-0 hidden w-1.5 rounded-full md:block"
       />
       <div className="ops-page-hero-row relative flex items-center gap-3.5">
         {showBrand ? (

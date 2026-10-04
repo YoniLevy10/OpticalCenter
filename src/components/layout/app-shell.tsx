@@ -171,10 +171,8 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
-        active
-          ? 'bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] text-ink'
-          : 'text-ink-2 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
+        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        active ? 'text-ink' : 'text-ink-2',
       )}
     >
       <Icon
