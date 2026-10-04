@@ -2,32 +2,43 @@
 
 כדי לעבוד מול Penpot **כמו מול Figma** (יצירת מסכים ישירות בקובץ ענן), צריך MCP של Penpot.
 
-## למה לא עולה מעצמו
+## מצב נוכחי
 
-בסביבת הסוכן מחובר Figma MCP — **לא** Penpot.  
-Penpot דורש:
+- יש מיזם/קובץ **MILO** ב־Penpot — מצוין.
+- חיבור ב־**Cursor Desktop** לא מופיע אוטומטית אצל **Cloud Agent**.
+- בריצה הזו אין עדיין namespace `penpot` / כלים כמו `high_level_overview` / `execute_code`.
+- בינתיים: חבילת ייבוא מוכנה ב־`docs/ux-preview/penpot-import/` (PNG + SVG).
 
-1. MCP key מהחשבון שלכם ב־Penpot  
-2. חיבור Plugin לקובץ פתוח (`File → MCP Server → Connect`)
+## ייבוא מיידי לפרויקט MILO
 
-בלי זה הסוכן יכול רק להכין preview HTML (`docs/ux-preview/`) לייבוא ידני.
+1. פתחו את קובץ **MILO** ב־[design.penpot.app](https://design.penpot.app)
+2. גררו / `File → Import` את הקבצים מ־`docs/ux-preview/penpot-import/`
+3. מומלץ להתחיל מ־`01-dashboard.png` + `board-dashboard.svg`, `05-login` / `board-login.svg`, `06-tech-home` / `board-tech-iphone.svg`
 
-## שלבים (Remote MCP — מומלץ)
+Preview חי: `npx --yes serve docs/ux-preview -p 4173`
 
-1. פתחו [https://design.penpot.app](https://design.penpot.app)  
-2. צרו קובץ: **MILO Design**  
-3. **Your account → Integrations → MCP Server**  
-   - Status: Enabled  
-   - Generate MCP key (נשמר פעם אחת)  
-   - Copy server URL (`https://design.penpot.app/mcp/stream?userToken=…`)  
-4. הוסיפו ל־Cursor כ־MCP server בשם `penpot` עם ה־URL המלא  
-5. בקובץ: **File → MCP Server → Connect** — השאירו את הטאב פעיל  
-6. חזרו לצ׳אט: «Penpot מחובר — תעלה את מסכי MILO»
+## חיבור MCP לסוכן Cloud (ציור ישיר)
 
-## Preview בינתיים
+1. ב־Penpot: **Your account → Integrations → MCP Server**
+   - Status: Enabled
+   - Generate MCP key (נשמר פעם אחת)
+   - Copy server URL (`https://design.penpot.app/mcp/stream?userToken=…`)
+2. הוסיפו ל־**Cloud Agent Environment** (לא רק Desktop):
+   - Secret בשם `PENPOT_MCP_URL` עם ה־URL המלא  
+   - או רשומה ב־MCP settings של הסביבה:
 
-```bash
-npx --yes serve docs/ux-preview -p 4173
+```json
+{
+  "mcpServers": {
+    "penpot": {
+      "url": "https://design.penpot.app/mcp/stream?userToken=YOUR_MCP_KEY",
+      "type": "http"
+    }
+  }
+}
 ```
 
-גלריה: `docs/ux-preview/index.html` (MILO Alive · iPhone feel).
+3. בקובץ **MILO**: **File → MCP Server → Connect** — השאירו את הטאב פעיל
+4. חזרו לצ׳אט: «Penpot MCP מחובר לסוכן»
+
+אחרי שהכלים מופיעים לסוכן — נבנה ישירות ב־MILO: Dashboard, Tickets, Login, Tech (iPhone).
