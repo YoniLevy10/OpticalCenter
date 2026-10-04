@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * Optical Precision shell
- * Optical Center is the tenant identity; MaintainOS remains the quiet platform layer.
+ * Optical Center is the tenant identity; MILO remains the quiet platform layer.
  * Desktop keeps navigation calm and persistent; mobile prioritizes the daily operating loop.
  */
 
@@ -234,7 +234,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/lab')) return 'מעבדה'
   if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
   if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
-  return 'MaintainOS'
+  return 'MILO'
 }
 
 function TenantMark() {
@@ -280,7 +280,7 @@ export function AppShell({
           >
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-ink">MaintainOS</p>
+              <p className="t-body-strong truncate text-ink">MILO</p>
               <p className="t-caption truncate text-ink-3">
                 Optical Center · ישראל
               </p>
