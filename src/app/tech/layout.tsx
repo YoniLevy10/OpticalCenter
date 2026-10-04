@@ -5,7 +5,7 @@ import type { Metadata, Viewport } from 'next'
  * manifest — a field worker installs "טכנאי", not the HQ console.
  */
 export const metadata: Metadata = {
-  title: 'MaintainOS · טכנאי',
+  title: 'MILO · טכנאי',
   description: 'פורטל טכנאי — Optical Center ישראל',
   manifest: '/manifest-tech.webmanifest',
   appleWebApp: {

@@ -5,7 +5,7 @@
 
 | נושא | החלטה | יישום |
 |------|--------|--------|
-| בידול / היקף | MaintainOS = OS תפעולי לרשתות; לא ticketing גנרי ולא custom-per-client. ליבה אחידה; משתנה רק מיתוג, הרשאות, סוגי תקלות, SLA | `docs/DIFFERENTIATION.md` |
+| בידול / היקף | MILO = OS תפעולי לרשתות; לא ticketing גנרי ולא custom-per-client. ליבה אחידה; משתנה רק מיתוג, הרשאות, סוגי תקלות, SLA | `docs/DIFFERENTIATION.md` |
 | דוחות | CSV + Excel + PDF + dashboard מספיק; PDF לא חובה נפרד | `/api/reports/export?format=csv\|xlsx\|pdf` |
 | היסטוריה | דוחות חודשיים נשמרים ידנית | `/ops/reports/history` + `report_snapshots` |
 | התראות טכנאי | SMS (019) ראשי בשיוך + WhatsApp עם קישור `/tech`; Web Push כש־VAPID מוגדר | `modules/push/send.ts` + TechPushSubscribe |

@@ -20,10 +20,10 @@ const rubik = Rubik({
 })
 
 export const metadata: Metadata = {
-  title: 'MaintainOS',
-  description: 'מערכת דיווח וניהול תקלות — Optical Center',
+  title: 'MILO',
+  description: 'MILO — Maintenance Intelligence & Logistics Operations · Optical Center',
   manifest: '/manifest.webmanifest',
-  applicationName: 'MaintainOS',
+  applicationName: 'MILO',
   appleWebApp: {
     capable: true,
     title: 'Optical Center',
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
     shortcut: ['/icons/apple-touch-icon.png'],
   },
   openGraph: {
-    title: 'MaintainOS · Optical Center',
-    description: 'תחזוקה תפעולית לרשת Optical Center',
+    title: 'MILO · Optical Center',
+    description: 'MILO · תחזוקה תפעולית לרשת Optical Center',
     images: [{ url: '/brand/oc-mark.png', width: 512, height: 512 }],
   },
 }

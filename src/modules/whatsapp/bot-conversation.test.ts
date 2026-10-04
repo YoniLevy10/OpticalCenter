@@ -98,7 +98,7 @@ describe('WhatsApp store conversation (Vercel AI Gateway)', () => {
       prompt?: string
       model?: string
     }
-    expect(call.system).toMatch(/MaintainOS|Optical Center/)
+    expect(call.system).toMatch(/MILO|Optical Center/)
     expect(call.prompt).toContain(WA_COPY.askStore.slice(0, 20))
     expect(call.model).toMatch(/^anthropic\//)
   })

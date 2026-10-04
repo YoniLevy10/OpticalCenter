@@ -1,4 +1,4 @@
-# MaintainOS — Optical Center
+# MILO — Optical Center
 
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.

@@ -1,4 +1,6 @@
-# MaintainOS
+# MILO
+
+**Maintenance Intelligence & Logistics Operations**
 
 מערכת הפעלה תפעולית לרשתות מרובות סניפים — לא עוד מערכת Ticketing.  
 **Optical Center** = deployment ראשון (פיילוט ישראל).
@@ -12,7 +14,7 @@
 - מספר WhatsApp **לכל מדינה** (לא לכל חנות)
 - שפה: **עברית**
 - צוות תחזוקה פנימי של Optical Center
-- מיתוג ניטרלי (MaintainOS)
+- מיתוג ניטרלי (MILO)
 
 ## Stack
 

@@ -78,7 +78,7 @@ export async function GET(request: Request) {
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <title>MaintainOS — QR Batch</title>
+  <title>MILO — QR Batch</title>
   <style>
     @page { size: A4; margin: 12mm; }
     body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; }

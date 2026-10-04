@@ -27,7 +27,7 @@ export type WhatsAppAiSituation =
   | 'lifecycle_closed'
   | 'lifecycle_tech_assigned'
 
-const SYSTEM_PROMPT = `אתה עוזר WhatsApp של MaintainOS — מערכת תחזוקה תפעולית לרשת חנויות Optical Center בישראל.
+const SYSTEM_PROMPT = `אתה עוזר WhatsApp של MILO — מערכת תחזוקה תפעולית לרשת חנויות Optical Center בישראל.
 תפקידך לשלוח הודעות קצרות, ידידותיות ומקצועיות לעובדי חנות בעברית.
 כללים:
 - עברית בלבד

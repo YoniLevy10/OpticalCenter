@@ -1,47 +1,46 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MaintainOS — Optical Center
-   Balanced showroom palette: soft charcoal ink (not pure black),
-   warm white canvas, diamond red (#d92621). Red and charcoal
-   balance each other — never Bamakor blue or page-wide teal.
+   MILO — Optical Center
+   Warm showroom canvas + charcoal ink + diamond red kick.
+   Sidebar uses deep charcoal chrome so the console never feels pale.
    See docs/DESIGN_SYSTEM.md
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (warm white + soft charcoal) ---------- */
-  --canvas: #f7f6f2;
+  /* ---------- Layer 1 — SUBSTRATE (warm showroom + charcoal) ---------- */
+  --canvas: #efecea;
   --surface: #ffffff;
-  --surface-sunken: #f0efe9;
+  --surface-sunken: #e4dfda;
   --surface-raised: #ffffff;
-  --border: #e5e4de;
-  --border-strong: #d0cfc8;
-  /* Soft charcoal — readable without pure-black harshness */
+  --border: #d6cfc8;
+  --border-strong: #b9b0a7;
+  /* Soft charcoal — readable, not pure black */
   --ink: #2b2b28;
-  --ink-2: #5e5e59;
-  /* WCAG AA ≥4.5:1 on --canvas (#f7f6f2) and white */
+  --ink-2: #5a5a54;
+  /* WCAG AA ≥4.5:1 on --canvas */
   --ink-3: #6f6f69;
 
-  /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
-  --signal-critical: #c01e1e;
-  --signal-critical-soft: #fef0f0;
-  --signal-critical-line: #f4cfcf;
-  --signal-warning: #8a5a12;
-  --signal-warning-soft: #fdf5e6;
-  --signal-warning-line: #f0e0c2;
-  --signal-progress: #3b6cb8;
-  --signal-progress-soft: #eaf1fa;
-  --signal-resolved: #187348;
-  --signal-resolved-soft: #e8f6ee;
-  --signal-idle: #8b90a0;
-  --signal-idle-soft: #f5f6fa;
+  /* ---------- Layer 2 — SIGNAL (saturated enough to read as color) ---------- */
+  --signal-critical: #d92621;
+  --signal-critical-soft: #f8d4d2;
+  --signal-critical-line: #efb0ad;
+  --signal-warning: #c2410c;
+  --signal-warning-soft: #f8d9c8;
+  --signal-warning-line: #ebc09f;
+  --signal-progress: #0a84ff;
+  --signal-progress-soft: #d6e9ff;
+  --signal-resolved: #1a8f4a;
+  --signal-resolved-soft: #cfeeda;
+  --signal-idle: #7a8078;
+  --signal-idle-soft: #ebe8e4;
 
   /* ---------- Layer 3 — TENANT (Optical Center diamond red) ---------- */
   --tenant: #d92621;
-  --tenant-hover: #b31c18;
-  --tenant-soft: #faf0ef;
-  --tenant-line: #f0c9c7;
-  --signal-accent: #f4b860;
+  --tenant-hover: #b81f1b;
+  --tenant-soft: #f3d0ce;
+  --tenant-line: #e8a8a4;
+  --signal-accent: #0b6e99;
   --tenant-contrast: #ffffff;
 
   /* ---------- Radius — continuous corners, closer to iOS ---------- */
@@ -55,11 +54,11 @@
   --glass-sat: 1.55;
   --large-title-progress: 0;
 
-  /* ---------- Elevation — soft charcoal depth (not pure black) ---------- */
-  --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.05), 0 1px 3px rgba(43, 43, 40, 0.04);
-  --shadow-2: 0 2px 8px rgba(43, 43, 40, 0.06), 0 1px 2px rgba(43, 43, 40, 0.04);
-  --shadow-hover: 0 6px 18px rgba(43, 43, 40, 0.08), 0 2px 4px rgba(43, 43, 40, 0.04);
-  --shadow-pop: 0 14px 40px rgba(43, 43, 40, 0.12), 0 4px 12px rgba(43, 43, 40, 0.06);
+  /* ---------- Elevation — charcoal depth with a hint of red cast ---------- */
+  --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.07), 0 1px 3px rgba(217, 38, 33, 0.04);
+  --shadow-2: 0 2px 10px rgba(43, 43, 40, 0.08), 0 1px 3px rgba(217, 38, 33, 0.05);
+  --shadow-hover: 0 8px 22px rgba(43, 43, 40, 0.1), 0 2px 6px rgba(217, 38, 33, 0.06);
+  --shadow-pop: 0 16px 44px rgba(43, 43, 40, 0.14), 0 4px 14px rgba(217, 38, 33, 0.08);
 
   /* Dark chrome — lifted charcoal, never pure black */
   --panel-dark: #2b2b28;
@@ -181,33 +180,38 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Warm canvas with a soft OC-red breath — balances charcoal ink without teal wash. */
+/* Warm showroom canvas + visible OC-red / teal breath — not a pale grey void. */
 .ops-atmosphere,
 body {
   background:
     radial-gradient(
-      ellipse 100% 60% at 100% -8%,
-      color-mix(in srgb, var(--tenant-soft) 70%, transparent),
-      transparent 55%
+      ellipse 110% 70% at 100% -12%,
+      color-mix(in srgb, var(--tenant) 16%, transparent),
+      transparent 58%
     ),
     radial-gradient(
-      ellipse 55% 40% at 0% 100%,
-      color-mix(in srgb, var(--signal-accent) 8%, transparent),
-      transparent 50%
+      ellipse 70% 50% at -5% 105%,
+      color-mix(in srgb, var(--signal-accent) 14%, transparent),
+      transparent 52%
     ),
-    var(--canvas);
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--tenant-soft) 45%, var(--canvas)) 0%,
+      var(--canvas) 42%,
+      color-mix(in srgb, var(--signal-accent) 6%, var(--canvas)) 100%
+    );
   background-attachment: fixed;
 }
 
 /* Liquid-glass chrome: frosted, soft edge, light specular. Content panels stay opaque. */
 .apple-glass {
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, var(--tenant-soft));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   box-shadow:
     inset 0 0.5px 0 color-mix(in srgb, white 80%, transparent),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 8%, transparent),
-    0 10px 28px color-mix(in srgb, var(--ink) 6%, transparent);
+    inset 0 0 0 0.5px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 10px 28px color-mix(in srgb, var(--ink) 8%, transparent);
 }
 html.dark .apple-glass {
   background: color-mix(in srgb, var(--surface) 72%, transparent);
@@ -217,10 +221,49 @@ html.dark .apple-glass {
     0 12px 28px rgba(0, 0, 0, 0.28);
 }
 
+/*
+ * Desktop sidebar = charcoal chrome with diamond-red kick.
+ * Remaps substrate tokens locally so existing text-* utilities stay readable.
+ */
 .apple-sidebar {
-  background: color-mix(in srgb, var(--surface) 82%, var(--canvas));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  --sidebar-fg: #f4f2ef;
+  --sidebar-fg-2: #c9c4bc;
+  --sidebar-fg-3: #9a948c;
+  --sidebar-line: color-mix(in srgb, white 12%, transparent);
+  --ink: var(--sidebar-fg);
+  --ink-2: var(--sidebar-fg-2);
+  --ink-3: var(--sidebar-fg-3);
+  --border: var(--sidebar-line);
+  --tenant-soft: color-mix(in srgb, var(--tenant) 32%, transparent);
+  color: var(--sidebar-fg);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant) 22%, #2f2c2a) 0%,
+      #252322 38%,
+      #1c1b19 100%
+    );
+  border-color: color-mix(in srgb, var(--tenant) 28%, #3a3532);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, white 6%, transparent),
+    8px 0 28px rgba(28, 27, 25, 0.18);
+}
+.apple-sidebar .sidebar-nav-link[aria-current='page'] {
+  background: color-mix(in srgb, var(--tenant) 28%, transparent);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tenant) 45%, transparent);
+}
+.apple-sidebar .sidebar-nav-link:hover {
+  background: color-mix(in srgb, white 7%, transparent);
+  color: #fff;
+}
+html.dark .apple-sidebar {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant) 18%, #2a2826) 0%,
+      #1a1917 100%
+    );
 }
 
 /* Soft fade where content scrolls under glass chrome */
@@ -517,17 +560,19 @@ textarea:focus-visible,
   }
 }
 
-/* Mobile bottom-nav active pill — Bamakor-style tenant chrome */
+/* Mobile bottom-nav active pill — diamond-red kick */
 .nav-pill-active {
   position: relative;
   color: var(--tenant);
+  font-weight: 600;
 }
 .nav-pill-active::before {
   content: "";
   position: absolute;
   inset: 4px 6px;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--tenant-soft) 88%, var(--surface));
+  background: color-mix(in srgb, var(--tenant-soft) 92%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tenant) 22%, transparent);
   z-index: 0;
 }
 .nav-pill-active > * {

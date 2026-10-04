@@ -146,11 +146,14 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       {/* Brand story — desktop hero */}
       <aside
         className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
-        aria-label="MaintainOS"
+        aria-label="MILO"
       >
         <div className="relative">
           <BrandLogoFull priority className="mb-6 w-[132px] rounded-[var(--radius-lg)] shadow-[var(--shadow-2)]" />
-          <p className="t-title text-ink">MaintainOS</p>
+          <p className="t-title text-ink">MILO</p>
+          <p className="t-caption text-ink-2">
+            Maintenance Intelligence &amp; Logistics Operations
+          </p>
           <p className="t-caption mt-1 text-ink-2">תפעול ותחזוקה · פיילוט ישראל</p>
           <h1 className="t-display mt-10 max-w-md text-ink">
             תחזוקה חכמה לרשתות קמעונאיות
@@ -191,7 +194,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <div className="mx-auto mb-4 flex justify-center">
             <BrandMark size={56} priority className="rounded-[var(--radius-xl)] shadow-[var(--shadow-pop)]" />
           </div>
-          <h1 className="t-title text-ink">MaintainOS</h1>
+          <h1 className="t-title text-ink">MILO</h1>
           <p className="t-body mt-1 text-ink-2">Optical Center</p>
           {!googleOAuthReady ? (
             <p className="t-caption mt-2 text-ink-3">מייל + סיסמה · {PILOT_DEMO_EMAIL}</p>

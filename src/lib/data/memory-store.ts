@@ -309,12 +309,31 @@ export type MemAuditEvent = {
   created_at: string
 }
 
+export type MemProfessional = {
+  id: string
+  full_name: string
+  phone: string | null
+  trade: string | null
+  midrag_sector_id: number | null
+  midrag_service_id: number | null
+  company_name: string | null
+  notes: string | null
+  source: 'manual' | 'midrag' | 'vendor'
+  is_active: boolean
+  use_count: number
+  last_contacted_at: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
 type GlobalMem = {
   tickets: Map<string, MemTicket>
   sessions: Map<string, MemSession>
   processed: Set<string>
   assets: Map<string, MemAsset>
   vendors: Map<string, MemVendor>
+  professionals: Map<string, MemProfessional>
   dispatches: Map<string, MemPartnerDispatch>
   pushSubs: Map<string, MemPushSubscription>
   inboxMessages: Map<string, MemInboxMessage[]>
@@ -356,6 +375,7 @@ function store(): GlobalMem {
       processed: new Set(),
       assets: new Map(),
       vendors: new Map(),
+      professionals: new Map(),
       dispatches: new Map(),
       pushSubs: new Map(),
       inboxMessages: new Map(),
@@ -364,6 +384,7 @@ function store(): GlobalMem {
     }
     seedDemoAssets(g.__maintainosMem)
     seedDemoVendors(g.__maintainosMem)
+    seedDemoProfessionals(g.__maintainosMem)
   }
   // Backfill fields if an older in-process shape exists
   const mem = g.__maintainosMem
@@ -377,6 +398,10 @@ function store(): GlobalMem {
     mem.vendors = new Map()
   }
   seedDemoVendors(mem)
+  if (!mem.professionals) {
+    mem.professionals = new Map()
+    seedDemoProfessionals(mem)
+  }
   if (!mem.dispatches) mem.dispatches = new Map()
   if (!mem.pushSubs) mem.pushSubs = new Map()
   if (!mem.inboxMessages) mem.inboxMessages = new Map()
@@ -484,6 +509,48 @@ function ensurePreferredVendors(mem: GlobalMem, now: string) {
   }
 }
 
+function seedDemoProfessionals(mem: GlobalMem) {
+  if (mem.professionals.size > 0) return
+  const now = new Date().toISOString()
+  const demos: MemProfessional[] = [
+    {
+      id: 'pro-demo-hvac-uri',
+      full_name: 'אורי כהן',
+      phone: '972501112233',
+      trade: 'תיקון מזגנים',
+      midrag_sector_id: 18,
+      midrag_service_id: 284,
+      company_name: null,
+      notes: 'פנה דרך מידרג · דיזנגוף',
+      source: 'midrag',
+      is_active: true,
+      use_count: 5,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+    {
+      id: 'pro-demo-elec-dana',
+      full_name: 'דנה לוי',
+      phone: '972544445566',
+      trade: 'חשמלאים',
+      midrag_sector_id: 5,
+      midrag_service_id: 152,
+      company_name: null,
+      notes: 'מהיר בתל אביב',
+      source: 'midrag',
+      is_active: true,
+      use_count: 3,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+  ]
+  for (const p of demos) mem.professionals.set(p.id, p)
+}
+
 /** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
 export function memReset() {
   const g = globalThis as typeof globalThis & { __maintainosMem?: GlobalMem }
@@ -493,6 +560,7 @@ export function memReset() {
     processed: new Set(),
     assets: new Map(),
     vendors: new Map(),
+    professionals: new Map(),
     dispatches: new Map(),
     pushSubs: new Map(),
     inboxMessages: new Map(),
@@ -502,6 +570,7 @@ export function memReset() {
   const mem = g.__maintainosMem
   seedDemoAssets(mem)
   seedDemoVendors(mem)
+  seedDemoProfessionals(mem)
   return mem
 }
 
@@ -1143,6 +1212,96 @@ export function memListVendors(activeOnly = false): MemVendor[] {
   const all = [...store().vendors.values()]
   const filtered = activeOnly ? all.filter((v) => v.active) : all
   return filtered.sort((a, b) => a.name.localeCompare(b.name, 'he'))
+}
+
+/** Ranked contact book — most used / recently contacted first. */
+export function memListProfessionals(opts?: {
+  activeOnly?: boolean
+  tradeQuery?: string | null
+}): MemProfessional[] {
+  let all = [...store().professionals.values()].filter((p) => !p.deleted_at)
+  if (opts?.activeOnly !== false) all = all.filter((p) => p.is_active)
+  const q = (opts?.tradeQuery ?? '').trim().toLowerCase()
+  if (q) {
+    all = all.filter(
+      (p) =>
+        (p.trade ?? '').toLowerCase().includes(q) ||
+        p.full_name.toLowerCase().includes(q),
+    )
+  }
+  return all.sort((a, b) => {
+    if (b.use_count !== a.use_count) return b.use_count - a.use_count
+    const at = a.last_contacted_at ?? ''
+    const bt = b.last_contacted_at ?? ''
+    return bt.localeCompare(at)
+  })
+}
+
+export function memUpsertProfessional(input: {
+  full_name: string
+  phone?: string | null
+  trade?: string | null
+  midrag_sector_id?: number | null
+  midrag_service_id?: number | null
+  company_name?: string | null
+  notes?: string | null
+  source?: MemProfessional['source']
+}): MemProfessional {
+  const name = input.full_name.trim()
+  if (!name) throw new Error('שם איש מקצוע חובה')
+  const phone = input.phone?.replace(/[^\d+]/g, '') || null
+  const now = new Date().toISOString()
+  const existing = phone
+    ? [...store().professionals.values()].find(
+        (p) => !p.deleted_at && p.phone === phone,
+      )
+    : undefined
+  if (existing) {
+    existing.full_name = name
+    if (input.trade !== undefined) existing.trade = input.trade?.trim() || null
+    if (input.midrag_sector_id !== undefined)
+      existing.midrag_sector_id = input.midrag_sector_id
+    if (input.midrag_service_id !== undefined)
+      existing.midrag_service_id = input.midrag_service_id
+    if (input.company_name !== undefined)
+      existing.company_name = input.company_name?.trim() || null
+    if (input.notes !== undefined) existing.notes = input.notes?.trim() || null
+    if (input.source) existing.source = input.source
+    existing.use_count += 1
+    existing.last_contacted_at = now
+    existing.updated_at = now
+    existing.is_active = true
+    return existing
+  }
+  const row: MemProfessional = {
+    id: `pro-${crypto.randomUUID()}`,
+    full_name: name,
+    phone,
+    trade: input.trade?.trim() || null,
+    midrag_sector_id: input.midrag_sector_id ?? null,
+    midrag_service_id: input.midrag_service_id ?? null,
+    company_name: input.company_name?.trim() || null,
+    notes: input.notes?.trim() || null,
+    source: input.source ?? 'manual',
+    is_active: true,
+    use_count: 1,
+    last_contacted_at: now,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  }
+  store().professionals.set(row.id, row)
+  return row
+}
+
+export function memTouchProfessional(id: string): MemProfessional | null {
+  const row = store().professionals.get(id)
+  if (!row || row.deleted_at) return null
+  const now = new Date().toISOString()
+  row.use_count += 1
+  row.last_contacted_at = now
+  row.updated_at = now
+  return row
 }
 
 export function memGetVendor(id: string): MemVendor | undefined {

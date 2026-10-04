@@ -5,7 +5,6 @@ import {
 } from '@/lib/auth/request-actor'
 import { AuthError, actorHasHqAccess } from '@/lib/auth/types'
 import { suggestVendorsForTicket } from '@/modules/vendors/service'
-import { isFixlyEnabled, fixlyStatusLabelHe } from '@/modules/vendors/fixly'
 import { captureError } from '@/lib/monitoring'
 
 export async function GET(request: Request) {
@@ -22,10 +21,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       matches,
       backend,
-      fixly: {
-        enabled: isFixlyEnabled(),
-        label: fixlyStatusLabelHe(),
-      },
     })
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)

@@ -24,6 +24,7 @@ function isProductionRuntime(): boolean {
 export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
   { id: 'tasks', href: '/ops/tasks', label: 'משימות' },
+  { id: 'professionals', href: '/ops/professionals', label: 'אנשי מקצוע' },
   { id: 'assets', href: '/ops/assets', label: 'נכסים' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
   { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
@@ -42,6 +43,12 @@ export function canAccessUsers(actor: Actor | null): boolean {
 }
 
 export function canAccessVendors(actor: Actor | null): boolean {
+  if (!actor) return true
+  return hasHq(actor)
+}
+
+/** Midrag contact book — HQ ops (Ari) */
+export function canAccessProfessionals(actor: Actor | null): boolean {
   if (!actor) return true
   return hasHq(actor)
 }
@@ -101,6 +108,7 @@ export function canAccessPrintQr(actor: Actor | null): boolean {
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   inbox: canAccessInbox,
   tasks: canAccessTasks,
+  professionals: canAccessProfessionals,
   assets: canAccessAssets,
   vendors: canAccessVendors,
   activity: canAccessActivity,

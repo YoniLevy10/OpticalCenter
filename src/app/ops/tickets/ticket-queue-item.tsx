@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { Check, MessageSquareText, Search } from 'lucide-react'
+import { Check, MessageSquareText } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import {
   OPEN_TICKET_STATUSES,
@@ -15,9 +15,6 @@ import { Textarea } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { OperationalRow, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
-import { priorityEdgeClass, priorityRowClass } from '@/components/ui/signal'
-import { SwipeActions } from '@/components/ui/swipe-actions'
-import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { cn } from '@/lib/utils'
 import {
   plainOpenForHe,
@@ -68,18 +65,16 @@ export function TicketQueueItem({
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [midragOpen, setMidragOpen] = useState(false)
   const [status, setStatus] = useState<TicketStatus>(
     (ticket.status as TicketStatus) || 'assigned',
   )
   const [note, setNote] = useState('')
 
   const open = OPEN_TICKET_STATUSES.includes(ticket.status as TicketStatus)
-  const unassigned = !ticket.assigned_to
   const openFor = plainOpenForHe(ticket.created_at, ticket)
   const disabled = busy || pending
-  const midragCategory = ticket.category?.trim() || 'other'
-  const midragCity = ticket.stores?.city ?? null
+  const critical =
+    ticket.priority === 'critical' || ticket.priority === 'high' || openFor.overdue
 
   async function patch(body: Record<string, unknown>, successText: string) {
     if (busy || pending) return false
@@ -122,8 +117,7 @@ export function TicketQueueItem({
   }
 
   async function resolveTicket() {
-    const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
-    if (ok) startTransition(() => router.refresh())
+    await patch({ status: 'resolved' }, 'התקלה הסתיימה')
   }
 
   if (!open) {
@@ -133,11 +127,9 @@ export function TicketQueueItem({
         priority={ticket.priority}
         leading={
           <span className="inline-flex items-center gap-2">
-            <span className="t-num" data-live="ticket-no">
-              {displayNum(ticket)}
-              <span className="mx-1.5 text-ink-3" aria-hidden>
-                ·
-              </span>
+            <span className="t-num text-ink">{displayNum(ticket)}</span>
+            <span aria-hidden className="text-ink-3">
+              ·
             </span>
             <span>{storeLabel(ticket.stores)}</span>
           </span>
@@ -154,157 +146,78 @@ export function TicketQueueItem({
     )
   }
 
-  const rowLink = (
-    <Link
-      href={`/ops/tickets/${ticket.id}`}
-      className={cn(
-        'flex min-h-[80px] min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3.5 ps-5 transition-colors duration-[var(--dur-1)] active:bg-surface-sunken/50 md:hover:bg-surface-sunken/40',
-        priorityEdgeClass(ticket.priority),
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="t-caption t-num text-ink-3" data-live="ticket-no">
-          <span className="text-ink">{displayNum(ticket)}</span>
-          <span className="mx-1.5" aria-hidden>
-            ·
-          </span>
-          {storeLabel(ticket.stores)}
-        </span>
-        <span
-          className={cn(
-            't-meta shrink-0',
-            openFor.overdue
-              ? 'text-[var(--signal-critical)]'
-              : 'text-ink-3',
-          )}
-        >
-          {openFor.text}
-        </span>
-      </div>
-      <span className="t-lead line-clamp-2 text-ink">
-        {ticket.title || ticket.description}
-      </span>
-      <div className="mt-0.5 flex items-center gap-2">
-        <StatusLabel status={ticket.status} />
-        <Dot />
-        <span className="t-meta truncate text-ink-2">{assigneeLabel}</span>
-      </div>
-    </Link>
-  )
-
-  const desktopActions = (
-    <div className="hidden shrink-0 items-center gap-2 border-t border-border px-4 py-2.5 md:flex md:w-48 md:flex-col md:justify-center md:border-s md:border-t-0 md:px-3">
-      {unassigned ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="min-h-[var(--tap)] w-full"
-          onClick={() => setMidragOpen(true)}
-        >
-          <Search className="h-3.5 w-3.5" aria-hidden />
-          מידרג
-        </Button>
-      ) : null}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="min-h-[var(--tap)] w-full"
-        disabled={disabled}
-        onClick={() => void resolveTicket()}
-      >
-        <Check className="h-3.5 w-3.5" aria-hidden />
-        סגור
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="min-h-[var(--tap)] w-full"
-        disabled={disabled}
-        onClick={openUpdateSheet}
-      >
-        <MessageSquareText className="h-3.5 w-3.5" aria-hidden />
-        עדכון
-      </Button>
-    </div>
-  )
-
-  const swipeButtons = (
-    <div className="flex h-full w-full">
-      {unassigned ? (
-        <button
-          type="button"
-          onClick={() => setMidragOpen(true)}
-          className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--ink)] text-white t-caption"
-        >
-          <Search className="h-4 w-4" aria-hidden />
-          מידרג
-        </button>
-      ) : null}
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => void resolveTicket()}
-        className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--signal-resolved)] text-white t-caption"
-      >
-        <Check className="h-4 w-4" aria-hidden />
-        סגור
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={openUpdateSheet}
-        className="flex flex-1 flex-col items-center justify-center gap-1 bg-[var(--signal-progress)] text-white t-caption"
-      >
-        <MessageSquareText className="h-4 w-4" aria-hidden />
-        עדכון
-      </button>
-    </div>
-  )
-
   return (
-    <div
+    <article
       className={cn(
-        'border-b border-border last:border-b-0 md:flex md:flex-row md:items-stretch',
-        priorityRowClass(ticket.priority),
+        'border-b border-border bg-surface last:border-b-0',
+        'transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken/40',
       )}
     >
-      <div className="min-w-0 flex-1 md:flex md:min-h-0 md:flex-col">
-        <SwipeActions
-          actions={swipeButtons}
-          disabled={disabled}
-          className="md:flex-1"
+      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4">
+        <Link
+          href={`/ops/tickets/${ticket.id}`}
+          className="min-w-0 flex-1 space-y-1.5"
         >
-          {rowLink}
-        </SwipeActions>
-        {unassigned ? (
-          <div className="border-t border-border px-4 py-2 md:hidden">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="min-h-[var(--tap)] w-full"
-              onClick={() => setMidragOpen(true)}
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="t-caption t-num text-ink-3">
+              <span className="font-semibold text-ink">{displayNum(ticket)}</span>
+              <span className="mx-1.5" aria-hidden>
+                ·
+              </span>
+              {storeLabel(ticket.stores)}
+            </p>
+            <span
+              className={cn(
+                't-meta shrink-0',
+                openFor.overdue
+                  ? 'font-semibold text-[var(--signal-critical)]'
+                  : 'text-ink-3',
+              )}
             >
-              <Search className="h-3.5 w-3.5" aria-hidden />
-              חיפוש איש מקצוע במידרג
-            </Button>
+              {openFor.overdue ? 'חורגת · ' : null}
+              {openFor.text}
+            </span>
           </div>
-        ) : null}
-      </div>
-      {desktopActions}
+          <p className="t-lead line-clamp-2 text-ink">
+            {ticket.title || ticket.description}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusLabel status={ticket.status} />
+            {critical ? (
+              <span className="t-caption rounded-full bg-[var(--signal-critical-soft)] px-2 py-0.5 font-semibold text-[var(--signal-critical)]">
+                דחוף
+              </span>
+            ) : null}
+            <Dot />
+            <span className="t-meta truncate text-ink-2">{assigneeLabel}</span>
+          </div>
+        </Link>
 
-      {unassigned ? (
-        <MidragSearchAction
-          category={midragCategory}
-          city={midragCity}
-          hideTrigger
-          open={midragOpen}
-          onOpenChange={setMidragOpen}
-        />
-      ) : null}
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:w-[7.5rem]">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="min-h-[40px] flex-1 sm:w-full"
+            disabled={disabled}
+            onClick={() => void resolveTicket()}
+          >
+            <Check className="h-3.5 w-3.5" aria-hidden />
+            סגור
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-[40px] flex-1 sm:w-full"
+            disabled={disabled}
+            onClick={openUpdateSheet}
+          >
+            <MessageSquareText className="h-3.5 w-3.5" aria-hidden />
+            עדכון
+          </Button>
+        </div>
+      </div>
 
       <BottomSheet
         open={sheetOpen}
@@ -358,6 +271,6 @@ export function TicketQueueItem({
           </Button>
         </div>
       </BottomSheet>
-    </div>
+    </article>
   )
 }

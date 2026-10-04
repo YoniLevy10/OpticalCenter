@@ -18,7 +18,7 @@ export function TicketShareBar({
   techId?: string | null
 }) {
   const lines = [
-    `MaintainOS · ${display}`,
+    `MILO · ${display}`,
     storeName && storeCode ? `${storeName} (#${storeCode})` : null,
     description.slice(0, 200),
     techName ? `טכנאי: ${techName}` : 'לא משויך',

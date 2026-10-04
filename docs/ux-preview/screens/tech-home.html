@@ -3,75 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tech Jobs · MaintainOS Preview</title>
+  <title>Tech · MILO Preview</title>
   <link rel="stylesheet" href="../preview.css" />
 </head>
-<body style="background:var(--canvas)">
+<body class="bg-alive">
   <div class="preview-bar">
     <a href="../index.html">← גלריה</a>
-    <a href="login.html">Login</a>
-    <a href="store-portal.html">Store</a>
     <a class="active" href="tech-home.html">Tech</a>
-    <a href="tech-job.html">Job</a>
+    <a href="store-portal.html">Store</a>
     <span class="spacer"></span>
-    <span class="tag">PWA · Internal technician</span>
+    <span class="tag">iOS Liquid Tab Bar</span>
   </div>
 
-  <div class="phone-frame">
-    <div class="phone-top">
-      <strong class="t-section">המשימות שלי</strong>
-      <span class="badge warning">3 פתוחות</span>
+  <div class="phone-wrap">
+    <div class="phone bg-alive">
+      <div class="phone-body">
+        <div class="t-caption">היום · טכנאי</div>
+        <div class="t-display">העבודות שלי</div>
+        <div class="t-meta">2 דחופות · ממשק בסגנון iPhone</div>
+
+        <div class="glass" style="padding:16px;border-radius:24px">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <strong class="t-body-strong">מזגן אולם תצוגה</strong>
+            <span class="badge critical">SLA חריגה</span>
+          </div>
+          <div class="t-meta" style="margin-top:6px">דיזנגוף</div>
+        </div>
+        <div class="glass" style="padding:16px;border-radius:24px">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <strong class="t-body-strong">דלת כניסה</strong>
+            <span class="badge warning">עד 14:00</span>
+          </div>
+          <div class="t-meta" style="margin-top:6px">באר שבע</div>
+        </div>
+        <div class="glass" style="padding:16px;border-radius:24px">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <strong class="t-body-strong">מדפסת קבלות</strong>
+            <span class="badge progress">בטיפול</span>
+          </div>
+          <div class="t-meta" style="margin-top:6px">אשדוד</div>
+        </div>
+      </div>
+      <nav class="liquid-tab glass">
+        <a href="#">בית</a>
+        <a class="active" href="#">תקלות</a>
+        <a href="#">דיווח</a>
+        <a href="#">עוד</a>
+      </nav>
     </div>
-    <div class="phone-body">
-      <p class="t-caption" style="margin:0 0 12px">היום · חמישי</p>
-
-      <a class="panel elevated" href="tech-job.html" style="display:block;margin-bottom:10px;padding:14px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div>
-            <span class="badge critical">SLA חרג</span>
-            <p class="t-lead" style="margin:8px 0 4px">דלף מים · רמת אביב</p>
-            <p class="t-meta" style="margin:0"><span class="t-num" dir="ltr">#10479</span> · קוד 118</p>
-          </div>
-          <span class="row-sla breach t-num">−0:38</span>
-        </div>
-      </a>
-
-      <a class="panel" href="tech-job.html" style="display:block;margin-bottom:10px;padding:14px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div>
-            <span class="badge progress">בדרך</span>
-            <p class="t-lead" style="margin:8px 0 4px">מדפסת תוויות · אשדוד</p>
-            <p class="t-meta" style="margin:0"><span class="t-num" dir="ltr">#10465</span> · קוד 172</p>
-          </div>
-          <span class="row-sla t-num">2:40</span>
-        </div>
-      </a>
-
-      <a class="panel" href="tech-job.html" style="display:block;padding:14px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div>
-            <span class="badge idle">מתוזמן</span>
-            <p class="t-lead" style="margin:8px 0 4px">דלת כניסה · חיפה</p>
-            <p class="t-meta" style="margin:0"><span class="t-num" dir="ltr">#10458</span> · קוד 301</p>
-          </div>
-          <span class="row-sla t-num">5:10</span>
-        </div>
-      </a>
-    </div>
-    <nav class="bottom-nav">
-      <a class="active" href="tech-home.html">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        משימות
-      </a>
-      <a href="#">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        היסטוריה
-      </a>
-      <a href="#">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-        פרופיל
-      </a>
-    </nav>
   </div>
 </body>
 </html>
