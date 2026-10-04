@@ -7,6 +7,7 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listProfessionals } from '@/modules/professionals/service'
 import { midragSectorsForSelect } from '@/modules/vendors/midrag/catalog'
 import { ProfessionalsBook } from './professionals-book'
+import { ProfessionalsMidrag } from './professionals-midrag'
 import { UserRound } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -15,10 +16,20 @@ export default async function ProfessionalsPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
-  const [{ professionals, backend }, sectors] = await Promise.all([
-    listProfessionals({ limit: 100 }),
-    Promise.resolve(midragSectorsForSelect()),
-  ])
+  const sectors = midragSectorsForSelect()
+  let professionals: Awaited<
+    ReturnType<typeof listProfessionals>
+  >['professionals'] = []
+  let backend: 'memory' | 'supabase' = 'memory'
+  try {
+    const result = await listProfessionals({ limit: 100 })
+    professionals = result.professionals
+    backend = result.backend
+  } catch {
+    // Page must still render Midrag search even if the book fails to load.
+    professionals = []
+    backend = 'memory'
+  }
 
   return (
     <OpsAppShell>
@@ -34,16 +45,21 @@ export default async function ProfessionalsPage() {
         />
 
         <Notice tone="progress">
-          <strong className="text-ink">מידרג — כל המקצועות.</strong>{' '}
-          בקטלוג יש {sectors.length} מקצועות. מתוך תקלה: «מידרג» → בחרו מקצוע →
-          פתיחה באתר → שמירה לספר הטלפונים כאן.
+          <strong className="text-ink">מידרג — {sectors.length} מקצועות.</strong>{' '}
+          פותחים אתר חיצוני לחיפוש. מספר טלפון לא נשלף אוטומטית — מעתיקים
+          שם+טלפון ושומרים כאן לחיוג מהיר בפעם הבאה.
         </Notice>
+
+        <Panel elevated className="space-y-3">
+          <p className="t-body-strong text-ink">חיפוש במידרג</p>
+          <ProfessionalsMidrag />
+        </Panel>
 
         <Panel flush elevated className="overflow-hidden">
           {professionals.length === 0 ? (
             <EmptyState
               title="עדיין אין אנשי מקצוע שמורים"
-              description="פתחו תקלה → מידרג → שמרו שם ומספר אחרי הזמנה."
+              description="חיפוש במידרג ← העתיקו שם וטלפון ← שמרו לדירוג מהיר."
               icon={UserRound}
               className="py-14"
             />
