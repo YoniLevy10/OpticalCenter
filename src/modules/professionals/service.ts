@@ -9,6 +9,23 @@ import {
   type MemProfessional,
 } from '@/lib/data/memory-store'
 import type { Professional, ProfessionalInput } from './types'
+import { captureError } from '@/lib/monitoring'
+
+function memoryList(opts?: {
+  tradeQuery?: string | null
+  limit?: number
+}): { professionals: Professional[]; backend: 'memory' } {
+  const limit = opts?.limit ?? 40
+  return {
+    backend: 'memory',
+    professionals: memListProfessionals({
+      activeOnly: true,
+      tradeQuery: opts?.tradeQuery,
+    })
+      .slice(0, limit)
+      .map(toPublic),
+  }
+}
 
 function toPublic(p: MemProfessional): Professional {
   return {
@@ -59,54 +76,44 @@ export async function listProfessionals(opts?: {
 }): Promise<{ professionals: Professional[]; backend: 'memory' | 'supabase' }> {
   const limit = opts?.limit ?? 40
   if (!(await supabaseReady())) {
-    return {
-      backend: 'memory',
-      professionals: memListProfessionals({
-        activeOnly: true,
-        tradeQuery: opts?.tradeQuery,
-      })
-        .slice(0, limit)
-        .map(toPublic),
-    }
+    return memoryList(opts)
   }
 
-  const supabase = createSystemClient('professionals_list')
-  const query = supabase
-    .from('professionals')
-    .select('*')
-    .is('deleted_at', null)
-    .eq('is_active', true)
-    .eq('organization_id', MEM_ORG_ID)
-    .order('use_count', { ascending: false })
-    .order('last_contacted_at', { ascending: false, nullsFirst: false })
-    .limit(limit)
+  try {
+    const supabase = createSystemClient('professionals_list')
+    // Avoid nullsFirst option — some PostgREST versions reject it and crash the page.
+    const { data, error } = await supabase
+      .from('professionals')
+      .select('*')
+      .is('deleted_at', null)
+      .eq('is_active', true)
+      .eq('organization_id', MEM_ORG_ID)
+      .order('use_count', { ascending: false })
+      .order('last_contacted_at', { ascending: false })
+      .limit(limit)
 
-  const { data, error } = await query
-  if (error) {
-    if (isSupabaseSchemaError(error)) {
-      return {
-        backend: 'memory',
-        professionals: memListProfessionals({
-          activeOnly: true,
-          tradeQuery: opts?.tradeQuery,
-        })
-          .slice(0, limit)
-          .map(toPublic),
-      }
+    if (error) {
+      captureError(error, { route: 'professionals_list', schema: isSupabaseSchemaError(error) })
+      return memoryList(opts)
     }
-    throw error
-  }
 
-  let list = (data ?? []).map((r) => toPublic(rowToMem(r as Record<string, unknown>)))
-  const q = (opts?.tradeQuery ?? '').trim().toLowerCase()
-  if (q) {
-    list = list.filter(
-      (p) =>
-        (p.trade ?? '').toLowerCase().includes(q) ||
-        p.full_name.toLowerCase().includes(q),
+    let list = (data ?? []).map((r) =>
+      toPublic(rowToMem(r as Record<string, unknown>)),
     )
+    const q = (opts?.tradeQuery ?? '').trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (p) =>
+          (p.trade ?? '').toLowerCase().includes(q) ||
+          p.full_name.toLowerCase().includes(q),
+      )
+    }
+    return { backend: 'supabase', professionals: list }
+  } catch (err) {
+    // Never lock the אנשי מקצוע screen — Midrag catalog + memory book still work.
+    captureError(err, { route: 'professionals_list' })
+    return memoryList(opts)
   }
-  return { backend: 'supabase', professionals: list }
 }
 
 export async function upsertProfessional(

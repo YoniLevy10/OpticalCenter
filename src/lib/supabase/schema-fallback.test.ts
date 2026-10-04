@@ -14,6 +14,18 @@ describe('schema-fallback', () => {
     ).toBe(true)
   })
 
+  it('detects PostgREST plain-object schema errors (not Error instances)', () => {
+    expect(
+      isSupabaseSchemaError({
+        message: "Could not find the table 'public.professionals' in the schema cache",
+        code: 'PGRST205',
+      }),
+    ).toBe(true)
+    expect(isSupabaseSchemaError({ message: 'relation does not exist', code: '42P01' })).toBe(
+      true,
+    )
+  })
+
   it('detects missing column', () => {
     expect(
       isMissingColumnError(
