@@ -30,6 +30,7 @@ export function MidragSearchAction({
   open: openProp,
   onOpenChange,
   hideTrigger = false,
+  onSaved,
 }: {
   category: string
   city?: string | null
@@ -38,6 +39,8 @@ export function MidragSearchAction({
   open?: boolean
   onOpenChange?: (open: boolean) => void
   hideTrigger?: boolean
+  /** Called after a professional is saved to the contact book. */
+  onSaved?: () => void
 }) {
   const toast = useToast()
   const allSectors = useMemo(() => midragSectorsForSelect(), [])
@@ -104,6 +107,7 @@ export function MidragSearchAction({
       toast.push({ title: 'איש מקצוע נשמר בספר', tone: 'success' })
       setSaveName('')
       setSavePhone('')
+      onSaved?.()
     } catch (e) {
       toast.push({
         title: e instanceof Error ? e.message : 'שמירה נכשלה',
@@ -206,8 +210,8 @@ export function MidragSearchAction({
               שמירה לספר אנשי מקצוע
             </p>
             <p className="t-caption text-ink-2">
-              אחרי שמצאתם במידרג — שמרו שם וטלפון. בפעם הבאה יופיעו בראש הרשימה
-              עם כפתור חיוג.
+              מידרג לא משתף מספרים אוטומטית לאתר חיצוני. אחרי שמצאתם שם וטלפון
+              במידרג — העתיקו לכאן ושמרו. בפעם הבאה: חיוג מהיר מהספר.
             </p>
             <Input
               value={saveName}

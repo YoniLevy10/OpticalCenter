@@ -7,6 +7,7 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listProfessionals } from '@/modules/professionals/service'
 import { midragSectorsForSelect } from '@/modules/vendors/midrag/catalog'
 import { ProfessionalsBook } from './professionals-book'
+import { ProfessionalsMidrag } from './professionals-midrag'
 import { UserRound } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -34,16 +35,18 @@ export default async function ProfessionalsPage() {
         />
 
         <Notice tone="progress">
-          <strong className="text-ink">מידרג — כל המקצועות.</strong>{' '}
-          בקטלוג יש {sectors.length} מקצועות. מתוך תקלה: «מידרג» → בחרו מקצוע →
-          פתיחה באתר → שמירה לספר הטלפונים כאן.
+          <strong className="text-ink">מידרג — {sectors.length} מקצועות.</strong>{' '}
+          פותחים אתר חיצוני לחיפוש. מספר טלפון לא נשלף אוטומטית — מעתיקים
+          שם+טלפון ושומרים כאן לחיוג מהיר בפעם הבאה.
         </Notice>
+
+        <ProfessionalsMidrag />
 
         <Panel flush elevated className="overflow-hidden">
           {professionals.length === 0 ? (
             <EmptyState
               title="עדיין אין אנשי מקצוע שמורים"
-              description="פתחו תקלה → מידרג → שמרו שם ומספר אחרי הזמנה."
+              description="חיפוש במידרג ← העתיקו שם וטלפון ← שמרו לדירוג מהיר."
               icon={UserRound}
               className="py-14"
             />
