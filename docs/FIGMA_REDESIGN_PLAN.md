@@ -1,10 +1,17 @@
 # תוכנית עיצוב מחדש ב־Figma — MaintainOS
 
-**סטטוס:** Preview חי ב־Figma · ממשיכים לפי משוב  
+**סטטוס:** Preview חי ב־Figma · כיוון **Alive Ops** (Apple Liquid Glass + Linear density)  
 **מוצר:** MaintainOS (Optical Center = דייר ראשון)  
 **Figma Preview:** https://www.figma.com/design/g2dW3BXCSohnIGYbLBxuOC  
 **יישור:** [`DIFFERENTIATION.md`](./DIFFERENTIATION.md) · [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) · [`UX_IMPROVEMENT_PLAN.md`](./UX_IMPROVEMENT_PLAN.md)  
 **כלי:** Figma MCP (מחובר) · Code Connect · יישום בקוד אחרי אישור ויזואלי  
+
+### כיוון ויזואלי נוכחי (v2 — Alive)
+- השראה: **Apple iOS 26/27 Liquid Glass** (כרום צף, חומר שקוף־למחצה, specular עדין) + צפיפות **Linear / Stripe**
+- יותר צבע מערכת: כחול `#007aff` · כתום `#ff9f0a` · ירוק `#34c759` · אדום אות `#ff3b30` + אדום OC `#e11d2e` למותג/CTA
+- רקע אטמוספרי (גרדיאנט כחול→חמים→ורוד עדין) במקום canvas שטוח
+- Capsule CTAs / tab bar זכוכית במובייל; badges צבעוניים ל־SLA/עדיפות
+- נשמר: RTL · צבע = אות תפעולי · לא סגול־גנרי · לא ticketing דקורטיבי  
 
 ---
 
