@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Notice, Panel } from '@/components/ui/primitives'
+import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { useToast } from '@/components/ui/toast'
 import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { externalSearchCaption } from '@/modules/vendors/external-search'
@@ -20,26 +21,31 @@ type Match = {
   reason: string
 }
 
+type Pro = {
+  id: string
+  full_name: string
+  phone: string | null
+  trade: string | null
+  use_count: number
+  notes: string | null
+}
+
 export function PreferredVendorsPanel({
   ticketId,
   category,
   regionId,
   city,
   initialMatches,
-  fixlyLabel: initialFixlyLabel,
 }: {
   ticketId: string
   category: string
   regionId: string
   city?: string | null
   initialMatches?: Match[]
-  fixlyLabel?: string
 }) {
   const toast = useToast()
   const [matches, setMatches] = useState<Match[]>(initialMatches ?? [])
-  const [fixlyLabel, setFixlyLabel] = useState(
-    initialFixlyLabel ?? 'Fixly כבוי — מאגר ספקים מועדפים בלבד',
-  )
+  const [pros, setPros] = useState<Pro[]>([])
   const [loading, setLoading] = useState(!initialMatches)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -47,25 +53,29 @@ export function PreferredVendorsPanel({
   const searchCaption = externalSearchCaption({ category, city })
 
   useEffect(() => {
-    if (initialMatches) {
-      setMatches(initialMatches)
-      setLoading(false)
-      return
-    }
     let cancelled = false
     ;(async () => {
-      setLoading(true)
+      if (!initialMatches) setLoading(true)
       try {
-        const qs = new URLSearchParams({
-          category,
-          regionId,
-        })
-        const res = await fetch(`/api/vendors/suggest?${qs}`)
-        const json = await res.json()
-        if (!res.ok) throw new Error(json.error || 'טעינה נכשלה')
+        const qs = new URLSearchParams({ category, regionId })
+        const [suggestRes, prosRes] = await Promise.all([
+          initialMatches
+            ? Promise.resolve(null)
+            : fetch(`/api/vendors/suggest?${qs}`),
+          fetch('/api/professionals'),
+        ])
         if (cancelled) return
-        setMatches((json.matches ?? []).slice(0, 4))
-        setFixlyLabel(json.fixly?.label ?? 'Fixly כבוי')
+        if (suggestRes) {
+          const json = await suggestRes.json()
+          if (!suggestRes.ok) throw new Error(json.error || 'טעינה נכשלה')
+          setMatches((json.matches ?? []).slice(0, 4))
+        } else {
+          setMatches(initialMatches ?? [])
+        }
+        if (prosRes.ok) {
+          const pj = await prosRes.json()
+          setPros((pj.professionals ?? []).slice(0, 8))
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'שגיאה')
@@ -104,22 +114,61 @@ export function PreferredVendorsPanel({
     }
   }
 
+  async function onCallPro(id: string) {
+    try {
+      await fetch(`/api/professionals/${id}/touch`, { method: 'POST' })
+    } catch {
+      /* ranking best-effort */
+    }
+  }
+
   return (
     <Panel className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="t-body-strong text-ink">ספקים מועדפים באזור</h2>
+        <h2 className="t-body-strong text-ink">ספקים ואנשי מקצוע</h2>
         <Link href="/ops/vendors" className="t-caption text-ink-2 underline">
           מאגר ספקים
         </Link>
       </div>
-      <p className="t-meta text-ink-2">{fixlyLabel}</p>
+      <p className="t-meta text-ink-2">
+        מאגר מועדפים + אנשי קשר ששמרתם ממידרג (מדורגים לפי שימוש).
+      </p>
+
+      {pros.length > 0 ? (
+        <div className="space-y-2">
+          <h3 className="t-caption text-ink-2">אנשי מקצוע שמורים</h3>
+          <ul className="divide-y divide-border rounded-[var(--radius-md)] border border-border">
+            {pros.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="t-body-strong text-ink">{p.full_name}</p>
+                  <p className="t-meta text-ink-2">
+                    {p.trade ?? 'כללי'}
+                    {p.use_count ? ` · ${p.use_count} פניות` : ''}
+                    {p.notes ? ` · ${p.notes}` : ''}
+                  </p>
+                </div>
+                {p.phone ? (
+                  <span onClick={() => void onCallPro(p.id)}>
+                    <PhoneCallLink phone={p.phone} label="חיוג" />
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {loading ? (
         <p className="t-body text-ink-2">טוען התאמות…</p>
       ) : error && matches.length === 0 ? (
         <Notice tone="critical">{error}</Notice>
       ) : matches.length === 0 ? (
         <Notice tone="warning">
-          אין ספק מועדף בקטגוריה זו — חפשו במידרג למטה והוסיפו למאגר.
+          אין ספק מועדף בקטגוריה זו — חפשו במידרג למטה ושמרו איש מקצוע.
         </Notice>
       ) : (
         <ul className="divide-y divide-border">
@@ -135,25 +184,27 @@ export function PreferredVendorsPanel({
                   {m.notes ? ` · ${m.notes}` : ''}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="touch"
-                disabled={busyId === m.id}
-                onClick={() => void dispatch(m.id)}
-              >
-                {busyId === m.id ? 'משגר…' : 'שגר לספק'}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {m.contact_phone ? (
+                  <PhoneCallLink phone={m.contact_phone} label="חיוג" />
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="touch"
+                  disabled={busyId === m.id}
+                  onClick={() => void dispatch(m.id)}
+                >
+                  {busyId === m.id ? 'משגר…' : 'שגר לספק'}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
       )}
 
       <div className="space-y-2 border-t border-border pt-3">
-        <p className="t-body-strong text-ink">חיפוש חיצוני · מידרג</p>
-        <p className="t-meta text-ink-2">
-          גיבוי כשאין ספק מועדף פנוי · {searchCaption}
-        </p>
+        <p className="t-meta text-ink-2">{searchCaption}</p>
         <MidragSearchAction category={category} city={city} />
       </div>
     </Panel>

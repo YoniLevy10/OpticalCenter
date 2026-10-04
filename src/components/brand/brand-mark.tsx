@@ -76,7 +76,7 @@ export function BrandLogoFull({
 }
 
 /** Lightweight loading splash — Bamakor AppSplashScreen pattern. */
-export function BrandSplash({ label = 'MaintainOS' }: { label?: string }) {
+export function BrandSplash({ label = 'MILO' }: { label?: string }) {
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 py-12">
       <BrandMark size={80} priority className="rounded-[var(--radius-lg)] shadow-[var(--shadow-2)]" />

@@ -43,11 +43,11 @@ function ticketRows(tickets: QueueTicket[]): string[][] {
 
 export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'MaintainOS'
+  wb.creator = 'MILO'
 
   const summary = wb.addWorksheet('סיכום')
   summary.views = [{ rightToLeft: true }]
-  summary.addRow(['MaintainOS — דוח תקלות'])
+  summary.addRow(['MILO — דוח תקלות'])
   summary.addRow(['מתאריך', data.from ?? '—', 'עד', data.to ?? '—'])
   summary.addRow([])
   summary.addRow(['פתוחות', data.kpis.open])
@@ -98,7 +98,7 @@ function ReportPdfDocument({ data }: { data: ReportExportRow }) {
   return (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
-        <Text style={pdfStyles.title}>MaintainOS — דוח תקלות</Text>
+        <Text style={pdfStyles.title}>MILO — דוח תקלות</Text>
         <Text>
           תקופה: {data.from ?? '—'} — {data.to ?? '—'}
         </Text>
@@ -125,7 +125,7 @@ function ReportPdfDocument({ data }: { data: ReportExportRow }) {
           ))}
         </View>
         <Text style={{ marginTop: 20, fontSize: 10, color: '#666' }}>
-          {data.tickets.length} תקלות בטווח · Optical Center · MaintainOS
+          {data.tickets.length} תקלות בטווח · Optical Center · MILO
         </Text>
       </Page>
     </Document>

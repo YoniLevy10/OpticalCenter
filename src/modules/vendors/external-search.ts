@@ -196,6 +196,25 @@ export function buildMidragSearchUrl(input: ExternalSearchInput): string {
   return MIDRAG_IN_SECTOR
 }
 
+/** Deep link from full Midrag profession catalog (sector/serviceId). */
+export function buildMidragResultsUrl(opts: {
+  serviceId: number | null | undefined
+  city?: string | null
+  sectorId?: number | null
+}): string {
+  const cityMatch = midragCityMatchForCity(opts.city)
+  if (opts.serviceId) {
+    if (cityMatch) {
+      return `${MIDRAG_RESULTS}?serviceId=${opts.serviceId}&cityId=${cityMatch.cityId}`
+    }
+    return `${MIDRAG_RESULTS}?serviceId=${opts.serviceId}`
+  }
+  if (opts.sectorId) {
+    return `${MIDRAG_IN_SECTOR}?sectorId=${opts.sectorId}`
+  }
+  return MIDRAG_IN_SECTOR
+}
+
 /** When city is known but unmapped, offer Midrag city picker for the service. */
 export function buildMidragCityPickerUrl(input: ExternalSearchInput): string | null {
   const service = midragServiceMatchForCategory(input.category)

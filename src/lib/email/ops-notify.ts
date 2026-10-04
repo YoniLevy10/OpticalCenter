@@ -31,7 +31,7 @@ export async function sendOpsNotifyEmail(input: {
   }
 
   const from =
-    process.env.LOGIN_EMAIL_FROM?.trim() || 'MaintainOS <onboarding@resend.dev>'
+    process.env.LOGIN_EMAIL_FROM?.trim() || 'MILO <onboarding@resend.dev>'
 
   try {
     const body: Record<string, unknown> = {
@@ -82,7 +82,7 @@ export async function notifySlaBreach(input: {
 }): Promise<void> {
   const label = input.displayNumber ?? input.ticketId.slice(0, 8)
   await sendOpsNotifyEmail({
-    subject: `MaintainOS · הפרת SLA · ${label}`,
+    subject: `MILO · הפרת SLA · ${label}`,
     html: `
       <div dir="rtl" style="font-family:sans-serif;line-height:1.5">
         <h2>הפרת SLA</h2>
@@ -101,7 +101,7 @@ export async function notifyUnassignedTimeout(input: {
 }): Promise<void> {
   const label = input.displayNumber ?? input.ticketId.slice(0, 8)
   await sendOpsNotifyEmail({
-    subject: `MaintainOS · ללא שיוך · ${label}`,
+    subject: `MILO · ללא שיוך · ${label}`,
     html: `
       <div dir="rtl" style="font-family:sans-serif;line-height:1.5">
         <h2>תקלה ללא שיוך</h2>
@@ -134,7 +134,7 @@ export async function notifyMonthlyReport(input: {
     : undefined
 
   return sendOpsNotifyEmail({
-    subject: `MaintainOS · דוח חודשי · ${input.monthLabel}`,
+    subject: `MILO · דוח חודשי · ${input.monthLabel}`,
     html: `
       <div dir="rtl" style="font-family:sans-serif;line-height:1.5">
         <h2>דוח חודשי — ${input.monthLabel}</h2>

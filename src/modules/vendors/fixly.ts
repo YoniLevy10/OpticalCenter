@@ -1,15 +1,22 @@
 /**
- * Fixly marketplace backup — intentionally OFF for the Optical Center pilot.
- * Preferred vendor pool is the primary dispatch path. Flip FIXLY_ENABLED=1
- * only when Partner API credentials and product decision are ready.
+ * Marketplace partner stubs (removed from product surface).
+ * Preferred vendors + Midrag professionals contact book are the dispatch path.
  */
-export function isFixlyEnabled(): boolean {
-  const raw = (process.env.FIXLY_ENABLED ?? '').trim().toLowerCase()
-  return raw === '1' || raw === 'true' || raw === 'yes'
+export function isPartnerMarketplaceEnabled(): boolean {
+  return false
 }
 
+/** @deprecated Use Midrag professionals book copy instead. */
+export function partnerMarketplaceStatusLabelHe(): string {
+  return 'מאגר ספקים מועדפים ואנשי מקצוע ממידרג'
+}
+
+/** @deprecated Alias — do not surface in UI. */
+export function isFixlyEnabled(): boolean {
+  return isPartnerMarketplaceEnabled()
+}
+
+/** @deprecated Alias — do not surface in UI. */
 export function fixlyStatusLabelHe(): string {
-  return isFixlyEnabled()
-    ? 'Fixly פעיל כגיבוי'
-    : 'Fixly כבוי — מאגר ספקים מועדפים בלבד'
+  return partnerMarketplaceStatusLabelHe()
 }

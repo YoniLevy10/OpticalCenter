@@ -29,7 +29,7 @@ export function WhatsAppShareButton({
   async function onClick() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title: 'MaintainOS', text: prefillText, url })
+        await navigator.share({ title: 'MILO', text: prefillText, url })
         return
       } catch {
         /* user cancelled or unsupported payload */

@@ -31,7 +31,7 @@ export default async function PublicReportPage({
             <BrandMark size={48} priority className="rounded-[var(--radius-lg)]" />
           </div>
           <h1 className="t-title text-ink">דיווח תקלה</h1>
-          <p className="t-body mt-1 text-ink-2">Optical Center · MaintainOS</p>
+          <p className="t-body mt-1 text-ink-2">Optical Center · MILO</p>
         </div>
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]">
           <PublicReportForm

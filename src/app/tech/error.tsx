@@ -6,7 +6,7 @@ import { ErrorState } from '@/components/ui/primitives'
 
 export default function TechError({ reset }: { reset: () => void }) {
   return (
-    <TechShell title="שגיאה" eyebrow="MaintainOS · טכנאי">
+    <TechShell title="שגיאה" eyebrow="MILO · טכנאי">
       <ErrorState
         title="לא ניתן לטעון"
         description="בדקו את החיבור לרשת ונסו שוב."
