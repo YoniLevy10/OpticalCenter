@@ -8,7 +8,6 @@ import { listVendors } from '@/modules/vendors/service'
 import { listRecentAuditEvents } from '@/modules/audit/service'
 import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES, type TicketStatus } from '@/modules/tickets/constants'
-import { fixlyStatusLabelHe, isFixlyEnabled } from '@/modules/vendors/fixly'
 import { Notice } from '@/components/ui/primitives'
 
 export const dynamic = 'force-dynamic'
@@ -73,7 +72,6 @@ export default async function VendorsPage() {
 
   const activeCount = enriched.filter((v) => v.active).length
   const preferredCount = enriched.filter((v) => v.preferred && v.active).length
-  const fixlyOn = isFixlyEnabled()
 
   return (
     <OpsAppShell>
@@ -82,8 +80,13 @@ export default async function VendorsPage() {
           title="ספקים"
           status={`${activeCount} פעילים · ${preferredCount} מועדפים`}
         />
-        <Notice tone={fixlyOn ? 'progress' : 'neutral'}>
-          <span className="t-body-strong block">{fixlyStatusLabelHe()}</span>
+        <Notice tone="neutral">
+          <span className="t-body-strong block">
+            מאגר מועדפים + אנשי מקצוע ממידרג
+          </span>
+          <span className="t-meta text-ink-2 block mt-1">
+            שמרו אנשי קשר מתקלה — יופיעו מדורגים עם חיוג מהיר.
+          </span>
         </Notice>
         <VendorsAdmin initialVendors={enriched} />
       </div>
