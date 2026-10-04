@@ -137,7 +137,7 @@ test.describe('PWA manifests', () => {
     const hq = await request.get('/manifest.webmanifest')
     expect(hq.ok()).toBeTruthy()
     const hqJson = await hq.json()
-    expect(hqJson.name).toMatch(/MaintainOS/)
+    expect(hqJson.name).toMatch(/MILO/)
     expect(String(hqJson.start_url)).toMatch(/^\/ops\/dashboard/)
     expect(hqJson.id).toBe('/ops/dashboard')
 
