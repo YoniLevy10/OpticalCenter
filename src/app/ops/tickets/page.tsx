@@ -142,7 +142,7 @@ export default async function TicketsPage({
 
         <QueueTabs active={view} filters={queueFilters} />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
           <div className="min-w-0 flex-1">
             <Suspense fallback={null}>
               <TicketSearch initialQ={q ?? ''} />
@@ -152,6 +152,7 @@ export default async function TicketsPage({
             <TicketFilters />
           </Suspense>
         </div>
+        <p className="t-caption text-ink-3">מיון: מהחדש לישן</p>
 
         {listError ? (
           <ErrorState

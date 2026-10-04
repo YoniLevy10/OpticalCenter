@@ -1,47 +1,47 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MaintainOS — Optical Center
-   Balanced showroom palette: soft charcoal ink (not pure black),
-   warm white canvas, diamond red (#d92621). Red and charcoal
-   balance each other — never Bamakor blue or page-wide teal.
+   MILO — Optical Center
+   Apple-like operational palette: cool mist canvas, deep ink,
+   system-blue progress, diamond-red tenant accent.
+   Comfortable contrast (WCAG AA) without harsh pure black.
    See docs/DESIGN_SYSTEM.md
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (warm white + soft charcoal) ---------- */
-  --canvas: #f7f6f2;
+  /* ---------- Layer 1 — SUBSTRATE (cool mist + deep ink) ---------- */
+  --canvas: #f2f4f7;
   --surface: #ffffff;
-  --surface-sunken: #f0efe9;
+  --surface-sunken: #e8ecf1;
   --surface-raised: #ffffff;
-  --border: #e5e4de;
-  --border-strong: #d0cfc8;
-  /* Soft charcoal — readable without pure-black harshness */
-  --ink: #2b2b28;
-  --ink-2: #5e5e59;
-  /* WCAG AA ≥4.5:1 on --canvas (#f7f6f2) and white */
-  --ink-3: #6f6f69;
+  --border: #d5dde6;
+  --border-strong: #b8c2ce;
+  /* Deep ink — readable, not pure black */
+  --ink: #111827;
+  --ink-2: #4b5563;
+  /* WCAG AA ≥4.5:1 on --canvas */
+  --ink-3: #6b7280;
 
-  /* ---------- Layer 2 — SIGNAL (identical for every tenant) ---------- */
-  --signal-critical: #c01e1e;
-  --signal-critical-soft: #fef0f0;
-  --signal-critical-line: #f4cfcf;
-  --signal-warning: #8a5a12;
-  --signal-warning-soft: #fdf5e6;
-  --signal-warning-line: #f0e0c2;
-  --signal-progress: #3b6cb8;
-  --signal-progress-soft: #eaf1fa;
-  --signal-resolved: #187348;
-  --signal-resolved-soft: #e8f6ee;
-  --signal-idle: #8b90a0;
-  --signal-idle-soft: #f5f6fa;
+  /* ---------- Layer 2 — SIGNAL ---------- */
+  --signal-critical: #e11d2e;
+  --signal-critical-soft: #fce8ea;
+  --signal-critical-line: #f0c9c7;
+  --signal-warning: #c2410c;
+  --signal-warning-soft: #fde8df;
+  --signal-warning-line: #f0d0bc;
+  --signal-progress: #0a84ff;
+  --signal-progress-soft: #e5f1ff;
+  --signal-resolved: #1f8a4c;
+  --signal-resolved-soft: #e6f5ec;
+  --signal-idle: #8b919a;
+  --signal-idle-soft: #f1f2f4;
 
-  /* ---------- Layer 3 — TENANT (Optical Center diamond red) ---------- */
-  --tenant: #d92621;
-  --tenant-hover: #b31c18;
-  --tenant-soft: #faf0ef;
+  /* ---------- Layer 3 — TENANT (Optical Center) ---------- */
+  --tenant: #e11d2e;
+  --tenant-hover: #c41828;
+  --tenant-soft: #fce8ea;
   --tenant-line: #f0c9c7;
-  --signal-accent: #f4b860;
+  --signal-accent: #0b6e99;
   --tenant-contrast: #ffffff;
 
   /* ---------- Radius — continuous corners, closer to iOS ---------- */

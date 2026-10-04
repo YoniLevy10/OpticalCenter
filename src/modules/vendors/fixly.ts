@@ -1,13 +1,22 @@
 /**
- * @deprecated Fixly marketplace removed from product surface.
+ * Marketplace partner stubs (removed from product surface).
  * Preferred vendors + Midrag professionals contact book are the dispatch path.
- * Kept as no-op stubs so any residual imports compile until fully deleted.
  */
-export function isFixlyEnabled(): boolean {
+export function isPartnerMarketplaceEnabled(): boolean {
   return false
 }
 
-/** @deprecated */
-export function fixlyStatusLabelHe(): string {
+/** @deprecated Use Midrag professionals book copy instead. */
+export function partnerMarketplaceStatusLabelHe(): string {
   return 'מאגר ספקים מועדפים ואנשי מקצוע ממידרג'
+}
+
+/** @deprecated Alias — do not surface in UI. */
+export function isFixlyEnabled(): boolean {
+  return isPartnerMarketplaceEnabled()
+}
+
+/** @deprecated Alias — do not surface in UI. */
+export function fixlyStatusLabelHe(): string {
+  return partnerMarketplaceStatusLabelHe()
 }

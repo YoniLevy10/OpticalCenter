@@ -247,7 +247,7 @@ async function dispatchSupabase(input: {
 }
 
 /**
- * Partner dispatch (Fixly-style façade):
+ * Partner dispatch façade:
  * - Idempotent by (ticket_id, client key)
  * - HMAC-SHA256 over canonical JSON body
  * - Persists to Supabase when available; memory otherwise

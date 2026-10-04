@@ -145,7 +145,7 @@ describe('queueCounts', () => {
 
 describe('queueHref / parseQueueParams', () => {
   it('omits defaults and round-trips the rest', () => {
-    expect(queueHref({ view: 'all', sort: 'urgency' })).toBe('/ops/tickets')
+    expect(queueHref({ view: 'all', sort: 'newest' })).toBe('/ops/tickets')
     const href = queueHref(
       { view: 'open', sort: 'sla', q: 'מזגן' },
       { priority: 'critical' },
@@ -155,8 +155,9 @@ describe('queueHref / parseQueueParams', () => {
     expect(href).toContain('priority=critical')
   })
 
-  it('falls back to the all view', () => {
+  it('falls back to the all view and newest sort', () => {
     expect(parseQueueParams({}).view).toBe('all')
+    expect(parseQueueParams({}).sort).toBe('newest')
     expect(parseQueueParams({ view: 'nonsense' }).view).toBe('all')
     expect(parseQueueParams({ view: 'resolved' }).view).toBe('resolved')
   })

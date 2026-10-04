@@ -25,16 +25,30 @@ const PRIORITIES: TicketPriority[] = ['critical', 'high', 'medium', 'low']
 function FilterFields({
   draft,
   setDraft,
+  layout = 'stack',
 }: {
   draft: QueueFilters
   setDraft: (next: QueueFilters) => void
+  /** stack = mobile sheet; row = desktop toolbar */
+  layout?: 'stack' | 'row'
 }) {
+  const wrap =
+    layout === 'row'
+      ? 'flex flex-row flex-wrap items-end gap-2'
+      : 'flex flex-col gap-4'
+  const field =
+    layout === 'row'
+      ? 'flex min-w-[8.5rem] flex-col gap-1'
+      : 'flex flex-col gap-1.5'
+  const selectCls =
+    't-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink'
+
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5">
+    <div className={wrap}>
+      <label className={field}>
         <span className="t-caption text-ink-2">עדיפות</span>
         <select
-          className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
+          className={selectCls}
           value={draft.priority ?? ''}
           onChange={(e) =>
             setDraft({
@@ -52,10 +66,10 @@ function FilterFields({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1.5">
+      <label className={field}>
         <span className="t-caption text-ink-2">סטטוס</span>
         <select
-          className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
+          className={selectCls}
           value={draft.status ?? ''}
           onChange={(e) =>
             setDraft({
@@ -73,10 +87,10 @@ function FilterFields({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1.5">
+      <label className={field}>
         <span className="t-caption text-ink-2">שיוך</span>
         <select
-          className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
+          className={selectCls}
           value={draft.tech ?? ''}
           onChange={(e) =>
             setDraft({
@@ -116,11 +130,14 @@ export function TicketFilters() {
 
   return (
     <>
-      {/* Desktop inline filters */}
-      <div className="hidden items-end gap-3 md:flex">
+      {/* Desktop inline filters — horizontal row (was broken as stacked columns) */}
+      <div className="hidden shrink-0 md:block">
         <FilterFields
+          layout="row"
           draft={filters}
-          setDraft={(next) => apply({ ...next, view: filters.view || 'open' })}
+          setDraft={(next) =>
+            apply({ ...next, view: filters.view || 'open', sort: 'newest' })
+          }
         />
       </div>
 
@@ -172,7 +189,7 @@ export function TicketFilters() {
                   tech: undefined,
                   store: filters.store,
                   view: filters.view || 'open',
-                  sort: filters.sort,
+                  sort: 'newest',
                   q: filters.q,
                 })
               }
@@ -188,7 +205,7 @@ export function TicketFilters() {
                 apply({
                   ...draft,
                   view: filters.view || 'open',
-                  sort: filters.sort,
+                  sort: 'newest',
                   q: filters.q,
                   store: filters.store,
                 })
