@@ -32,7 +32,7 @@ type Snapshot = {
 function shareText(s: Snapshot): string {
   const k = s.kpis_json
   return [
-    `MaintainOS · ${s.label}`,
+    `MILO · ${s.label}`,
     `תקופה: ${s.period_start} — ${s.period_end}`,
     `פתוחות: ${k.open ?? '—'} · נפתרו: ${k.resolvedCount ?? '—'}`,
     `% בתוך SLA: ${k.pctWithinSla ?? '—'}%`,
