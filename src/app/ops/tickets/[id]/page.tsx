@@ -25,7 +25,6 @@ import {
 import { TicketActions } from './ticket-actions'
 import { PreferredVendorsPanel } from './preferred-vendors-panel'
 import { suggestVendorsForTicket } from '@/modules/vendors/service'
-import { fixlyStatusLabelHe } from '@/modules/vendors/fixly'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -190,7 +189,6 @@ export default async function TicketDetailPage({
           regionId={ticket.region_id}
           city={ticket.stores?.city ?? null}
           initialMatches={preferredMatches}
-          fixlyLabel={fixlyStatusLabelHe()}
         />
 
         {/* Single mount: sticky dock on mobile, inline panel on md+ */}
