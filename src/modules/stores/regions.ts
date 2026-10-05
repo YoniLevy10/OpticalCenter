@@ -1,3 +1,6 @@
+import { phrase } from '@/lib/i18n/phrases'
+import type { Locale } from '@/lib/i18n/locale'
+
 /** Israel district codes used across stores + preferred vendors. */
 
 export const IL_REGION_CODES = ['TA', 'CTR', 'JLM', 'HFA', 'N', 'S'] as const
@@ -49,6 +52,15 @@ export function regionLabelHe(regionIdOrCode: string | null | undefined): string
   const code = regionCodeFromId(regionIdOrCode) ?? null
   if (!code) return '—'
   return IL_REGION_LABELS_HE[code]
+}
+
+export function regionLabel(
+  regionIdOrCode: string | null | undefined,
+  locale: Locale = 'he',
+): string {
+  const he = regionLabelHe(regionIdOrCode)
+  if (he === '—') return he
+  return phrase(locale, he)
 }
 
 export function isIlRegionCode(value: string): value is IlRegionCode {

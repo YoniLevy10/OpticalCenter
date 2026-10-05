@@ -20,7 +20,7 @@ import {
   IL_REGION_CODES,
   IL_REGION_LABELS_HE,
   regionCodeFromId,
-  regionLabelHe,
+  regionLabel,
   type IlRegionCode,
 } from '@/modules/stores/regions'
 
