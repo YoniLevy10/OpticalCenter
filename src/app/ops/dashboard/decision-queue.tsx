@@ -57,16 +57,15 @@ function DecisionRow({
   return (
     <li className="flex flex-col gap-2 bg-surface px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
-        <Link href={`/ops/stores/${item.storeCode}`} className="t-meta text-ink underline">
-          {item.storeCode} · {item.storeName}
+        <Link href={item.href} className="t-body text-ink">
+          {item.title}
         </Link>
-        <span className="t-meta text-ink-3">{item.owner}</span>
+        <span className="t-meta shrink-0 text-ink-3">{item.owner}</span>
       </div>
-      <Link href={item.href} className="t-body text-ink">
-        {item.title}
+      <Link href={`/ops/stores/${item.storeCode}`} className="t-meta text-ink-2">
+        {item.storeCode} · {item.storeName}
       </Link>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="t-meta text-ink-2">{item.action}</span>
         {item.ticketId ? (
           <>
             <select

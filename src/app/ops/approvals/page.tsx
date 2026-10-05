@@ -55,8 +55,9 @@ export default async function ApprovalsPage({
           </p>
         ) : null}
         <Panel elevated>
-          <p className="t-meta mb-2 text-ink-2">{tx('approvals.onBehalf')}</p>
-          <form action={submitSpend} className="grid gap-2">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">בקשה חדשה</summary>
+            <form action={submitSpend} className="mt-3 grid gap-2">
             <Input name="storeCode" placeholder="קוד סניף" required />
             <Input name="storeName" placeholder="שם סניף" required />
             <Input name="reason" placeholder="סיבה" required />
@@ -67,18 +68,26 @@ export default async function ApprovalsPage({
               <input type="checkbox" name="urgent" /> {tx('approvals.urgent')}
             </label>
             <Button type="submit">{tx('approvals.submit')}</Button>
-          </form>
+            </form>
+          </details>
         </Panel>
         {spends.map((spend) => (
           <Panel key={spend.id} elevated>
             <p className="t-body">
-              {spend.storeCode} · {spend.storeName} · {spend.reason}
+              {spend.storeCode} · {spend.storeName}
+            </p>
+            <p className="t-body">{spend.reason}</p>
+            <p className="t-meta text-ink-2">
+              {tx('approvals.by')} {spend.requestedBy || '—'}
             </p>
             <p className="t-meta text-ink-2">
-              {tx('approvals.by')} {spend.requestedBy || '—'} · {tx('approvals.requested')}{' '}
-              {spend.requestedAmount} · {tx('approvals.approved')} {spend.approvedAmount ?? '—'} ·{' '}
-              {tx('approvals.actual')} {spend.actualAmount ?? '—'} · {spend.vendorName || tx('approvals.noVendor')} ·{' '}
-              {spendStatus(spend.status)}
+              {tx('approvals.requested')} ₪{spend.requestedAmount} · {tx('approvals.approved')}{' '}
+              {spend.approvedAmount == null ? '—' : `₪${spend.approvedAmount}`} ·{' '}
+              {tx('approvals.actual')}{' '}
+              {spend.actualAmount == null ? '—' : `₪${spend.actualAmount}`}
+            </p>
+            <p className="t-meta text-ink-2">
+              {spend.vendorName || tx('approvals.noVendor')} · {spendStatus(spend.status)}
               {spend.needsReapproval ? ` · ${tx('approvals.reapproval')}` : ''}
               {invoiceVariance(spend) ? ` · ${tx('approvals.variance')}` : ''}
             </p>
@@ -99,18 +108,21 @@ export default async function ApprovalsPage({
                 <Button type="submit" size="sm" variant="secondary">{tx('approvals.needsInfo')}</Button>
               </form>
             </div>
-            <form action={reviseSpendAction} className="mt-2 flex flex-wrap gap-2">
-              <input type="hidden" name="id" value={spend.id} />
-              <Input name="amount" type="number" defaultValue={spend.requestedAmount} aria-label="סכום" />
-              <Input name="vendor" defaultValue={spend.vendorName ?? ''} aria-label="ספק" />
-              <Input name="scope" defaultValue={spend.scope ?? ''} aria-label="היקף" />
-              <Button type="submit" size="sm">{tx('approvals.revise')}</Button>
-            </form>
-            <form action={actualSpendAction} className="mt-2 flex gap-2">
-              <input type="hidden" name="id" value={spend.id} />
-              <Input name="actual" type="number" placeholder="עלות בפועל" aria-label="עלות בפועל" />
-              <Button type="submit" size="sm">{tx('approvals.invoice')}</Button>
-            </form>
+            <details className="mt-3">
+              <summary className="t-meta cursor-pointer text-ink-2">עדכון סכום או חשבונית</summary>
+              <form action={reviseSpendAction} className="mt-2 flex flex-wrap gap-2">
+                <input type="hidden" name="id" value={spend.id} />
+                <Input name="amount" type="number" defaultValue={spend.requestedAmount} aria-label="סכום" />
+                <Input name="vendor" defaultValue={spend.vendorName ?? ''} aria-label="ספק" />
+                <Input name="scope" defaultValue={spend.scope ?? ''} aria-label="היקף" />
+                <Button type="submit" size="sm">{tx('approvals.revise')}</Button>
+              </form>
+              <form action={actualSpendAction} className="mt-2 flex gap-2">
+                <input type="hidden" name="id" value={spend.id} />
+                <Input name="actual" type="number" placeholder="עלות בפועל" aria-label="עלות בפועל" />
+                <Button type="submit" size="sm">{tx('approvals.invoice')}</Button>
+              </form>
+            </details>
           </Panel>
         ))}
       </div>

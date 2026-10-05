@@ -52,10 +52,7 @@ export default async function DocumentsPage() {
           }
         />
         <Panel elevated>
-          <h2 className="t-section mb-1 text-ink">סנכרון עם גוגל דרייב</h2>
-          <p className="t-body mb-4 text-ink-2">
-            ארי ממשיך לעבוד בתיקיות. קובץ חדש או עדכון אצלו נכנס לכאן, ומסמך שנשמר כאן נכתב לתיקיית הסניף. עריכה שלו גוברת, וקובץ שלו לא נמחק ולא נדרס. מה שלא ברור נשאר לבדיקה.
-          </p>
+          <h2 className="t-section mb-3 text-ink">גוגל דרייב</h2>
           <DriveImportForm
             connectedFolder={folderId ? driveFolderUrl(folderId) : null}
             statusLine={statusLine}
@@ -63,8 +60,9 @@ export default async function DocumentsPage() {
           />
         </Panel>
         <Panel elevated>
-          <h2 className="t-section mb-3 text-ink">מסמך ידני</h2>
-          <form action={addDocumentAction} className="grid gap-3">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">מסמך חדש</summary>
+            <form action={addDocumentAction} className="mt-3 grid gap-3">
             <Field label="קוד סניף" htmlFor="doc-store">
               <Input id="doc-store" name="storeCode" placeholder="6018" required />
             </Field>
@@ -90,7 +88,8 @@ export default async function DocumentsPage() {
               </select>
             </Field>
             <Button type="submit">שמירת מסמך</Button>
-          </form>
+            </form>
+          </details>
         </Panel>
         {documents.length === 0 ? (
           <Panel elevated>
@@ -111,11 +110,7 @@ export default async function DocumentsPage() {
                 {isDocumentOverdue(doc) ? ' · באיחור' : ''}
                 {doc.renewed ? ' · הוחלף' : ''}
               </p>
-              {doc.sourceUrl ? (
-                <a className="t-meta text-ink underline" href={doc.sourceUrl} target="_blank" rel="noreferrer">
-                  קובץ המקור
-                </a>
-              ) : null}
+              <DocumentPeek name={doc.docType} url={doc.sourceUrl} />
               {!doc.renewed ? (
                 <form action={renewDocumentAction} className="mt-3 flex flex-wrap gap-2">
                   <input type="hidden" name="id" value={doc.id} />
@@ -128,8 +123,9 @@ export default async function DocumentsPage() {
           ))
         )}
         <Panel elevated>
-          <h2 className="t-section mb-3 text-ink">קליטה ידנית של קובץ</h2>
-          <form action={ingestFileAction} className="grid gap-3">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">קליטת קובץ</summary>
+            <form action={ingestFileAction} className="mt-3 grid gap-3">
             <Field label="שם קובץ" htmlFor="file-name">
               <Input id="file-name" name="name" required />
             </Field>
@@ -144,27 +140,46 @@ export default async function DocumentsPage() {
             </Field>
             <input type="hidden" name="mime" value="application/pdf" />
             <Button type="submit">קליטה</Button>
-          </form>
-          <ul className="mt-4 space-y-2">
+            </form>
+          </details>
+          <ul className="mt-4 space-y-3">
             {files.map((file) => (
-              <li key={file.id} className="t-meta text-ink-2">
-                {file.name} · {FILE_STATUS[file.status]}
-                {file.reason ? ` · ${file.reason}` : ''}
-                {file.versionOf ? ' · גרסה מעודכנת' : ''}
-                {file.deletedInSource ? ' · נמחק במקור' : ''}
-                {file.sourceUrl ? (
-                  <>
-                    {' · '}
-                    <a className="underline" href={file.sourceUrl} target="_blank" rel="noreferrer">
-                      מקור
-                    </a>
-                  </>
-                ) : null}
+              <li key={file.id}>
+                <p className="t-meta text-ink-2">
+                  {file.name} · {FILE_STATUS[file.status]}
+                  {file.reason ? ` · ${file.reason}` : ''}
+                  {file.deletedInSource ? ' · נמחק במקור' : ''}
+                </p>
+                <DocumentPeek name={file.name} url={file.sourceUrl} />
               </li>
             ))}
           </ul>
         </Panel>
       </div>
     </OpsAppShell>
+  )
+}
+
+function DocumentPeek({ name, url }: { name: string; url: string | null }) {
+  if (!url || url.startsWith('meta-media:')) {
+    return <p className="t-meta mt-2 text-ink-3">הקובץ נשמר. אין תצוגה עד שההורדה מוואטסאפ מסתיימת.</p>
+  }
+  const image = url.startsWith('data:image') || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url)
+  const pdf = url.startsWith('data:application/pdf') || /\.pdf(\?|$)/i.test(url)
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={url} alt={name} className="mt-3 max-h-64 w-full rounded-md border border-border object-contain" />
+    )
+  }
+  if (pdf) {
+    return (
+      <iframe title={name} src={url} className="mt-3 h-64 w-full rounded-md border border-border bg-surface" />
+    )
+  }
+  return (
+    <a className="t-meta mt-2 inline-block text-ink underline" href={url} target="_blank" rel="noreferrer">
+      פתיחת הקובץ
+    </a>
   )
 }

@@ -54,7 +54,7 @@ export function DriveImportForm({
       <Field
         label="תיקייה בגוגל דרייב"
         htmlFor="drive-link"
-        hint="התיקייה שארי מעדכן. קובץ בתוך תיקיית סניף, למשל 6018, משויך לסניף. שינוי שלו נכנס לכאן, ומסמך שנשמר כאן נכתב לתיקיית הסניף."
+        hint="קישור לתיקייה. תיקיית סניף, למשל 6018, משייכת את הקובץ."
       >
         <Input
           id="drive-link"
@@ -74,7 +74,7 @@ export function DriveImportForm({
       {statusLine ? <p className="t-meta text-ink">{statusLine}</p> : null}
       {!canWrite ? (
         <p className="t-meta text-ink-2">
-          בלי חשבון שירות הסנכרון קורא את התיקייה בלבד. כדי שקובץ שנשמר כאן יופיע אצלו בדרייב, משתפים את התיקייה עם חשבון השירות כעורך.
+          כרגע קריאה בלבד. כדי לכתוב חזרה לדרייב צריך לשתף את התיקייה עם חשבון השירות.
         </p>
       ) : null}
       <Button type="submit" variant="primary" size="touch" disabled={pending}>

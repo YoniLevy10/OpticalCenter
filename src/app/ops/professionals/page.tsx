@@ -6,7 +6,9 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listProfessionals } from '@/modules/professionals/service'
 import { midragSectorsForSelect } from '@/modules/vendors/midrag/catalog'
-import { ProfessionalsBook } from './professionals-book'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
+import { listSpends } from '@/lib/data/ops-ledger'
+import { ProfessionalsBook, type ProfessionalJob } from './professionals-book'
 import { ProfessionalsMidrag } from './professionals-midrag'
 import { UserRound } from 'lucide-react'
 
@@ -29,6 +31,23 @@ export default async function ProfessionalsPage() {
     // Page must still render Midrag search even if the book fails to load.
     professionals = []
     backend = 'memory'
+  }
+
+  await hydrateOpsLedger()
+  const jobs: Record<string, ProfessionalJob[]> = {}
+  for (const person of professionals) {
+    const names = [person.full_name, person.company_name]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .map((value) => value.trim())
+    jobs[person.id] = listSpends()
+      .filter((spend) =>
+        names.some((name) => spend.vendorName?.includes(name) || name.includes(spend.vendorName ?? '\0')),
+      )
+      .map((spend) => ({
+        title: spend.reason || 'בקשה',
+        store: [spend.storeCode, spend.storeName].filter(Boolean).join(' '),
+        status: spend.status,
+      }))
   }
 
   return (
@@ -64,7 +83,7 @@ export default async function ProfessionalsPage() {
               className="py-14"
             />
           ) : (
-            <ProfessionalsBook professionals={professionals} />
+            <ProfessionalsBook professionals={professionals} jobs={jobs} />
           )}
         </Panel>
 

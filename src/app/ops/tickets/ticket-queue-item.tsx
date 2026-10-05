@@ -7,8 +7,11 @@ import { Check, MessageSquareText } from 'lucide-react'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import {
   OPEN_TICKET_STATUSES,
+  TICKET_CATEGORIES,
+  TICKET_CATEGORY_LABELS_HE,
   TICKET_STATUS_LABELS_HE,
 } from '@/modules/tickets/constants'
+import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { Button } from '@/components/ui/button'
 import { BottomSheet } from '@/components/ui/overlay'
 import { Textarea } from '@/components/ui/input'
@@ -198,7 +201,27 @@ export function TicketQueueItem({
           </div>
         </Link>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:w-[7.5rem]">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:w-[9.5rem]">
+          <select
+            aria-label="סיווג מהיר"
+            className="t-meta min-h-10 w-full rounded-md border border-border bg-surface px-2 text-ink"
+            defaultValue={ticket.category || 'other'}
+            disabled={disabled}
+            onChange={(event) =>
+              void patch({ category: event.target.value }, 'הסיווג עודכן')
+            }
+          >
+            {TICKET_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {TICKET_CATEGORY_LABELS_HE[category] ?? category}
+              </option>
+            ))}
+          </select>
+          <MidragSearchAction
+            category={ticket.category || 'other'}
+            city={ticket.stores?.city}
+            compact
+          />
           <Button
             type="button"
             variant="secondary"

@@ -19,7 +19,12 @@ import {
 import { memListUsers } from '@/lib/auth/memory-memberships'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { OPEN_TICKET_STATUSES, TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
+import {
+  normalizeTicketCategory,
+  OPEN_TICKET_STATUSES,
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+} from '@/modules/tickets/constants'
 import { computeSlaTimestamps, windowsFromSettings } from '@/modules/tickets/sla'
 import { getSettings } from '@/modules/settings/service'
 import { assertTransition, isTicketStatus } from '@/modules/tickets/transitions'
@@ -648,6 +653,35 @@ export async function updatePriority(
   const current = memGet(id)
   if (!current) throw new Error('תקלה לא נמצאה')
   return memToRecord(memUpdatePriority(id, priority, sla, actorId ?? null))
+}
+
+export async function updateCategory(
+  id: string,
+  category: string,
+  actorId?: string | null,
+): Promise<TicketRecord> {
+  const next = normalizeTicketCategory(category)
+  const current = await getTicketForMutation(id)
+  if (!current) throw new Error('תקלה לא נמצאה')
+  const from = current.category
+  if (await supabaseReady()) {
+    const supabase = createSystemClient('tickets_service')
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ category: next })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw new Error(error.message)
+    await appendEvent(id, 'hq_note', actorId ?? null, {
+      note: `סיווג: ${from} → ${next}`,
+    })
+    return data as TicketRecord
+  }
+  const mem = memGet(id)
+  if (!mem) throw new Error('תקלה לא נמצאה')
+  mem.category = next
+  return memToRecord(mem)
 }
 
 export async function updateStatus(

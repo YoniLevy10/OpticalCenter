@@ -10,6 +10,9 @@ import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { StoreQrAccordion } from './store-qr-accordion'
 import { fetchStores } from '@/modules/stores/data'
+import { ISRAEL_STORES } from '@/modules/stores/israel-stores'
+import { listSpends } from '@/lib/data/ops-ledger'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { listTickets } from '@/modules/tickets/service'
@@ -42,10 +45,23 @@ export default async function StoresPage({
   const regionFilter = (sp.region ?? '').trim().toUpperCase() as
     | IlRegionCode
     | ''
-  const [{ stores }, businessPhone] = await Promise.all([
+  const [{ stores: loaded }, businessPhone] = await Promise.all([
     fetchStores({ includeInactive: true }),
     resolveWhatsAppBusinessPhone(),
   ])
+  const approvedCodes = new Set(ISRAEL_STORES.map((store) => store.code))
+  const stores = loaded.filter((store) => approvedCodes.has(store.code))
+  await hydrateOpsLedger()
+  const spendByCode = new Map<string, { count: number; waiting: number }>()
+  for (const spend of listSpends()) {
+    if (!spend.storeCode) continue
+    const current = spendByCode.get(spend.storeCode) ?? { count: 0, waiting: 0 }
+    current.count += 1
+    if (spend.status === 'pending' || spend.status === 'needs_info') {
+      current.waiting += spend.requestedAmount
+    }
+    spendByCode.set(spend.storeCode, current)
+  }
 
   const { tickets } = await listTickets(500).catch(() => ({
     tickets: [],
@@ -160,6 +176,7 @@ export default async function StoresPage({
             <RowList>
               {filtered.map((s) => {
                 const openCount = openCountByStore.get(s.id) ?? 0
+                const money = spendByCode.get(s.code)
                 return (
                   <OperationalRow
                     key={s.id}
@@ -184,6 +201,11 @@ export default async function StoresPage({
                         s.city,
                         s.manager_name,
                         s.manager_phone,
+                        money
+                          ? money.waiting > 0
+                            ? `${money.count} בקשות · ₪${money.waiting} ממתינות`
+                            : `${money.count} בקשות`
+                          : null,
                       ]
                         .filter(Boolean)
                         .join(' · ') || undefined

@@ -57,6 +57,14 @@ export async function transcribeVoice(
 }
 
 function transcriptionRoute(): { url: string; key: string } | null {
+  // OpenAI-compatible endpoint from a free local server (whisper.cpp, speaches, faster-whisper).
+  const local = process.env.WHISPER_API_URL?.trim()
+  if (local) {
+    return {
+      url: local,
+      key: process.env.WHISPER_API_KEY?.trim() || 'local',
+    }
+  }
   const gateway = process.env.AI_GATEWAY_API_KEY?.trim()
   if (gateway) {
     return { url: 'https://ai-gateway.vercel.sh/v1/audio/transcriptions', key: gateway }

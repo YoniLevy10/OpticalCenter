@@ -9,7 +9,7 @@ const he = {
   'nav.whatsapp': 'WhatsApp',
   'nav.professionals': 'אנשי מקצוע',
   'nav.documents': 'מסמכים',
-  'nav.inventory': 'מלאי',
+  'nav.inventory': 'מלאי וציוד',
   'nav.assets': 'ציוד',
   'nav.vendors': 'ספקים',
   'nav.activity': 'יומן פעילות',

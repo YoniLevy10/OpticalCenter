@@ -315,6 +315,19 @@ function enrichMemorySessions(sessions: InboxSession[]): InboxSessionView[] {
   })
 }
 
+function waPreview(row: {
+  body?: string | null
+  media_kind?: string | null
+}): string | null {
+  const body = row.body?.trim()
+  if (body) return body
+  if (row.media_kind === 'audio') return 'הקלטה'
+  if (row.media_kind === 'document') return 'מסמך'
+  if (row.media_kind === 'image') return 'תמונה'
+  if (row.media_kind === 'video') return 'סרטון'
+  return null
+}
+
 export async function listInboxSessions(): Promise<{
   sessions: InboxSessionView[]
   backend: 'memory' | 'supabase'
@@ -360,12 +373,47 @@ export async function listInboxSessions(): Promise<{
   }
 
   const sessions = (rows ?? []).map((row) => mapSessionRow(row))
-  if (sessions.length === 0) {
+  const waLog = await supabase
+    .from('whatsapp_messages')
+    .select('wa_id, body, direction, created_at, media_kind')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  const logged = waLog.error ? [] : (waLog.data ?? [])
+  if (sessions.length === 0 && logged.length === 0) {
     return {
       sessions: enrichMemorySessions(seedDemoInboxIfEmpty()),
       backend: 'memory',
     }
   }
+  const knownWa = new Set(sessions.map((session) => session.wa_id))
+  for (const row of logged) {
+    const waId = String(row.wa_id ?? '')
+    const at = row.created_at ? String(row.created_at) : ''
+    if (waId && knownWa.has(waId)) {
+      const existing = sessions.find((session) => session.wa_id === waId)
+      if (existing && at > existing.updated_at) {
+        existing.updated_at = at
+        const preview = waPreview(row)
+        if (preview && row.direction !== 'outbound') existing.last_inbound = preview
+      }
+      continue
+    }
+    if (!waId || knownWa.has(waId)) continue
+    knownWa.add(waId)
+    sessions.push({
+      wa_id: waId,
+      country_id: '',
+      store_id: null,
+      store_code: null,
+      state: 'done',
+      pending_description: null,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: row.created_at ? String(row.created_at) : new Date().toISOString(),
+      human_takeover: false,
+      last_inbound: waPreview(row),
+    })
+  }
+  sessions.sort((a, b) => b.updated_at.localeCompare(a.updated_at))
 
   const waIds = sessions.map((s) => s.wa_id)
   const storeIds = [
@@ -379,7 +427,7 @@ export async function listInboxSessions(): Promise<{
   >()
   const lastMsgByWa = new Map<
     string,
-    { body: string; direction: 'inbound' | 'outbound' }
+    { body: string; direction: 'inbound' | 'outbound'; at: string }
   >()
 
   const [storesRes, ticketsRes, recentRes] = await Promise.all([
@@ -442,6 +490,20 @@ export async function listInboxSessions(): Promise<{
     lastMsgByWa.set(m.wa_id, {
       body: m.body,
       direction: m.direction === 'outbound' ? 'outbound' : 'inbound',
+      at: m.created_at,
+    })
+  }
+  for (const row of logged) {
+    const waId = String(row.wa_id ?? '')
+    const at = row.created_at ? String(row.created_at) : ''
+    const preview = waPreview(row)
+    if (!waId || !preview) continue
+    const current = lastMsgByWa.get(waId)
+    if (current && current.at >= at) continue
+    lastMsgByWa.set(waId, {
+      body: preview,
+      direction: row.direction === 'outbound' ? 'outbound' : 'inbound',
+      at,
     })
   }
 
@@ -712,6 +774,24 @@ export async function listSessionMessages(waId: string): Promise<{
     }
   }
 
+  const waThread = await supabase
+    .from('whatsapp_messages')
+    .select('id, direction, body, created_at, ticket_id, media_kind')
+    .eq('wa_id', waId)
+    .order('created_at', { ascending: true })
+    .limit(200)
+  const waMessages: InboxMessage[] = waThread.error
+    ? []
+    : (waThread.data ?? [])
+        .map((m) => ({
+          id: String(m.id),
+          direction: m.direction === 'outbound' ? 'outbound' as const : 'inbound' as const,
+          body: waPreview(m) ?? '',
+          created_at: String(m.created_at),
+          ticket_id: m.ticket_id ? String(m.ticket_id) : null,
+        }))
+        .filter((m) => m.body)
+
   const combined = [
     ...(inboxRows ?? []).map((m) => ({
       id: m.id,
@@ -721,6 +801,7 @@ export async function listSessionMessages(waId: string): Promise<{
       ticket_id: m.ticket_id,
     })),
     ...ticketMessages,
+    ...waMessages,
   ].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )

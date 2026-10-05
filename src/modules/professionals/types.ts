@@ -11,6 +11,7 @@ export type Professional = {
   source: 'manual' | 'midrag' | 'vendor'
   is_active: boolean
   use_count: number
+  internal_rating: number | null
   last_contacted_at: string | null
   created_at: string
   updated_at: string

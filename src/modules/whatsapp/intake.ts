@@ -1102,11 +1102,25 @@ export async function processInboundMessage(
       return { ok: true, reply, ticketId: session.active_ticket_id, state: 'done' }
     }
 
+    let deskMessage = message
+    if (
+      message.mediaUrl &&
+      (message.mediaKind === 'document' || message.mediaKind === 'audio')
+    ) {
+      const resolved = await resolveInboundMediaUrl({
+        mediaUrl: message.mediaUrl,
+        mediaKind: message.mediaKind,
+        accessToken: country.whatsapp_access_token,
+        supabase,
+      })
+      if (resolved.url) deskMessage = { ...message, mediaUrl: resolved.url }
+    }
+
     const desk = await routeInboundToDesk({
       text: spoken ?? null,
-      mediaKind: message.mediaKind,
-      fileName: message.fileName,
-      mediaUrl: message.mediaUrl,
+      mediaKind: deskMessage.mediaKind,
+      fileName: deskMessage.fileName,
+      mediaUrl: deskMessage.mediaUrl,
       waId: message.waId,
       sessionStore: session.store_id
         ? {

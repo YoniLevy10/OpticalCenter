@@ -1,7 +1,8 @@
 import { createSystemClient } from '@/lib/supabase/system'
-import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
+import { isMissingColumnError, isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import {
   memListProfessionals,
+  memRateProfessional,
   memTouchProfessional,
   memUpsertProfessional,
   MEM_ORG_ID,
@@ -41,6 +42,7 @@ function toPublic(p: MemProfessional): Professional {
     source: p.source,
     is_active: p.is_active,
     use_count: p.use_count,
+    internal_rating: p.internal_rating ?? null,
     last_contacted_at: p.last_contacted_at,
     created_at: p.created_at,
     updated_at: p.updated_at,
@@ -63,6 +65,8 @@ function rowToMem(row: Record<string, unknown>): MemProfessional {
     source: (row.source as MemProfessional['source']) || 'manual',
     is_active: row.is_active !== false,
     use_count: Number(row.use_count ?? 0),
+    internal_rating:
+      row.internal_rating == null ? null : Number(row.internal_rating),
     last_contacted_at: (row.last_contacted_at as string | null) ?? null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
@@ -259,6 +263,35 @@ export async function touchProfessional(id: string): Promise<{
     throw error
   }
 
+  return {
+    backend: 'supabase',
+    professional: toPublic(rowToMem(data as Record<string, unknown>)),
+  }
+}
+
+export async function rateProfessional(
+  id: string,
+  rating: number,
+): Promise<{ professional: Professional | null; backend: 'memory' | 'supabase' }> {
+  const score = Math.min(5, Math.max(1, Math.round(rating)))
+  if (!(await supabaseReady())) {
+    const row = memRateProfessional(id, score)
+    return { backend: 'memory', professional: row ? toPublic(row) : null }
+  }
+  const supabase = createSystemClient('professionals_rate')
+  const { data, error } = await supabase
+    .from('professionals')
+    .update({ internal_rating: score, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) {
+    if (isSupabaseSchemaError(error) || isMissingColumnError(error)) {
+      const row = memRateProfessional(id, score)
+      return { backend: 'memory', professional: row ? toPublic(row) : null }
+    }
+    throw error
+  }
   return {
     backend: 'supabase',
     professional: toPublic(rowToMem(data as Record<string, unknown>)),

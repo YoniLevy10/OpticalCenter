@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
@@ -22,8 +23,13 @@ export default async function InventoryPage() {
     <OpsAppShell>
       <div className="mx-auto flex max-w-2xl flex-col gap-5">
         <OpsPageHero
-          title="מלאי"
-          status="פריט קטלוג, כמות, ויחידת ציוד — בנפרד"
+          title="מלאי וציוד"
+          status="קטלוג וכמות. יחידות הציוד באותו מקום."
+          actions={
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/ops/assets">ציוד בסניף</Link>
+            </Button>
+          }
         />
         <Panel elevated>
           <form action={addItemAction} className="flex flex-wrap gap-2">

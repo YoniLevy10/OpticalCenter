@@ -329,6 +329,7 @@ export type MemProfessional = {
   source: 'manual' | 'midrag' | 'vendor'
   is_active: boolean
   use_count: number
+  internal_rating?: number | null
   last_contacted_at: string | null
   created_at: string
   updated_at: string
@@ -1502,6 +1503,14 @@ export function memUpsertProfessional(input: {
     deleted_at: null,
   }
   store().professionals.set(row.id, row)
+  return row
+}
+
+export function memRateProfessional(id: string, rating: number): MemProfessional | null {
+  const row = store().professionals.get(id)
+  if (!row || row.deleted_at) return null
+  row.internal_rating = Math.min(5, Math.max(1, Math.round(rating)))
+  row.updated_at = new Date().toISOString()
   return row
 }
 

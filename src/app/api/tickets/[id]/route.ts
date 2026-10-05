@@ -5,10 +5,11 @@ import {
   getById,
   getTicketForMutation,
   listInternalTechnicians,
+  updateCategory,
   updateStatus,
   type TicketRecord,
 } from '@/modules/tickets/service'
-import { TICKET_STATUSES } from '@/modules/tickets/constants'
+import { TICKET_CATEGORIES, TICKET_STATUSES } from '@/modules/tickets/constants'
 import {
   authErrorResponse,
   requireActor,
@@ -31,10 +32,18 @@ const patchSchema = z
     status: z.enum(TICKET_STATUSES).optional(),
     assignedTo: z.string().uuid().optional(),
     note: z.string().trim().max(2000).optional(),
+    category: z.enum(TICKET_CATEGORIES).optional(),
   })
-  .refine((v) => v.status != null || v.assignedTo != null || Boolean(v.note), {
-    message: 'יש לציין status, assignedTo או note',
-  })
+  .refine(
+    (v) =>
+      v.status != null ||
+      v.assignedTo != null ||
+      Boolean(v.note) ||
+      Boolean(v.category),
+    {
+      message: 'יש לציין status, assignedTo, note או category',
+    },
+  )
 
 async function resolveTechProfile(assignedTo: string) {
   const techs = await listInternalTechnicians()
@@ -105,6 +114,9 @@ export async function PATCH(
     }
     if (parsed.data.status) {
       ticket = await updateStatus(id, parsed.data.status, actor.id)
+    }
+    if (parsed.data.category) {
+      ticket = await updateCategory(id, parsed.data.category, actor.id)
     }
     if (parsed.data.note) {
       const { appendEvent } = await import('@/modules/tickets/service')

@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
   BarChart3,
-  Box,
   CheckSquare,
   ClipboardCheck,
   Ellipsis,
@@ -107,11 +106,10 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
       },
       {
         href: '/ops/inventory',
-        label: 'מלאי',
+        label: 'מלאי וציוד',
         icon: Package,
         match: '/ops/inventory',
       },
-      { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
         label: 'ספקים',
@@ -207,6 +205,12 @@ function NavText({ href, fallback }: { href: string; fallback: string }) {
 }
 
 function isActive(pathname: string, match: string) {
+  if (
+    match === '/ops/inventory' &&
+    (pathname === '/ops/assets' || pathname.startsWith('/ops/assets/'))
+  ) {
+    return true
+  }
   return pathname === match || pathname.startsWith(`${match}/`)
 }
 
