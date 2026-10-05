@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'תנאי שימוש · Terms of Service — MaintainOS',
+  title: 'תנאי שימוש · Terms of Service — MILO',
   description:
-    'תנאי שימוש ב־MaintainOS ובבוט WhatsApp לדיווח תקלות Optical Center',
+    'תנאי שימוש ב־MILO ובבוט WhatsApp לדיווח תקלות Optical Center',
   robots: { index: true, follow: true },
 }
 
@@ -15,7 +15,7 @@ export default function TermsOfServicePage() {
     <main className="min-h-dvh bg-canvas px-4 py-10 text-ink" dir="rtl">
       <article className="mx-auto max-w-2xl space-y-8">
         <header className="space-y-2 border-b border-border pb-6">
-          <p className="t-caption text-ink-2">MaintainOS · Optical Center</p>
+          <p className="t-caption text-ink-2">MILO · Optical Center</p>
           <h1 className="t-title text-ink">תנאי שימוש</h1>
           <p className="t-body text-ink-2">Terms of Service</p>
           <p className="t-caption text-ink-3">עודכן לאחרונה: {UPDATED}</p>
@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
         <section className="space-y-3" lang="he">
           <h2 className="t-body-strong">1. השירות</h2>
           <p className="t-body text-ink-2 leading-relaxed">
-            MaintainOS מספקת ערוץ דיווח תקלות תחזוקה (כולל בוט WhatsApp) וממשק
+            MILO מספקת ערוץ דיווח תקלות תחזוקה (כולל בוט WhatsApp) וממשק
             ניהול לצוות Optical Center. השימוש מיועד לעובדים ולגורמים מורשים
             של הרשת בלבד.
           </p>
@@ -67,7 +67,7 @@ export default function TermsOfServicePage() {
         <section className="space-y-3" lang="en" dir="ltr">
           <h2 className="t-title text-ink">Terms of Service (English)</h2>
           <p className="t-body text-ink-2 leading-relaxed">
-            MaintainOS provides a maintenance fault-reporting channel (including
+            MILO provides a maintenance fault-reporting channel (including
             a WhatsApp bot) and an operations console for Optical Center
             authorized users. Use the service only for legitimate maintenance
             reporting and handling. Availability may be affected by maintenance

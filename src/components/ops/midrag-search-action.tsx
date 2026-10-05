@@ -1,35 +1,26 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ExternalLink, Search } from 'lucide-react'
+import { ExternalLink, Phone, Search, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { BottomSheet } from '@/components/ui/overlay'
+import { useToast } from '@/components/ui/toast'
 import {
-  TICKET_CATEGORIES,
-  TICKET_CATEGORY_LABELS_HE,
-  type TicketCategory,
-} from '@/modules/tickets/constants'
-import {
-  buildMidragCityPickerUrl,
-  buildMidragGoogleBackupUrl,
-  buildMidragSearchUrl,
-  externalSearchCaption,
+  buildMidragResultsUrl,
   midragCityMatchForCity,
-  midragServiceMatchForCategory,
 } from '@/modules/vendors/external-search'
+import {
+  filterSectorsByQuery,
+  midragSectorForTicketCategory,
+  midragSectorsForSelect,
+  type MidragSector,
+} from '@/modules/vendors/midrag/catalog'
 import { cn } from '@/lib/utils'
 
-function normalizeCategory(raw: string | null | undefined): TicketCategory {
-  const key = (raw ?? 'other').trim().toLowerCase()
-  return (TICKET_CATEGORIES as readonly string[]).includes(key)
-    ? (key as TicketCategory)
-    : 'other'
-}
-
 /**
- * In-app Midrag professional search — pick trade + city, then open Midrag
- * results in a new tab (no iframe; Midrag blocks embedding).
+ * Midrag professional search — full profession catalog (149) + city,
+ * then open Midrag in a new tab. Also save contact to ranked book.
  */
 export function MidragSearchAction({
   category,
@@ -39,44 +30,92 @@ export function MidragSearchAction({
   open: openProp,
   onOpenChange,
   hideTrigger = false,
+  onSaved,
 }: {
   category: string
   city?: string | null
-  /** Smaller control for queue row actions */
   compact?: boolean
   className?: string
-  /** Controlled sheet (e.g. swipe action opens search) */
   open?: boolean
   onOpenChange?: (open: boolean) => void
   hideTrigger?: boolean
+  /** Called after a professional is saved to the contact book. */
+  onSaved?: () => void
 }) {
+  const toast = useToast()
+  const allSectors = useMemo(() => midragSectorsForSelect(), [])
+  const defaultSector = useMemo(
+    () => midragSectorForTicketCategory(category) ?? allSectors[0] ?? null,
+    [category, allSectors],
+  )
+
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const open = openProp ?? uncontrolledOpen
   const setOpen = onOpenChange ?? setUncontrolledOpen
-  const [draftCategory, setDraftCategory] = useState(() =>
-    normalizeCategory(category),
-  )
+  const [sectorQuery, setSectorQuery] = useState('')
+  const [selected, setSelected] = useState<MidragSector | null>(defaultSector)
   const [draftCity, setDraftCity] = useState(() => (city ?? '').trim())
+  const [saveName, setSaveName] = useState('')
+  const [savePhone, setSavePhone] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const searchInput = useMemo(
-    () => ({
-      category: draftCategory,
-      city: draftCity.trim() || null,
-    }),
-    [draftCategory, draftCity],
+  const filtered = useMemo(
+    () => filterSectorsByQuery(sectorQuery, allSectors),
+    [sectorQuery, allSectors],
   )
 
-  const midragUrl = buildMidragSearchUrl(searchInput)
-  const midragCityUrl = buildMidragCityPickerUrl(searchInput)
-  const googleBackupUrl = buildMidragGoogleBackupUrl(searchInput)
-  const caption = externalSearchCaption(searchInput)
-  const cityMatch = midragCityMatchForCity(searchInput.city)
-  const serviceMatch = midragServiceMatchForCategory(searchInput.category)
+  const cityMatch = midragCityMatchForCity(draftCity)
+  const midragUrl = buildMidragResultsUrl({
+    serviceId: selected?.serviceId,
+    sectorId: selected?.sectorId,
+    city: draftCity.trim() || null,
+  })
 
   function openSheet() {
-    setDraftCategory(normalizeCategory(category))
+    setSelected(midragSectorForTicketCategory(category) ?? allSectors[0] ?? null)
     setDraftCity((city ?? '').trim())
+    setSectorQuery('')
+    setSaveName('')
+    setSavePhone('')
     setOpen(true)
+  }
+
+  async function saveProfessional() {
+    if (!saveName.trim()) {
+      toast.push({ title: 'הזינו שם איש מקצוע', tone: 'critical' })
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/professionals', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          full_name: saveName.trim(),
+          phone: savePhone.trim() || null,
+          trade: selected?.label ?? null,
+          midrag_sector_id: selected?.sectorId ?? null,
+          midrag_service_id: selected?.serviceId ?? null,
+          source: 'midrag',
+          notes: draftCity.trim()
+            ? `נשמר מחיפוש מידרג · ${draftCity.trim()}`
+            : 'נשמר מחיפוש מידרג',
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'שמירה נכשלה')
+      toast.push({ title: 'איש מקצוע נשמר בספר', tone: 'success' })
+      setSaveName('')
+      setSavePhone('')
+      onSaved?.()
+    } catch (e) {
+      toast.push({
+        title: e instanceof Error ? e.message : 'שמירה נכשלה',
+        tone: 'critical',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -97,49 +136,53 @@ export function MidragSearchAction({
       <BottomSheet
         open={open}
         onOpenChange={(next) => {
-          if (next) {
-            setDraftCategory(normalizeCategory(category))
-            setDraftCity((city ?? '').trim())
-          }
-          setOpen(next)
+          if (next) openSheet()
+          else setOpen(false)
         }}
         title="חיפוש איש מקצוע במידרג"
-        detent="half"
+        detent="full"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 pb-4">
           <p className="t-meta text-ink-2">
-            בוחרים מקצוע ועיר לפי הסניף של התקלה — התוצאות נפתחות במידרג
-            בעיר המדויקת, בחלון חדש.
+            כל מקצועות מידרג · בחרו תחום ועיר · שמרו אנשי קשר לדירוג מהיר בחזרה.
           </p>
 
           <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">סוג תקלה / מקצוע</span>
-            <select
-              className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
-              value={draftCategory}
-              onChange={(e) =>
-                setDraftCategory(normalizeCategory(e.target.value))
-              }
-            >
-              {TICKET_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {TICKET_CATEGORY_LABELS_HE[c]}
-                </option>
-              ))}
-            </select>
-            {serviceMatch ? (
-              <span className="t-caption text-ink-3">
-                ממופה למידרג: {serviceMatch.midragLabel}
-              </span>
-            ) : (
-              <span className="t-caption text-amber-700">
-                אין מקצוע ממופה — ייפתח בוחר תחום במידרג
-              </span>
-            )}
+            <span className="t-caption text-ink-2">סינון מקצוע</span>
+            <Input
+              value={sectorQuery}
+              onChange={(e) => setSectorQuery(e.target.value)}
+              placeholder="חשמל, מזגן, מנעולן…"
+              autoComplete="off"
+            />
           </label>
 
+          <div className="max-h-48 overflow-y-auto rounded-[var(--radius-lg)] border border-border bg-surface">
+            <ul className="divide-y divide-border">
+              {filtered.slice(0, 80).map((s) => {
+                const active = selected?.sectorId === s.sectorId
+                return (
+                  <li key={s.sectorId}>
+                    <button
+                      type="button"
+                      className={cn(
+                        't-body flex min-h-[var(--tap)] w-full items-center px-3 text-start transition-colors',
+                        active
+                          ? 'bg-[var(--tenant-soft)] text-[var(--tenant)]'
+                          : 'text-ink hover:bg-surface-sunken',
+                      )}
+                      onClick={() => setSelected(s)}
+                    >
+                      {s.label}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
           <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">עיר הסניף</span>
+            <span className="t-caption text-ink-2">עיר</span>
             <Input
               value={draftCity}
               onChange={(e) => setDraftCity(e.target.value)}
@@ -150,44 +193,50 @@ export function MidragSearchAction({
               <span className="t-caption text-ink-3">
                 ממופה למידרג: {cityMatch.midragLabel}
               </span>
-            ) : draftCity.trim() ? (
-              <span className="t-caption text-amber-700">
-                העיר לא ממופה — ייפתח בוחר עיר במידרג
-              </span>
             ) : null}
           </label>
-
-          <p className="t-caption text-ink-3">{caption}</p>
 
           <Button asChild variant="primary" size="touch" className="w-full">
             <a href={midragUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" aria-hidden />
-              פתח תוצאות במידרג
-              {serviceMatch ? ` · ${serviceMatch.midragLabel}` : ''}
-              {cityMatch ? ` · ${cityMatch.midragLabel}` : ''}
+              פתח במידרג
+              {selected ? ` · ${selected.label}` : ''}
             </a>
           </Button>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {midragCityUrl ? (
-              <Button asChild variant="secondary" size="touch" className="flex-1">
-                <a
-                  href={midragCityUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  בחירת עיר במידרג
-                </a>
-              </Button>
-            ) : null}
-            <Button asChild variant="ghost" size="touch" className="flex-1">
-              <a
-                href={googleBackupUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                גיבוי · Google
-              </a>
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface-sunken/60 p-3 space-y-3">
+            <p className="t-body-strong text-ink flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-[var(--tenant)]" aria-hidden />
+              שמירה לספר אנשי מקצוע
+            </p>
+            <p className="t-caption text-ink-2">
+              מידרג לא משתף מספרים אוטומטית לאתר חיצוני. אחרי שמצאתם שם וטלפון
+              במידרג — העתיקו לכאן ושמרו. בפעם הבאה: חיוג מהיר מהספר.
+            </p>
+            <Input
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              placeholder="שם מלא"
+              autoComplete="name"
+            />
+            <Input
+              value={savePhone}
+              onChange={(e) => setSavePhone(e.target.value)}
+              placeholder="טלפון"
+              inputMode="tel"
+              autoComplete="tel"
+              dir="ltr"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="touch"
+              className="w-full"
+              disabled={saving}
+              onClick={() => void saveProfessional()}
+            >
+              <Phone className="h-3.5 w-3.5" aria-hidden />
+              {saving ? 'שומר…' : 'שמור לדירוג מהיר'}
             </Button>
           </div>
         </div>

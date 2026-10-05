@@ -84,11 +84,11 @@ async function sendResendLoginEmail(input: {
   emailOtp: string
 }): Promise<{ ok: boolean; detail: string }> {
   const from =
-    process.env.LOGIN_EMAIL_FROM?.trim() || 'MaintainOS <onboarding@resend.dev>'
+    process.env.LOGIN_EMAIL_FROM?.trim() || 'MILO <onboarding@resend.dev>'
 
   const html = `
     <div dir="rtl" style="font-family:sans-serif;line-height:1.5">
-      <h2>התחברות ל־MaintainOS</h2>
+      <h2>התחברות ל־MILO</h2>
       <p>לחצו להתחברות (קישור חד־פעמי לשרת הפרודקשן):</p>
       <p><a href="${input.magicUrl}">כניסה למערכת</a></p>
       <p>או הזינו את הקוד במסך ההתחברות: <strong dir="ltr">${input.emailOtp}</strong></p>
@@ -104,7 +104,7 @@ async function sendResendLoginEmail(input: {
     body: JSON.stringify({
       from,
       to: [input.to],
-      subject: 'התחברות ל־MaintainOS',
+      subject: 'התחברות ל־MILO',
       html,
     }),
   })

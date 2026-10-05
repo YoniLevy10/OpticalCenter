@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'מדיניות פרטיות · Privacy Policy — MaintainOS',
+  title: 'מדיניות פרטיות · Privacy Policy — MILO',
   description:
-    'מדיניות פרטיות של MaintainOS (Optical Center) לשימוש בבוט WhatsApp ובמערכת דיווח התקלות',
+    'מדיניות פרטיות של MILO (Optical Center) לשימוש בבוט WhatsApp ובמערכת דיווח התקלות',
   robots: { index: true, follow: true },
 }
 
@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
     <main className="min-h-dvh bg-canvas px-4 py-10 text-ink" dir="rtl">
       <article className="mx-auto max-w-2xl space-y-8">
         <header className="space-y-2 border-b border-border pb-6">
-          <p className="t-caption text-ink-2">MaintainOS · Optical Center</p>
+          <p className="t-caption text-ink-2">MILO · Optical Center</p>
           <h1 className="t-title text-ink">מדיניות פרטיות</h1>
           <p className="t-body text-ink-2">Privacy Policy</p>
           <p className="t-caption text-ink-3">עודכן לאחרונה: {UPDATED}</p>
@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
         <section className="space-y-3" lang="he">
           <h2 className="t-body-strong">1. מי אנחנו</h2>
           <p className="t-body text-ink-2 leading-relaxed">
-            MaintainOS היא מערכת לדיווח וניהול תקלות תחזוקה עבור רשת Optical
+            MILO היא מערכת לדיווח וניהול תקלות תחזוקה עבור רשת Optical
             Center (פיילוט ישראל). השירות כולל בוט WhatsApp עסקי וממשק תפעול
             לצוות התחזוקה.
           </p>
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
         <section className="space-y-3" lang="he">
           <h2 className="t-body-strong">8. יצירת קשר</h2>
           <p className="t-body text-ink-2 leading-relaxed">
-            MaintainOS / Optical Center (פיילוט ישראל)
+            MILO / Optical Center (פיילוט ישראל)
             <br />
             WhatsApp עסקי:{' '}
             <span dir="ltr" className="inline-block">
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
         <section className="space-y-4" lang="en" dir="ltr">
           <h2 className="t-title text-ink">Privacy Policy (English)</h2>
           <p className="t-body text-ink-2 leading-relaxed">
-            MaintainOS is a maintenance ticketing service operated for Optical
+            MILO is a maintenance ticketing service operated for Optical
             Center (Israel pilot). It includes a WhatsApp business bot and an
             internal operations console.
           </p>
@@ -130,7 +130,7 @@ export default function PrivacyPolicyPage() {
             essential infrastructure providers under appropriate safeguards.
           </p>
           <p className="t-body text-ink-2 leading-relaxed">
-            Contact: Optical Center / MaintainOS Israel pilot — WhatsApp{' '}
+            Contact: Optical Center / MILO Israel pilot — WhatsApp{' '}
             <span dir="ltr">+972 55-281-9086</span>. Last updated: 7 September
             2026.
           </p>

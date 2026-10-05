@@ -23,9 +23,7 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
-import { PreferredVendorsPanel } from './preferred-vendors-panel'
-import { suggestVendorsForTicket } from '@/modules/vendors/service'
-import { fixlyStatusLabelHe } from '@/modules/vendors/fixly'
+import { TicketMidragPanel } from './ticket-midrag-panel'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -67,30 +65,11 @@ export default async function TicketDetailPage({
   if (!ticket) notFound()
   if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
-  const vendorSuggestResolved = await suggestVendorsForTicket({
-    category: ticket.category,
-    regionId: ticket.region_id,
-  }).catch(() => ({ matches: [] as Awaited<
-    ReturnType<typeof suggestVendorsForTicket>
-  >['matches'] }))
-
   const techOptions = technicians.map((t) => ({
     id: t.id,
     full_name: t.full_name,
     email: t.email,
     openCount: openCountByTech.get(t.id) ?? 0,
-  }))
-
-  const preferredMatches = vendorSuggestResolved.matches.slice(0, 4).map((m) => ({
-    id: m.id,
-    name: m.name,
-    specialties: m.specialties,
-    preferred: m.preferred,
-    coverage_regions: m.coverage_regions ?? [],
-    contact_phone: m.contact_phone ?? null,
-    notes: m.notes ?? null,
-    score: m.score,
-    reason: m.reason,
   }))
 
   const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
@@ -184,13 +163,10 @@ export default async function TicketDetailPage({
           </ul>
         </Panel>
 
-        <PreferredVendorsPanel
-          ticketId={ticket.id}
+        {/* Midrag is body content — not next to assign/close */}
+        <TicketMidragPanel
           category={ticket.category}
-          regionId={ticket.region_id}
           city={ticket.stores?.city ?? null}
-          initialMatches={preferredMatches}
-          fixlyLabel={fixlyStatusLabelHe()}
         />
 
         {/* Single mount: sticky dock on mobile, inline panel on md+ */}
@@ -203,8 +179,6 @@ export default async function TicketDetailPage({
               assignee?.full_name || assignee?.email || null
             }
             technicians={techOptions}
-            category={ticket.category}
-            city={ticket.stores?.city ?? null}
           />
         </div>
       </div>

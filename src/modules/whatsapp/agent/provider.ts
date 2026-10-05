@@ -27,7 +27,7 @@ export function isWhatsAppAiIntakeEnabled(): boolean {
   return resolveIntakeLlmProvider() !== 'none'
 }
 
-const SYSTEM_INSTRUCTION = `אתה AI Intake Agent של MaintainOS לתחזוקת חנויות Optical Center.
+const SYSTEM_INSTRUCTION = `אתה AI Intake Agent של MILO לתחזוקת חנויות Optical Center.
 נתח דיווח תקלה בעברית והחזר JSON בלבד לפי הסכמה.
 כללים:
 - category אחת מהרשימה
@@ -86,7 +86,7 @@ export async function callIntakeLlm(params: {
       abortSignal: AbortSignal.timeout(12_000),
       output: Output.object({
         name: 'whatsapp_intake',
-        description: 'Structured WhatsApp fault intake for MaintainOS',
+        description: 'Structured WhatsApp fault intake for MILO',
         schema: intakeAgentOutputSchema,
       }),
     })

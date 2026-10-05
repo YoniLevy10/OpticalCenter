@@ -22,7 +22,7 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
     await expect(
-      page.getByRole('heading', { name: /מה קורה עכשיו|ראשי|בוקר טוב|צהריים טובים|ערב טוב/ }),
+      page.getByRole('heading', { name: /דשבורד|ראשי|בוקר טוב|צהריים טובים|ערב טוב/ }),
     ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()
@@ -39,13 +39,14 @@ test.describe('Navigation & layout', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoStable(page, '/ops/dashboard')
     const bottomNav = page.locator('nav.fixed')
-    await expect(bottomNav.getByText('ראשי')).toBeVisible()
+    await expect(bottomNav.getByText('דשבורד')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
-    await expect(bottomNav.getByText('משימות')).toBeVisible()
+    await expect(bottomNav.getByText('אנשי מקצוע')).toBeVisible()
     await expect(bottomNav.getByText('WhatsApp')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
     const more = page.getByRole('dialog')
     await expect(more.getByRole('link', { name: 'חנויות' })).toBeVisible()
+    await expect(more.getByRole('link', { name: 'משימות' })).toBeVisible()
     await expect(more.getByRole('link', { name: 'הגדרות' })).toBeVisible()
   })
 
@@ -137,7 +138,7 @@ test.describe('PWA manifests', () => {
     const hq = await request.get('/manifest.webmanifest')
     expect(hq.ok()).toBeTruthy()
     const hqJson = await hq.json()
-    expect(hqJson.name).toMatch(/MaintainOS/)
+    expect(hqJson.name).toMatch(/MILO/)
     expect(String(hqJson.start_url)).toMatch(/^\/ops\/dashboard/)
     expect(hqJson.id).toBe('/ops/dashboard')
 

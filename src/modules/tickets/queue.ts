@@ -252,7 +252,7 @@ export function parseQueueParams(sp: Record<string, string | undefined>): QueueF
   const view = (QUEUE_VIEWS.find((v) => v.key === sp.view)?.key ??
     'all') as QueueView
   const sort = (QUEUE_SORTS.find((s) => s.key === sp.sort)?.key ??
-    'urgency') as QueueSort
+    'newest') as QueueSort
   return {
     view,
     sort,
@@ -273,7 +273,7 @@ export function queueHref(
   const merged = { ...filters, ...overrides }
   const params = new URLSearchParams()
   if (merged.view && merged.view !== 'all') params.set('view', merged.view)
-  if (merged.sort && merged.sort !== 'urgency') params.set('sort', merged.sort)
+  if (merged.sort && merged.sort !== 'newest') params.set('sort', merged.sort)
   if (merged.status) params.set('status', merged.status)
   if (merged.priority) params.set('priority', merged.priority)
   if (merged.store) params.set('store', merged.store)

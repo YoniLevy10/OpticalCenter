@@ -19,6 +19,7 @@ import {
   Smartphone,
   Store,
   Truck,
+  UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -36,7 +37,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * Optical Precision shell
- * Optical Center is the tenant identity; MaintainOS remains the quiet platform layer.
+ * Optical Center is the tenant identity; MILO remains the quiet platform layer.
  * Desktop keeps navigation calm and persistent; mobile prioritizes the daily operating loop.
  */
 
@@ -50,16 +51,16 @@ type NavItem = {
 const PRIMARY: NavItem[] = [
   {
     href: '/ops/dashboard',
-    label: 'ראשי',
+    label: 'דשבורד',
     icon: LayoutDashboard,
     match: '/ops/dashboard',
   },
   { href: '/ops/tickets', label: 'תקלות', icon: Inbox, match: '/ops/tickets' },
   {
-    href: '/ops/tasks',
-    label: 'משימות',
-    icon: CheckSquare,
-    match: '/ops/tasks',
+    href: '/ops/professionals',
+    label: 'אנשי מקצוע',
+    icon: UserRound,
+    match: '/ops/professionals',
   },
   {
     href: '/ops/inbox',
@@ -80,6 +81,12 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         label: 'ספקים',
         icon: Truck,
         match: '/ops/vendors',
+      },
+      {
+        href: '/ops/tasks',
+        label: 'משימות',
+        icon: CheckSquare,
+        match: '/ops/tasks',
       },
       {
         href: '/ops/activity',
@@ -164,10 +171,8 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        't-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
-        active
-          ? 'bg-[color-mix(in_srgb,var(--ink)_8%,transparent)] text-ink'
-          : 'text-ink-2 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
+        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        active ? 'text-ink' : 'text-ink-2',
       )}
     >
       <Icon
@@ -219,8 +224,9 @@ function DrawerNavLink({
 }
 
 function pageTitle(pathname: string): string {
-  if (pathname.startsWith('/ops/dashboard')) return 'ראשי'
+  if (pathname.startsWith('/ops/dashboard')) return 'דשבורד'
   if (pathname.startsWith('/ops/tickets')) return 'תקלות'
+  if (pathname.startsWith('/ops/professionals')) return 'אנשי מקצוע'
   if (pathname.startsWith('/ops/tasks')) return 'משימות'
   if (pathname.startsWith('/ops/stores/print-qr')) return 'הדפסת QR'
   if (pathname.startsWith('/ops/stores')) return 'חנויות'
@@ -234,7 +240,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith('/ops/lab')) return 'מעבדה'
   if (pathname.startsWith('/ops/simulator')) return 'סימולטור'
   if (pathname.startsWith('/ops/status')) return 'סטטוס מערכת'
-  return 'MaintainOS'
+  return 'MILO'
 }
 
 function TenantMark() {
@@ -280,7 +286,7 @@ export function AppShell({
           >
             <TenantMark />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-ink">MaintainOS</p>
+              <p className="t-body-strong truncate text-ink">MILO</p>
               <p className="t-caption truncate text-ink-3">
                 Optical Center · ישראל
               </p>
@@ -338,7 +344,7 @@ export function AppShell({
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
-          <Link href="/ops/dashboard" aria-label="ראשי" className="shrink-0">
+          <Link href="/ops/dashboard" aria-label="דשבורד" className="shrink-0">
             <TenantMark />
           </Link>
           <div className="min-w-0 flex-1">
