@@ -77,6 +77,7 @@ const PHRASES: Record<string, { en: string; fr: string }> = {
   'אנשי מקצוע': { en: 'Professionals', fr: 'Professionnels' },
   'אין אנשי מקצוע': { en: 'No professionals', fr: 'Aucun professionnel' },
   משימות: { en: 'Tasks', fr: 'Tâches' },
+  משימה: { en: 'Task', fr: 'Tâche' },
   'אין משימות': { en: 'No tasks', fr: 'Aucune tâche' },
   מסמכים: { en: 'Documents', fr: 'Documents' },
   'אין מסמכים': { en: 'No documents', fr: 'Aucun document' },

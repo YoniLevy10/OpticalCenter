@@ -42,9 +42,12 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
       title: doc.docType,
       storeCode: doc.storeCode,
       storeName: doc.storeName,
-      owner: doc.owner || 'לא הוגדר',
+      owner: doc.owner || phrase(locale, 'לא הוגדר'),
       urgency: isDocumentOverdue(doc, now) ? 'overdue' : 'today',
-      action: doc.intakeStatus === 'needs_review' ? 'לבדוק מסמך' : 'לחדש מסמך',
+      action:
+        doc.intakeStatus === 'needs_review'
+          ? phrase(locale, 'לבדוק מסמך')
+          : phrase(locale, 'לחדש מסמך'),
       href: '/ops/documents',
     })
   }
@@ -60,10 +63,10 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
       kind: 'verify',
       title: `${contact.fullName} · ${contact.phone}`,
       storeCode: store?.code ?? '—',
-      storeName: store?.name ?? 'סניף',
+      storeName: store?.name ?? phrase(locale, 'סניף'),
       owner: 'ארי',
       urgency: 'today',
-      action: 'לאמת טלפון',
+      action: phrase(locale, 'לאמת טלפון'),
       href: store ? `/ops/stores/${store.code}` : '/ops/stores',
     })
   }
@@ -75,10 +78,10 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
       kind: 'task',
       title: task.title,
       storeCode: task.storeCode || '—',
-      storeName: task.storeCode || 'משימה',
-      owner: task.assignee || 'לא צוין',
+      storeName: task.storeCode || phrase(locale, 'משימה'),
+      owner: task.assignee || phrase(locale, 'לא צוין'),
       urgency: 'today',
-      action: task.clarification || 'להבהיר',
+      action: task.clarification || phrase(locale, 'להבהיר'),
       href: '/ops/tasks',
     })
   }
@@ -89,10 +92,10 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
       kind: 'conflict',
       title: `${conflict.field}: ${conflict.current} / ${conflict.incoming}`,
       storeCode: '—',
-      storeName: 'סנכרון',
+      storeName: phrase(locale, 'סנכרון'),
       owner: 'ארי',
       urgency: 'today',
-      action: 'להכריע בסתירה',
+      action: phrase(locale, 'להכריע בסתירה'),
       href: '/ops/stores',
     })
   }
