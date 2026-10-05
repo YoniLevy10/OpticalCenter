@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { Button } from '@/components/ui/button'
 import type { DecisionItem } from '@/modules/decisions/queue'
 import {
@@ -17,8 +18,9 @@ export function DecisionQueue({
   items: DecisionItem[]
   technicians: { id: string; name: string }[]
 }) {
+  const p = usePhrase()
   if (items.length === 0) {
-    return <p className="t-body px-4 py-8 text-ink-3">אין פריטים בקבוצה הזו.</p>
+    return <p className="t-body px-4 py-8 text-ink-3">{p('אין פריטים בקבוצה הזו.')}</p>
   }
   return (
     <ul className="divide-y divide-border">
@@ -36,6 +38,7 @@ function DecisionRow({
   item: DecisionItem
   technicians: { id: string; name: string }[]
 }) {
+  const p = usePhrase()
   const [tech, setTech] = useState(technicians[0]?.id ?? '')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +49,7 @@ function DecisionRow({
       try {
         await action()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'הפעולה נכשלה')
+        setError(err instanceof Error ? err.message : p('הפעולה נכשלה'))
       }
     })
   }
@@ -70,7 +73,7 @@ function DecisionRow({
               className="rounded-md border border-border bg-surface px-2 py-1 text-sm"
               value={tech}
               onChange={(event) => setTech(event.target.value)}
-              aria-label="בחירת אחראי"
+              aria-label={p('בחירת אחראי')}
             >
               {technicians.map((person) => (
                 <option key={person.id} value={person.id}>

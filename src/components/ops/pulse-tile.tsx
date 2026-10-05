@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
+import { Tx } from '@/components/i18n/tx'
 import { cn } from '@/lib/utils'
 
 export type PulseTone = 'neutral' | 'critical' | 'warning' | 'ok'
@@ -84,7 +85,9 @@ export function PulseTile({
           {value}
         </span>
       </span>
-      <span className="t-caption text-ink-2">{label}</span>
+      <span className="t-caption text-ink-2">
+        <Tx text={label} />
+      </span>
     </>
   )
 

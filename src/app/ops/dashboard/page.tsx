@@ -43,6 +43,9 @@ import { ticketDecision, splitDecisions, type DecisionItem } from '@/modules/dec
 import { ledgerDecisions } from '@/modules/decisions/from-ledger'
 import { hydrateOpsLedger } from '@/lib/data/ops-db'
 import { listSpends } from '@/lib/data/ops-ledger'
+import { getLocale } from '@/lib/i18n/server'
+import { phrase } from '@/lib/i18n/phrases'
+import { Tx } from '@/components/i18n/tx'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -53,6 +56,8 @@ export default async function OpsDashboardPage() {
     redirect('/login')
   }
   await hydrateOpsLedger()
+  const locale = await getLocale()
+  const p = (text: string) => phrase(locale, text)
 
   const [openResult, doneResult, techRows] = await Promise.all([
     listTickets({
@@ -92,9 +97,9 @@ export default async function OpsDashboardPage() {
     .slice(0, 12)
   const decisions = splitDecisions([
     ...all
-      .map((ticket) => ticketDecision(ticket))
+      .map((ticket) => ticketDecision(ticket, new Date(), locale))
       .filter((item): item is DecisionItem => item != null),
-    ...ledgerDecisions(),
+    ...ledgerDecisions(new Date(), locale),
   ])
 
   const isDemo =
@@ -107,12 +112,12 @@ export default async function OpsDashboardPage() {
   ).length
 
   const statusLine = !hasOpen
-    ? 'הכל שקט — אין תקלות פתוחות'
+    ? `${p('הכל שקט')} — ${p('אין תקלות פתוחות')}`
     : unassigned > 0
-      ? `${unassigned} בלי שיוך · ${kpis.open} פתוחות`
+      ? `${unassigned} ${p('בלי שיוך')} · ${kpis.open} ${p('פתוחות')}`
       : urgentCount > 0
-        ? `${urgentCount} דחופות · ${kpis.open} פתוחות`
-        : `${kpis.open} פתוחות`
+        ? `${urgentCount} ${p('דחופות')} · ${kpis.open} ${p('פתוחות')}`
+        : `${kpis.open} ${p('פתוחות')}`
 
   return (
     <OpsAppShell>
@@ -232,7 +237,7 @@ export default async function OpsDashboardPage() {
                 href="/ops/tickets?view=open"
                 className="t-caption font-medium text-[var(--tenant)] hover:underline"
               >
-                כל הפתוחות
+                <Tx text="כל הפתוחות" />
               </Link>
             }
           />
@@ -245,7 +250,7 @@ export default async function OpsDashboardPage() {
           ) : (
             <RowList>
               {attentionQueue.map((t) => {
-                const openFor = plainOpenForHe(t.created_at, t)
+                const openFor = plainOpenForHe(t.created_at, t, new Date(), locale)
                 const awaitingStore = t.status === 'resolved'
                 const num =
                   t.display_number ||
@@ -282,7 +287,7 @@ export default async function OpsDashboardPage() {
                         <StatusLabel status={t.status} />
                         <Dot />
                         <span className="t-meta text-ink-2">
-                          {awaitingStore ? 'אישור סניף' : 'לטפל ←'}
+                          <Tx text={awaitingStore ? 'אישור סניף' : 'לטפל ←'} />
                         </span>
                       </>
                     }
@@ -295,13 +300,15 @@ export default async function OpsDashboardPage() {
 
         <Button asChild variant="secondary" size="touch" className="w-full">
           <Link href="/ops/tickets" className="inline-flex items-center gap-2">
-            כל התקלות
+            <Tx text="כל התקלות" />
             <ArrowLeft className="h-4 w-4" aria-hidden />
           </Link>
         </Button>
 
         {isDemo ? (
-          <p className="t-caption text-center text-ink-3">מצב הדגמה</p>
+          <p className="t-caption text-center text-ink-3">
+            <Tx text="מצב הדגמה" />
+          </p>
         ) : null}
       </div>
     </OpsAppShell>
@@ -325,7 +332,9 @@ function DashShortcut({
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-[var(--tenant)]">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <span className="t-control text-ink">{label}</span>
+      <span className="t-control text-ink">
+        <Tx text={label} />
+      </span>
     </Link>
   )
 }
