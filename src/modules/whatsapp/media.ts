@@ -20,7 +20,7 @@ export type ResolveInboundMediaResult = {
 
 export type ResolveInboundMediaOpts = {
   mediaUrl: string | null | undefined
-  mediaKind?: 'image' | 'video' | 'document' | null
+  mediaKind?: 'image' | 'video' | 'document' | 'audio' | null
   /** Country / env WhatsApp Graph access token */
   accessToken?: string | null
   ticketId?: string | null
@@ -77,7 +77,7 @@ async function fetchGraphMediaBinary(
 
 function extensionForMime(
   mime: string,
-  kind: 'image' | 'video' | 'document' | null,
+  kind: 'image' | 'video' | 'document' | 'audio' | null,
 ): string {
   if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg'
   if (mime.includes('png')) return 'png'
@@ -86,6 +86,7 @@ function extensionForMime(
   if (mime.includes('pdf')) return 'pdf'
   if (mime.includes('webm')) return 'webm'
   if (mime.includes('mp4') || mime.includes('video')) return 'mp4'
+  if (mime.includes('ogg') || mime.includes('audio') || kind === 'audio') return 'ogg'
   return kind === 'document' ? 'bin' : 'jpg'
 }
 

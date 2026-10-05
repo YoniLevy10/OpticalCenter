@@ -5,6 +5,7 @@ import {
   memDedupe,
   memGetSession,
   memLinkStorePhone,
+  memListTickets,
   memUpsertSession,
   MEM_COUNTRY_ID,
   MEM_ORG_ID,
@@ -15,6 +16,7 @@ import {
   normalizeTicketCategory,
   parseStoreCodeFromText,
 } from '@/modules/tickets/constants'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { createTicket } from '@/modules/tickets/service'
 import {
   findPossibleDuplicateTicket,
@@ -28,7 +30,16 @@ import { inferSourceFromText } from './parse'
 import { sendWhatsAppText } from './send'
 import { resolveWhatsAppPhoneNumberId } from './phone-number-id'
 import type { InboundMessage, IntakeResult, IntakeState, TicketSource } from './types'
-import { isHumanPauseActive } from './human-pause'
+import { humanPauseUntilIso, isHumanPauseActive } from './human-pause'
+import { handoffReply, isStatusQuestion, statusReply, voiceNeedsReviewReply } from './intent'
+import { transcribeVoice } from './voice'
+import { spendForTicket } from '@/lib/data/ops-ledger'
+
+function ticketSpendApproved(ticketId: string): boolean | null {
+  const spend = spendForTicket(ticketId)
+  if (!spend) return null
+  return spend.status === 'approved' && !spend.needsReapproval
+}
 import { isNonIssueAck } from './non-issue'
 
 type CountryRow = {
@@ -129,9 +140,14 @@ void DEMO_COUNTRY
 function isIdentityOnly(text: string | null, storeCode: string): boolean {
   if (!text) return false
   const compact = text.toUpperCase().replace(/\s+/g, '')
+  const bare = text.replace(/\s+/g, '')
+  const hinted = parseStoreCodeFromText(text)
+  const hintedCanonical = hinted ? canonicalStoreCode(hinted) : null
   return (
     compact === `STORE_${storeCode}` ||
-    text.replace(/\s+/g, '') === storeCode ||
+    bare === storeCode ||
+    (hintedCanonical === storeCode &&
+      (bare === hinted || compact === `STORE_${hinted}`)) ||
     /^STORE[_\s-]?\d{1,6}$/i.test(text.trim())
   )
 }
@@ -201,7 +217,9 @@ function sessionFromMem(
 function normalizeSessionRow(row: Record<string, unknown>): SessionRow {
   const kind = row.pending_media_kind
   const pendingKind =
-    kind === 'image' || kind === 'video' || kind === 'document' ? kind : null
+    kind === 'image' || kind === 'video' || kind === 'document' || kind === 'audio'
+      ? kind
+      : null
   return {
     id: String(row.id),
     organization_id: String(row.organization_id),
@@ -325,12 +343,14 @@ export async function resolveStoreByCode(
     }
   }
 
+  const lookup = canonicalStoreCode(code)
   const { data } = await supabase
     .from('stores')
     .select('id, code, name, organization_id, country_id, region_id')
     .eq('country_id', countryId)
-    .eq('code', code)
+    .in('code', lookup === code ? [code] : [lookup, code])
     .eq('is_active', true)
+    .limit(1)
     .maybeSingle()
   return (data as StoreRow) ?? null
 }
@@ -947,7 +967,7 @@ export async function processInboundMessage(
     }
 
     let session = await getOrCreateSession(supabase, country, message.waId)
-    const text = message.text?.trim() || null
+    let text = message.text?.trim() || null
 
     await logWhatsAppMessage({
       supabase,
@@ -1004,8 +1024,80 @@ export async function processInboundMessage(
       })
     }
 
+    if (message.mediaKind === 'audio' && !text) {
+      const transcribed = await transcribeVoice(
+        message.mediaUrl,
+        country.whatsapp_access_token,
+      )
+      if (!transcribed.text) {
+        const reply = await craftIntakeReply(
+          voiceNeedsReviewReply(),
+          'intake_voice_review',
+        )
+        await sendReply(supabase, message, country, reply, null, options, session)
+        return { ok: true, reply, state: session.state }
+      }
+      message = { ...message, text: transcribed.text }
+      text = transcribed.text
+    }
+
+    const spoken = message.text?.trim() || text
+    if (spoken && isStatusQuestion(spoken)) {
+      const tail = message.waId.slice(-9)
+      const mine = memListTickets().filter(
+        (ticket) =>
+          ticket.reporter_phone?.includes(tail) &&
+          ticket.status !== 'closed' &&
+          ticket.status !== 'cancelled',
+      )
+      const reply = await craftIntakeReply(
+        statusReply(
+          mine.map((ticket) => ({
+            displayNumber: ticket.display_number || ticket.id.slice(0, 8),
+            status: ticket.status,
+            spendApproved: ticketSpendApproved(ticket.id),
+          })),
+        ),
+        'intake_status',
+      )
+      await sendReply(supabase, message, country, reply, mine[0]?.id ?? null, options, session)
+      return { ok: true, reply, state: session.state }
+    }
+
+    if (
+      session.state === 'done' &&
+      session.active_ticket_id &&
+      spoken &&
+      /^(עדכון|המשך|בנוסף)\b/.test(spoken)
+    ) {
+      try {
+        memAddMessage(session.active_ticket_id, {
+          channel: 'whatsapp',
+          direction: 'inbound',
+          body: spoken,
+          wa_message_id: message.messageId,
+        })
+      } catch {
+        // Ticket may live only in Supabase; the reply still confirms receipt.
+      }
+      const reply = await craftIntakeReply(
+        'ההודעה צורפה לפנייה הקיימת. היא נקלטת, ועדיין לא מהווה אישור של ארי.',
+        'intake_follow_up',
+      )
+      await sendReply(
+        supabase,
+        message,
+        country,
+        reply,
+        session.active_ticket_id,
+        options,
+        session,
+      )
+      return { ok: true, reply, ticketId: session.active_ticket_id, state: 'done' }
+    }
+
     const storeCodeFromText = storeCodeHint
-    let source = inferSourceFromText(text, message.sourceHint)
+    let source = inferSourceFromText(spoken, message.sourceHint)
 
     // Photo (or other media) right after a ticket was opened → attach to that ticket.
     if (
@@ -1388,6 +1480,20 @@ async function analyzeAndFinalize(params: {
     decision.needsClarification &&
     Boolean(decision.clarificationQuestion) &&
     session.clarification_count < 2
+
+  if (
+    decision.needsClarification &&
+    (forceCreate || session.clarification_count >= 2)
+  ) {
+    const until = humanPauseUntilIso()
+    await updateSession(supabase, session, {
+      human_takeover: true,
+      human_takeover_until: until,
+    })
+    const reply = await craftIntakeReply(handoffReply(), 'intake_human_handoff')
+    await sendReply(supabase, message, country, reply, null, options, session)
+    return { ok: true, reply, state: session.state }
+  }
 
   if (canClarify) {
     // Keep photo across clarification turns (Bamakor pending_whatsapp_media pattern).

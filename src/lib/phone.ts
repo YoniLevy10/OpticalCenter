@@ -15,6 +15,16 @@ export function normalizePhoneDigits(
   return digits
 }
 
+/** Israeli mobile for people to read: 9725… or 05… → 05X-XXXXXXX. */
+export function formatIsraeliPhoneDisplay(phone: string): string {
+  let digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('972')) digits = `0${digits.slice(3)}`
+  if (digits.length === 10 && digits.startsWith('0')) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  }
+  return phone.trim()
+}
+
 /** Display-friendly: keep user input trimmed, or null if blank. */
 export function sanitizePhoneInput(
   input: string | null | undefined,

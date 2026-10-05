@@ -24,6 +24,10 @@ function isProductionRuntime(): boolean {
 export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
   { id: 'tasks', href: '/ops/tasks', label: 'משימות' },
+  { id: 'approvals', href: '/ops/approvals', label: 'אישורים' },
+  { id: 'documents', href: '/ops/documents', label: 'מסמכים' },
+  { id: 'inventory', href: '/ops/inventory', label: 'מלאי' },
+  { id: 'pilot', href: '/ops/pilot', label: 'פיילוט' },
   { id: 'professionals', href: '/ops/professionals', label: 'אנשי מקצוע' },
   { id: 'assets', href: '/ops/assets', label: 'נכסים' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },

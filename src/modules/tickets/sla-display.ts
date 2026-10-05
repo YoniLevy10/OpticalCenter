@@ -1,5 +1,7 @@
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { SLA_WINDOWS, getSlaBreachKind } from '@/modules/tickets/sla'
+import type { Locale } from '@/lib/i18n/locale'
+import { phrase } from '@/lib/i18n/phrases'
 
 /**
  * Presentation layer for SLA. Pure derivation — the business rules in `sla.ts`
@@ -30,6 +32,7 @@ type SlaInput = {
   resolved_at?: string | null
   created_at?: string | null
   now?: Date
+  locale?: Locale
 }
 
 const MIN = 60_000
@@ -42,6 +45,7 @@ function hasResponded(status: string, firstResponseAt?: string | null): boolean 
   if (firstResponseAt) return true
   return (
     status === 'in_progress' ||
+    status === 'waiting_vendor' ||
     status === 'waiting_parts' ||
     status === 'resolved' ||
     status === 'closed'
@@ -123,12 +127,13 @@ function clockHe(iso: string): string {
 export function getSlaView(input: SlaInput): SlaView {
   const now = input.now ?? new Date()
   const status = input.status ?? ''
+  const locale = input.locale ?? 'he'
 
   if (status === 'resolved' || status === 'closed' || status === 'cancelled') {
     return {
       tone: 'done',
       short: '—',
-      long: status === 'cancelled' ? 'בוטל' : 'הושלם בזמן היעד',
+      long: phrase(locale, status === 'cancelled' ? 'בוטל' : 'הושלם בזמן היעד'),
       phase: 'none',
       dueAt: null,
       remainingMs: null,
@@ -150,7 +155,7 @@ export function getSlaView(input: SlaInput): SlaView {
     return {
       tone: 'idle',
       short: '—',
-      long: 'אין יעד SLA',
+      long: phrase(locale, 'אין יעד SLA'),
       phase: 'none',
       dueAt: null,
       remainingMs: null,
@@ -158,14 +163,21 @@ export function getSlaView(input: SlaInput): SlaView {
   }
 
   const remainingMs = new Date(dueAt).getTime() - now.getTime()
-  const phaseLabel = phase === 'respond' ? 'תגובה' : 'סיום'
+  const phaseLabel = phrase(locale, phase === 'respond' ? 'תגובה' : 'סיום')
 
   if (breach !== 'none' || remainingMs <= 0) {
-    const overdue = formatDurationHe(Math.abs(remainingMs))
+    const overdue =
+      locale === 'he'
+        ? formatDurationHe(Math.abs(remainingMs))
+        : formatDuration(Math.abs(remainingMs), locale)
     return {
       tone: 'critical',
-      short: `באיחור ${overdue}`,
-      long: `חריגת SLA ${phaseLabel} · ${overdue}`,
+      short:
+        locale === 'he' ? `באיחור ${overdue}` : `${phrase(locale, 'באיחור')} ${overdue}`,
+      long:
+        locale === 'he'
+          ? `חריגת SLA ${phase === 'respond' ? 'תגובה' : 'סיום'} · ${overdue}`
+          : `${phrase(locale, 'חריגת SLA')} ${phaseLabel} · ${overdue}`,
       phase,
       dueAt,
       remainingMs,
@@ -181,8 +193,11 @@ export function getSlaView(input: SlaInput): SlaView {
 
   return {
     tone: approaching ? 'warning' : 'neutral',
-    short: formatDurationHe(remainingMs),
-    long: `${phaseLabel} עד ${clockHe(dueAt)}`,
+    short: locale === 'he' ? formatDurationHe(remainingMs) : formatDuration(remainingMs, locale),
+    long:
+      locale === 'he'
+        ? `${phase === 'respond' ? 'תגובה' : 'סיום'} עד ${clockHe(dueAt)}`
+        : `${phaseLabel} ${phrase(locale, 'עד')} ${clock(dueAt, locale)}`,
     phase,
     dueAt,
     remainingMs,
@@ -190,18 +205,56 @@ export function getSlaView(input: SlaInput): SlaView {
 }
 
 /** Relative age of a ticket, e.g. "לפני 3ש׳". */
-export function formatAgeHe(createdAt: string, now = new Date()): string {
+export function formatAgeHe(
+  createdAt: string,
+  now = new Date(),
+  locale: Locale = 'he',
+): string {
   const started = new Date(createdAt).getTime()
   if (Number.isNaN(started)) return '—'
   const diff = now.getTime() - started
   if (!Number.isFinite(diff)) return '—'
   // Small clock skew (future) → treat as now; larger skew → absolute-ish dash
   if (diff < 0) {
-    if (diff > -2 * MIN) return 'עכשיו'
+    if (diff > -2 * MIN) return phrase(locale, 'עכשיו')
     return '—'
   }
-  if (diff < MIN) return 'עכשיו'
-  return `לפני ${formatDurationHe(diff)}`
+  if (diff < MIN) return phrase(locale, 'עכשיו')
+  if (locale === 'he') return `לפני ${formatDurationHe(diff)}`
+  const compact = formatDuration(diff, locale)
+  return locale === 'fr' ? `il y a ${compact}` : `${compact} ago`
+}
+
+function formatDuration(ms: number, locale: Locale): string {
+  const total = Math.max(0, Math.round(ms / MIN))
+  const min = locale === 'fr' ? 'min' : 'm'
+  const hour = locale === 'fr' ? 'h' : 'h'
+  const day = locale === 'fr' ? 'j' : 'd'
+  if (total < 60) return `${total}${min}`
+  const hours = Math.floor(total / 60)
+  const minutes = total % 60
+  if (hours < 24) {
+    return minutes === 0 ? `${hours}${hour}` : `${hours}${hour} ${minutes}${min}`
+  }
+  const days = Math.floor(hours / 24)
+  const restHours = hours % 24
+  return restHours === 0 ? `${days}${day}` : `${days}${day} ${restHours}${hour}`
+}
+
+function clock(iso: string, locale: Locale): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const loc = locale === 'fr' ? 'fr-FR' : 'en-GB'
+  try {
+    return new Intl.DateTimeFormat(loc, {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(d)
+  } catch {
+    return clockHe(iso)
+  }
 }
 
 /** Absolute datetime in Israel for ops surfaces. */

@@ -46,7 +46,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     expect(r.ticketId).toBeTruthy()
     expect(memListTickets().length).toBe(before + 1)
     const ticket = memListTickets().find((t) => t.id === r.ticketId)
-    expect(ticket?.stores?.code).toBe('172')
+    expect(ticket?.stores?.code).toBe('6006')
   })
 
   it('WA-02 unknown phone asks for store; no ticket', async () => {

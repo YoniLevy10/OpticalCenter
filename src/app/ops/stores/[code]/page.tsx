@@ -16,6 +16,8 @@ import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { listTickets } from '@/modules/tickets/service'
 import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
+import { StoreDirectoryPanel } from '../store-directory-panel'
+import { areaManagerForStore, listAudits, listContactsForStore } from '@/lib/data/ops-ledger'
 import { regionLabelHe } from '@/modules/stores/regions'
 
 export const dynamic = 'force-dynamic'
@@ -85,6 +87,13 @@ export default async function StoreDetailPage({
           <dl className="divide-y divide-border">
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
             <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
+            <KeyValue label="מנהל/ת">
+              {store.manager_name
+                ? `${store.manager_name}${store.manager_name_en ? ` · ${store.manager_name_en}` : ''}`
+                : '—'}
+            </KeyValue>
+            <KeyValue label="טלפון">{store.manager_phone ?? '—'}</KeyValue>
+            <KeyValue label="מנהל אזור">{store.area_manager ?? '—'}</KeyValue>
             <KeyValue label="סטטוס">
               {store.is_active === false ? 'מושבת' : 'פעיל'}
             </KeyValue>
@@ -102,6 +111,28 @@ export default async function StoreDetailPage({
         <Panel elevated className="overflow-hidden" id="store-qr">
           <p className="t-section mb-3 text-ink">הורדת QR</p>
           <StoreQrPanel code={store.code} deepLink={deepLink} />
+        </Panel>
+
+        <Panel elevated>
+          <p className="t-section mb-3 text-ink">סניף ואנשי קשר</p>
+          <StoreDirectoryPanel
+            storeId={store.id}
+            code={store.code}
+            canEdit={
+              Boolean(actor?.memberships.some((m) => m.role === 'global_admin')) ||
+              shouldAllowDemoEntry()
+            }
+            contacts={listContactsForStore(store.id, store.code)}
+            areaManager={store.area_manager ?? areaManagerForStore(store.id, store.code)}
+          />
+          {listAudits()
+            .filter((row) => row.entityId === store.id)
+            .slice(0, 6)
+            .map((row) => (
+              <p key={row.id} className="t-meta mt-2 text-ink-3">
+                {row.actor} · {row.field}: {row.previous || '—'} → {row.next}
+              </p>
+            ))}
         </Panel>
 
         {canEdit ? (

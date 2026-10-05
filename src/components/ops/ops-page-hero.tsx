@@ -1,4 +1,7 @@
+'use client'
+
 import { BrandMark } from '@/components/brand/brand-mark'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -31,28 +34,18 @@ export function OpsPageHero({
   className?: string
   largeTitle?: boolean
 }) {
+  const p = usePhrase()
+  const statusText = typeof status === 'string' ? p(status) : (status ?? '\u00a0')
   return (
     <header
       className={cn(
         'ops-page-hero relative overflow-hidden',
         // Mobile: edge-to-edge large title. Desktop: soft elevated band.
         'rounded-none border-0 bg-transparent px-0 py-1 shadow-none',
-        'md:rounded-[var(--radius-xl)] md:border md:border-[color-mix(in_srgb,var(--tenant)_18%,var(--border))] md:bg-[color-mix(in_srgb,var(--surface)_92%,var(--tenant-soft))] md:px-7 md:py-5 md:shadow-[var(--shadow-2)]',
+        'md:rounded-[var(--radius-xl)] md:border md:border-border md:bg-[color-mix(in_srgb,var(--tenant)_6%,white)] md:px-7 md:py-5 md:shadow-[var(--shadow-1)]',
         className,
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden opacity-90 md:block"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 90% at 100% 0%, color-mix(in srgb, var(--tenant) 10%, transparent), transparent 55%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="ops-page-hero-accent pointer-events-none absolute inset-y-3 end-0 hidden w-1.5 rounded-full md:block"
-      />
       <div className="ops-page-hero-row relative flex items-center gap-3.5">
         {showBrand ? (
           <BrandMark
@@ -69,17 +62,19 @@ export function OpsPageHero({
               !eyebrow && 'invisible',
             )}
           >
-            {eyebrow || '\u00a0'}
+            {eyebrow ? p(eyebrow) : '\u00a0'}
           </p>
           <h1 className="ops-page-hero-title large-title-hero-title text-ink">
-            {title}
+            {p(title)}
           </h1>
           <span
             aria-hidden
-            className="ops-page-hero-rule mt-2 block h-1 w-10 rounded-full md:mt-2.5"
+            className={cn(
+              'ops-page-hero-rule mt-2 block h-1 w-10 rounded-full bg-[var(--tenant)] md:mt-2.5',
+            )}
           />
           <div className="ops-page-hero-status t-body mt-1.5 truncate text-ink-2 md:mt-2">
-            {status ?? '\u00a0'}
+            {statusText}
           </div>
           {footer ? (
             <div className="mt-2.5 flex flex-wrap items-center gap-3">{footer}</div>

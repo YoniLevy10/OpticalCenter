@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { primaryStoreId, shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { fetchStores } from '@/modules/stores/data'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Panel } from '@/components/ui/primitives'
 import { StoreReportForm } from './store-report-form'
@@ -16,7 +17,7 @@ export default async function StoreReportPage() {
   const storeId = actor ? primaryStoreId(actor) : null
   const locked = storeId
     ? stores.find((s) => s.id === storeId)
-    : stores.find((s) => s.code === '172') ?? stores[0]
+    : stores.find((s) => s.code === canonicalStoreCode('172')) ?? stores[0]
 
   if (!locked) {
     return (

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowDown, ArrowUp } from 'lucide-react'
+import { LocalText } from '@/components/i18n/tx'
 import { cn } from '@/lib/utils'
 
 /**
@@ -64,11 +65,11 @@ export function TH({
             sort.active && 'text-ink',
           )}
         >
-          {children}
+          <LocalText>{children}</LocalText>
           {sort.active ? <Icon className="h-3 w-3" aria-hidden /> : null}
         </Link>
       ) : (
-        children
+        <LocalText>{children}</LocalText>
       )}
     </th>
   )
@@ -123,7 +124,7 @@ export function TD({
       )}
       {...rest}
     >
-      {children}
+      <LocalText>{children}</LocalText>
     </td>
   )
 }

@@ -31,10 +31,19 @@ import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 import {
   plainAgoHe,
   plainOpenForHe,
-  plainUrgency,
   storeLabel,
 } from '@/components/ops/plain-labels'
 import { cn } from '@/lib/utils'
+import { listTickets } from '@/modules/tickets/service'
+import { findRecurrences, recurrenceBasis, suggestPrevention } from '@/modules/tickets/recurrence'
+import { getLocale } from '@/lib/i18n/server'
+import { translate, type MessageKey } from '@/lib/i18n/messages'
+import { TicketTrialPanel } from './ticket-trial-panel'
+import { matchProfessionalsForFault } from '@/modules/professionals/match-fault'
+import { listProfessionals } from '@/modules/professionals/service'
+import { suggestVendorsForTicket } from '@/modules/vendors/service'
+import { windowsFromSettings } from '@/modules/tickets/sla'
+import { getSettings } from '@/modules/settings/service'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,6 +94,83 @@ export default async function TicketDetailPage({
     ticket.reporter_phone?.trim() ||
     'דיווח מהחנות'
 
+  const history = await listTickets({ limit: 200 }).catch(() => ({ tickets: [] }))
+  const hits = findRecurrences(
+    {
+      id: ticket.id,
+      storeId: ticket.store_id,
+      category: ticket.category,
+      description: ticket.description,
+      status: ticket.status,
+      createdAt: ticket.created_at,
+    },
+    (history.tickets ?? []).map((row) => ({
+      id: row.id,
+      storeId: row.store_id,
+      category: row.category,
+      description: row.description,
+      status: row.status,
+      createdAt: row.created_at,
+      resolutionNote: null,
+    })),
+  )
+  const prevention = suggestPrevention(hits)
+  const locale = await getLocale()
+  const tx = (key: MessageKey, vars?: Record<string, string | number>) =>
+    translate(locale, key, vars)
+  const categoryKey = `category.${ticket.category}` as MessageKey
+  const knownCategory = [
+    'hvac',
+    'electrical',
+    'electrical_hazard',
+    'plumbing',
+    'security',
+    'it',
+    'cleaning',
+    'other',
+  ].includes(ticket.category)
+  const categoryLabel = knownCategory
+    ? tx(categoryKey)
+    : (TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category)
+  const priority = ticket.priority as TicketPriority
+  const [{ settings }, pros, vendors] = await Promise.all([
+    getSettings().catch(() => ({
+      settings: {
+        sla_respond_hours_critical: 1,
+        sla_respond_hours_high: 2,
+        sla_respond_hours_medium: 4,
+        sla_respond_hours_low: 8,
+      },
+    })),
+    listProfessionals({ limit: 40 }).catch(() => ({ professionals: [] })),
+    suggestVendorsForTicket({
+      category: ticket.category,
+      regionId: ticket.region_id,
+    }).catch(() => ({ matches: [] })),
+  ])
+  const slaWindow = windowsFromSettings(settings)[priority]
+  const proMatches = matchProfessionalsForFault(
+    pros.professionals,
+    ticket.category,
+  ).slice(0, 3)
+  const vendorMatches = vendors.matches.slice(0, 2).map((row) => ({
+    id: row.id,
+    name: row.name,
+    detail: row.specialties,
+    phone: row.contact_phone ?? null,
+    reason: row.reason,
+  }))
+  const people = [
+    ...proMatches.map((row) => ({
+      id: row.id,
+      name: row.full_name,
+      detail: row.trade ?? '',
+      phone: row.phone,
+      reason: row.reason,
+    })),
+    ...vendorMatches,
+  ]
+
   const storyLines: string[] = [`נפתחה על ידי ${reporter}`]
   if (assignee) {
     storyLines.push(
@@ -126,24 +212,39 @@ export default async function TicketDetailPage({
 
         <Panel elevated>
           <dl className="divide-y divide-border">
-            <KeyValue label="נפתחה">
+            <KeyValue label={tx('ticket.opened')}>
               {plainAgoHe(ticket.created_at)}
             </KeyValue>
-            <KeyValue label="דחיפות">
-              {plainUrgency(ticket.priority as TicketPriority)}
+            <KeyValue label={tx('ticket.urgency')}>
+              {tx(`priority.${priority}`)}
             </KeyValue>
-            <KeyValue label="טכנאי">
+            <KeyValue label={tx('ticket.tech')}>
               {assignee ? (
                 assignee.full_name || assignee.email || 'טכנאי'
               ) : (
-                <span className="text-[var(--signal-critical)]">לא משויך</span>
+                <span className="text-[var(--signal-critical)]">{tx('ticket.unassigned')}</span>
               )}
             </KeyValue>
-            <KeyValue label="סוג תקלה">
-              {TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}
+            <KeyValue label={tx('ticket.category')}>
+              {categoryLabel}
             </KeyValue>
           </dl>
         </Panel>
+
+        {hits.length > 0 ? (
+          <Panel elevated>
+            <p className="t-section mb-3 text-ink">אירועים דומים</p>
+            <p className="t-meta mb-2 text-ink-2">{recurrenceBasis(hits)}</p>
+            <ul className="space-y-1">
+              {hits.slice(0, 5).map((hit) => (
+                <li key={hit.ticket.id} className="t-body text-ink-2">
+                  {hit.ticket.description} · {hit.reason}
+                </li>
+              ))}
+            </ul>
+            {prevention ? <p className="t-body mt-2">{prevention}</p> : null}
+          </Panel>
+        ) : null}
 
         {attachments.length > 0 ? (
           <Panel elevated>
@@ -162,6 +263,24 @@ export default async function TicketDetailPage({
             ))}
           </ul>
         </Panel>
+
+        <TicketTrialPanel
+          ticketId={ticket.id}
+          description={whatsBroken}
+          priority={priority}
+          category={ticket.category}
+          status={ticket.status}
+          slaRespondBy={ticket.sla_respond_by}
+          slaResolveBy={ticket.sla_resolve_by}
+          firstResponseAt={ticket.first_response_at}
+          resolvedAt={ticket.resolved_at}
+          respondHours={slaWindow.respondHours}
+          resolveHours={slaWindow.resolveHours}
+          storeId={ticket.store_id}
+          storeCode={ticket.stores?.code ?? ''}
+          storeName={ticket.stores?.name ?? storeHeading}
+          matches={people}
+        />
 
         {/* Midrag is body content — not next to assign/close */}
         <TicketMidragPanel

@@ -20,6 +20,10 @@ export type WhatsAppAiSituation =
   | 'intake_non_issue_ack'
   | 'intake_country_missing'
   | 'intake_generic_error'
+  | 'intake_voice_review'
+  | 'intake_status'
+  | 'intake_follow_up'
+  | 'intake_human_handoff'
   | 'lifecycle_assigned'
   | 'lifecycle_in_progress'
   | 'lifecycle_waiting_parts'
@@ -49,6 +53,10 @@ const SITUATION_HINT: Partial<Record<WhatsAppAiSituation, string>> = {
     'הלקוח שלח תודה/אישור אחרי דיווח — אל תפתח תקלה; אשר בקצרה שאפשר לדווח תקלה נוספת אם צריך',
   intake_country_missing: 'שגיאת הגדרות — לא זוהתה מדינה למספר WhatsApp',
   intake_generic_error: 'שגיאה זמנית בקליטת דיווח',
+  intake_voice_review: 'התקבלה הקלטה שעדיין לא תומללה — לבקש טקסט קצר',
+  intake_status: 'המדווח שואל מה מצב הפנייה — לענות עם המספר והסטטוס, ולהבחין בין נקלט לאושר',
+  intake_follow_up: 'הודעת המשך צורפה לפנייה קיימת — לא נפתחה פנייה חדשה',
+  intake_human_handoff: 'הסוכן לא הבין — הפנייה עברה לאדם',
   lifecycle_assigned: 'עדכון לעובד החנות — טכנאי שויך לתקלה',
   lifecycle_in_progress: 'עדכון — הטכנאי התחיל טיפול',
   lifecycle_waiting_parts: 'עדכון — ממתינים לחלקים',

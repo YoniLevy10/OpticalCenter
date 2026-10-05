@@ -1,6 +1,7 @@
 'use client'
 
 import { Moon, Sun, Sunset } from 'lucide-react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { useTheme } from '@/components/theme/theme-provider'
 import { cn } from '@/lib/utils'
 import type { ThemePreference } from '@/lib/theme'
@@ -30,6 +31,7 @@ export function ThemeToggle({
   compact?: boolean
 }) {
   const { preference, setPreference, resolvedDark } = useTheme()
+  const p = usePhrase()
 
   if (compact) {
     const cycle: ThemePreference[] = ['auto', 'light', 'dark']
@@ -38,16 +40,16 @@ export function ThemeToggle({
       preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
     const label =
       preference === 'auto'
-        ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה עכשיו' : 'בהיר עכשיו'})`
+        ? `${p('ערכת נושא אוטומטית')} (${resolvedDark ? p('כהה עכשיו') : p('בהיר עכשיו')})`
         : preference === 'dark'
-          ? 'ערכת נושא כהה'
-          : 'ערכת נושא בהירה'
+          ? p('ערכת נושא כהה')
+          : p('ערכת נושא בהירה')
 
     return (
       <button
         type="button"
         onClick={() => setPreference(next)}
-        aria-label={`${label}. לחצו להחלפה`}
+        aria-label={`${label}. ${p('לחצו להחלפה')}`}
         title={label}
         className={cn(
           'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors hover:bg-surface-sunken hover:text-ink',
@@ -61,14 +63,15 @@ export function ThemeToggle({
 
   return (
     <fieldset className={cn('space-y-2', className)}>
-      <legend className="t-section text-ink">ערכת נושא</legend>
+      <legend className="t-section text-ink">{p('ערכת נושא')}</legend>
       <p className="t-caption text-ink-3">
-        מצב אוטומטי עובר לכהה לפי שעון ישראל (Asia/Jerusalem), 19:00–07:00 —
-        ביום נשאר בהיר.
+        {p(
+          'מצב אוטומטי עובר לכהה לפי שעון ישראל (Asia/Jerusalem), 19:00–07:00 — ביום נשאר בהיר.',
+        )}
       </p>
       <div
         role="radiogroup"
-        aria-label="ערכת נושא"
+        aria-label={p('ערכת נושא')}
         className="grid grid-cols-3 gap-2"
       >
         {OPTIONS.map((opt) => {
@@ -89,8 +92,8 @@ export function ThemeToggle({
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
-              <span className="t-body-strong">{opt.label}</span>
-              <span className="t-caption opacity-80">{opt.hint}</span>
+              <span className="t-body-strong">{p(opt.label)}</span>
+              <span className="t-caption opacity-80">{p(opt.hint)}</span>
             </button>
           )
         })}
@@ -102,23 +105,24 @@ export function ThemeToggle({
 /** Compact control styled for the dark desktop sidebar. */
 export function ThemeToggleOnDark({ className }: { className?: string }) {
   const { preference, setPreference, resolvedDark } = useTheme()
+  const p = usePhrase()
   const cycle: ThemePreference[] = ['auto', 'light', 'dark']
   const next = cycle[(cycle.indexOf(preference) + 1) % cycle.length]!
   const Icon =
     preference === 'dark' ? Moon : preference === 'light' ? Sun : Sunset
   const label =
     preference === 'auto'
-      ? `ערכת נושא אוטומטית (${resolvedDark ? 'כהה' : 'בהיר'})`
+      ? `${p('ערכת נושא אוטומטית')} (${resolvedDark ? p('כהה') : p('בהיר')})`
       : preference === 'dark'
-        ? 'כהה'
-        : 'בהיר'
+        ? p('כהה')
+        : p('בהיר')
 
   return (
     <button
       type="button"
       onClick={() => setPreference(next)}
-      aria-label={`ערכת נושא: ${label}. לחצו להחלפה`}
-      title={`ערכת נושא: ${label}`}
+      aria-label={`${p('ערכת נושא')}: ${label}. ${p('לחצו להחלפה')}`}
+      title={`${p('ערכת נושא')}: ${label}`}
       className={cn(
         'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white/70 transition-colors hover:bg-white/10 hover:text-white',
         className,

@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageCircle, ShieldCheck, Wrench } from 'lucide-react'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { SkipLink } from '@/components/layout/skip-link'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { BrandMark, BrandLogoFull } from '@/components/brand/brand-mark'
@@ -49,6 +51,7 @@ const VALUE_PROPS = [
 
 export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   const router = useRouter()
+  const p = usePhrase()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error') === 'auth'
   const unauthorized = searchParams.get('error') === 'unauthorized'
@@ -140,7 +143,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   return (
     <div className="login-shell dvh-screen safe-pt safe-pb relative grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       <SkipLink />
-      <div className="absolute end-3 top-3 z-20 md:end-5 md:top-5">
+      <div className="absolute end-3 top-3 z-20 flex items-center gap-2 md:end-5 md:top-5">
+        <LocaleSwitcher />
         <ThemeToggle compact />
       </div>
       {/* Brand story — desktop hero */}
@@ -154,12 +158,12 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <p className="t-caption text-ink-2">
             Maintenance Intelligence &amp; Logistics Operations
           </p>
-          <p className="t-caption mt-1 text-ink-2">תפעול ותחזוקה · פיילוט ישראל</p>
+          <p className="t-caption mt-1 text-ink-2">{p('תפעול ותחזוקה · פיילוט ישראל')}</p>
           <h1 className="t-display mt-10 max-w-md text-ink">
-            תחזוקה חכמה לרשתות קמעונאיות
+            {p('תחזוקה חכמה לרשתות קמעונאיות')}
           </h1>
           <p className="t-lead mt-3 max-w-md text-ink-2">
-            מרכז פיקוד שקט — דיווחים מהשטח, מעקב חי, וטכנאים שמסיימים עבודה מהנייד.
+            {p('מרכז פיקוד שקט — דיווחים מהשטח, מעקב חי, וטכנאים שמסיימים עבודה מהנייד.')}
           </p>
         </div>
 
@@ -175,8 +179,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   <Icon className="h-5 w-5" strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="t-body-strong text-ink">{item.title}</p>
-                  <p className="t-meta mt-0.5 text-ink-2">{item.desc}</p>
+                  <p className="t-body-strong text-ink">{p(item.title)}</p>
+                  <p className="t-meta mt-0.5 text-ink-2">{p(item.desc)}</p>
                 </div>
               </li>
             )
@@ -184,7 +188,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
         </ul>
 
         <p className="relative t-caption text-ink-3">
-          Optical Center · פיילוט ישראל
+          Optical Center · {p('פיילוט ישראל')}
         </p>
       </aside>
 
@@ -197,17 +201,17 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           <h1 className="t-title text-ink">MILO</h1>
           <p className="t-body mt-1 text-ink-2">Optical Center</p>
           {!googleOAuthReady ? (
-            <p className="t-caption mt-2 text-ink-3">מייל + סיסמה · {PILOT_DEMO_EMAIL}</p>
+            <p className="t-caption mt-2 text-ink-3">{p('מייל + סיסמה')} · {PILOT_DEMO_EMAIL}</p>
           ) : null}
         </div>
 
         <div className="w-full max-w-[400px] animate-scale-in">
           <div className="mb-6 hidden md:block">
-            <h2 className="t-title text-ink">כניסה למערכת</h2>
+            <h2 className="t-title text-ink">{p('כניסה למערכת')}</h2>
             <p className="t-body mt-1 text-ink-2">
               {googleOAuthReady
-                ? 'Gmail מאושר, או מייל וסיסמה שסופקו על ידי מנהל המערכת.'
-                : 'מייל וסיסמה שסופקו על ידי מנהל המערכת.'}
+                ? p('Gmail מאושר, או מייל וסיסמה שסופקו על ידי מנהל המערכת.')
+                : p('מייל וסיסמה שסופקו על ידי מנהל המערכת.')}
             </p>
           </div>
 
@@ -224,7 +228,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   onClick={() => void signInGoogle()}
                   className="mb-4"
                 >
-                  {googleBusy ? 'מעביר…' : 'המשך עם Google'}
+                  {googleBusy ? p('מעביר…') : p('המשך עם Google')}
                 </Button>
 
                 <button
@@ -233,8 +237,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   onClick={() => setShowEmailBackup((v) => !v)}
                 >
                   {showEmailBackup
-                    ? 'הסתר התחברות בסיסמה'
-                    : 'התחברות עם מייל וסיסמה'}
+                    ? p('הסתר התחברות בסיסמה')
+                    : p('התחברות עם מייל וסיסמה')}
                 </button>
               </>
             ) : null}
@@ -246,7 +250,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                 className="space-y-4"
                 aria-busy={busy}
               >
-                <Field label="מייל" htmlFor="login-email-pw">
+                <Field label={p('מייל')} htmlFor="login-email-pw">
                   <Input
                     id="login-email-pw"
                     type="email"
@@ -259,7 +263,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                     placeholder="you@gmail.com"
                   />
                 </Field>
-                <Field label="סיסמה" htmlFor="login-password">
+                <Field label={p('סיסמה')} htmlFor="login-password">
                   <Input
                     id="login-password"
                     type="password"
@@ -273,20 +277,20 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   />
                 </Field>
                 <Button type="submit" variant="primary" size="block" disabled={busy}>
-                  {busy ? 'מתחבר…' : 'כניסה'}
+                  {busy ? p('מתחבר…') : p('כניסה')}
                 </Button>
               </form>
             ) : null}
 
             {!googleOAuthReady && process.env.NODE_ENV === 'development' ? (
               <p className="t-caption mt-3 text-center text-ink-3">
-                חשבון פיילוט: {PILOT_DEMO_EMAIL} · הסיסמה מוגדרת ב־PILOT_LOGIN_PASSWORD
+                {p('חשבון פיילוט')}: {PILOT_DEMO_EMAIL} · {p('הסיסמה מוגדרת ב־PILOT_LOGIN_PASSWORD')}
               </p>
             ) : null}
 
             {error ? (
               <LiveRegion politeness="assertive" className="mt-4">
-                <ErrorState title="ההתחברות נכשלה" description={error} />
+                <ErrorState title={p('ההתחברות נכשלה')} description={p(error)} />
               </LiveRegion>
             ) : null}
 
@@ -300,16 +304,16 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                   onClick={() => void enterAsDemo()}
                 >
                   {demoBusy
-                    ? 'נכנסים…'
-                    : `כניסה כדמו · ${PILOT_DEMO_EMAIL}`}
+                    ? p('נכנסים…')
+                    : `${p('כניסה כדמו')} · ${PILOT_DEMO_EMAIL}`}
                 </Button>
                 <p className="t-caption text-center text-ink-3">
-                  או ישירות אל{' '}
+                  {p('או ישירות אל')}{' '}
                   <Link
                     href="/ops/dashboard"
                     className="text-ink-2 underline underline-offset-2"
                   >
-                    לוח הבקרה
+                    {p('לוח הבקרה')}
                   </Link>
                   .
                 </p>
@@ -320,12 +324,12 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           {process.env.NODE_ENV === 'development' ? (
             <details className="mt-6 group">
               <summary className="t-caption flex min-h-[var(--tap)] cursor-pointer list-none items-center text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline [&::-webkit-details-marker]:hidden">
-                עזרה בהתחברות
+                {p('עזרה בהתחברות')}
               </summary>
               <p className="t-caption mt-2 text-ink-3">
-                אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית
-                «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור
-                יעבוד.
+                {p(
+                  'אם קישור המייל נפתח ב־localhost במקום בפרודקשן — השתמשו בלשונית «קוד» או «סיסמה». אחרי תיקון ה־Site URL לכתובת הפרודקשן, הקישור יעבוד.',
+                )}
               </p>
             </details>
           ) : null}

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -142,6 +143,7 @@ export function SegmentedLinks({
 }) {
   const keys = segments.map((s) => s.key)
   const { trackRef, setItemRef, pill } = useSlidingPill(activeKey, keys)
+  const p = usePhrase()
   const isTabs = mode === 'tabs'
 
   return (
@@ -167,7 +169,7 @@ export function SegmentedLinks({
             aria-current={!isTabs && active ? 'page' : undefined}
             className={cn(segmentClass(active), 'shrink-0', fill && 'flex-1')}
           >
-            {s.label}
+            {p(s.label)}
             {typeof s.count === 'number' ? <Count value={s.count} /> : null}
           </Link>
         )
@@ -198,6 +200,7 @@ export function SegmentedButtons({
   const isTabs = mode === 'tabs' && panelIdPrefix
   const keys = segments.map((s) => s.key)
   const { trackRef, setItemRef, pill } = useSlidingPill(activeKey, keys)
+  const p = usePhrase()
 
   return (
     <Track
@@ -225,7 +228,7 @@ export function SegmentedButtons({
             onClick={() => onChange(s.key)}
             className={cn(segmentClass(active), fill && 'flex-1')}
           >
-            {s.label}
+            {p(s.label)}
             {typeof s.count === 'number' ? <Count value={s.count} /> : null}
           </button>
         )

@@ -79,7 +79,7 @@ export default async function StoresPage({
     }
     if (!q) return true
     const hay =
-      `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''}`.toLowerCase()
+      `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''} ${s.manager_name ?? ''} ${s.manager_phone ?? ''} ${s.area_manager ?? ''}`.toLowerCase()
     return hay.includes(q)
   })
 
@@ -176,7 +176,12 @@ export default async function StoresPage({
                     }
                     title={s.name}
                     subtitle={
-                      [regionLabelHe(s.region_id), s.city, s.address]
+                      [
+                        regionLabelHe(s.region_id),
+                        s.city,
+                        s.manager_name,
+                        s.manager_phone,
+                      ]
                         .filter(Boolean)
                         .join(' · ') || undefined
                     }

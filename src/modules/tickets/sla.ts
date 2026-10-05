@@ -16,8 +16,39 @@ function addHours(from: Date, hours: number) {
   return new Date(from.getTime() + hours * 3600_000).toISOString()
 }
 
-export function computeSlaTimestamps(priority: TicketPriority, now = new Date()) {
-  const w = SLA_WINDOWS[priority]
+export type SlaWindows = Record<
+  TicketPriority,
+  { respondHours: number; resolveHours: number }
+>
+
+export type SlaHourSettings = {
+  sla_respond_hours_critical: number
+  sla_respond_hours_high: number
+  sla_respond_hours_medium: number
+  sla_respond_hours_low: number
+}
+
+/** Respond hours from settings; resolve stays on the product window, and never lands before respond. */
+export function windowsFromSettings(settings: SlaHourSettings): SlaWindows {
+  const priorities = ['critical', 'high', 'medium', 'low'] as const
+  const next = { ...SLA_WINDOWS }
+  for (const priority of priorities) {
+    const respondHours = settings[`sla_respond_hours_${priority}`]
+    const resolveHours = Math.max(
+      SLA_WINDOWS[priority].resolveHours,
+      respondHours + 1,
+    )
+    next[priority] = { respondHours, resolveHours }
+  }
+  return next
+}
+
+export function computeSlaTimestamps(
+  priority: TicketPriority,
+  now = new Date(),
+  windows: SlaWindows = SLA_WINDOWS,
+) {
+  const w = windows[priority]
   return {
     sla_respond_by: addHours(now, w.respondHours),
     sla_resolve_by: addHours(now, w.resolveHours),
@@ -62,6 +93,7 @@ export function getSlaBreachKind(opts: {
   const responded =
     Boolean(opts.first_response_at) ||
     status === 'in_progress' ||
+    status === 'waiting_vendor' ||
     status === 'waiting_parts' ||
     status === 'resolved' ||
     status === 'closed'

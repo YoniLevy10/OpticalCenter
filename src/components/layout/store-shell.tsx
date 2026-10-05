@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { BrandMark } from '@/components/brand/brand-mark'
@@ -17,10 +19,11 @@ export function StoreShell({
   storeCode?: string
 }) {
   const pathname = usePathname() ?? ''
+  const p = usePhrase()
 
   const links = [
-    { href: '/store', label: 'התקלות שלי', match: '/store' },
-    { href: '/store/report', label: 'דיווח חדש', match: '/store/report' },
+    { href: '/store', label: p('התקלות שלי'), match: '/store' },
+    { href: '/store/report', label: p('דיווח חדש'), match: '/store/report' },
   ]
 
   return (
@@ -30,7 +33,7 @@ export function StoreShell({
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark size={32} className="rounded-[var(--radius-md)]" alt="" />
             <div className="min-w-0">
-              <p className="t-body-strong truncate text-ink">Optical Center · חנות</p>
+              <p className="t-body-strong truncate text-ink">{p('Optical Center · חנות')}</p>
               {storeName ? (
                 <p className="t-caption truncate text-ink-3">
                   {storeName}
@@ -40,6 +43,7 @@ export function StoreShell({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <LocaleSwitcher />
             <ThemeToggle compact />
             <LogoutButton size="sm" variant="secondary" />
           </div>
@@ -55,7 +59,7 @@ export function StoreShell({
                 className={cn(
                   'press-scale t-control mx-1 mb-2 flex-1 rounded-md py-2.5 text-center transition-colors',
                   active
-                    ? 'bg-tenant-soft text-tenant'
+                    ? 'bg-tenant-soft font-medium text-tenant'
                     : 'text-ink-3 hover:bg-[color-mix(in_srgb,var(--ink)_5%,transparent)] hover:text-ink',
                 )}
               >

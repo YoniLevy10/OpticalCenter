@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { TICKET_STATUSES } from '@/modules/tickets/constants'
-import { isUuid } from '@/modules/tickets/tech'
+import { isTicketRef } from '@/modules/tickets/tech'
 import { getTechTicket, patchTechTicket } from '@/modules/tech/service'
 import { getById } from '@/modules/tickets/service'
 import {
@@ -51,7 +51,7 @@ export async function GET(
       throw new AuthError('אין הרשאת טכנאי', 403)
     }
     const { id: ticketId } = await context.params
-    if (!isUuid(ticketId)) {
+    if (!isTicketRef(ticketId)) {
       return NextResponse.json({ error: 'מזהה תקלה לא תקין' }, { status: 400 })
     }
     const full = await getById(ticketId)
@@ -79,7 +79,7 @@ export async function PATCH(
     }
     const techId = actorPrimaryTechId(actor)!
     const { id: ticketId } = await context.params
-    if (!isUuid(ticketId)) {
+    if (!isTicketRef(ticketId)) {
       return NextResponse.json({ error: 'מזהה תקלה לא תקין' }, { status: 400 })
     }
 

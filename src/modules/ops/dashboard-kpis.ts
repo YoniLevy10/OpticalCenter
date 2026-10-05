@@ -67,16 +67,32 @@ export type StoreSlaRow = {
   total: number
 }
 
+/** Local calendar day, so a date-only bound does not shift with UTC. */
+function localDayBound(iso: string, end: boolean): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim())
+  if (!match) {
+    const ms = new Date(iso).getTime()
+    return Number.isFinite(ms) ? ms : null
+  }
+  const year = Number(match[1])
+  const month = Number(match[2]) - 1
+  const day = Number(match[3])
+  return end
+    ? new Date(year, month, day, 23, 59, 59, 999).getTime()
+    : new Date(year, month, day, 0, 0, 0, 0).getTime()
+}
+
 /** Filter tickets by created_at date range (inclusive). */
 export function filterTicketsByDateRange<T extends { created_at: string }>(
   tickets: T[],
   from?: string | null,
   to?: string | null,
 ): T[] {
-  const fromMs = from ? new Date(from).getTime() : null
-  const toMs = to ? new Date(`${to}T23:59:59.999`).getTime() : null
+  const fromMs = from?.trim() ? localDayBound(from, false) : null
+  const toMs = to?.trim() ? localDayBound(to, true) : null
   return tickets.filter((t) => {
     const ms = new Date(t.created_at).getTime()
+    if (!Number.isFinite(ms)) return fromMs == null && toMs == null
     if (fromMs != null && ms < fromMs) return false
     if (toMs != null && ms > toMs) return false
     return true

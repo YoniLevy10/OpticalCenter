@@ -12,7 +12,7 @@ export type InboundMessage = {
   phoneNumberId: string | null
   text: string | null
   mediaUrl: string | null
-  mediaKind: 'image' | 'video' | 'document' | null
+  mediaKind: 'image' | 'video' | 'document' | 'audio' | null
   timestamp: string | null
   /** Optional override (simulator / deep-link hint). */
   sourceHint?: TicketSource | null

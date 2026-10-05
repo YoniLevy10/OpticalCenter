@@ -19,6 +19,8 @@ type MetaWebhookBody = {
           image?: { id?: string; caption?: string; mime_type?: string }
           document?: { id?: string; caption?: string; filename?: string }
           video?: { id?: string; caption?: string; mime_type?: string }
+          audio?: { id?: string }
+          voice?: { id?: string }
         }>
       }
     }>
@@ -57,6 +59,10 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
           text = msg.video?.caption?.trim() || null
           mediaUrl = msg.video?.id ? `meta-media:${msg.video.id}` : null
           mediaKind = 'video'
+        } else if (type === 'audio' || type === 'voice') {
+          const clip = type === 'audio' ? msg.audio : msg.voice
+          mediaUrl = clip?.id ? `meta-media:${clip.id}` : null
+          mediaKind = 'audio'
         } else {
           continue
         }

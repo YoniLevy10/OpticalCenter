@@ -4,6 +4,7 @@ import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 export const TECH_LIST_STATUSES: TicketStatus[] = [
   'assigned',
   'in_progress',
+  'waiting_vendor',
   'waiting_parts',
   'resolved',
 ]
@@ -12,7 +13,7 @@ export type TechTab = 'new_assigned' | 'in_progress' | 'done'
 
 export const TECH_TAB_STATUSES: Record<TechTab, TicketStatus[]> = {
   new_assigned: ['assigned'],
-  in_progress: ['in_progress', 'waiting_parts'],
+  in_progress: ['in_progress', 'waiting_vendor', 'waiting_parts'],
   done: ['resolved'],
 }
 
@@ -24,7 +25,8 @@ export const TECH_TAB_LABELS_HE: Record<TechTab, string> = {
 
 const TECH_TRANSITIONS: Partial<Record<TicketStatus, TicketStatus[]>> = {
   assigned: ['in_progress'],
-  in_progress: ['waiting_parts', 'resolved'],
+  in_progress: ['waiting_parts', 'waiting_vendor', 'resolved'],
+  waiting_vendor: ['in_progress', 'waiting_parts', 'resolved'],
   waiting_parts: ['in_progress', 'resolved'],
 }
 
@@ -71,6 +73,11 @@ export function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   )
+}
+
+/** UUID or a stable demo slug such as trial-6006-hvac. */
+export function isTicketRef(value: string): boolean {
+  return isUuid(value) || /^[a-z0-9][a-z0-9-]{0,63}$/i.test(value)
 }
 
 export function snippet(text: string, max = 90): string {

@@ -214,6 +214,13 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                   </GroupedRow>
                 ))}
               </GroupedSection>
+              <GroupedSection title="שפה">
+                <GroupedRow>
+                  <p className="t-body text-ink-2">
+                    עברית, English ו־Français זמינות בתפריט הצד, ליד ערכת הנושא.
+                  </p>
+                </GroupedRow>
+              </GroupedSection>
               <GroupedSection title="תכונות עתידיות">
                 <GroupedRow className="flex-col items-stretch gap-2">
                   <p className="t-section flex flex-wrap items-center gap-2 text-ink">
@@ -222,7 +229,6 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                   </p>
                   <ul className="t-caption space-y-1 text-ink-3">
                     <li>Web Push — פעיל ב־/tech כש־VAPID מוגדר</li>
-                    <li>תמיכה בצרפת (i18n)</li>
                   </ul>
                 </GroupedRow>
               </GroupedSection>

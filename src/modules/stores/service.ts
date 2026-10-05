@@ -3,6 +3,7 @@ import {
   MEM_COUNTRY_ID,
   MEM_ORG_ID,
   memCreateStore,
+  memFindStoreByCode,
   memFindStoreById,
   memListStores,
   memUpdateStore,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/data/memory-store'
 import { AuthError, type Actor } from '@/lib/auth/types'
 import type { StoreRow } from '@/modules/stores/data'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 
 export type StoreRecord = StoreRow & {
   organization_id?: string
@@ -38,8 +40,15 @@ function toRecord(s: MemStore): StoreRecord {
     organization_id: s.organization_id,
     country_id: s.country_id,
     is_active: s.is_active,
+    manager_name: s.manager_name ?? null,
+    manager_name_en: s.manager_name_en ?? null,
+    manager_phone: s.manager_phone ?? null,
+    area_manager: s.area_manager ?? null,
   }
 }
+
+const STORE_COLUMNS =
+  'id, code, name, city, address, region_id, organization_id, country_id, is_active, manager_name, manager_name_en, manager_phone, area_manager'
 
 export async function listStores(opts?: {
   includeInactive?: boolean
@@ -54,7 +63,7 @@ export async function listStores(opts?: {
   const supabase = createSystemClient('stores_list')
   let query = supabase
     .from('stores')
-    .select('id, code, name, city, address, region_id, organization_id, country_id, is_active')
+    .select(STORE_COLUMNS)
     .order('code')
   if (!opts?.includeInactive) query = query.eq('is_active', true)
   const { data, error } = await query
@@ -69,15 +78,17 @@ export async function getStoreByCode(
   code: string,
 ): Promise<{ store: StoreRecord | null; backend: 'supabase' | 'memory' }> {
   if (!(await supabaseReady())) {
-    const store = memListStores({ activeOnly: false }).find((s) => s.code === code)
+    const store = memFindStoreByCode(code) ?? null
     return { store: store ? toRecord(store) : null, backend: 'memory' }
   }
 
   const supabase = createSystemClient('stores_get')
+  const lookup = canonicalStoreCode(code)
   const { data, error } = await supabase
     .from('stores')
-    .select('id, code, name, city, address, region_id, organization_id, country_id, is_active')
-    .eq('code', code)
+    .select(STORE_COLUMNS)
+    .in('code', lookup === code ? [code] : [code, lookup])
+    .limit(1)
     .maybeSingle()
   if (error) throw new Error(error.message)
   return { store: (data as StoreRecord | null) ?? null, backend: 'supabase' }
@@ -136,13 +147,14 @@ export async function createStore(input: CreateStoreInput): Promise<StoreRecord>
       organization_id: organizationId,
       is_active: true,
     })
-    .select('id, code, name, city, address, region_id, organization_id, country_id, is_active')
+    .select(STORE_COLUMNS)
     .single()
   if (error) throw new Error(error.message)
   return data as StoreRecord
 }
 
 export type UpdateStoreInput = {
+  code?: string
   name?: string
   city?: string | null
   address?: string | null
@@ -162,6 +174,7 @@ export async function updateStore(
 
   const supabase = createSystemClient('stores_update')
   const payload: Record<string, unknown> = {}
+  if (patch.code !== undefined) payload.code = patch.code.trim()
   if (patch.name !== undefined) payload.name = patch.name.trim()
   if (patch.city !== undefined) payload.city = patch.city?.trim() || null
   if (patch.address !== undefined) payload.address = patch.address?.trim() || null
@@ -172,7 +185,7 @@ export async function updateStore(
     .from('stores')
     .update(payload)
     .eq('id', id)
-    .select('id, code, name, city, address, region_id, organization_id, country_id, is_active')
+    .select(STORE_COLUMNS)
     .single()
   if (error) throw new Error(error.message)
   return data as StoreRecord

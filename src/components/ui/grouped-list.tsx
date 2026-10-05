@@ -1,3 +1,6 @@
+'use client'
+
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -15,16 +18,19 @@ export function GroupedSection({
   children: React.ReactNode
   className?: string
 }) {
+  const p = usePhrase()
   return (
     <section className={cn('flex flex-col gap-2', className)}>
       {title ? (
-        <h2 className="t-caption px-4 text-ink-3 md:px-1">{title}</h2>
+        <h2 className="t-caption px-4 text-ink-3 md:px-1">{p(title)}</h2>
       ) : null}
       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/80 bg-surface">
         <div className="divide-y divide-border">{children}</div>
       </div>
       {footer ? (
-        <p className="t-caption px-4 text-ink-3 md:px-1">{footer}</p>
+        <p className="t-caption px-4 text-ink-3 md:px-1">
+          {typeof footer === 'string' ? p(footer) : footer}
+        </p>
       ) : null}
     </section>
   )

@@ -1,7 +1,7 @@
-import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import type { SlaTone, SlaView } from '@/modules/tickets/sla-display'
-import { plainStatus, plainUrgency } from '@/components/ops/plain-labels'
 import { cn } from '@/lib/utils'
+
+export { PriorityText, StatusLabel } from '@/components/ui/status-label'
 
 /**
  * THE SIGNAL RULE (docs/DESIGN_SYSTEM.md §4)
@@ -30,96 +30,6 @@ export function priorityRowClass(priority: string | null | undefined): string {
   return priority === 'critical'
     ? 'bg-[var(--signal-critical-soft)]/40'
     : ''
-}
-
-/** Text form of priority, for detail surfaces where there is no row edge. */
-export function PriorityText({
-  priority,
-  className,
-}: {
-  priority: TicketPriority | string
-  className?: string
-}) {
-  const label = plainUrgency(priority)
-  const strong = priority === 'critical' || priority === 'high'
-  return (
-    <span
-      className={cn(
-        't-body-strong inline-flex items-center gap-1.5',
-        strong ? 'text-[var(--signal-critical)]' : 'text-ink',
-        className,
-      )}
-    >
-      {priority === 'critical' || priority === 'high' ? (
-        <span
-          aria-hidden
-          className={cn(
-            'h-2.5 w-[3px] rounded-full',
-            priority === 'critical'
-              ? 'bg-[var(--signal-critical)]'
-              : 'bg-[var(--signal-critical)]/45',
-          )}
-        />
-      ) : null}
-      {label}
-    </span>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Status — typography, with a marker only for states needing action   */
-/* ------------------------------------------------------------------ */
-
-type StatusTreatment = {
-  className: string
-  marker: string | null
-}
-
-function statusTreatment(status: string): StatusTreatment {
-  switch (status) {
-    case 'new':
-      return {
-        className: 'text-[var(--signal-critical)]',
-        marker: 'bg-[var(--signal-critical)]',
-      }
-    case 'waiting_parts':
-    case 'assigned':
-    case 'triaged':
-    case 'in_progress':
-      return {
-        className: 'text-[var(--signal-warning)]',
-        marker: 'bg-[var(--signal-warning)]',
-      }
-    case 'resolved':
-    case 'closed':
-      return {
-        className: 'text-[var(--signal-resolved)]',
-        marker: 'bg-[var(--signal-resolved)]',
-      }
-    case 'cancelled':
-      return { className: 'text-ink-3', marker: null }
-    default:
-      return { className: 'text-ink-2', marker: null }
-  }
-}
-
-export function StatusLabel({
-  status,
-  className,
-}: {
-  status: TicketStatus | string
-  className?: string
-}) {
-  const label = plainStatus(status)
-  const { className: tone, marker } = statusTreatment(status)
-  return (
-    <span className={cn('t-body inline-flex items-center gap-1.5', tone, className)}>
-      {marker ? (
-        <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', marker)} />
-      ) : null}
-      {label}
-    </span>
-  )
 }
 
 /* ------------------------------------------------------------------ */

@@ -23,7 +23,9 @@ import {
 
 const HQ_STATUS_OPTIONS: TicketStatus[] = [
   'assigned',
+  'awaiting_info',
   'in_progress',
+  'waiting_vendor',
   'waiting_parts',
   'resolved',
 ]

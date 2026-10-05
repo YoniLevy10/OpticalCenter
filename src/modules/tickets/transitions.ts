@@ -8,11 +8,13 @@ import { TICKET_STATUSES } from '@/modules/tickets/constants'
  */
 export const ALLOWED_TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
   // HQ may close (→ resolved) from any open state — "סגור תקלה" must not fail.
-  new: ['triaged', 'assigned', 'resolved', 'cancelled'],
-  triaged: ['assigned', 'resolved', 'cancelled'],
-  assigned: ['in_progress', 'resolved', 'cancelled'],
-  in_progress: ['waiting_parts', 'resolved', 'cancelled'],
-  waiting_parts: ['in_progress', 'resolved', 'cancelled'],
+  new: ['triaged', 'assigned', 'awaiting_info', 'resolved', 'cancelled'],
+  triaged: ['assigned', 'awaiting_info', 'resolved', 'cancelled'],
+  assigned: ['in_progress', 'awaiting_info', 'waiting_vendor', 'resolved', 'cancelled'],
+  awaiting_info: ['assigned', 'in_progress', 'resolved', 'cancelled'],
+  in_progress: ['waiting_parts', 'waiting_vendor', 'awaiting_info', 'resolved', 'cancelled'],
+  waiting_vendor: ['in_progress', 'waiting_parts', 'resolved', 'cancelled'],
+  waiting_parts: ['in_progress', 'waiting_vendor', 'resolved', 'cancelled'],
   resolved: ['closed', 'in_progress'],
   closed: [],
   cancelled: [],

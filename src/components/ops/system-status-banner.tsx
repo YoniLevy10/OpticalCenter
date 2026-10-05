@@ -13,7 +13,7 @@ type HealthPayload = {
 
 const LEVEL_LABEL: Record<HealthLevel, string> = {
   ok: 'הכול עובד',
-  partial: 'חלקי',
+  partial: 'מצב הדגמה',
   issue: 'תקלה',
   unknown: 'בודק…',
 }
@@ -56,7 +56,6 @@ export function SystemStatusBanner({
   // Status page removed from product nav — keep a quiet health chip only.
   return (
     <span
-      role="status"
       aria-label={`סטטוס מערכת: ${label}`}
       data-visual="system-status"
       className={cn(

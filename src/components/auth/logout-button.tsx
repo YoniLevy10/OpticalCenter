@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +18,7 @@ export function LogoutButton({
   label?: string
 }) {
   const router = useRouter()
+  const p = usePhrase()
   const [busy, setBusy] = useState(false)
 
   async function onLogout() {
@@ -39,7 +41,7 @@ export function LogoutButton({
       onClick={onLogout}
       className={cn(className)}
     >
-      {busy ? 'מתנתק…' : label}
+      {busy ? p('מתנתק…') : p(label)}
     </Button>
   )
 }

@@ -1,12 +1,19 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
+  AlertTriangle,
   ArrowLeft,
+  BadgeCheck,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
+  FileText,
+  ListChecks,
   Plus,
   Search,
+  Store,
   UserRound,
+  type LucideIcon,
 } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import {
@@ -31,6 +38,11 @@ import {
   storeLabel,
 } from '@/components/ops/plain-labels'
 import { DashboardSoftRefresh } from './dashboard-soft-refresh'
+import { DecisionQueue } from './decision-queue'
+import { ticketDecision, splitDecisions, type DecisionItem } from '@/modules/decisions/queue'
+import { ledgerDecisions } from '@/modules/decisions/from-ledger'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
+import { listSpends } from '@/lib/data/ops-ledger'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +52,7 @@ export default async function OpsDashboardPage() {
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
+  await hydrateOpsLedger()
 
   const [openResult, doneResult, techRows] = await Promise.all([
     listTickets({
@@ -77,12 +90,21 @@ export default async function OpsDashboardPage() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     )
     .slice(0, 12)
+  const decisions = splitDecisions([
+    ...all
+      .map((ticket) => ticketDecision(ticket))
+      .filter((item): item is DecisionItem => item != null),
+    ...ledgerDecisions(),
+  ])
+
   const isDemo =
     openResult.backend === 'memory' || doneResult.backend === 'memory'
   const hasOpen = kpis.open > 0
   const urgentCount = kpis.urgent
   const unassigned = kpis.needsAri
-  const awaitingCount = kpis.awaitingStoreConfirm
+  const awaitingCount = listSpends().filter(
+    (spend) => spend.status === 'pending' || spend.status === 'needs_info',
+  ).length
 
   const statusLine = !hasOpen
     ? 'הכל שקט — אין תקלות פתוחות'
@@ -100,35 +122,26 @@ export default async function OpsDashboardPage() {
           showBrand
           largeTitle
           title="דשבורד"
-          status={statusLine}
+          status={
+            !hasOpen ? (
+              <span className="font-medium text-[var(--signal-resolved)]">
+                {statusLine}
+              </span>
+            ) : (
+              statusLine
+            )
+          }
         />
 
-        {/* Quick actions — Apple-like large controls */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Button asChild variant="primary" size="touch" className="w-full">
-            <Link href="/ops/tickets?view=open" className="inline-flex items-center justify-center gap-2">
-              <ClipboardList className="h-4 w-4" aria-hidden />
-              תקלות
-            </Link>
-          </Button>
-          <Button asChild variant="secondary" size="touch" className="w-full">
-            <Link href="/report" className="inline-flex items-center justify-center gap-2">
-              <Plus className="h-4 w-4" aria-hidden />
-              דיווח חדש
-            </Link>
-          </Button>
-          <Button asChild variant="secondary" size="touch" className="w-full">
-            <Link href="/ops/professionals" className="inline-flex items-center justify-center gap-2">
-              <UserRound className="h-4 w-4" aria-hidden />
-              אנשי מקצוע
-            </Link>
-          </Button>
-          <Button asChild variant="secondary" size="touch" className="w-full">
-            <Link href="/ops/tickets?view=open&tech=none" className="inline-flex items-center justify-center gap-2">
-              <Search className="h-4 w-4" aria-hidden />
-              בלי שיוך
-            </Link>
-          </Button>
+          <DashShortcut href="/ops/tickets?view=open" label="תקלות" icon={ClipboardList} />
+          <DashShortcut href="/report" label="דיווח חדש" icon={Plus} />
+          <DashShortcut href="/ops/professionals" label="אנשי מקצוע" icon={UserRound} />
+          <DashShortcut href="/ops/tickets?view=open&tech=none" label="בלי שיוך" icon={Search} />
+          <DashShortcut href="/ops/approvals" label="אישורים" icon={ClipboardCheck} />
+          <DashShortcut href="/ops/tasks" label="משימות" icon={ListChecks} />
+          <DashShortcut href="/ops/documents" label="מסמכים" icon={FileText} />
+          <DashShortcut href="/ops/stores" label="סניפים" icon={Store} />
         </div>
 
         {/* General KPIs */}
@@ -137,27 +150,74 @@ export default async function OpsDashboardPage() {
             href="/ops/tickets?view=open"
             value={kpis.open}
             label="פתוחות"
-            tone={!hasOpen ? 'ok' : urgentCount > 0 ? 'critical' : 'warning'}
+            icon={ClipboardList}
+            tone="neutral"
           />
           <PulseTile
             href="/ops/tickets?view=open"
             value={urgentCount}
             label="דחופות"
+            icon={AlertTriangle}
+            mark="critical"
             tone={urgentCount > 0 ? 'critical' : 'neutral'}
           />
           <PulseTile
             href="/ops/tickets?view=open&tech=none"
             value={unassigned}
             label="בלי שיוך"
-            tone={unassigned > 0 ? 'warning' : 'ok'}
+            icon={Search}
+            mark="warning"
+            tone={unassigned > 0 ? 'warning' : 'neutral'}
           />
           <PulseTile
-            href="/ops/tickets?view=resolved"
+            href="/ops/approvals"
             value={awaitingCount}
             label="ממתינות לאישור"
+            icon={BadgeCheck}
+            mark={awaitingCount > 0 ? 'warning' : 'ok'}
             tone={awaitingCount > 0 ? 'warning' : 'neutral'}
           />
         </div>
+
+        <Panel
+          flush
+          elevated
+          className={cn(
+            'overflow-hidden',
+            decisions.overdue.length > 0 && 'border-s-[3px]',
+          )}
+          style={
+            decisions.overdue.length > 0
+              ? { borderInlineStartColor: 'var(--signal-critical)' }
+              : undefined
+          }
+        >
+          <PanelHeader
+            title="באיחור"
+            meta={decisions.overdue.length ? String(decisions.overdue.length) : undefined}
+          />
+          <DecisionQueue items={decisions.overdue} technicians={technicians} />
+        </Panel>
+
+        <Panel
+          flush
+          elevated
+          className={cn(
+            'overflow-hidden',
+            decisions.today.length > 0 && 'border-s-[3px]',
+          )}
+          style={
+            decisions.today.length > 0
+              ? { borderInlineStartColor: 'var(--signal-warning)' }
+              : undefined
+          }
+        >
+          <PanelHeader
+            title="דורש החלטה היום"
+            meta={decisions.today.length ? String(decisions.today.length) : undefined}
+          />
+          <DecisionQueue items={decisions.today} technicians={technicians} />
+        </Panel>
 
         <Panel flush elevated className="overflow-hidden">
           <PanelHeader
@@ -245,5 +305,27 @@ export default async function OpsDashboardPage() {
         ) : null}
       </div>
     </OpsAppShell>
+  )
+}
+
+function DashShortcut({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: string
+  label: string
+  icon: LucideIcon
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex h-14 items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-3 shadow-[var(--shadow-1)] transition-shadow duration-[var(--dur-1)] hover:shadow-[var(--shadow-2)]"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-[var(--tenant)]">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="t-control text-ink">{label}</span>
+    </Link>
   )
 }

@@ -8,7 +8,7 @@ import { Panel, ErrorState } from '@/components/ui/primitives'
 import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import type { TicketStatus } from '@/modules/tickets/constants'
-import { fetchTechTicket, isUuid } from '@/modules/tickets/tech'
+import { fetchTechTicket, isTicketRef } from '@/modules/tickets/tech'
 import { getById } from '@/modules/tickets/service'
 import { mergeEvidence } from '@/modules/tickets/attachments'
 import {
@@ -18,7 +18,10 @@ import {
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorFromProfileId } from '@/lib/auth/load-memberships'
 import { actorIsTech, testAuthAllowed } from '@/lib/auth/types'
-import { actorCanOpenTechTicket } from '@/lib/auth/ticket-scope'
+import {
+  actorCanAccessTicket,
+  actorCanOpenTechTicket,
+} from '@/lib/auth/ticket-scope'
 import { storeLabel } from '@/components/ops/plain-labels'
 
 export const dynamic = 'force-dynamic'
@@ -40,7 +43,7 @@ export default async function TechTicketDetailPage({
 
   const techId = resolveServerTechId(actor, sp.techId ?? null)
 
-  if (!isUuid(ticketId)) notFound()
+  if (!isTicketRef(ticketId)) notFound()
 
   const { ticket, error } = await fetchTechTicket(ticketId)
 
@@ -64,18 +67,17 @@ export default async function TechTicketDetailPage({
     notFound()
   }
 
-  let scopeActor = actor && actorIsTech(actor) ? actor : null
-  if (!scopeActor && testAuthAllowed() && techId) {
-    scopeActor = await actorFromProfileId(techId, 'test_bearer')
-  } else if (!scopeActor && actor) {
-    scopeActor = actor
+  const full = (await getById(ticketId).catch(() => null)) ?? ticket
+  let techScope = actor && actorIsTech(actor) ? actor : null
+  if (!techScope && techId && (testAuthAllowed() || shouldAllowDemoEntry())) {
+    techScope = await actorFromProfileId(techId, 'test_bearer')
   }
-
-  if (scopeActor) {
-    const full = (await getById(ticketId).catch(() => null)) ?? ticket
-    if (!actorCanOpenTechTicket(scopeActor, full)) {
-      notFound()
-    }
+  const openedByTech = techScope
+    ? actorCanOpenTechTicket(techScope, full)
+    : false
+  const openedByHq = actor ? actorCanAccessTicket(actor, full) : false
+  if (!openedByTech && !openedByHq && !(!actor && shouldAllowDemoEntry())) {
+    notFound()
   }
 
   const fullTicket = await getById(ticketId).catch(() => null)

@@ -31,7 +31,7 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     expect(s2.ok).toBe(true)
     expect(s2.ticket_id).toBeTruthy()
     expect(s2.display_number || s2.reply || '').toMatch(/OC-|הדיווח/)
-    expect(s2.ticket?.store_code).toBe('172')
+    expect(s2.ticket?.store_code).toBe('6006')
     expect(s2.ticket?.priority).toBe('high')
     expect(s2.ticket?.description || '').toMatch(/מזגן/)
     const ticketId = s2.ticket_id as string

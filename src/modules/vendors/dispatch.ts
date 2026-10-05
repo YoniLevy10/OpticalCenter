@@ -259,6 +259,11 @@ export async function dispatchToVendor(input: {
   actorId?: string | null
   note?: string
 }): Promise<MemPartnerDispatch> {
+  const { executionBlockReason } = await import('@/modules/spend/policy')
+  const { spendForTicket } = await import('@/lib/data/ops-ledger')
+  const block = executionBlockReason(spendForTicket(input.ticketId))
+  if (block) throw new Error(block)
+
   if (!(await supabaseReady())) {
     return dispatchMemory(input)
   }

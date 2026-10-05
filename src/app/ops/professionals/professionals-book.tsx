@@ -6,6 +6,7 @@ import { Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import type { Professional } from '@/modules/professionals/types'
+import { formatIsraeliPhoneDisplay } from '@/lib/phone'
 import { cn } from '@/lib/utils'
 
 function dialHref(phone: string | null | undefined): string | null {
@@ -13,6 +14,11 @@ function dialHref(phone: string | null | undefined): string | null {
   const digits = phone.replace(/[^\d+]/g, '')
   if (!digits) return null
   return `tel:${digits}`
+}
+
+function usageLabel(count: number): string {
+  if (count === 1) return 'שימוש אחד'
+  return `${count} שימושים`
 }
 
 export function ProfessionalsBook({
@@ -56,10 +62,8 @@ export function ProfessionalsBook({
                   'איש מקצוע ממידרג'}
               </p>
               <p className="t-caption text-ink-3">
-                {p.use_count > 0
-                  ? `${p.use_count} שימושים`
-                  : 'נשמר לאחרונה'}
-                {p.phone ? ` · ${p.phone}` : ''}
+                {p.use_count > 0 ? usageLabel(p.use_count) : 'נשמר לאחרונה'}
+                {p.phone ? ` · ${formatIsraeliPhoneDisplay(p.phone)}` : ''}
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
@@ -73,6 +77,7 @@ export function ProfessionalsBook({
                 >
                   <a
                     href={tel}
+                    aria-label={`התקשר אל ${p.full_name}`}
                     onClick={() => void touch(p.id)}
                     className="inline-flex items-center gap-2"
                   >

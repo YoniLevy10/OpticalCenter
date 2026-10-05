@@ -102,16 +102,33 @@ export default async function ReportsPage({
 
   const orgId = actor?.memberships[0]?.organization_id ?? defaultOrganizationId()
 
-  const [ticketResult, techRows, snapshotResult] = await Promise.all([
-    listTickets(5000).catch(() => ({ tickets: [], backend: 'memory' as const })),
-    listInternalTechnicians().catch(() => []),
-    listReportSnapshots(orgId).catch(() => ({
-      snapshots: [],
-      backend: 'memory' as const,
-    })),
-  ])
+  const [openResult, doneResult, allResult, techRows, snapshotResult] =
+    await Promise.all([
+      listTickets({
+        limit: 1000,
+        statuses: [...OPEN_TICKET_STATUSES],
+      }).catch(() => ({ tickets: [] as { id: string }[] })),
+      listTickets({
+        limit: 1000,
+        statuses: ['resolved', 'closed'],
+      }).catch(() => ({ tickets: [] as { id: string }[] })),
+      listTickets({ limit: 1000 }).catch(() => ({ tickets: [] as { id: string }[] })),
+      listInternalTechnicians().catch(() => []),
+      listReportSnapshots(orgId).catch(() => ({
+        snapshots: [],
+        backend: 'memory' as const,
+      })),
+    ])
 
-  const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
+  const byId = new Map<string, { id: string }>()
+  for (const ticket of [
+    ...(allResult.tickets ?? []),
+    ...(openResult.tickets ?? []),
+    ...(doneResult.tickets ?? []),
+  ]) {
+    byId.set(ticket.id, ticket)
+  }
+  const fetched = [...byId.values()] as unknown as QueueTicket[]
   const scoped = actor ? scopeTicketsForActor(actor, fetched) : fetched
   const dated = filterTicketsByDateRange(scoped, from, to)
   const all = filterByStatus(dated, status)
@@ -198,7 +215,9 @@ export default async function ReportsPage({
         <OpsPageHero
           title="דוחות"
           status={`${rangeLabel}${statusLabel}${
-            ticketResult.backend === 'supabase' ? '' : ' · דמו'
+            'backend' in allResult && allResult.backend === 'supabase'
+              ? ''
+              : ' · דמו'
           }`}
           actions={
             <ReportsExportActions query={exportQuery} count={all.length} />

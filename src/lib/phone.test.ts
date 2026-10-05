@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { normalizePhoneDigits, sanitizePhoneInput } from './phone'
+import {
+  formatIsraeliPhoneDisplay,
+  normalizePhoneDigits,
+  sanitizePhoneInput,
+} from './phone'
 
 describe('normalizePhoneDigits', () => {
   it('converts IL local to 972…', () => {
@@ -11,6 +15,13 @@ describe('normalizePhoneDigits', () => {
     expect(normalizePhoneDigits('')).toBeNull()
     expect(normalizePhoneDigits('123')).toBeNull()
     expect(normalizePhoneDigits(null)).toBeNull()
+  })
+})
+
+describe('formatIsraeliPhoneDisplay', () => {
+  it('groups a 972 mobile with a dash', () => {
+    expect(formatIsraeliPhoneDisplay('972501112233')).toBe('050-1112233')
+    expect(formatIsraeliPhoneDisplay('0501112233')).toBe('050-1112233')
   })
 })
 

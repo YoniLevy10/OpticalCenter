@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 import {
   queueHref,
@@ -28,6 +29,7 @@ export function QueueTabs({
   filters?: Partial<QueueFilters>
 }) {
   const router = useRouter()
+  const p = usePhrase()
   const trackRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
   const [pill, setPill] = useState({ x: 0, w: 0, ready: false })
@@ -45,7 +47,7 @@ export function QueueTabs({
     <div
       ref={trackRef}
       role="tablist"
-      aria-label="סינון תקלות"
+      aria-label={p('סינון תקלות')}
       aria-orientation="horizontal"
       className="relative flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
     >
@@ -78,7 +80,7 @@ export function QueueTabs({
               selected ? 'text-ink' : 'text-ink-3',
             )}
           >
-            {tab.label}
+            {p(tab.label)}
           </button>
         )
       })}

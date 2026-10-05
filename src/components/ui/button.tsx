@@ -1,6 +1,11 @@
+'use client'
+
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
+import { phraseChunk } from '@/lib/i18n/phrases'
+import { localizeChunks } from '@/components/i18n/tx'
+import { useLocale } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -42,14 +47,25 @@ export interface ButtonProps
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, children, ...props }, ref) => {
+    const { locale } = useLocale()
     const Comp = asChild ? Slot : 'button'
+    const label =
+      typeof props['aria-label'] === 'string'
+        ? phraseChunk(locale, props['aria-label'])
+        : props['aria-label']
+    const title =
+      typeof props.title === 'string' ? phraseChunk(locale, props.title) : props.title
     return (
       <Comp
         className={cn(buttonVariants({ variant, size }), className)}
         ref={ref}
         {...props}
-      />
+        aria-label={label}
+        title={title}
+      >
+        {asChild ? children : localizeChunks(children, locale)}
+      </Comp>
     )
   },
 )

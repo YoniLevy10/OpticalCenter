@@ -28,6 +28,8 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
+import { getLocale } from '@/lib/i18n/server'
+import { translate } from '@/lib/i18n/messages'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +62,7 @@ export default async function TicketsPage({
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
+  const locale = await getLocale()
 
   const resolved = await resolveTicketsSupabase(actor)
 
@@ -120,18 +123,18 @@ export default async function TicketsPage({
   const statusLine =
     view === 'resolved'
       ? filtered.length === 0
-        ? 'עדיין אין תקלות שהסתיימו'
-        : `${filtered.length} תקלות שהסתיימו`
+        ? translate(locale, 'tickets.noneResolved')
+        : translate(locale, 'tickets.resolved', { count: filtered.length })
       : filtered.length === 0
-        ? 'אין תקלות פתוחות'
-        : `${filtered.length} תקלות פתוחות`
+        ? translate(locale, 'tickets.noneOpen')
+        : translate(locale, 'tickets.open', { count: filtered.length })
 
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
           largeTitle
-          title="תקלות"
+          title={translate(locale, 'tickets.title')}
           status={statusLine}
           actions={
             canPurgeDemo && ticketResult.backend === 'supabase' ? (

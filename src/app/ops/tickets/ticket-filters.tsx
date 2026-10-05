@@ -18,6 +18,7 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from '@/modules/tickets/constants'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 const PRIORITIES: TicketPriority[] = ['critical', 'high', 'medium', 'low']
@@ -36,6 +37,7 @@ function FilterFields({
     layout === 'row'
       ? 'flex flex-row flex-wrap items-end gap-2'
       : 'flex flex-col gap-4'
+  const tr = usePhrase()
   const field =
     layout === 'row'
       ? 'flex min-w-[8.5rem] flex-col gap-1'
@@ -46,7 +48,7 @@ function FilterFields({
   return (
     <div className={wrap}>
       <label className={field}>
-        <span className="t-caption text-ink-2">עדיפות</span>
+        <span className="t-caption text-ink-2">{tr('עדיפות')}</span>
         <select
           className={selectCls}
           value={draft.priority ?? ''}
@@ -57,17 +59,17 @@ function FilterFields({
             })
           }
         >
-          <option value="">הכל</option>
-          {PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {TICKET_PRIORITY_LABELS_HE[p]}
+          <option value="">{tr('הכל')}</option>
+          {PRIORITIES.map((priority) => (
+            <option key={priority} value={priority}>
+              {tr(TICKET_PRIORITY_LABELS_HE[priority])}
             </option>
           ))}
         </select>
       </label>
 
       <label className={field}>
-        <span className="t-caption text-ink-2">סטטוס</span>
+        <span className="t-caption text-ink-2">{tr('סטטוס')}</span>
         <select
           className={selectCls}
           value={draft.status ?? ''}
@@ -78,17 +80,17 @@ function FilterFields({
             })
           }
         >
-          <option value="">הכל</option>
+          <option value="">{tr('הכל')}</option>
           {OPEN_TICKET_STATUSES.map((s: TicketStatus) => (
             <option key={s} value={s}>
-              {TICKET_STATUS_LABELS_HE[s]}
+              {tr(TICKET_STATUS_LABELS_HE[s])}
             </option>
           ))}
         </select>
       </label>
 
       <label className={field}>
-        <span className="t-caption text-ink-2">שיוך</span>
+        <span className="t-caption text-ink-2">{tr('שיוך')}</span>
         <select
           className={selectCls}
           value={draft.tech ?? ''}
@@ -99,8 +101,8 @@ function FilterFields({
             })
           }
         >
-          <option value="">הכל</option>
-          <option value="none">לא משויך</option>
+          <option value="">{tr('הכל')}</option>
+          <option value="none">{tr('לא משויך')}</option>
         </select>
       </label>
     </div>

@@ -11,7 +11,7 @@ describe('store confirm close', () => {
   })
 
   it('closes a resolved ticket after store confirmation', async () => {
-    const store = israelStoresAsRows().find((s) => s.code === '172')!
+    const store = israelStoresAsRows().find((s) => s.code === '6006')!
     const created = memCreate({
       store,
       description: 'מזגן לא מקרר',
@@ -32,7 +32,7 @@ describe('store confirm close', () => {
   })
 
   it('rejects confirm when ticket is still in progress', async () => {
-    const store = israelStoresAsRows().find((s) => s.code === '130')!
+    const store = israelStoresAsRows().find((s) => s.code === '6029')!
     const created = memCreate({
       store,
       description: 'קצר חשמלי',

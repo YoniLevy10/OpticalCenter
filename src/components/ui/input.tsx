@@ -2,6 +2,9 @@
 
 import * as React from 'react'
 import { Search, X } from 'lucide-react'
+import { phraseChunk } from '@/lib/i18n/phrases'
+import { localizeOptions } from '@/components/i18n/tx'
+import { useLocale, usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 const fieldBase =
@@ -10,39 +13,64 @@ const fieldBase =
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => (
-  <input
-    ref={ref}
-    className={cn(fieldBase, 'h-11 px-3 md:h-9', className)}
-    {...props}
-  />
-))
+>(({ className, placeholder, ...props }, ref) => {
+  const { locale } = useLocale()
+  const aria =
+    typeof props['aria-label'] === 'string'
+      ? phraseChunk(locale, props['aria-label'])
+      : props['aria-label']
+  return (
+    <input
+      ref={ref}
+      className={cn(fieldBase, 'h-11 px-3 md:h-9', className)}
+      placeholder={
+        typeof placeholder === 'string' ? phraseChunk(locale, placeholder) : placeholder
+      }
+      {...props}
+      aria-label={aria}
+    />
+  )
+})
 Input.displayName = 'Input'
 
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, ...props }, ref) => (
-  <select
-    ref={ref}
-    className={cn(fieldBase, 'h-11 px-2.5 md:h-9', className)}
-    {...props}
-  >
-    {children}
-  </select>
-))
+>(({ className, children, ...props }, ref) => {
+  const { locale } = useLocale()
+  const aria =
+    typeof props['aria-label'] === 'string'
+      ? phraseChunk(locale, props['aria-label'])
+      : props['aria-label']
+  return (
+    <select
+      ref={ref}
+      className={cn(fieldBase, 'h-11 px-2.5 md:h-9', className)}
+      {...props}
+      aria-label={aria}
+    >
+      {localizeOptions(children, locale)}
+    </select>
+  )
+})
 Select.displayName = 'Select'
 
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement>
->(({ className, ...props }, ref) => (
-  <textarea
-    ref={ref}
-    className={cn(fieldBase, 'min-h-24 px-3 py-2 leading-relaxed', className)}
-    {...props}
-  />
-))
+>(({ className, placeholder, ...props }, ref) => {
+  const { locale } = useLocale()
+  return (
+    <textarea
+      ref={ref}
+      className={cn(fieldBase, 'min-h-24 px-3 py-2 leading-relaxed', className)}
+      placeholder={
+        typeof placeholder === 'string' ? phraseChunk(locale, placeholder) : placeholder
+      }
+      {...props}
+    />
+  )
+})
 Textarea.displayName = 'Textarea'
 
 export function Field({
@@ -56,13 +84,14 @@ export function Field({
   hint?: string
   children: React.ReactNode
 }) {
+  const p = usePhrase()
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={htmlFor} className="t-caption block text-ink-2">
-        {label}
+        {p(label)}
       </label>
       {children}
-      {hint ? <p className="t-caption text-ink-3">{hint}</p> : null}
+      {hint ? <p className="t-caption text-ink-3">{p(hint)}</p> : null}
     </div>
   )
 }

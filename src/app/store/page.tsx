@@ -5,6 +5,7 @@ import { primaryStoreId, shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { listTickets } from '@/modules/tickets/service'
 import { fetchStores } from '@/modules/stores/data'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { StatusLabel } from '@/components/ui/signal'
 import { EmptyState, Panel } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,7 @@ export default async function StoreHomePage() {
   const { stores } = await fetchStores()
   const store = storeId
     ? stores.find((s) => s.id === storeId)
-    : stores.find((s) => s.code === '172') ?? stores[0]
+    : stores.find((s) => s.code === canonicalStoreCode('172')) ?? stores[0]
 
   const result = await listTickets({
     limit: 50,

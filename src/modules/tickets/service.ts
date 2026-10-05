@@ -11,14 +11,17 @@ import {
   memGet,
   memDeleteTicket,
   memListTickets,
+  memUpdatePriority,
   memUpdateStatus,
   supabaseReady,
   type MemTicket,
 } from '@/lib/data/memory-store'
 import { memListUsers } from '@/lib/auth/memory-memberships'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { OPEN_TICKET_STATUSES, TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
-import { computeSlaTimestamps } from '@/modules/tickets/sla'
+import { computeSlaTimestamps, windowsFromSettings } from '@/modules/tickets/sla'
+import { getSettings } from '@/modules/settings/service'
 import { assertTransition, isTicketStatus } from '@/modules/tickets/transitions'
 import type { TicketRow } from '@/modules/stores/data'
 
@@ -615,6 +618,38 @@ async function assertAssetBelongsToStore(
   }
 }
 
+export async function updatePriority(
+  id: string,
+  priority: TicketPriority,
+  actorId?: string | null,
+): Promise<TicketRecord> {
+  if (!TICKET_PRIORITIES.includes(priority)) throw new Error('עדיפות לא חוקית')
+  const { settings } = await getSettings()
+  const sla = computeSlaTimestamps(priority, new Date(), windowsFromSettings(settings))
+
+  if (await supabaseReady()) {
+    const current = await getTicketForMutation(id)
+    if (!current) throw new Error('תקלה לא נמצאה')
+    const supabase = createSystemClient('tickets_service')
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ priority, ...sla })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw new Error(error.message)
+    await appendEvent(id, 'priority_changed', actorId ?? null, {
+      from: current.priority,
+      to: priority,
+    })
+    return data as TicketRecord
+  }
+
+  const current = memGet(id)
+  if (!current) throw new Error('תקלה לא נמצאה')
+  return memToRecord(memUpdatePriority(id, priority, sla, actorId ?? null))
+}
+
 export async function updateStatus(
   id: string,
   nextStatus: string,
@@ -667,7 +702,7 @@ export async function assign(
     const from = current.status as TicketStatus
     const patch: Record<string, unknown> = { assigned_to: assignedTo.trim() }
     let statusChanged = false
-    if (from === 'new' || from === 'triaged') {
+    if (from === 'new' || from === 'triaged' || from === 'awaiting_info') {
       assertTransition(from, 'assigned')
       patch.status = 'assigned'
       statusChanged = true
@@ -701,7 +736,7 @@ export async function assign(
   const current = memGet(id)
   if (!current) throw new Error('תקלה לא נמצאה')
   const from = current.status as TicketStatus
-  if (from === 'new' || from === 'triaged') {
+  if (from === 'new' || from === 'triaged' || from === 'awaiting_info') {
     assertTransition(from, 'assigned')
   }
   return memToRecord(memAssign(id, assignedTo.trim(), actorId))
@@ -817,10 +852,11 @@ async function resolveStore(
     throw new Error('יש לציין storeId או storeCode')
   }
 
+  const lookup = canonicalStoreCode(input.storeCode)
   let query = supabase
     .from('stores')
     .select('id, organization_id, country_id, region_id, countries!inner(code)')
-    .eq('code', input.storeCode)
+    .in('code', lookup === input.storeCode ? [input.storeCode] : [lookup, input.storeCode])
     .eq('is_active', true)
 
   if (input.countryCode) {

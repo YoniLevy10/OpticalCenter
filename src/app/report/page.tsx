@@ -1,3 +1,4 @@
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { PublicReportForm } from './report-form'
 import { fetchStores } from '@/modules/stores/data'
 import { SkipLink } from '@/components/layout/skip-link'
@@ -14,7 +15,7 @@ export default async function PublicReportPage({
   const { stores } = await fetchStores()
   const initial =
     (sp.store ?? '').trim() ||
-    stores.find((s) => s.code === '172')?.code ||
+    stores.find((s) => s.code === canonicalStoreCode('172'))?.code ||
     stores[0]?.code ||
     ''
 

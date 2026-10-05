@@ -2,7 +2,9 @@ export const TICKET_STATUSES = [
   'new',
   'triaged',
   'assigned',
+  'awaiting_info',
   'in_progress',
+  'waiting_vendor',
   'waiting_parts',
   'resolved',
   'closed',
@@ -12,14 +14,16 @@ export const TICKET_STATUSES = [
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
 
 export const TICKET_STATUS_LABELS_HE: Record<TicketStatus, string> = {
-  new: 'חדש',
-  triaged: 'מסווג',
-  assigned: 'משויך',
+  new: 'חדשה',
+  triaged: 'מסווגת',
+  assigned: 'משויכת',
+  awaiting_info: 'ממתינה למידע',
   in_progress: 'בטיפול',
-  waiting_parts: 'ממתין לחלקים',
-  resolved: 'נפתר',
-  closed: 'סגור',
-  cancelled: 'בוטל',
+  waiting_vendor: 'ממתינה לבעל מקצוע',
+  waiting_parts: 'ממתינה להזמנה או לחלקים',
+  resolved: 'טופלה — ממתינה לאימות',
+  closed: 'סגורה',
+  cancelled: 'בוטלה',
 }
 
 export const TICKET_PRIORITIES = ['critical', 'high', 'medium', 'low'] as const
@@ -36,7 +40,9 @@ export const OPEN_TICKET_STATUSES: TicketStatus[] = [
   'new',
   'triaged',
   'assigned',
+  'awaiting_info',
   'in_progress',
+  'waiting_vendor',
   'waiting_parts',
 ]
 

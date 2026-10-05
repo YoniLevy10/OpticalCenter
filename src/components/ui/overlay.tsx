@@ -3,15 +3,17 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 const overlayClass =
   'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,20,0.35)] backdrop-blur-[2px]'
 
 function CloseButton() {
+  const p = usePhrase()
   return (
     <Dialog.Close
-      aria-label="סגירה"
+      aria-label={p('סגירה')}
       className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-ink-3 transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken hover:text-ink"
     >
       <X className="h-4 w-4" />
@@ -39,6 +41,7 @@ export function Modal({
   children: React.ReactNode
   className?: string
 }) {
+  const p = usePhrase()
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -51,10 +54,10 @@ export function Modal({
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-3.5">
             <div className="min-w-0">
-              <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
+              <Dialog.Title className="t-section text-ink">{p(title)}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="t-meta mt-0.5 text-ink-2">
-                  {description}
+                  {p(description)}
                 </Dialog.Description>
               ) : null}
             </div>
@@ -98,6 +101,7 @@ export function BottomSheet({
 }) {
   const [current, setCurrent] = useState<SheetDetent>(detent)
   const [dragY, setDragY] = useState(0)
+  const p = usePhrase()
   const startY = useRef<number | null>(null)
 
   useEffect(() => {
@@ -163,10 +167,10 @@ export function BottomSheet({
           </div>
           <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-2">
             <div className="min-w-0">
-              <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
+              <Dialog.Title className="t-section text-ink">{p(title)}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="t-meta mt-0.5 text-ink-2">
-                  {description}
+                  {p(description)}
                 </Dialog.Description>
               ) : null}
             </div>
@@ -195,6 +199,7 @@ export function SideDrawer({
   title: string
   children: React.ReactNode
 }) {
+  const p = usePhrase()
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -203,7 +208,7 @@ export function SideDrawer({
           className="apple-glass safe-pt safe-pb fixed inset-y-3 start-3 z-50 flex w-[min(86vw,320px)] animate-drawer-in flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/50 outline-none"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <Dialog.Title className="t-section text-ink">{title}</Dialog.Title>
+            <Dialog.Title className="t-section text-ink">{p(title)}</Dialog.Title>
             <CloseButton />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">

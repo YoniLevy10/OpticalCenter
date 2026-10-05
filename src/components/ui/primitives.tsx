@@ -1,4 +1,8 @@
+'use client'
+
 import { Inbox } from 'lucide-react'
+import { useLocale, usePhrase } from '@/components/i18n/locale-provider'
+import { localizeChunks } from '@/components/i18n/tx'
 import { cn } from '@/lib/utils'
 
 /**
@@ -23,9 +27,8 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border/80 bg-surface',
-        elevated &&
-          'shadow-[inset_0_1px_0_rgba(255,255,255,0.7),var(--shadow-1)]',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
+        elevated && 'shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
       )}
@@ -45,10 +48,11 @@ export function PanelHeader({
   meta?: React.ReactNode
   action?: React.ReactNode
 }) {
+  const p = usePhrase()
   return (
-    <header className="flex shrink-0 min-h-10 items-center justify-between gap-3 border-b border-border bg-surface-sunken/35 px-4">
+    <header className="flex shrink-0 min-h-11 items-center justify-between gap-3 border-b border-border bg-[var(--surface-sunken)] px-4">
       <div className="flex items-baseline gap-2">
-        <h2 className="t-section text-ink">{title}</h2>
+        <h2 className="t-section text-ink">{p(title)}</h2>
         {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
       </div>
       {action}
@@ -70,6 +74,7 @@ export function PageHeader({
   actions?: React.ReactNode
   className?: string
 }) {
+  const p = usePhrase()
   return (
     <div
       className={cn(
@@ -79,11 +84,13 @@ export function PageHeader({
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-3">
-          <h1 className="t-title text-ink">{title}</h1>
+          <h1 className="t-title text-ink">{p(title)}</h1>
           {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
         </div>
         {description ? (
-          <p className="t-body mt-1 max-w-2xl text-ink-2">{description}</p>
+          <p className="t-body mt-1 max-w-2xl text-ink-2">
+            {typeof description === 'string' ? p(description) : description}
+          </p>
         ) : null}
       </div>
       {actions ? (
@@ -106,6 +113,7 @@ export function EmptyState({
   icon?: typeof Inbox
   className?: string
 }) {
+  const p = usePhrase()
   return (
     <div
       className={cn(
@@ -114,9 +122,9 @@ export function EmptyState({
       )}
     >
       <Icon className="mb-2 h-5 w-5 text-ink-3" aria-hidden strokeWidth={1.5} />
-      <p className="t-body-strong text-ink">{title}</p>
+      <p className="t-body-strong text-ink">{p(title)}</p>
       {description ? (
-        <p className="t-body mt-1.5 max-w-xs text-ink-2">{description}</p>
+        <p className="t-body mt-1.5 max-w-xs text-ink-2">{p(description)}</p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
@@ -132,11 +140,12 @@ export function ErrorState({
   description?: string
   action?: React.ReactNode
 }) {
+  const p = usePhrase()
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3">
-      <p className="t-body-strong text-[var(--signal-critical)]">{title}</p>
+      <p className="t-body-strong text-[var(--signal-critical)]">{p(title)}</p>
       {description ? (
-        <p className="t-body mt-1 text-ink-2">{description}</p>
+        <p className="t-body mt-1 text-ink-2">{p(description)}</p>
       ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
@@ -150,6 +159,7 @@ export function Notice({
   tone?: 'neutral' | 'warning' | 'progress' | 'success' | 'critical'
   children: React.ReactNode
 }) {
+  const { locale } = useLocale()
   return (
     <div
       className={cn(
@@ -165,7 +175,7 @@ export function Notice({
           'border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
       )}
     >
-      {children}
+      {localizeChunks(children, locale)}
     </div>
   )
 }
@@ -179,11 +189,12 @@ export function PermissionDenied({
   description?: string
   action?: React.ReactNode
 }) {
+  const p = usePhrase()
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--signal-warning-line)] bg-[var(--signal-warning-soft)] px-4 py-3">
-      <p className="t-body-strong text-[var(--signal-warning)]">{title}</p>
+      <p className="t-body-strong text-[var(--signal-warning)]">{p(title)}</p>
       {description ? (
-        <p className="t-body mt-1 text-ink-2">{description}</p>
+        <p className="t-body mt-1 text-ink-2">{p(description)}</p>
       ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>

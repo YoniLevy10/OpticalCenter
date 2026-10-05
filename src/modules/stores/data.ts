@@ -9,6 +9,10 @@ export type StoreRow = {
   address: string | null
   region_id: string
   is_active?: boolean
+  manager_name?: string | null
+  manager_name_en?: string | null
+  manager_phone?: string | null
+  area_manager?: string | null
 }
 
 export type TicketRow = {
@@ -40,7 +44,7 @@ export type TicketRow = {
   } | null
 }
 
-/** Fallback when DB is unavailable — 48 real Optical Center IL branches. */
+/** Fallback when DB is unavailable — 48 OPC Israel branches. */
 export const DEMO_STORES: StoreRow[] = israelStoresAsRows()
 
 export async function fetchStores(opts?: {
@@ -68,7 +72,9 @@ export async function fetchStores(opts?: {
     const supabase = createAdminClient()
     let query = supabase
       .from('stores')
-      .select('id, code, name, city, address, region_id, is_active')
+      .select(
+        'id, code, name, city, address, region_id, is_active, manager_name, manager_name_en, manager_phone, area_manager',
+      )
       .order('code')
     if (!opts?.includeInactive) {
       query = query.eq('is_active', true)

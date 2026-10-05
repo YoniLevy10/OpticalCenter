@@ -2,45 +2,44 @@
 
 /* ============================================================
    MILO — Optical Center
-   Warm showroom canvas + charcoal ink + diamond red kick.
-   Sidebar uses deep charcoal chrome so the console never feels pale.
-   See docs/DESIGN_SYSTEM.md
+   Cool air, deep ink, one diamond-red accent.
+   Signal colors stay on live states. See docs/DESIGN_SYSTEM.md
    ============================================================ */
 
 :root {
-  /* ---------- Layer 1 — SUBSTRATE (warm showroom + charcoal) ---------- */
-  --canvas: #efecea;
+  /* ---------- Layer 1 — SUBSTRATE (cool air, white cards) ---------- */
+  --canvas: #e7f0f3;
   --surface: #ffffff;
-  --surface-sunken: #e4dfda;
+  --surface-sunken: #e5eef2;
   --surface-raised: #ffffff;
-  --border: #d6cfc8;
-  --border-strong: #b9b0a7;
-  /* Soft charcoal — readable, not pure black */
-  --ink: #2b2b28;
-  --ink-2: #5a5a54;
-  /* WCAG AA ≥4.5:1 on --canvas */
-  --ink-3: #6f6f69;
+  --border: #d3e2e8;
+  --border-strong: #b7ccd4;
+  /* Deep blue-green — readable, not pure black */
+  --ink: #163039;
+  --ink-2: #3d5a66;
+  /* WCAG AA ≥4.5:1 on --canvas and white */
+  --ink-3: #4d6570;
 
   /* ---------- Layer 2 — SIGNAL (saturated enough to read as color) ---------- */
-  --signal-critical: #d92621;
-  --signal-critical-soft: #f8d4d2;
-  --signal-critical-line: #efb0ad;
-  --signal-warning: #c2410c;
-  --signal-warning-soft: #f8d9c8;
-  --signal-warning-line: #ebc09f;
-  --signal-progress: #0a84ff;
-  --signal-progress-soft: #d6e9ff;
-  --signal-resolved: #1a8f4a;
-  --signal-resolved-soft: #cfeeda;
-  --signal-idle: #7a8078;
-  --signal-idle-soft: #ebe8e4;
+  --signal-critical: #c01e1e;
+  --signal-critical-soft: #fdecec;
+  --signal-critical-line: #f3c9c9;
+  --signal-warning: #8a5a12;
+  --signal-warning-soft: #fbf3e4;
+  --signal-warning-line: #ead7b0;
+  --signal-progress: #3b6cb8;
+  --signal-progress-soft: #eaf1fa;
+  --signal-resolved: #187348;
+  --signal-resolved-soft: #e7f6ee;
+  --signal-idle: #8b9088;
+  --signal-idle-soft: #f3f4f1;
 
   /* ---------- Layer 3 — TENANT (Optical Center diamond red) ---------- */
   --tenant: #d92621;
-  --tenant-hover: #b81f1b;
-  --tenant-soft: #f3d0ce;
-  --tenant-line: #e8a8a4;
-  --signal-accent: #0b6e99;
+  --tenant-hover: #b31c18;
+  --tenant-soft: #faf0ef;
+  --tenant-line: #f0c9c7;
+  --signal-accent: #3b6cb8;
   --tenant-contrast: #ffffff;
 
   /* ---------- Radius — continuous corners, closer to iOS ---------- */
@@ -54,11 +53,11 @@
   --glass-sat: 1.55;
   --large-title-progress: 0;
 
-  /* ---------- Elevation — charcoal depth with a hint of red cast ---------- */
-  --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.07), 0 1px 3px rgba(217, 38, 33, 0.04);
-  --shadow-2: 0 2px 10px rgba(43, 43, 40, 0.08), 0 1px 3px rgba(217, 38, 33, 0.05);
-  --shadow-hover: 0 8px 22px rgba(43, 43, 40, 0.1), 0 2px 6px rgba(217, 38, 33, 0.06);
-  --shadow-pop: 0 16px 44px rgba(43, 43, 40, 0.14), 0 4px 14px rgba(217, 38, 33, 0.08);
+  /* ---------- Elevation — soft lift, no color cast ---------- */
+  --shadow-1: 0 1px 2px rgba(43, 43, 40, 0.06), 0 1px 3px rgba(43, 43, 40, 0.04);
+  --shadow-2: 0 2px 8px rgba(43, 43, 40, 0.06), 0 1px 2px rgba(43, 43, 40, 0.04);
+  --shadow-hover: 0 8px 20px rgba(43, 43, 40, 0.08);
+  --shadow-pop: 0 16px 40px rgba(43, 43, 40, 0.12);
 
   /* Dark chrome — lifted charcoal, never pure black */
   --panel-dark: #2b2b28;
@@ -180,32 +179,22 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Warm showroom canvas + visible OC-red / teal breath — not a pale grey void. */
+/* Cool air behind white cards. One soft breath, not a painted wall. */
 .ops-atmosphere,
 body {
   background:
     radial-gradient(
-      ellipse 110% 70% at 100% -12%,
-      color-mix(in srgb, var(--tenant) 16%, transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at -5% 105%,
+      ellipse 70% 42% at 100% -8%,
       color-mix(in srgb, var(--signal-accent) 14%, transparent),
-      transparent 52%
+      transparent 62%
     ),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--tenant-soft) 45%, var(--canvas)) 0%,
-      var(--canvas) 42%,
-      color-mix(in srgb, var(--signal-accent) 6%, var(--canvas)) 100%
-    );
+    var(--canvas);
   background-attachment: fixed;
 }
 
 /* Liquid-glass chrome: frosted, soft edge, light specular. Content panels stay opaque. */
 .apple-glass {
-  background: color-mix(in srgb, var(--surface) 88%, var(--tenant-soft));
+  background: color-mix(in srgb, var(--surface) 90%, var(--tenant-soft));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   box-shadow:
@@ -222,48 +211,36 @@ html.dark .apple-glass {
 }
 
 /*
- * Desktop sidebar = charcoal chrome with diamond-red kick.
- * Remaps substrate tokens locally so existing text-* utilities stay readable.
+ * Desktop sidebar stays paper. The current page is a soft diamond-red wash,
+ * so "where am I" is obvious without a solid red block.
  */
 .apple-sidebar {
-  --sidebar-fg: #f4f2ef;
-  --sidebar-fg-2: #c9c4bc;
-  --sidebar-fg-3: #9a948c;
-  --sidebar-line: color-mix(in srgb, white 12%, transparent);
-  --ink: var(--sidebar-fg);
-  --ink-2: var(--sidebar-fg-2);
-  --ink-3: var(--sidebar-fg-3);
-  --border: var(--sidebar-line);
-  --tenant-soft: color-mix(in srgb, var(--tenant) 32%, transparent);
-  color: var(--sidebar-fg);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant) 22%, #2f2c2a) 0%,
-      #252322 38%,
-      #1c1b19 100%
-    );
-  border-color: color-mix(in srgb, var(--tenant) 28%, #3a3532);
-  box-shadow:
-    inset -1px 0 0 color-mix(in srgb, white 6%, transparent),
-    8px 0 28px rgba(28, 27, 25, 0.18);
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: none;
 }
 .apple-sidebar .sidebar-nav-link[aria-current='page'] {
-  background: color-mix(in srgb, var(--tenant) 28%, transparent);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tenant) 45%, transparent);
+  background: var(--tenant-soft);
+  color: var(--tenant);
+  font-weight: 600;
+}
+.apple-sidebar .sidebar-nav-link[aria-current='page'] svg {
+  color: var(--tenant);
 }
 .apple-sidebar .sidebar-nav-link:hover {
-  background: color-mix(in srgb, white 7%, transparent);
-  color: #fff;
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+.apple-sidebar .sidebar-nav-link[aria-current='page']:hover {
+  background: color-mix(in srgb, var(--tenant) 12%, white);
+  color: var(--tenant);
+}
+.apple-sidebar .sidebar-nav-link[aria-current='page']:hover svg {
+  color: var(--tenant);
 }
 html.dark .apple-sidebar {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant) 18%, #2a2826) 0%,
-      #1a1917 100%
-    );
+  background: var(--surface);
 }
 
 /* Soft fade where content scrolls under glass chrome */
@@ -331,8 +308,7 @@ html.dark .apple-sidebar {
   line-height: 1.5;
 }
 .ops-page-hero-rule {
-  background: var(--tenant);
-  opacity: 0.9;
+  opacity: 0.95;
 }
 .ops-page-hero-accent {
   background: linear-gradient(
@@ -361,7 +337,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--tenant) 18%, transparent);
+  background: color-mix(in srgb, var(--tenant) 16%, transparent);
   color: var(--ink);
 }
 
@@ -471,10 +447,10 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--tenant) 60%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--tenant) 55%, transparent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tenant) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tenant) 12%, transparent);
 }
 
 /* ============================================================
@@ -560,7 +536,7 @@ textarea:focus-visible,
   }
 }
 
-/* Mobile bottom-nav active pill — diamond-red kick */
+/* Mobile bottom-nav active pill — soft diamond red, not a solid block */
 .nav-pill-active {
   position: relative;
   color: var(--tenant);
@@ -571,8 +547,8 @@ textarea:focus-visible,
   position: absolute;
   inset: 4px 6px;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--tenant-soft) 92%, var(--surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tenant) 22%, transparent);
+  background: color-mix(in srgb, var(--tenant-soft) 88%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tenant) 18%, transparent);
   z-index: 0;
 }
 .nav-pill-active > * {
@@ -775,12 +751,7 @@ main {
       rgb(20 20 20 / 3.5%) 0.8px,
       transparent 1.1px
     ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant-soft) 35%, #efeae2) 0%,
-      #efeae2 28%,
-      #e8e0d5 100%
-    );
+    linear-gradient(180deg, #f4f0ea 0%, #efeae2 28%, #e8e0d5 100%);
   background-size: 22px 22px, 28px 28px, auto;
 }
 
@@ -797,12 +768,7 @@ html.dark .wa-chat-wallpaper {
       rgb(233 237 239 / 3%) 0.8px,
       transparent 1.1px
     ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant-soft) 40%, #0b141a) 0%,
-      #0b141a 32%,
-      #111b21 100%
-    );
+    linear-gradient(180deg, #122028 0%, #0b141a 32%, #111b21 100%);
 }
 
 /* Bubble ink must stay readable — never inherit theme --ink on light surfaces */

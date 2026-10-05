@@ -3,7 +3,10 @@ import Script from 'next/script'
 import { Heebo, Rubik } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
+import { LocaleProvider } from '@/components/i18n/locale-provider'
 import { THEME_BOOT_SCRIPT } from '@/lib/theme'
+import { getLocale } from '@/lib/i18n/server'
+import { localeDir, localeHtmlLang } from '@/lib/i18n/locale'
 import './globals.css'
 
 const heebo = Heebo({
@@ -60,20 +63,23 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale()
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
+    <html lang={localeHtmlLang(locale)} dir={localeDir(locale)} suppressHydrationWarning>
       <body className={`${heebo.variable} ${rubik.variable} font-sans antialiased`}>
         <Script
           id="maintainos-theme-boot"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
-        <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </ThemeProvider>
+        <LocaleProvider locale={locale}>
+          <ThemeProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ThemeProvider>
+        </LocaleProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}`,

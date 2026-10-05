@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { Button } from '@/components/ui/button'
 
 export function RefreshButton({
@@ -13,6 +14,8 @@ export function RefreshButton({
   label?: string
 }) {
   const router = useRouter()
+  const p = usePhrase()
+  const text = p(label)
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
 
@@ -33,7 +36,7 @@ export function RefreshButton({
       type="button"
       variant="ghost"
       size="touch"
-      aria-label={label}
+      aria-label={text}
       aria-busy={pending || busy}
       disabled={pending || busy}
       onClick={handleClick}

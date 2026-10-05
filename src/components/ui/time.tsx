@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatAgeHe, getSlaView } from '@/modules/tickets/sla-display'
 import { SlaValue } from '@/components/ui/signal'
+import { useLocale } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -61,7 +62,8 @@ export function LiveSla({
   className?: string
 }) {
   const now = useTick()
-  const view = getSlaView({ ...ticket, now: now ?? undefined })
+  const { locale } = useLocale()
+  const view = getSlaView({ ...ticket, now: now ?? undefined, locale })
   return (
     <span suppressHydrationWarning data-live="sla" className="live-sla">
       <SlaValue view={view} className={className} />
@@ -77,13 +79,14 @@ export function LiveAge({
   className?: string
 }) {
   const now = useTick()
+  const { locale } = useLocale()
   return (
     <span
       suppressHydrationWarning
       data-live="age"
       className={cn('live-age t-meta t-num text-ink-3', className)}
     >
-      {formatAgeHe(createdAt, now ?? undefined)}
+      {formatAgeHe(createdAt, now ?? undefined, locale)}
     </span>
   )
 }

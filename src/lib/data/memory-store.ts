@@ -1,6 +1,9 @@
 import { DEMO_STORES, type StoreRow } from '@/modules/stores/data'
+import { canonicalStoreCode, ISRAEL_STORES } from '@/modules/stores/israel-stores'
+import { computeSlaTimestamps } from '@/modules/tickets/sla'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import { PREFERRED_VENDOR_SEEDS } from '@/modules/vendors/preferred-seed'
+import { TRIAL_FAULTS } from '@/modules/demo/trial-scenario'
 
 export type MemTicket = {
   id: string
@@ -166,7 +169,12 @@ export function memFindStoreByCodeInCountry(
   countryId: string,
   code: string,
 ): MemStore | undefined {
-  return MEM_STORES.find((s) => s.country_id === countryId && s.code === code)
+  const canonical = canonicalStoreCode(code)
+  return MEM_STORES.find(
+    (s) =>
+      s.country_id === countryId &&
+      (s.code === code || s.code === canonical),
+  )
 }
 
 /** Persist wa_id → store mapping in memory (hybrid identity learn). */
@@ -235,7 +243,7 @@ export type MemSession = {
   active_ticket_id?: string | null
   /** Bamakor-style stash: media received before ticket exists. */
   pending_media_url?: string | null
-  pending_media_kind?: 'image' | 'video' | 'document' | null
+  pending_media_kind?: 'image' | 'video' | 'document' | 'audio' | null
   expires_at: string
   updated_at: string
   /** Private ops window for this wa_id only (bot stays on elsewhere). */
@@ -359,12 +367,14 @@ const DEFAULT_SETTINGS: MemSettings = {
   wa_business_phone:
     process.env.NEXT_PUBLIC_WA_BUSINESS_PHONE?.replace(/\D/g, '') ||
     '972552819086',
-  sla_respond_hours_critical: 2,
-  sla_respond_hours_high: 4,
-  sla_respond_hours_medium: 8,
-  sla_respond_hours_low: 24,
+  sla_respond_hours_critical: 1,
+  sla_respond_hours_high: 2,
+  sla_respond_hours_medium: 4,
+  sla_respond_hours_low: 8,
   notify_email: '',
 }
+
+let seedingTrial = false
 
 function store(): GlobalMem {
   const g = globalThis as typeof globalThis & { __maintainosMem?: GlobalMem }
@@ -398,14 +408,36 @@ function store(): GlobalMem {
     mem.vendors = new Map()
   }
   seedDemoVendors(mem)
-  if (!mem.professionals) {
-    mem.professionals = new Map()
-    seedDemoProfessionals(mem)
-  }
+  if (!mem.professionals) mem.professionals = new Map()
+  seedDemoProfessionals(mem)
   if (!mem.dispatches) mem.dispatches = new Map()
   if (!mem.pushSubs) mem.pushSubs = new Map()
   if (!mem.inboxMessages) mem.inboxMessages = new Map()
   if (!mem.settings) mem.settings = { ...DEFAULT_SETTINGS }
+  const sla = mem.settings
+  if (
+    sla.sla_respond_hours_critical === 2 &&
+    sla.sla_respond_hours_high === 4 &&
+    sla.sla_respond_hours_medium === 8 &&
+    sla.sla_respond_hours_low === 24
+  ) {
+    sla.sla_respond_hours_critical = 1
+    sla.sla_respond_hours_high = 2
+    sla.sla_respond_hours_medium = 4
+    sla.sla_respond_hours_low = 8
+  }
+  if (!seedingTrial && !mem.tickets.has('trial-6001-electrical')) {
+    seedingTrial = true
+    try {
+      seedTrialFaults(mem)
+    } finally {
+      seedingTrial = false
+    }
+  }
+  if (!seedingTrial) {
+    pruneDuplicateTrialTickets(mem)
+    backfillTrialFaults(mem)
+  }
   return mem
 }
 
@@ -510,7 +542,6 @@ function ensurePreferredVendors(mem: GlobalMem, now: string) {
 }
 
 function seedDemoProfessionals(mem: GlobalMem) {
-  if (mem.professionals.size > 0) return
   const now = new Date().toISOString()
   const demos: MemProfessional[] = [
     {
@@ -548,7 +579,146 @@ function seedDemoProfessionals(mem: GlobalMem) {
       deleted_at: null,
     },
   ]
-  for (const p of demos) mem.professionals.set(p.id, p)
+  for (const p of demos) {
+    if (!mem.professionals.has(p.id)) mem.professionals.set(p.id, p)
+  }
+  const extra: MemProfessional[] = [
+    {
+      id: 'pro-demo-plumb-yossi',
+      full_name: 'יוסי אזולאי',
+      phone: '972523334455',
+      trade: 'אינסטלציה',
+      midrag_sector_id: null,
+      midrag_service_id: null,
+      company_name: null,
+      notes: 'נזילות בסניפי המרכז',
+      source: 'manual',
+      is_active: true,
+      use_count: 4,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+    {
+      id: 'pro-demo-lock-michal',
+      full_name: 'מיכל בר',
+      phone: '972527778899',
+      trade: 'מנעולן',
+      midrag_sector_id: null,
+      midrag_service_id: null,
+      company_name: null,
+      notes: 'דלתות ומנעולים אחרי סגירה',
+      source: 'manual',
+      is_active: true,
+      use_count: 2,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+    {
+      id: 'pro-demo-it-roei',
+      full_name: 'רועי חדד',
+      phone: '972528881122',
+      trade: 'קופות ומחשוב',
+      midrag_sector_id: null,
+      midrag_service_id: null,
+      company_name: null,
+      notes: 'מסופי קופה ורשת סניף',
+      source: 'manual',
+      is_active: true,
+      use_count: 6,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+    {
+      id: 'pro-demo-clean-noa',
+      full_name: 'נועה פרץ',
+      phone: '972529990011',
+      trade: 'ניקיון מסחרי',
+      midrag_sector_id: null,
+      midrag_service_id: null,
+      company_name: null,
+      notes: 'פתיחת בוקר',
+      source: 'manual',
+      is_active: true,
+      use_count: 1,
+      last_contacted_at: now,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+  ]
+  for (const p of extra) {
+    if (!mem.professionals.has(p.id)) mem.professionals.set(p.id, p)
+  }
+}
+
+function pruneDuplicateTrialTickets(mem: GlobalMem) {
+  for (const [id, ticket] of [...mem.tickets]) {
+    if (ticket.source === 'trial' && !id.startsWith('trial-')) mem.tickets.delete(id)
+  }
+}
+
+function backfillTrialFaults(mem: GlobalMem) {
+  for (const fault of TRIAL_FAULTS) {
+    const ticket = mem.tickets.get(fault.id)
+    if (!ticket) continue
+    const branch = ISRAEL_STORES.find((row) => row.code === fault.storeCode)
+    if (branch && ticket.reporter_name === ticket.stores?.name) {
+      ticket.reporter_name = branch.managerName
+      ticket.reporter_phone = branch.managerPhone
+    }
+    if (ticket.sla_respond_by && ticket.sla_resolve_by) continue
+    const created = new Date(ticket.created_at)
+    const sla = fault.breachHours
+      ? {
+          sla_respond_by: new Date(Date.now() - fault.breachHours * 3600_000).toISOString(),
+          sla_resolve_by: new Date(
+            Date.now() - Math.max(1, fault.breachHours - 1) * 3600_000,
+          ).toISOString(),
+        }
+      : computeSlaTimestamps(fault.priority, created)
+    ticket.sla_respond_by = sla.sla_respond_by
+    ticket.sla_resolve_by = sla.sla_resolve_by
+  }
+}
+
+function seedTrialFaults(mem: GlobalMem) {
+  const nowMs = Date.now()
+  for (const fault of TRIAL_FAULTS) {
+    if (mem.tickets.has(fault.id)) continue
+    const store = memFindStoreByCode(fault.storeCode)
+    if (!store) continue
+    const branch = ISRAEL_STORES.find((row) => row.code === fault.storeCode)
+    const createdDate = new Date(nowMs - fault.hoursAgo * 3600_000)
+    const sla = fault.breachHours
+      ? {
+          sla_respond_by: new Date(nowMs - fault.breachHours * 3600_000).toISOString(),
+          sla_resolve_by: new Date(
+            nowMs - Math.max(1, fault.breachHours - 1) * 3600_000,
+          ).toISOString(),
+        }
+      : computeSlaTimestamps(fault.priority, createdDate)
+    memCreate({
+      id: fault.id,
+      store,
+      description: fault.description,
+      priority: fault.priority,
+      category: fault.category,
+      source: 'trial',
+      reporterName: branch?.managerName ?? store.name,
+      reporterPhone: branch?.managerPhone,
+      title: fault.title,
+      createdAt: createdDate.toISOString(),
+      status: fault.assignDemoTech ? 'assigned' : 'new',
+      assigned_to: fault.assignDemoTech ? DEMO_TECH_ID : null,
+      ...sla,
+    })
+  }
 }
 
 /** Test/demo helper: wipe in-memory tickets/sessions (FORCE_MEMORY only). */
@@ -626,7 +796,7 @@ export function memDemoTechnicians() {
 }
 
 export function memStore(code: string): StoreRow | undefined {
-  return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
+  return memFindStoreByCodeInCountry(MEM_COUNTRY_ID, code)
 }
 
 export function memFindStoreById(id: string): MemStore | undefined {
@@ -642,7 +812,7 @@ export function memCountryIdFromCode(code?: string | null): string | null {
 }
 
 export function memFindStoreByCode(code: string): MemStore | undefined {
-  return MEM_STORES.find((s) => s.country_id === MEM_COUNTRY_ID && s.code === code)
+  return memFindStoreByCodeInCountry(MEM_COUNTRY_ID, code)
 }
 
 export function memListStores(opts?: {
@@ -693,6 +863,7 @@ export function memCreateStore(input: {
 export function memUpdateStore(
   id: string,
   patch: {
+    code?: string
     name?: string
     city?: string | null
     address?: string | null
@@ -702,6 +873,17 @@ export function memUpdateStore(
 ): MemStore {
   const store = MEM_STORES.find((s) => s.id === id)
   if (!store) throw new Error('חנות לא נמצאה')
+  if (patch.code !== undefined) {
+    const code = patch.code.trim()
+    if (!/^\d{1,6}$/.test(code)) {
+      throw new Error('קוד חנות חייב להיות טקסט מספרי (עד 6 ספרות)')
+    }
+    const clash = MEM_STORES.find(
+      (s) => s.country_id === store.country_id && s.code === code && s.id !== id,
+    )
+    if (clash) throw new Error(`חנות עם קוד ${code} כבר קיימת`)
+    store.code = code
+  }
   if (patch.name !== undefined) {
     const name = patch.name.trim()
     if (!name) throw new Error('שם חנות חובה')
@@ -730,6 +912,7 @@ export function memDeleteTicket(id: string): boolean {
 }
 
 export function memCreate(input: {
+  id?: string
   store: StoreRow | { id: string; code: string; name: string; city: string | null; address?: string | null; region_id?: string }
   description: string
   priority: TicketPriority | string
@@ -743,12 +926,16 @@ export function memCreate(input: {
   sla_resolve_by?: string
   status?: TicketStatus | string
   assigned_to?: string | null
+  createdAt?: string
 }): MemTicket {
   const mem = store()
+  if (input.id && mem.tickets.has(input.id)) {
+    return mem.tickets.get(input.id)!
+  }
   mem.seq += 1
   const number = mem.seq
-  const id = crypto.randomUUID()
-  const now = new Date().toISOString()
+  const id = input.id ?? crypto.randomUUID()
+  const now = input.createdAt ?? new Date().toISOString()
   const ticket: MemTicket = {
     id,
     organization_id:
@@ -820,6 +1007,30 @@ export function memCreate(input: {
   return ticket
 }
 
+export function memUpdatePriority(
+  id: string,
+  priority: string,
+  sla: { sla_respond_by: string; sla_resolve_by: string },
+  actorId: string | null = null,
+): MemTicket {
+  const ticket = store().tickets.get(id)
+  if (!ticket) throw new Error('תקלה לא נמצאה')
+  const from = String(ticket.priority)
+  ticket.priority = priority
+  ticket.sla_respond_by = sla.sla_respond_by
+  ticket.sla_resolve_by = sla.sla_resolve_by
+  ticket.updated_at = new Date().toISOString()
+  ticket.events.push({
+    id: `${id}-ev-${ticket.events.length + 1}`,
+    ticket_id: id,
+    event_type: 'priority_changed',
+    actor_id: actorId,
+    payload: { from, to: priority },
+    created_at: ticket.updated_at,
+  })
+  return ticket
+}
+
 export function memUpdateStatus(
   id: string,
   nextStatus: string,
@@ -885,7 +1096,7 @@ export function memAssign(
       }
     : { id: assignedTo, full_name: null, email: null, phone: null }
 
-  if (from === 'new' || from === 'triaged') {
+  if (from === 'new' || from === 'triaged' || from === 'awaiting_info') {
     ticket.status = 'assigned'
     ticket.events.push({
       id: `${id}-ev-${ticket.events.length + 1}`,
@@ -970,7 +1181,7 @@ export function memUpsertSession(
     draft_payload?: Record<string, unknown> | null
     active_ticket_id?: string | null
     pending_media_url?: string | null
-    pending_media_kind?: 'image' | 'video' | 'document' | null
+    pending_media_kind?: 'image' | 'video' | 'document' | 'audio' | null
   },
 ): MemSession {
   const now = new Date().toISOString()

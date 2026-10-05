@@ -428,7 +428,7 @@ export function InboxClient() {
                 >
                   <span
                     aria-hidden
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-sm font-semibold text-[var(--tenant)] ring-1 ring-[var(--tenant-line)]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-sm font-semibold text-[var(--tenant)]"
                   >
                     {initialsFrom(title)}
                   </span>
@@ -552,12 +552,12 @@ export function InboxClient() {
         </div>
       ) : (
         <>
-          <header className="flex shrink-0 items-center gap-3 bg-[var(--tenant)] px-3 py-2.5 text-[var(--tenant-contrast)] shadow-[var(--shadow-1)]">
+          <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-3 py-2.5 text-ink">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="-ms-1 shrink-0 text-[var(--tenant-contrast)] hover:bg-white/10 hover:text-[var(--tenant-contrast)] lg:hidden"
+              className="-ms-1 shrink-0 text-ink lg:hidden"
               onClick={backToList}
               aria-label="חזרה לרשימה"
             >
@@ -565,7 +565,7 @@ export function InboxClient() {
             </Button>
             <span
               aria-hidden
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-semibold"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--tenant-soft)] text-sm font-semibold text-[var(--tenant)]"
             >
               {initialsFrom(sessionTitle(active))}
             </span>
@@ -584,7 +584,7 @@ export function InboxClient() {
                 disabled={busy}
                 variant="ghost"
                 aria-label="מחק שיחה מתיבת Ops"
-                className="h-8 border-0 px-2 text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]"
+                className="h-8 border-0 px-2 text-ink-2 hover:bg-surface-sunken hover:text-ink"
                 onClick={() => void clearChat()}
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
@@ -597,8 +597,8 @@ export function InboxClient() {
                 className={cn(
                   'h-8 border-0 px-2.5 text-[12px]',
                   waiting
-                    ? 'bg-white text-[var(--tenant)] hover:bg-white/90'
-                    : 'text-[var(--tenant-contrast)] hover:bg-white/15 hover:text-[var(--tenant-contrast)]',
+                    ? 'bg-surface-sunken text-ink hover:bg-surface-sunken'
+                    : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'waiting')}
               >
@@ -613,7 +613,7 @@ export function InboxClient() {
                   'h-8 border-0 px-2.5 text-[12px]',
                   !waiting
                     ? undefined
-                    : 'bg-white/20 text-[var(--tenant-contrast)] hover:bg-white/30 hover:text-[var(--tenant-contrast)]',
+                    : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
                 )}
                 onClick={() => void setInboxStatus(active.wa_id, 'handled')}
               >
@@ -652,7 +652,7 @@ export function InboxClient() {
                     {i > 0 ? ', ' : ''}
                     <Link
                       href={`/ops/tickets/${t.id}`}
-                      className="font-medium text-[var(--tenant)] hover:underline"
+                      className="font-medium text-ink underline-offset-2 hover:underline"
                     >
                       {t.display_number || `${t.id.slice(0, 8)}…`}
                     </Link>
@@ -702,7 +702,7 @@ export function InboxClient() {
                           {item.message.ticket_id ? (
                             <Link
                               href={`/ops/tickets/${item.message.ticket_id}`}
-                              className="me-auto text-[10px] text-[var(--tenant)] hover:underline"
+                              className="me-auto text-[10px] text-ink-2 underline-offset-2 hover:underline"
                             >
                               תקלה {item.message.ticket_id.slice(0, 8)}…
                             </Link>
@@ -810,7 +810,7 @@ export function InboxClient() {
       </div>
 
       {/* Desktop: fixed WhatsApp-like stage */}
-      <div className="mx-auto hidden h-[min(580px,70vh)] w-full max-w-[860px] gap-3 lg:grid lg:grid-cols-[220px_400px_200px] lg:justify-center">
+      <div className="mx-auto hidden h-[min(580px,70vh)] w-full max-w-[860px] gap-3 max-lg:hidden lg:grid lg:grid-cols-[220px_400px_200px] lg:justify-center">
         {listPanel}
         {conversationPanel}
         {contextPanel ?? (

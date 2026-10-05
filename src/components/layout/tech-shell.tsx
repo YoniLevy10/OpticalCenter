@@ -1,9 +1,13 @@
+'use client'
+
 import { BackButton } from '@/components/layout/back-button'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { cn } from '@/lib/utils'
+import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { LogoutButton } from '@/components/auth/logout-button'
 
 /**
@@ -35,6 +39,7 @@ export function TechShell({
   headerActions?: React.ReactNode
   enablePullToRefresh?: boolean
 }) {
+  const p = usePhrase()
   const body = (
     <main
       id="main-content"
@@ -58,14 +63,15 @@ export function TechShell({
             <BrandMark size={32} className="mt-0.5 rounded-[var(--radius-md)]" alt="" />
           ) : null}
           <div className="min-w-0 flex-1">
-            <p className="t-caption text-ink-3">{eyebrow ?? 'Optical Center · טכנאי'}</p>
-            <h1 className="t-title mt-0.5 truncate text-ink">{title}</h1>
+            <p className="t-caption text-ink-3">{p(eyebrow ?? 'Optical Center · טכנאי')}</p>
+            <h1 className="t-title mt-0.5 truncate text-ink">{p(title)}</h1>
             {subtitle ? (
               <div className="t-meta mt-0.5 truncate text-ink-2">{subtitle}</div>
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {headerActions}
+            <LocaleSwitcher />
             <ThemeToggle compact />
             <LogoutButton size="touch" className="shrink-0" />
           </div>
@@ -76,7 +82,7 @@ export function TechShell({
 
       {actions ? (
         <div
-          aria-label="פעולות עבודה"
+          aria-label={p('פעולות עבודה')}
           className="apple-glass fixed inset-x-3 z-40 rounded-xl border border-white/50"
           style={{ bottom: 'calc(var(--safe-b) + 12px)' }}
         >

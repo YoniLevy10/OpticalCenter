@@ -3,6 +3,7 @@ import { createTicket, listTickets } from '@/modules/tickets/service'
 import { memReset } from '@/lib/data/memory-store'
 import { dispatchToVendor } from '@/modules/vendors/dispatch'
 import { memListVendors } from '@/lib/data/memory-store'
+import { applySpendDecision, createSpend, resetOpsLedger } from '@/lib/data/ops-ledger'
 
 process.env.MAINTAINOS_FORCE_MEMORY = '1'
 
@@ -40,6 +41,7 @@ describe('Phase C — partner dispatch', () => {
   beforeEach(() => {
     process.env.MAINTAINOS_FORCE_MEMORY = '1'
     memReset()
+    resetOpsLedger()
   })
 
   it('is idempotent and attaches HMAC', async () => {
@@ -51,6 +53,20 @@ describe('Phase C — partner dispatch', () => {
     })
     const vendor = memListVendors(true)[0]
     expect(vendor).toBeTruthy()
+
+    const spend = createSpend({
+      storeId: ticket.store_id,
+      storeCode: '172',
+      storeName: 'תל אביב',
+      ticketId: ticket.id,
+      reason: 'שיגור ספק',
+      vendorName: vendor!.name,
+      requestedAmount: 100,
+      scope: 'ביקור',
+      urgent: false,
+      actor: 'ארי',
+    })
+    applySpendDecision(spend.id, 'approved', 'ארי')
 
     const key = `test-${ticket.id}-${vendor!.id}`
     const a = await dispatchToVendor({
