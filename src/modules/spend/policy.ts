@@ -20,6 +20,8 @@ export type SpendRequest = {
   needsReapproval: boolean
   createdAt: string
   updatedAt: string
+  /** WhatsApp sender to answer after Ari decides. */
+  originWaId?: string | null
 }
 
 export function canExecuteSpend(spend: SpendRequest | null | undefined): boolean {

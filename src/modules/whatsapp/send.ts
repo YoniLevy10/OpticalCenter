@@ -31,6 +31,8 @@ export type SendWhatsAppParams = {
   purpose?: OutboundPurpose
   /** When true, do not write to the durable retry queue (cron retries). */
   skipFailureQueue?: boolean
+  /** In-window reply buttons. Outside 24h the caller falls back to a utility template. */
+  buttons?: Array<{ id: string; title: string }>
 }
 
 export type SendWhatsAppResult = {
@@ -81,6 +83,45 @@ function hebrewGraphError(json: GraphErrorBody, status: number): string {
     return `בקשת WhatsApp נדחתה על ידי Meta (${msg})`
   }
   return msg
+}
+
+function graphBody(
+  toWaId: string,
+  text: string,
+  buttons?: Array<{ id: string; title: string }>,
+) {
+  const usable = (buttons ?? [])
+    .map((button) => ({
+      id: button.id.trim().slice(0, 256),
+      title: button.title.trim().slice(0, 20),
+    }))
+    .filter((button) => button.id && button.title)
+    .slice(0, 3)
+  if (usable.length === 0) {
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: toWaId,
+      type: 'text',
+      text: { body: text, preview_url: false },
+    }
+  }
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: toWaId,
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text },
+      action: {
+        buttons: usable.map((button) => ({
+          type: 'reply',
+          reply: { id: button.id, title: button.title },
+        })),
+      },
+    },
+  }
 }
 
 /**
@@ -162,13 +203,7 @@ export async function sendWhatsAppText(
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              messaging_product: 'whatsapp',
-              recipient_type: 'individual',
-              to: toWaId,
-              type: 'text',
-              text: { body: params.text, preview_url: false },
-            }),
+            body: JSON.stringify(graphBody(toWaId, params.text, params.buttons)),
           },
         )
         const json = (await res.json()) as GraphErrorBody

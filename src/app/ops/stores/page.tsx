@@ -15,10 +15,11 @@ import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { listTickets } from '@/modules/tickets/service'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { getLocale } from '@/lib/i18n/server'
+import { phrase } from '@/lib/i18n/phrases'
 import { cn } from '@/lib/utils'
 import {
   IL_REGION_CODES,
-  IL_REGION_LABELS_HE,
   regionCodeFromId,
   regionLabel,
   type IlRegionCode,
@@ -96,6 +97,8 @@ export default async function StoresPage({
     return qs ? `/ops/stores?${qs}` : '/ops/stores'
   }
 
+  const locale = await getLocale()
+  const p = (text: string) => phrase(locale, text)
   const openStores = filtered.filter(
     (s) => (openCountByStore.get(s.id) ?? 0) > 0,
   ).length
@@ -106,8 +109,8 @@ export default async function StoresPage({
         <OpsPageHero
           largeTitle
           title="חנויות"
-          status={`${activeCount} סניפים פעילים${
-            openStores > 0 ? ` · ${openStores} עם תקלות פתוחות` : ''
+          status={`${activeCount} ${p('סניפים פעילים')}${
+            openStores > 0 ? ` · ${openStores} ${p('עם תקלות פתוחות')}` : ''
           }`}
           actions={canMutate ? <StoreCreateForm /> : undefined}
         />
@@ -139,7 +142,7 @@ export default async function StoresPage({
                   : 'text-ink-3 hover:text-ink',
               )}
             >
-              {IL_REGION_LABELS_HE[code]} · {byRegion.get(code) ?? 0}
+              {regionLabel(code, locale)} · {byRegion.get(code) ?? 0}
             </Link>
           ))}
         </div>
@@ -177,7 +180,7 @@ export default async function StoresPage({
                     title={s.name}
                     subtitle={
                       [
-                        regionLabelHe(s.region_id),
+                        regionLabel(s.region_id, locale),
                         s.city,
                         s.manager_name,
                         s.manager_phone,

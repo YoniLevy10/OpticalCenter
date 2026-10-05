@@ -28,7 +28,9 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
+import { Tx } from '@/components/i18n/tx'
 import { getLocale } from '@/lib/i18n/server'
+import { phrase } from '@/lib/i18n/phrases'
 import { translate } from '@/lib/i18n/messages'
 
 export const dynamic = 'force-dynamic'
@@ -40,9 +42,10 @@ const FETCH_LIMIT = 200
 function technicianName(
   id: string | null | undefined,
   techs: { id: string; name: string }[],
+  locale: 'he' | 'en' | 'fr',
 ): string {
-  if (!id) return 'לא משויך'
-  return techs.find((t) => t.id === id)?.name ?? 'טכנאי'
+  if (!id) return phrase(locale, 'לא משויך')
+  return techs.find((t) => t.id === id)?.name ?? phrase(locale, 'טכנאי')
 }
 
 export default async function TicketsPage({
@@ -155,7 +158,9 @@ export default async function TicketsPage({
             <TicketFilters />
           </Suspense>
         </div>
-        <p className="t-caption text-ink-3">מיון: מהחדש לישן</p>
+        <p className="t-caption text-ink-3">
+          <Tx text="מיון: מהחדש לישן" />
+        </p>
 
         {listError ? (
           <ErrorState
@@ -163,7 +168,9 @@ export default async function TicketsPage({
             description={listError}
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link href="/ops/tickets">רענון</Link>
+                <Link href="/ops/tickets">
+                  <Tx text="רענון" />
+                </Link>
               </Button>
             }
           />
@@ -191,7 +198,7 @@ export default async function TicketsPage({
                   key={t.id}
                   ticket={t}
                   view={view}
-                  assigneeLabel={technicianName(t.assigned_to, technicians)}
+                  assigneeLabel={technicianName(t.assigned_to, technicians, locale)}
                 />
               ))}
             </div>

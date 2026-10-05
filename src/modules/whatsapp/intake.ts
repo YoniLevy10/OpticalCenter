@@ -34,6 +34,7 @@ import { humanPauseUntilIso, isHumanPauseActive } from './human-pause'
 import { handoffReply, isStatusQuestion, statusReply, voiceNeedsReviewReply } from './intent'
 import { transcribeVoice } from './voice'
 import { spendForTicket } from '@/lib/data/ops-ledger'
+import { landVoiceReview, lookupStore, routeInboundToDesk } from './desk-route'
 
 function ticketSpendApproved(ticketId: string): boolean | null {
   const spend = spendForTicket(ticketId)
@@ -1030,6 +1031,11 @@ export async function processInboundMessage(
         country.whatsapp_access_token,
       )
       if (!transcribed.text) {
+        await landVoiceReview({
+          waId: message.waId,
+          store: lookupStore(session.store_code),
+          dryRun: options?.skipOutboundGraph === true,
+        })
         const reply = await craftIntakeReply(
           voiceNeedsReviewReply(),
           'intake_voice_review',
@@ -1094,6 +1100,32 @@ export async function processInboundMessage(
         session,
       )
       return { ok: true, reply, ticketId: session.active_ticket_id, state: 'done' }
+    }
+
+    const desk = await routeInboundToDesk({
+      text: spoken ?? null,
+      mediaKind: message.mediaKind,
+      fileName: message.fileName,
+      mediaUrl: message.mediaUrl,
+      waId: message.waId,
+      sessionStore: session.store_id
+        ? {
+            id: session.store_id,
+            code: session.store_code || lookupStore(session.store_code)?.code || '',
+            name: lookupStore(session.store_code)?.name || session.store_code || '',
+          }
+        : lookupStore(session.store_code),
+      dryRun: options?.skipOutboundGraph === true,
+    })
+    if (desk) {
+      // Keep the approval sentence exact. A rewrite must not say the money was approved.
+      await sendReply(supabase, message, country, desk.reply, null, options, session)
+      return {
+        ok: true,
+        reply: desk.reply,
+        storeReply: desk.storeReply,
+        state: session.state,
+      }
     }
 
     const storeCodeFromText = storeCodeHint

@@ -30,6 +30,15 @@ export const AYA_PHONE = '050-22840204'
 export const AYA_STORE_CODE = '6018'
 /** Optical Center ops owner. Text, so a leading zero is kept. */
 export const ARI_PHONE = '0509881951'
+/**
+ * Extra desk manager for tests, until the live pilot covers the store network.
+ * Stored exactly as given. Not a store and not a replacement for Ari.
+ */
+export const TEST_DESK_PHONE = '0548102688'
+
+export function deskPhones(): string[] {
+  return [ARI_PHONE, TEST_DESK_PHONE]
+}
 
 export type DirectoryContact = {
   id: string
@@ -123,7 +132,17 @@ function seedContacts(): DirectoryContact[] {
       isActive: true,
     })
   }
-  return [...byPhone.values()]
+  const contacts = [...byPhone.values()]
+  contacts.push({
+    id: 'contact-test-desk',
+    fullName: 'מנהל בדיקות',
+    phone: TEST_DESK_PHONE,
+    phoneStatus: 'ok',
+    roleLabel: 'מנהל מערכת',
+    storeIds: [],
+    isActive: true,
+  })
+  return contacts
 }
 
 function seedLedger(): Ledger {
@@ -492,6 +511,7 @@ export function createSpend(
     status: 'pending',
     urgent: input.urgent,
     requestedBy: input.requestedBy ?? input.actor,
+    originWaId: input.originWaId ?? null,
     decidedBy: null,
     decidedAt: null,
     needsReapproval: false,
@@ -560,6 +580,28 @@ export function recordActualSpend(id: string, actualAmount: number, actor: strin
 
 export function listDocuments(): StoreDocument[] {
   return ledger.documents
+}
+
+export function decideStoredDocument(
+  id: string,
+  decision: 'approved' | 'rejected' | 'needs_info',
+): StoreDocument {
+  const doc = ledger.documents.find((row) => row.id === id)
+  if (!doc) throw new Error('מסמך לא נמצא')
+  if (decision === 'approved') {
+    doc.intakeStatus = 'ingested'
+    doc.intakeReason = null
+    doc.fieldsLocked = true
+  } else if (decision === 'rejected') {
+    doc.intakeStatus = 'failed'
+    doc.intakeReason = 'נדחה על ידי ארי'
+    doc.fieldsLocked = true
+  } else {
+    doc.intakeStatus = 'needs_review'
+    doc.intakeReason = 'ארי ביקש מידע נוסף'
+  }
+  doc.localUpdatedAt = new Date().toISOString()
+  return doc
 }
 
 export function addDocument(

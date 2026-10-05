@@ -39,11 +39,11 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
-import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { ThemeToggleOnDark } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { LargeTitleScrollSync } from '@/components/ops/large-title'
 import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
-import { useT } from '@/components/i18n/locale-provider'
+import { usePhrase, useT } from '@/components/i18n/locale-provider'
 import type { MessageKey } from '@/lib/i18n/messages'
 import { cn } from '@/lib/utils'
 
@@ -230,28 +230,23 @@ function SidebarNavLink({
 }) {
   const active = isActive(pathname, item.match)
   const Icon = item.icon
-  const mark = sectionMark(item.href)
 
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 transition-colors duration-[var(--dur-1)]',
-        active ? 'text-[var(--tenant)]' : 'text-ink-2',
+        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        active ? 'text-ink' : 'text-ink-2',
       )}
     >
-      <span
+      <Icon
         className={cn(
-          'flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-          active ? 'bg-transparent' : sectionChipClass[mark],
+          'h-4 w-4 shrink-0',
+          active ? 'text-[var(--tenant)]' : 'text-ink-3',
         )}
-      >
-        <Icon
-          className={cn('h-3.5 w-3.5', !active && sectionIconClass[mark])}
-          aria-hidden
-        />
-      </span>
+        aria-hidden
+      />
       <NavText href={item.href} fallback={item.label} />
     </Link>
   )
@@ -326,6 +321,7 @@ export function AppShell({
 }) {
   const pathname = usePathname() ?? ''
   const t = useT()
+  const p = usePhrase()
   const [menuOpen, setMenuOpen] = useState(false)
   const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
   const fillMain = pathname.startsWith('/ops/inbox')
@@ -337,7 +333,7 @@ export function AppShell({
       <LargeTitleScrollSync />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
-        aria-label="תפריט צד"
+        aria-label={p('תפריט צד')}
         className="apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e border-border/80 text-ink start-0 md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
@@ -359,7 +355,7 @@ export function AppShell({
           </Link>
         </div>
 
-        <nav aria-label="ניווט עיקרי" className="flex-1 overflow-y-auto px-3 py-4">
+        <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-3 py-4">
           <p className="t-caption mb-2 px-2.5 text-ink-3">{t('nav.control')}</p>
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
@@ -388,11 +384,11 @@ export function AppShell({
         <div className="border-t border-border/70 p-3">
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
             <span className="t-caption text-ink-3">{t('nav.language')}</span>
-            <LocaleSwitcher />
+            <LocaleSwitcher tone="onDark" />
           </div>
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
             <span className="t-caption text-ink-3">{t('nav.theme')}</span>
-            <ThemeToggle compact />
+            <ThemeToggleOnDark />
           </div>
           <div className="px-2.5">
             <LogoutButton className="w-full justify-start px-0 text-ink-2 hover:text-ink" />
@@ -415,7 +411,7 @@ export function AppShell({
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
         >
-          <Link href="/ops/dashboard" aria-label="דשבורד" className="shrink-0">
+          <Link href="/ops/dashboard" aria-label={t('nav.dashboard')} className="shrink-0">
             <TenantMark />
           </Link>
           <div className="min-w-0 flex-1">
@@ -433,7 +429,7 @@ export function AppShell({
           </div>
           <button
             type="button"
-            aria-label="תפריט ניווט"
+            aria-label={p('תפריט ניווט')}
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             onClick={() => setMenuOpen(true)}
@@ -479,7 +475,7 @@ export function AppShell({
 
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
-        aria-label="ניווט תחתון"
+        aria-label={p('ניווט תחתון')}
         className="fixed inset-x-3 z-30 md:hidden"
         style={{ bottom: 'calc(var(--safe-b) + var(--bottomnav-gap))' }}
       >
@@ -490,7 +486,6 @@ export function AppShell({
           {PRIMARY.map((item) => {
             const active = isActive(pathname, item.match)
             const Icon = item.icon
-            const mark = sectionMark(item.href)
             return (
               <li key={item.href} className="flex-1">
                 <Link
@@ -498,7 +493,7 @@ export function AppShell({
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'press-scale flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
-                    active ? 'nav-pill-active' : sectionIconClass[mark],
+                    active ? 'nav-pill-active' : 'text-ink-3',
                   )}
                 >
                   <Icon className="h-5 w-5" aria-hidden />

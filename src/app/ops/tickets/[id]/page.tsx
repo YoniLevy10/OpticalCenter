@@ -24,6 +24,8 @@ import {
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
 import { TicketMidragPanel } from './ticket-midrag-panel'
+import { Tx } from '@/components/i18n/tx'
+import { phrase } from '@/lib/i18n/phrases'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
@@ -86,13 +88,15 @@ export default async function TicketDetailPage({
     ticket.assignee ??
     technicians.find((t) => t.id === ticket.assigned_to) ??
     null
-  const openFor = plainOpenForHe(ticket.created_at, ticket)
-  const storeHeading = storeLabel(ticket.stores)
-  const whatsBroken = ticket.description || ticket.title || 'ללא תיאור'
+  const locale = await getLocale()
+  const p = (text: string) => phrase(locale, text)
+  const openFor = plainOpenForHe(ticket.created_at, ticket, new Date(), locale)
+  const storeHeading = storeLabel(ticket.stores, locale)
+  const whatsBroken = ticket.description || ticket.title || p('ללא תיאור')
   const reporter =
     ticket.reporter_name?.trim() ||
     ticket.reporter_phone?.trim() ||
-    'דיווח מהחנות'
+    p('דיווח מהחנות')
 
   const history = await listTickets({ limit: 200 }).catch(() => ({ tickets: [] }))
   const hits = findRecurrences(
@@ -115,7 +119,6 @@ export default async function TicketDetailPage({
     })),
   )
   const prevention = suggestPrevention(hits)
-  const locale = await getLocale()
   const tx = (key: MessageKey, vars?: Record<string, string | number>) =>
     translate(locale, key, vars)
   const categoryKey = `category.${ticket.category}` as MessageKey
@@ -171,14 +174,14 @@ export default async function TicketDetailPage({
     ...vendorMatches,
   ]
 
-  const storyLines: string[] = [`נפתחה על ידי ${reporter}`]
+  const storyLines: string[] = [`${p('נפתחה על ידי')} ${reporter}`]
   if (assignee) {
     storyLines.push(
-      `שויכה ל${assignee.full_name || assignee.email || 'טכנאי'}`,
+      `${p('שויכה ל')} ${assignee.full_name || assignee.email || p('טכנאי')}`,
     )
   }
   if (ticket.status === 'resolved' || ticket.status === 'closed') {
-    storyLines.push('הסתיימה')
+    storyLines.push(p('הסתיימה'))
   }
 
   return (
@@ -213,7 +216,7 @@ export default async function TicketDetailPage({
         <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label={tx('ticket.opened')}>
-              {plainAgoHe(ticket.created_at)}
+              {plainAgoHe(ticket.created_at, new Date(), locale)}
             </KeyValue>
             <KeyValue label={tx('ticket.urgency')}>
               {tx(`priority.${priority}`)}
@@ -233,7 +236,9 @@ export default async function TicketDetailPage({
 
         {hits.length > 0 ? (
           <Panel elevated>
-            <p className="t-section mb-3 text-ink">אירועים דומים</p>
+            <p className="t-section mb-3 text-ink">
+              <Tx text="אירועים דומים" />
+            </p>
             <p className="t-meta mb-2 text-ink-2">{recurrenceBasis(hits)}</p>
             <ul className="space-y-1">
               {hits.slice(0, 5).map((hit) => (
@@ -248,13 +253,17 @@ export default async function TicketDetailPage({
 
         {attachments.length > 0 ? (
           <Panel elevated>
-            <p className="t-section mb-3 text-ink">תיעוד</p>
+            <p className="t-section mb-3 text-ink">
+              <Tx text="תיעוד" />
+            </p>
             <EvidenceGrid attachments={attachments} />
           </Panel>
         ) : null}
 
         <Panel elevated>
-          <p className="t-section mb-3 text-ink">מה קרה עד עכשיו</p>
+          <p className="t-section mb-3 text-ink">
+            <Tx text="מה קרה עד עכשיו" />
+          </p>
           <ul className="space-y-2">
             {storyLines.map((line) => (
               <li key={line} className="t-body text-ink-2">

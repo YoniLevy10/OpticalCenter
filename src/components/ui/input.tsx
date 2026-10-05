@@ -115,6 +115,8 @@ export function SearchField({
   autoFocusKey?: string
 }) {
   const ref = React.useRef<HTMLInputElement>(null)
+  const p = usePhrase()
+  const hint = placeholder ? p(placeholder) : p('חיפוש')
 
   React.useEffect(() => {
     if (!autoFocusKey) return
@@ -145,14 +147,14 @@ export function SearchField({
         type="search"
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder ?? 'חיפוש'}
+        placeholder={hint}
+        aria-label={hint}
         className={cn(fieldBase, 'h-11 ps-9 pe-9 md:h-9')}
       />
       {value ? (
         <button
           type="button"
-          aria-label="ניקוי חיפוש"
+          aria-label={p('ניקוי חיפוש')}
           onClick={() => onValueChange('')}
           className="absolute top-0 bottom-0 my-auto flex h-6 w-6 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-canvas hover:text-ink end-2"
         >

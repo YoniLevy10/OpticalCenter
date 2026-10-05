@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { BrandMark } from '@/components/brand/brand-mark'
+import { Tx } from '@/components/i18n/tx'
 
 export default function NotFound() {
   return (
@@ -10,13 +11,17 @@ export default function NotFound() {
           <BrandMark size={56} className="rounded-[var(--radius-lg)]" />
         </div>
         <p className="t-caption t-num text-ink-3">404</p>
-        <h1 className="t-title mt-1 text-ink">הדף לא נמצא</h1>
+        <h1 className="t-title mt-1 text-ink">
+          <Tx text="הדף לא נמצא" />
+        </h1>
         <p className="t-body mt-2 text-ink-2">
-          ייתכן שהתקלה נמחקה או שהקישור אינו תקין.
+          <Tx text="ייתכן שהתקלה נמחקה או שהקישור אינו תקין." />
         </p>
         <div className="mt-5">
           <Button asChild variant="primary">
-            <Link href="/ops/dashboard">חזרה לדשבורד</Link>
+            <Link href="/ops/dashboard">
+              <Tx text="חזרה לדשבורד" />
+            </Link>
           </Button>
         </div>
       </div>

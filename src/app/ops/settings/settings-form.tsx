@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
 import { ErrorState, Notice, SuccessNotice } from '@/components/ui/primitives'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge'
 import { SegmentedButtons } from '@/components/ui/segmented'
@@ -27,6 +28,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
 ]
 
 export function SettingsForm({ initial }: { initial: MemSettings }) {
+  const p = usePhrase()
   const [form, setForm] = useState(initial)
   const [section, setSection] = useState<SectionId>('profile')
   const [busy, setBusy] = useState(false)
@@ -217,7 +219,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
               <GroupedSection title="שפה">
                 <GroupedRow>
                   <p className="t-body text-ink-2">
-                    עברית, English ו־Français זמינות בתפריט הצד, ליד ערכת הנושא.
+                    {p('עברית, English ו-Français זמינות בתפריט הצד, ליד ערכת הנושא.')}
                   </p>
                 </GroupedRow>
               </GroupedSection>

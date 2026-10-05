@@ -19,6 +19,7 @@ import { renewDocument } from '@/modules/documents/rules'
 import {
   AYA_PHONE,
   ARI_PHONE,
+  TEST_DESK_PHONE,
   listContacts,
   proposeContactPhone,
   resetOpsLedger,
@@ -72,6 +73,10 @@ describe('Ari control center', () => {
     expect(ari?.phone.replace(/\D/g, '')).toBe(ARI_PHONE)
     const aya = listContacts().find((contact) => contact.id === 'contact-aya-6018')
     expect(aya?.phoneStatus).toBe('needs_verification')
+    const desk = listContacts().find((contact) => contact.id === 'contact-test-desk')
+    expect(desk?.phone).toBe(TEST_DESK_PHONE)
+    expect(desk?.roleLabel).toBe('מנהל מערכת')
+    expect(desk?.storeIds).toEqual([])
   })
 
   it('keeps Aya’s phone text and opens a conflict instead of auto-correcting', () => {

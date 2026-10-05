@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown, QrCode } from 'lucide-react'
+import { usePhrase } from '@/components/i18n/locale-provider'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -17,14 +18,15 @@ type StoreQrItem = {
  */
 export function StoreQrAccordion({ stores }: { stores: StoreQrItem[] }) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const p = usePhrase()
 
   if (stores.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-2" aria-label="QR לפי סניף">
-      <h2 className="t-section text-ink">QR לפי סניף</h2>
+    <section className="flex flex-col gap-2" aria-label={p('QR לפי סניף')}>
+      <h2 className="t-section text-ink">{p('QR לפי סניף')}</h2>
       <p className="t-caption text-ink-3">
-        פתחו סניף כדי להציג QR, להוריד PNG או לבדוק את קישור ה־WhatsApp.
+        {p('פתחו סניף כדי להציג QR, להוריד PNG או לבדוק את קישור ה־WhatsApp.')}
       </p>
       <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-border/80 bg-surface divide-y divide-border">
         {stores.map((s) => {
@@ -60,7 +62,7 @@ export function StoreQrAccordion({ stores }: { stores: StoreQrItem[] }) {
                 <div className="flex flex-col items-center gap-3 border-t border-border/60 bg-surface-sunken/30 px-4 py-4">
                   {!s.deepLink ? (
                     <p className="t-body text-ink-2">
-                      חסר מספר WhatsApp עסקי — הגדירו בהגדרות.
+                      {p('חסר מספר WhatsApp עסקי — הגדירו בהגדרות.')}
                     </p>
                   ) : (
                     <>
@@ -86,7 +88,7 @@ export function StoreQrAccordion({ stores }: { stores: StoreQrItem[] }) {
                             href={`/api/stores/qr?code=${encodeURIComponent(s.code)}&format=png&download=1`}
                             download={`store-${s.code}-qr.png`}
                           >
-                            הורדת PNG
+                            {p('הורדת PNG')}
                           </a>
                         </Button>
                         <Button asChild variant="primary" size="sm">
@@ -95,7 +97,7 @@ export function StoreQrAccordion({ stores }: { stores: StoreQrItem[] }) {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            בדיקת קישור
+                            {p('בדיקת קישור')}
                           </a>
                         </Button>
                       </div>

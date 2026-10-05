@@ -13,6 +13,8 @@ export type InboundMessage = {
   text: string | null
   mediaUrl: string | null
   mediaKind: 'image' | 'video' | 'document' | 'audio' | null
+  /** Original document filename from the Cloud API, when the message is a file. */
+  fileName?: string | null
   timestamp: string | null
   /** Optional override (simulator / deep-link hint). */
   sourceHint?: TicketSource | null
@@ -26,4 +28,6 @@ export type IntakeResult = {
   displayNumber?: string | null
   state?: IntakeState
   error?: string
+  /** Answer sent back to the store that opened the request. */
+  storeReply?: string | null
 }

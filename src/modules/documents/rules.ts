@@ -21,6 +21,8 @@ export type StoreDocument = {
   /** A person confirmed the store, expiry, or owner. Sync will not replace them. */
   fieldsLocked?: boolean
   localUpdatedAt?: string | null
+  /** WhatsApp sender to answer after Ari decides. */
+  originWaId?: string | null
 }
 
 export const DOCUMENT_TYPES = [

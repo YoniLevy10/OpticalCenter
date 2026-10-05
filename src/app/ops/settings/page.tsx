@@ -5,6 +5,7 @@ import {
   GroupedRow,
   GroupedSection,
 } from '@/components/ui/grouped-list'
+import { Tx } from '@/components/i18n/tx'
 import { SettingsForm } from './settings-form'
 import { getSettings } from '@/modules/settings/service'
 
@@ -27,19 +28,27 @@ export default async function SettingsPage() {
         <GroupedList>
           <GroupedSection title="פריסה">
             <GroupedRow className="justify-between">
-              <span className="t-body text-ink-2">מוצר</span>
+              <span className="t-body text-ink-2">
+                <Tx text="מוצר" />
+              </span>
               <span className="t-body text-ink">MILO</span>
             </GroupedRow>
             <GroupedRow className="justify-between">
-              <span className="t-body text-ink-2">לקוח</span>
+              <span className="t-body text-ink-2">
+                <Tx text="לקוח" />
+              </span>
               <span className="t-body text-ink">{settings.brand_name}</span>
             </GroupedRow>
             <GroupedRow className="justify-between">
-              <span className="t-body text-ink-2">מדינה</span>
+              <span className="t-body text-ink-2">
+                <Tx text="מדינה" />
+              </span>
               <span className="t-body text-ink">{settings.country_label}</span>
             </GroupedRow>
             <GroupedRow className="justify-between">
-              <span className="t-body text-ink-2">ערוץ דיווח</span>
+              <span className="t-body text-ink-2">
+                <Tx text="ערוץ דיווח" />
+              </span>
               <span className="t-body text-ink">WhatsApp</span>
             </GroupedRow>
           </GroupedSection>

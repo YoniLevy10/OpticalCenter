@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { BottomSheet } from '@/components/ui/overlay'
 import { Textarea } from '@/components/ui/input'
+import { useLocale, usePhrase } from '@/components/i18n/locale-provider'
 import { useToast } from '@/components/ui/toast'
 import { OperationalRow, Dot } from '@/components/ui/operational-row'
 import { StatusLabel } from '@/components/ui/signal'
@@ -64,6 +65,8 @@ export function TicketQueueItem({
 }) {
   const router = useRouter()
   const toast = useToast()
+  const { locale } = useLocale()
+  const p = usePhrase()
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -73,7 +76,7 @@ export function TicketQueueItem({
   const [note, setNote] = useState('')
 
   const open = OPEN_TICKET_STATUSES.includes(ticket.status as TicketStatus)
-  const openFor = plainOpenForHe(ticket.created_at, ticket)
+  const openFor = plainOpenForHe(ticket.created_at, ticket, new Date(), locale)
   const disabled = busy || pending
   const critical =
     ticket.priority === 'critical' || ticket.priority === 'high' || openFor.overdue
@@ -176,7 +179,7 @@ export function TicketQueueItem({
                   : 'text-ink-3',
               )}
             >
-              {openFor.overdue ? 'חורגת · ' : null}
+              {openFor.overdue ? `${p('חורגת')} · ` : null}
               {openFor.text}
             </span>
           </div>
@@ -187,7 +190,7 @@ export function TicketQueueItem({
             <StatusLabel status={ticket.status} />
             {critical ? (
               <span className="t-caption rounded-full bg-[var(--signal-critical-soft)] px-2 py-0.5 font-semibold text-[var(--signal-critical)]">
-                דחוף
+                {p('דחוף')}
               </span>
             ) : null}
             <Dot />
@@ -224,12 +227,12 @@ export function TicketQueueItem({
       <BottomSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        title={`עדכון ${displayNum(ticket)}`}
+        title={`${p('עדכון')} ${displayNum(ticket)}`}
         detent="half"
       >
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">סטטוס</span>
+            <span className="t-caption text-ink-2">{p('סטטוס')}</span>
             <select
               className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
               value={status}
@@ -238,13 +241,13 @@ export function TicketQueueItem({
             >
               {HQ_STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
-                  {TICKET_STATUS_LABELS_HE[s]}
+                  {p(TICKET_STATUS_LABELS_HE[s])}
                 </option>
               ))}
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">הערה (אופציונלי)</span>
+            <span className="t-caption text-ink-2">{p('הערה (אופציונלי)')}</span>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}

@@ -1,4 +1,11 @@
-import { listConflicts, listContacts, listDocuments, listSpends, listTasks } from '@/lib/data/ops-ledger'
+import {
+  listConflicts,
+  listContacts,
+  listDocuments,
+  listFiles,
+  listSpends,
+  listTasks,
+} from '@/lib/data/ops-ledger'
 import { ISRAEL_STORES } from '@/modules/stores/israel-stores'
 import { isDocumentOverdue } from '@/modules/documents/rules'
 import { invoiceVariance } from '@/modules/spend/policy'
@@ -48,6 +55,27 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
         doc.intakeStatus === 'needs_review'
           ? phrase(locale, 'לבדוק מסמך')
           : phrase(locale, 'לחדש מסמך'),
+      href: '/ops/documents',
+    })
+  }
+
+  for (const file of listFiles()) {
+    if (file.status !== 'needs_review') continue
+    const covered = listDocuments().some(
+      (doc) =>
+        (file.driveFileId && doc.driveFileId === file.driveFileId) ||
+        (file.sourceUrl && doc.sourceUrl === file.sourceUrl),
+    )
+    if (covered) continue
+    items.push({
+      id: `file:${file.id}`,
+      kind: 'document',
+      title: file.name,
+      storeCode: file.storeCode || '—',
+      storeName: file.reason || phrase(locale, 'לבדוק מסמך'),
+      owner: 'ארי',
+      urgency: 'today',
+      action: file.reason || phrase(locale, 'לבדוק מסמך'),
       href: '/ops/documents',
     })
   }

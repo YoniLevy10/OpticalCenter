@@ -207,6 +207,8 @@ export function planDriveSync(input: {
       local.reason = changed
         ? 'התאריך בדרייב שונה מהתאריך שננעל ידנית'
         : 'הקובץ עודכן בדרייב אחרי נעילה ידנית'
+      locked.intakeStatus = 'needs_review'
+      locked.intakeReason = local.reason
     } else {
       local.status = fresh.status
       local.reason = fresh.reason

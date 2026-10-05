@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { ARI_PHONE } from '@/lib/data/ops-ledger'
+import { deskPhones } from '@/lib/data/ops-ledger'
 import { send019Sms } from '@/lib/sms/019'
 import { logEvent } from '@/lib/logging'
 import { sendWhatsAppText } from '@/modules/whatsapp/send'
@@ -38,7 +38,7 @@ export async function notifyPhone(
   })
 }
 
-/** Tell Ari on SMS and WhatsApp. A failed channel does not block the action. */
+/** Tell every desk manager. A failed channel does not block the action. */
 export async function notifyAri(message: string, meta?: Record<string, unknown>) {
-  return notifyPhone(ARI_PHONE, message, meta)
+  await Promise.all(deskPhones().map((phone) => notifyPhone(phone, message, meta)))
 }

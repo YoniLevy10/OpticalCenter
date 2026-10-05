@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { hydrateOpsLedger, persistOpsLedger } from '@/lib/data/ops-db'
 import { getDriveSync } from '@/lib/data/ops-ledger'
+import { driveCanWrite } from '@/modules/drive/folder'
 import { syncDriveFolder } from '@/modules/drive/sync'
 import { notifyAri } from '@/modules/notify/ari'
 import { logEvent } from '@/lib/logging'
@@ -26,7 +27,12 @@ export async function GET(request: Request) {
   await hydrateOpsLedger()
   const folder = getDriveSync().rootFolderId || process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
   if (!folder) {
-    return NextResponse.json({ ok: true, skipped: true })
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: 'missing_folder',
+      canWrite: driveCanWrite(),
+    })
   }
   try {
     const result = await syncDriveFolder(folder)

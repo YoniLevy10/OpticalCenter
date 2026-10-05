@@ -21,6 +21,9 @@ type MetaWebhookBody = {
           video?: { id?: string; caption?: string; mime_type?: string }
           audio?: { id?: string }
           voice?: { id?: string }
+          interactive?: {
+            button_reply?: { id?: string; title?: string }
+          }
         }>
       }
     }>
@@ -44,6 +47,7 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
         let text: string | null = null
         let mediaUrl: string | null = null
         let mediaKind: InboundMessage['mediaKind'] = null
+        let fileName: string | null = null
 
         if (type === 'text') {
           text = msg.text?.body?.trim() || null
@@ -55,6 +59,18 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
           text = msg.document?.caption?.trim() || null
           mediaUrl = msg.document?.id ? `meta-media:${msg.document.id}` : null
           mediaKind = 'document'
+          fileName = msg.document?.filename?.trim() || null
+        } else if (type === 'interactive') {
+          const buttonId = msg.interactive?.button_reply?.id
+          text =
+            buttonId === 'desk_approve'
+              ? 'לאשר'
+              : buttonId === 'desk_reject'
+                ? 'לדחות'
+                : buttonId === 'desk_info'
+                  ? 'לבקש מידע'
+                  : msg.interactive?.button_reply?.title?.trim() || null
+          if (!text) continue
         } else if (type === 'video') {
           text = msg.video?.caption?.trim() || null
           mediaUrl = msg.video?.id ? `meta-media:${msg.video.id}` : null
@@ -74,6 +90,7 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
           text,
           mediaUrl,
           mediaKind,
+          fileName,
           timestamp: msg.timestamp ?? null,
         })
       }

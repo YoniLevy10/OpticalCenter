@@ -93,6 +93,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         driveFileId: row.drive_file_id ? String(row.drive_file_id) : null,
         fieldsLocked: Boolean(row.fields_locked),
         localUpdatedAt: row.local_updated_at ? String(row.local_updated_at) : null,
+        originWaId: row.origin_wa_id ? String(row.origin_wa_id) : null,
       })),
       spends: (spends.data ?? []).map((row) => ({
         id: String(row.client_id || row.id),
@@ -112,6 +113,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         decidedBy: row.decided_by ? String(row.decided_by) : null,
         decidedAt: row.decided_at ? String(row.decided_at) : null,
         needsReapproval: Boolean(row.needs_reapproval),
+        originWaId: row.origin_wa_id ? String(row.origin_wa_id) : null,
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at ?? row.created_at),
       })),
@@ -176,6 +178,7 @@ export async function persistOpsLedger(): Promise<void> {
       drive_file_id: doc.driveFileId ?? null,
       fields_locked: Boolean(doc.fieldsLocked),
       local_updated_at: doc.localUpdatedAt ?? null,
+      origin_wa_id: doc.originWaId ?? null,
     }))
     const spends = listSpends().map((spend) => ({
       client_id: spend.id,
@@ -194,6 +197,7 @@ export async function persistOpsLedger(): Promise<void> {
       urgent: spend.urgent,
       needs_reapproval: spend.needsReapproval,
       requested_by: spend.requestedBy,
+      origin_wa_id: spend.originWaId ?? null,
       decided_by: spend.decidedBy,
       decided_at: spend.decidedAt,
     }))
@@ -234,12 +238,13 @@ export async function persistOpsLedger(): Promise<void> {
   }
 }
 
-const DRIVE_COLUMNS = [
+const OPTIONAL_COLUMNS = [
   'drive_file_id',
   'drive_modified_time',
   'origin',
   'local_updated_at',
   'fields_locked',
+  'origin_wa_id',
 ] as const
 
 async function upsertFlexible(
@@ -248,17 +253,23 @@ async function upsertFlexible(
   rows: Record<string, unknown>[],
 ) {
   if (!rows.length) return
-  const wrote = await supabase.from(table).upsert(rows, { onConflict: 'client_id' })
-  if (!wrote.error) return
-  if (!isMissingColumnError(wrote.error)) {
-    if (!skipped(wrote.error)) throw wrote.error
-    return
+  const drops: Array<readonly string[] | null> = [null, ['origin_wa_id'], OPTIONAL_COLUMNS]
+  let lastError: unknown = null
+  for (const drop of drops) {
+    const body = drop
+      ? rows.map((row) => {
+          const copy = { ...row }
+          for (const key of drop) delete copy[key]
+          return copy
+        })
+      : rows
+    const wrote = await supabase.from(table).upsert(body, { onConflict: 'client_id' })
+    if (!wrote.error) return
+    lastError = wrote.error
+    if (skipped(wrote.error)) return
+    if (!isMissingColumnError(wrote.error)) throw wrote.error
   }
-  const slim = rows.map((row) => {
-    const copy = { ...row }
-    for (const key of DRIVE_COLUMNS) delete copy[key]
-    return copy
-  })
-  const again = await supabase.from(table).upsert(slim, { onConflict: 'client_id' })
-  if (again.error && !skipped(again.error)) throw again.error
+  if (lastError && !skipped(lastError) && !isMissingColumnError(lastError)) {
+    throw lastError
+  }
 }

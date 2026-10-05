@@ -18,7 +18,9 @@ import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
 import { StoreDirectoryPanel } from '../store-directory-panel'
 import { areaManagerForStore, listAudits, listContactsForStore } from '@/lib/data/ops-ledger'
-import { regionLabelHe } from '@/modules/stores/regions'
+import { regionLabel } from '@/modules/stores/regions'
+import { getLocale } from '@/lib/i18n/server'
+import { phrase } from '@/lib/i18n/phrases'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +33,8 @@ export default async function StoreDetailPage({
 }: {
   params: Promise<{ code: string }>
 }) {
+  const locale = await getLocale()
+  const p = (text: string) => phrase(locale, text)
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
@@ -72,14 +76,14 @@ export default async function StoreDetailPage({
         />
 
         <OpsPageHero
-          eyebrow={`#${store.code} · ${regionLabelHe(store.region_id)}`}
+          eyebrow={`#${store.code} · ${regionLabel(store.region_id, locale)}`}
           title={store.name}
           status={
             openCount > 0
-              ? `${openCount} תקלות פתוחות בחנות זו`
+              ? `${openCount} ${p('תקלות פתוחות בחנות זו')}`
               : store.is_active === false
-                ? 'חנות מושבתת'
-                : 'אין תקלות פתוחות'
+                ? p('חנות מושבתת')
+                : p('אין תקלות פתוחות')
           }
         />
 

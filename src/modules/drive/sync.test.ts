@@ -147,6 +147,7 @@ describe('planDriveSync', () => {
       localDocs: [locked],
     })
     expect(again.documents[0]?.extractedExpiry?.slice(0, 10)).toBe('2027-01-15')
+    expect(again.documents[0]?.intakeStatus).toBe('needs_review')
     expect(again.files[0]).toMatchObject({
       status: 'needs_review',
       reason: 'התאריך בדרייב שונה מהתאריך שננעל ידנית',
