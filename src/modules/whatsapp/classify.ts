@@ -1,6 +1,6 @@
 import { parseStoreCodeFromText } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { deskPhones } from '@/lib/data/ops-ledger'
+import { deskDecisionPhones } from '@/lib/data/ops-ledger'
 
 const MONEY = /שקל|₪|הצעת מחיר|תשלום|חשבונית|הזמנ/
 
@@ -56,7 +56,7 @@ export function phonesMatch(left: string, right: string): boolean {
 }
 
 export function isAriSender(waId: string): boolean {
-  return deskPhones().some((phone) => phonesMatch(waId, phone))
+  return deskDecisionPhones().some((phone) => phonesMatch(waId, phone))
 }
 
 /** The same three words work as a button title or as free text. */

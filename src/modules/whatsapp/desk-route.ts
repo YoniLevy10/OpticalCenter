@@ -4,7 +4,7 @@ import {
   addTask,
   addTasksFromTranscript,
   applySpendDecision,
-  deskPhones,
+  deskNotifyPhones,
   createSpend,
   decideStoredDocument,
   ingestFile,
@@ -14,7 +14,6 @@ import {
 import type { SpendRequest } from '@/modules/spend/policy'
 import { expiryFromText } from '@/modules/drive/import'
 import type { StoreDocument } from '@/modules/documents/rules'
-import { send019Sms } from '@/lib/sms/019'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
 import { canExecuteSpend } from '@/modules/spend/policy'
 import {
@@ -77,9 +76,7 @@ async function notifyOneDesk(
   text: string,
   dryRun: boolean,
 ): Promise<void> {
-  if (!dryRun) {
-    await send019Sms({ to: phone, message: text }).catch(() => undefined)
-  }
+  // SMS intentionally skipped — pilot cost control (WhatsApp / ops web only).
   const buttons = [
     { id: 'desk_approve', title: 'לאשר' },
     { id: 'desk_reject', title: 'לדחות' },
@@ -117,7 +114,7 @@ async function notifyOneDesk(
 export async function notifyAriOnDesk(message: string, dryRun: boolean): Promise<void> {
   const text = message.trim()
   if (!text) return
-  await Promise.all(deskPhones().map((phone) => notifyOneDesk(phone, text, dryRun)))
+  await Promise.all(deskNotifyPhones().map((phone) => notifyOneDesk(phone, text, dryRun)))
 }
 
 function ariNote(headline: string, store: string, missing: string | null): string {

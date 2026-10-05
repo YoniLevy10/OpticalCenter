@@ -20,6 +20,8 @@ import {
   AYA_PHONE,
   ARI_PHONE,
   TEST_DESK_PHONE,
+  deskDecisionPhones,
+  deskNotifyPhones,
   listContacts,
   proposeContactPhone,
   resetOpsLedger,
@@ -77,6 +79,11 @@ describe('Ari control center', () => {
     expect(desk?.phone).toBe(TEST_DESK_PHONE)
     expect(desk?.roleLabel).toBe('מנהל מערכת')
     expect(desk?.storeIds).toEqual([])
+  })
+
+  it('notifies only the test desk phone, while Ari can still decide', () => {
+    expect(deskNotifyPhones()).toEqual([TEST_DESK_PHONE])
+    expect(deskDecisionPhones()).toEqual([ARI_PHONE, TEST_DESK_PHONE])
   })
 
   it('keeps Aya’s phone text and opens a conflict instead of auto-correcting', () => {

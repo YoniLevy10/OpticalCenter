@@ -36,8 +36,22 @@ export const ARI_PHONE = '0509881951'
  */
 export const TEST_DESK_PHONE = '0548102688'
 
-export function deskPhones(): string[] {
+/** Who may approve/reject desk items over WhatsApp (buttons or free text). */
+export function deskDecisionPhones(): string[] {
   return [ARI_PHONE, TEST_DESK_PHONE]
+}
+
+/**
+ * Who receives proactive desk alerts (SMS/WhatsApp).
+ * Ari is excluded for now — no spam to 050-9881951 until pilot go-live.
+ */
+export function deskNotifyPhones(): string[] {
+  return [TEST_DESK_PHONE]
+}
+
+/** @deprecated Prefer deskDecisionPhones / deskNotifyPhones. */
+export function deskPhones(): string[] {
+  return deskDecisionPhones()
 }
 
 export type DirectoryContact = {

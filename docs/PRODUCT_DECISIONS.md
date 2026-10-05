@@ -8,7 +8,7 @@
 | בידול / היקף | MILO = OS תפעולי לרשתות; לא ticketing גנרי ולא custom-per-client. ליבה אחידה; משתנה רק מיתוג, הרשאות, סוגי תקלות, SLA | `docs/DIFFERENTIATION.md` |
 | דוחות | CSV + Excel + PDF + dashboard מספיק; PDF לא חובה נפרד | `/api/reports/export?format=csv\|xlsx\|pdf` |
 | היסטוריה | דוחות חודשיים נשמרים ידנית | `/ops/reports/history` + `report_snapshots` |
-| התראות טכנאי | SMS (019) ראשי בשיוך + WhatsApp עם קישור `/tech`; Web Push כש־VAPID מוגדר | `modules/push/send.ts` + TechPushSubscribe |
+| התראות טכנאי | WhatsApp עם קישור `/tech` (SMS כבוי כברירת מחדל — `SMS_019_ENABLED=1` להפעלה); Web Push כש־VAPID מוגדר | `lib/sms/019.ts` + `modules/push/send.ts` |
 | Inbox reply | HQ יכול לשלוח WA (UI קיים); policy: takeover + ticket ops | ללא שינוי policy ב-wave זה |
 | Auth | Google (Gmail מאושר) או מייל+סיסמה שסופקו ע״י מנהל; ללא כניסה פתוחה | `/login` + allowlist + Users admin |
 | תפקידים | 4 בלבד: מנהל מערכת, תפעול, חנות, טכנאי | `docs/ROLES_AND_ACCESS.md` |

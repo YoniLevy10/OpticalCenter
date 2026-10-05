@@ -142,7 +142,7 @@ export async function notifyReporter(
 export type { TechNotifyProfile } from './tech-assign-sms'
 
 /**
- * Notify assigned technician — SMS first (019), then WhatsApp deep link.
+ * Notify assigned technician — WhatsApp deep link (SMS only if SMS_019_ENABLED=1).
  * Must never message the ticket reporter as if they are the technician.
  */
 export async function notifyTechnicianAssigned(
