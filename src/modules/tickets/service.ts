@@ -198,7 +198,13 @@ async function queryTicketsList(
     query = query.eq('status', filters.status)
   }
   if (filters.priority) query = query.eq('priority', filters.priority)
-  if (filters.storeCode) query = query.eq('stores.code', filters.storeCode)
+  if (filters.storeCode) {
+    const code = canonicalStoreCode(filters.storeCode)
+    query =
+      code === filters.storeCode
+        ? query.eq('stores.code', code)
+        : query.in('stores.code', [code, filters.storeCode])
+  }
   if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
   else if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
 
