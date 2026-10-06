@@ -14,9 +14,11 @@ describe('Phase C — server listTickets filters', () => {
   })
 
   it('filters by q and priority on the service layer', async () => {
+    // Unique token — trial seeds also contain «מזגן» and would collide on q.
+    const uniqueQ = 'פילטר-phase-c-מזגן-ייחודי'
     await createTicket({
       storeCode: '172',
-      description: 'מזגן לא עובד באולם',
+      description: `${uniqueQ} לא עובד באולם`,
       priority: 'critical',
       source: 'demo',
     })
@@ -27,9 +29,9 @@ describe('Phase C — server listTickets filters', () => {
       source: 'demo',
     })
 
-    const byQ = await listTickets({ limit: 50, q: 'מזגן' })
+    const byQ = await listTickets({ limit: 50, q: uniqueQ })
     expect(byQ.tickets).toHaveLength(1)
-    expect(byQ.tickets[0]?.description).toContain('מזגן')
+    expect(byQ.tickets[0]?.description).toContain(uniqueQ)
 
     const byPri = await listTickets({ limit: 50, priority: 'low' })
     expect(byPri.tickets.every((t) => t.priority === 'low')).toBe(true)
