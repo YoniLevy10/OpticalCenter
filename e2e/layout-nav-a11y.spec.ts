@@ -41,12 +41,15 @@ test.describe('Navigation & layout', () => {
     const bottomNav = page.locator('nav.fixed')
     await expect(bottomNav.getByText('דשבורד')).toBeVisible()
     await expect(bottomNav.getByText('תקלות')).toBeVisible()
-    await expect(bottomNav.getByText('אנשי מקצוע')).toBeVisible()
-    await expect(bottomNav.getByText('WhatsApp')).toBeVisible()
+    await expect(bottomNav.getByText('אישורים')).toBeVisible()
+    await expect(bottomNav.getByText('משימות')).toBeVisible()
     await bottomNav.getByRole('button', { name: 'עוד' }).click()
     const more = page.getByRole('dialog')
     await expect(more.getByRole('link', { name: 'חנויות' })).toBeVisible()
-    await expect(more.getByRole('link', { name: 'משימות' })).toBeVisible()
+    await expect(more.getByRole('link', { name: 'אנשי מקצוע' })).toBeVisible()
+    await expect(
+      more.getByRole('link', { name: 'WhatsApp', exact: true }),
+    ).toBeVisible()
     await expect(more.getByRole('link', { name: 'הגדרות' })).toBeVisible()
   })
 

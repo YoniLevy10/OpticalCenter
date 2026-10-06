@@ -38,7 +38,16 @@ export function to019LocalPhone(raw: string): string | null {
   return local
 }
 
+/**
+ * SMS is opt-in. Credentials alone do not send — set SMS_019_ENABLED=1.
+ * Default off to avoid pilot spend (desk + tech assign).
+ */
+export function is019SmsEnabled(): boolean {
+  return process.env.SMS_019_ENABLED?.trim() === '1'
+}
+
 export function is019SmsConfigured(): boolean {
+  if (!is019SmsEnabled()) return false
   const username = process.env.SMS_019_USERNAME?.trim()
   const sender = process.env.SMS_019_SENDER?.trim()
   const token =
@@ -52,7 +61,8 @@ export function is019SmsConfigured(): boolean {
  * Send SMS via 019SMS (same provider as Bamakor worker assign alerts).
  *
  * Env:
- * - SMS_019_USERNAME (required)
+ * - SMS_019_ENABLED=1 — required opt-in; without it every send is skipped
+ * - SMS_019_USERNAME (required when enabled)
  * - SMS_019_SENDER (required, max 11 English letters/digits — no Hebrew/spaces/+;
  *   recommended branded value: opc; must be registered in 019 dashboard)
  * - SMS_019_TOKEN or SMS_019_BEARER_TOKEN (preferred) — Authorization: Bearer
@@ -66,6 +76,11 @@ export async function send019Sms(input: {
   /** Correlate logs (ticket id, etc.) */
   meta?: Record<string, unknown>
 }): Promise<Send019SmsResult> {
+  if (!is019SmsEnabled()) {
+    logEvent('sms:019', 'info', 'skipped_disabled', input.meta)
+    return { ok: false, skipped: 'disabled' }
+  }
+
   const username = process.env.SMS_019_USERNAME?.trim()
   const sender = process.env.SMS_019_SENDER?.trim()
   const token =

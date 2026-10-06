@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   is019SmsConfigured,
+  is019SmsEnabled,
   send019Sms,
   to019LocalPhone,
 } from './019'
@@ -22,6 +23,7 @@ describe('to019LocalPhone', () => {
 
 describe('is019SmsConfigured', () => {
   const keys = [
+    'SMS_019_ENABLED',
     'SMS_019_USERNAME',
     'SMS_019_SENDER',
     'SMS_019_TOKEN',
@@ -33,7 +35,19 @@ describe('is019SmsConfigured', () => {
     for (const k of keys) delete process.env[k]
   })
 
-  it('requires username + sender + token or password', () => {
+  it('stays off until SMS_019_ENABLED=1 even with credentials', () => {
+    process.env.SMS_019_USERNAME = 'u'
+    process.env.SMS_019_SENDER = 'MaintainOS'
+    process.env.SMS_019_TOKEN = 'tok'
+    expect(is019SmsEnabled()).toBe(false)
+    expect(is019SmsConfigured()).toBe(false)
+    process.env.SMS_019_ENABLED = '1'
+    expect(is019SmsEnabled()).toBe(true)
+    expect(is019SmsConfigured()).toBe(true)
+  })
+
+  it('requires username + sender + token or password when enabled', () => {
+    process.env.SMS_019_ENABLED = '1'
     expect(is019SmsConfigured()).toBe(false)
     process.env.SMS_019_USERNAME = 'u'
     process.env.SMS_019_SENDER = 'MaintainOS'
@@ -45,6 +59,7 @@ describe('is019SmsConfigured', () => {
 
 describe('send019Sms', () => {
   const keys = [
+    'SMS_019_ENABLED',
     'SMS_019_USERNAME',
     'SMS_019_SENDER',
     'SMS_019_TOKEN',
@@ -64,13 +79,27 @@ describe('send019Sms', () => {
     vi.restoreAllMocks()
   })
 
-  it('skips when not configured', async () => {
+  it('skips when SMS is disabled (default)', async () => {
+    process.env.SMS_019_USERNAME = 'u'
+    process.env.SMS_019_SENDER = 'opc'
+    process.env.SMS_019_TOKEN = 'tok'
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+    const r = await send019Sms({ to: '0548102688', message: 'hi' })
+    expect(r.ok).toBe(false)
+    expect(r.skipped).toBe('disabled')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('skips when enabled but not configured', async () => {
+    process.env.SMS_019_ENABLED = '1'
     const r = await send019Sms({ to: '0548102688', message: 'hi' })
     expect(r.ok).toBe(false)
     expect(r.skipped).toBe('not_configured')
   })
 
   it('dry-runs without HTTP when SMS_019_DRY_RUN=1', async () => {
+    process.env.SMS_019_ENABLED = '1'
     process.env.SMS_019_USERNAME = 'u'
     process.env.SMS_019_SENDER = 'opc'
     process.env.SMS_019_TOKEN = 'tok'
@@ -88,6 +117,7 @@ describe('send019Sms', () => {
   })
 
   it('POSTs JSON with Bearer token and treats status 0 as success', async () => {
+    process.env.SMS_019_ENABLED = '1'
     process.env.SMS_019_USERNAME = 'u'
     process.env.SMS_019_SENDER = 'opc'
     process.env.SMS_019_TOKEN = 'tok'

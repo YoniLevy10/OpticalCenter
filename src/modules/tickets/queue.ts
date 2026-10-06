@@ -4,6 +4,7 @@ import {
 } from '@/modules/tickets/constants'
 import { getSlaBreachKind } from '@/modules/tickets/sla'
 import { activeSlaTarget } from '@/modules/tickets/sla-display'
+import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 
 /**
  * Queue semantics for the operational inbox.
@@ -198,7 +199,11 @@ export function applyQueue(
     if (!matchesView(t, filters.view, now, filters.actorId)) return false
     if (filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
-    if (filters.store && t.stores?.code !== filters.store) return false
+    if (filters.store) {
+      const want = canonicalStoreCode(filters.store)
+      const code = t.stores?.code
+      if (code !== want && code !== filters.store) return false
+    }
     if (filters.tech === 'none' && t.assigned_to) return false
     if (filters.tech && filters.tech !== 'none' && t.assigned_to !== filters.tech)
       return false
@@ -258,7 +263,9 @@ export function parseQueueParams(sp: Record<string, string | undefined>): QueueF
     sort,
     status: sp.status?.trim() || undefined,
     priority: sp.priority?.trim() || undefined,
-    store: sp.store?.trim() || undefined,
+    store: sp.store?.trim()
+      ? canonicalStoreCode(sp.store.trim())
+      : undefined,
     tech: sp.tech?.trim() || undefined,
     q: sp.q?.trim() || undefined,
     includeDemo: sp.demo === '1' || sp.demo === 'true',

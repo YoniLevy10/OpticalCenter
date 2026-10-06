@@ -1693,7 +1693,11 @@ export function memFilterTickets(
     if (statusSet && !statusSet.has(t.status)) return false
     if (!statusSet && filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
-    if (filters.storeCode && t.stores?.code !== filters.storeCode) return false
+    if (filters.storeCode) {
+      const want = canonicalStoreCode(filters.storeCode)
+      const code = t.stores?.code
+      if (code !== want && code !== filters.storeCode) return false
+    }
     if (filters.assignedTo === 'none' && t.assigned_to) return false
     if (
       filters.assignedTo &&

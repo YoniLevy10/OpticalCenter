@@ -13,11 +13,15 @@ export default async function PublicReportPage({
 }) {
   const sp = await searchParams
   const { stores } = await fetchStores()
+  const rawStore = (sp.store ?? '').trim()
+  // QR / deep links still use legacy codes (172); options only list canonical OPC codes.
+  const requested = rawStore ? canonicalStoreCode(rawStore) : ''
   const initial =
-    (sp.store ?? '').trim() ||
+    (requested && stores.some((s) => s.code === requested) ? requested : '') ||
     stores.find((s) => s.code === canonicalStoreCode('172'))?.code ||
     stores[0]?.code ||
     ''
+  const locked = Boolean(rawStore && initial)
 
   return (
     <div className="dvh-screen safe-pt safe-pb bg-canvas px-4 py-8">
@@ -37,6 +41,7 @@ export default async function PublicReportPage({
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]">
           <PublicReportForm
             initialStore={initial}
+            locked={locked}
             stores={stores.map((s) => ({
               code: s.code,
               name: s.name,

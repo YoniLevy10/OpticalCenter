@@ -71,6 +71,8 @@ MAINTAINOS_FORCE_MEMORY=1
 ## מסמכים
 
 - [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md) — בידול, ליבה אחידה, Digital Twin, פילטר פיצ׳רים
+- [`docs/MILO_REBRAND.md`](docs/MILO_REBRAND.md) — מיתוג MILO + Midrag / ספר אנשי מקצוע
+- [`docs/FIGMA_REDESIGN_PLAN.md`](docs/FIGMA_REDESIGN_PLAN.md) — תוכנית עיצוב Figma (Alive Ops)
 - [`docs/ARI_MEETING_BRIEF.md`](docs/ARI_MEETING_BRIEF.md) — בריף פגישה עם ארי (Optical Center): התנגדויות → הוכחות
 - [`docs/CORE_FEATURES_ROADMAP.md`](docs/CORE_FEATURES_ROADMAP.md) — חיזוק ליבה + פיצ׳רים (בלי Zapier)
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)

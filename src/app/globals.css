@@ -22,8 +22,9 @@
   --ink-3: #6f6f69;
 
   /* ---------- Layer 2 — SIGNAL (saturated enough to read as color) ---------- */
-  --signal-critical: #d92621;
-  --signal-critical-soft: #f8d4d2;
+  /* Critical text must stay ≥4.5:1 on --signal-critical-soft (axe / WCAG AA). */
+  --signal-critical: #a81612;
+  --signal-critical-soft: #fdeceb;
   --signal-critical-line: #efb0ad;
   --signal-warning: #c2410c;
   --signal-warning-soft: #f8d9c8;
