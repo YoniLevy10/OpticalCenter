@@ -49,7 +49,7 @@ function FilterFields({
   const tr = usePhrase()
   const field =
     layout === 'row'
-      ? 'flex min-w-[8.5rem] flex-col gap-1'
+      ? 'flex min-w-[7.5rem] max-w-[12rem] flex-1 flex-col gap-1'
       : 'flex flex-col gap-1.5'
   const selectCls =
     't-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink'
@@ -187,8 +187,9 @@ export function TicketFilters({
 
   return (
     <>
-      {/* Desktop inline filters — horizontal row */}
-      <div className="hidden shrink-0 md:block">
+      {/* Desktop inline filters — lg+ only so tablet (iPad 768) stays sheet-based
+          and does not force horizontal page overflow. */}
+      <div className="hidden min-w-0 max-w-full shrink lg:block">
         <FilterFields
           layout="row"
           stores={stores}
@@ -199,8 +200,8 @@ export function TicketFilters({
         />
       </div>
 
-      {/* Mobile filter sheet trigger */}
-      <div className="md:hidden">
+      {/* Mobile / tablet filter sheet trigger */}
+      <div className="lg:hidden">
         <Button
           type="button"
           variant="secondary"

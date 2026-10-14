@@ -191,7 +191,7 @@ export default async function TicketsPage({
 
         <QueueTabs active={tabActive} filters={queueFilters} />
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+        <div className="flex min-w-0 max-w-full flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
           <div className="min-w-0 flex-1">
             <Suspense fallback={null}>
               <TicketSearch initialQ={q ?? ''} />
