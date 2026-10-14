@@ -19,6 +19,12 @@ export type TicketEvidence = {
 function inferMediaKind(url: string): string {
   const lower = url.toLowerCase()
   if (/\.(mp4|webm)(\?|$)/.test(lower) || lower.includes('video/')) return 'video'
+  if (
+    /\.(ogg|mp3|wav|m4a|opus)(\?|$)/.test(lower) ||
+    lower.includes('audio/')
+  ) {
+    return 'audio'
+  }
   if (/\.(pdf|doc)(\?|$)/.test(lower)) return 'document'
   return 'image'
 }

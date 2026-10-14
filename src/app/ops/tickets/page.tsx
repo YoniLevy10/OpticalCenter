@@ -15,6 +15,7 @@ import { TicketSearch } from './ticket-search'
 import { TicketFilters } from './ticket-filters'
 import { PurgeDemoButton } from './purge-demo-button'
 import { TicketQueueItem } from './ticket-queue-item'
+import { VisitQueueShell } from './visit-multi-select'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import {
   applyQueue,
@@ -28,16 +29,26 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
+import { listStores } from '@/modules/stores/service'
 import { Tx } from '@/components/i18n/tx'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
 import { translate } from '@/lib/i18n/messages'
+import { listVendors } from '@/modules/vendors/service'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
 /** Cap DB fetch; view filters open vs resolved at the query when possible. */
 const FETCH_LIMIT = 200
+
+const TAB_VIEWS = new Set<QueueView>([
+  'open',
+  'attention',
+  'urgent',
+  'stuck',
+  'resolved',
+])
 
 function technicianName(
   id: string | null | undefined,
@@ -48,6 +59,11 @@ function technicianName(
   return techs.find((t) => t.id === id)?.name ?? phrase(locale, 'טכנאי')
 }
 
+function resolveTabView(view: QueueView): QueueView {
+  if (TAB_VIEWS.has(view)) return view
+  return 'open'
+}
+
 export default async function TicketsPage({
   searchParams,
 }: {
@@ -55,9 +71,8 @@ export default async function TicketsPage({
 }) {
   const sp = await searchParams
   const parsed = parseQueueParams(sp)
-  const view: QueueView = parsed.view === 'resolved' ? 'resolved' : 'open'
+  const view = resolveTabView(parsed.view)
   const page = Math.max(1, Number(sp.page ?? '1') || 1)
-  // Silent deep-link from store detail — no filter UI.
   const storeCode = parsed.store || (sp.store ?? '').trim() || undefined
   const q = parsed.q || (sp.q ?? '').trim() || undefined
 
@@ -74,7 +89,7 @@ export default async function TicketsPage({
       ? ['resolved', 'closed']
       : [...OPEN_TICKET_STATUSES]
 
-  const [ticketResult, techRows] = await Promise.all([
+  const [ticketResult, techRows, storesResult, vendorsResult] = await Promise.all([
     listTickets({
       limit: FETCH_LIMIT,
       storeCode,
@@ -87,6 +102,8 @@ export default async function TicketsPage({
       error: err instanceof Error ? err.message : 'שגיאה בטעינת תקלות',
     })),
     listInternalTechnicians().catch(() => []),
+    listStores().catch(() => ({ stores: [], backend: 'memory' as const })),
+    listVendors().catch(() => ({ vendors: [], backend: 'memory' as const })),
   ])
 
   const fetched = (ticketResult.tickets ?? []) as unknown as QueueTicket[]
@@ -98,6 +115,14 @@ export default async function TicketsPage({
   const canPurgeDemo = Boolean(
     actor?.memberships.some(
       (m) => m.role === 'global_admin' || m.role === 'global_maintenance',
+    ),
+  )
+  const canOverrideResolve = Boolean(
+    actor?.memberships.some((m) => m.role === 'global_maintenance'),
+  )
+  const canDispatchVisit = Boolean(
+    actor?.memberships.some((m) =>
+      ['global_admin', 'global_maintenance', 'country_manager'].includes(m.role),
     ),
   )
   const listError =
@@ -114,7 +139,6 @@ export default async function TicketsPage({
     q,
   }
 
-  // Newest → oldest; sequential OC-N numbers shown on each row.
   const filtered = applyQueue(all, queueFilters)
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -132,6 +156,25 @@ export default async function TicketsPage({
         ? translate(locale, 'tickets.noneOpen')
         : translate(locale, 'tickets.open', { count: filtered.length })
 
+  const storeOptions = storesResult.stores.map((s) => ({
+    code: s.code,
+    name: s.name,
+  }))
+  const vendorOptions = (vendorsResult.vendors ?? [])
+    .filter((v) => v.active !== false)
+    .map((v) => ({
+      id: v.id,
+      name: v.name,
+    }))
+
+  const tabActive =
+    view === 'attention' ||
+    view === 'urgent' ||
+    view === 'stuck' ||
+    view === 'resolved'
+      ? view
+      : 'open'
+
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
@@ -146,7 +189,7 @@ export default async function TicketsPage({
           }
         />
 
-        <QueueTabs active={view} filters={queueFilters} />
+        <QueueTabs active={tabActive} filters={queueFilters} />
 
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
           <div className="min-w-0 flex-1">
@@ -155,7 +198,7 @@ export default async function TicketsPage({
             </Suspense>
           </div>
           <Suspense fallback={null}>
-            <TicketFilters />
+            <TicketFilters stores={storeOptions} />
           </Suspense>
         </div>
         <p className="t-caption text-ink-3">
@@ -176,34 +219,81 @@ export default async function TicketsPage({
           />
         ) : null}
 
-        <Panel flush elevated className="overflow-hidden">
-          {rows.length === 0 ? (
-            <EmptyState
-              title={
-                view === 'resolved'
-                  ? 'אין תקלות שהסתיימו עדיין'
-                  : 'אין תקלות פתוחות 🎉'
-              }
-              description={
-                view === 'open'
-                  ? 'כשתדווח תקלה חדשה — היא תופיע כאן.'
-                  : undefined
-              }
-              icon={PartyPopper}
-            />
-          ) : (
-            <div className="divide-y divide-border bg-surface">
-              {rows.map((t) => (
-                <TicketQueueItem
-                  key={t.id}
-                  ticket={t}
-                  view={view}
-                  assigneeLabel={technicianName(t.assigned_to, technicians, locale)}
+        {canDispatchVisit && view !== 'resolved' ? (
+          <VisitQueueShell
+            tickets={rows.map((t) => ({
+              id: t.id,
+              storeCode: t.stores?.code ?? '',
+              storeId: t.store_id ?? '',
+              label:
+                t.display_number ||
+                (t.number != null ? `OC-${t.number}` : t.id.slice(0, 8)),
+            }))}
+            vendors={vendorOptions}
+            storeFilter={storeCode}
+          >
+            <Panel flush elevated className="overflow-hidden">
+              {rows.length === 0 ? (
+                <EmptyState
+                  title="אין תקלות פתוחות 🎉"
+                  description="כשתדווח תקלה חדשה — היא תופיע כאן."
+                  icon={PartyPopper}
                 />
-              ))}
-            </div>
-          )}
-        </Panel>
+              ) : (
+                <div className="divide-y divide-border bg-surface">
+                  {rows.map((t) => (
+                    <TicketQueueItem
+                      key={t.id}
+                      ticket={t}
+                      view="open"
+                      assigneeLabel={technicianName(
+                        t.assigned_to,
+                        technicians,
+                        locale,
+                      )}
+                      selectable
+                      canOverrideResolve={canOverrideResolve}
+                    />
+                  ))}
+                </div>
+              )}
+            </Panel>
+          </VisitQueueShell>
+        ) : (
+          <Panel flush elevated className="overflow-hidden">
+            {rows.length === 0 ? (
+              <EmptyState
+                title={
+                  view === 'resolved'
+                    ? 'אין תקלות שהסתיימו עדיין'
+                    : 'אין תקלות פתוחות 🎉'
+                }
+                description={
+                  view === 'open'
+                    ? 'כשתדווח תקלה חדשה — היא תופיע כאן.'
+                    : undefined
+                }
+                icon={PartyPopper}
+              />
+            ) : (
+              <div className="divide-y divide-border bg-surface">
+                {rows.map((t) => (
+                  <TicketQueueItem
+                    key={t.id}
+                    ticket={t}
+                    view={view === 'resolved' ? 'resolved' : 'open'}
+                    assigneeLabel={technicianName(
+                      t.assigned_to,
+                      technicians,
+                      locale,
+                    )}
+                    canOverrideResolve={canOverrideResolve}
+                  />
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
 
         {totalPages > 1 ? (
           <nav className="flex items-center justify-between gap-3 border-t border-border pt-3">

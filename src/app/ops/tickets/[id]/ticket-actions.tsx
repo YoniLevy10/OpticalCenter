@@ -24,12 +24,15 @@ export function TicketActions({
   assignedTo,
   assigneeName,
   technicians,
+  canOverrideResolve = false,
 }: {
   ticketId: string
   status: TicketStatus
   assignedTo: string | null
   assigneeName?: string | null
   technicians: Technician[]
+  /** Ari (global_maintenance) may resolve without media with a reason. */
+  canOverrideResolve?: boolean
   /** Kept for call-site compatibility; unused in the simplified UI. */
   assigneeFieldId?: string
   /** @deprecated Midrag search removed from ticket actions — use אנשי מקצוע. */
@@ -42,6 +45,8 @@ export function TicketActions({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [overrideOpen, setOverrideOpen] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
   const [localAssignedTo, setLocalAssignedTo] = useState(assignedTo)
   const [localAssigneeName, setLocalAssigneeName] = useState(
     assigneeName ?? null,
@@ -79,7 +84,7 @@ export function TicketActions({
     null
 
   async function patch(body: Record<string, unknown>, successText: string) {
-    if (busy || pending) return false
+    if (busy || pending) return { ok: false as const, error: null as string | null }
     setError(null)
     setBusy(true)
     try {
@@ -91,17 +96,19 @@ export function TicketActions({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'העדכון נכשל')
-        toast.push({ title: 'העדכון נכשל', tone: 'critical' })
-        return false
+        const err =
+          typeof data.error === 'string' ? data.error : 'העדכון נכשל'
+        setError(err)
+        toast.push({ title: err, tone: 'critical' })
+        return { ok: false as const, error: err }
       }
       toast.push({ title: successText, tone: 'success' })
       startTransition(() => router.refresh())
-      return true
+      return { ok: true as const, error: null }
     } catch {
       setError('שגיאת רשת — בדקו את החיבור ונסו שוב')
       toast.push({ title: 'שגיאת רשת', tone: 'critical' })
-      return false
+      return { ok: false as const, error: 'network' }
     } finally {
       setBusy(false)
     }
@@ -163,10 +170,21 @@ export function TicketActions({
           disabled={disabled}
           onClick={() =>
             void (async () => {
-              const ok = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
-              if (ok) {
+              const result = await patch(
+                { status: 'resolved' },
+                'התקלה הסתיימה',
+              )
+              if (result.ok) {
                 setLocalStatus('resolved')
                 startTransition(() => router.push('/ops/tickets?view=resolved'))
+                return
+              }
+              if (
+                canOverrideResolve &&
+                result.error?.includes('תמונה או וידאו')
+              ) {
+                setOverrideReason('')
+                setOverrideOpen(true)
               }
             })()
           }
@@ -200,11 +218,11 @@ export function TicketActions({
                   disabled={disabled || selected}
                   onClick={() => {
                     void (async () => {
-                      const ok = await patch(
+                      const result = await patch(
                         { assignedTo: t.id },
                         'הטכנאי שויך',
                       )
-                      if (ok) {
+                      if (result.ok) {
                         setLocalAssignedTo(t.id)
                         setLocalAssigneeName(label)
                         setLocalStatus('assigned')
@@ -228,6 +246,53 @@ export function TicketActions({
             )
           })}
         </ul>
+      </BottomSheet>
+
+      <BottomSheet
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+        title="סגירה ללא הוכחה"
+        description="נדרשת סיבת חריגה לרישום ביומן"
+      >
+        <div className="space-y-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="t-caption text-ink-2">סיבת חריגה</span>
+            <textarea
+              className="t-control min-h-[5rem] rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-ink"
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              disabled={disabled}
+              placeholder="למשל: טופל מרחוק / אין גישה לצילום"
+            />
+          </label>
+          <Button
+            type="button"
+            variant="primary"
+            size="touch"
+            className="w-full"
+            disabled={disabled || overrideReason.trim().length < 3}
+            onClick={() =>
+              void (async () => {
+                const result = await patch(
+                  {
+                    status: 'resolved',
+                    overrideReason: overrideReason.trim(),
+                  },
+                  'התקלה נסגרה בחריגה',
+                )
+                if (result.ok) {
+                  setLocalStatus('resolved')
+                  setOverrideOpen(false)
+                  startTransition(() =>
+                    router.push('/ops/tickets?view=resolved'),
+                  )
+                }
+              })()
+            }
+          >
+            אישור חריגה
+          </Button>
+        </div>
       </BottomSheet>
     </div>
   )

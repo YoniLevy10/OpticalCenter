@@ -656,18 +656,60 @@ export async function updatePriority(
   return memToRecord(memUpdatePriority(id, priority, sla, actorId ?? null))
 }
 
+export type UpdateStatusOptions = {
+  /** Required when resolving without image/video proof (Ari / global_maintenance). */
+  overrideReason?: string | null
+  /** Membership roles for the actor performing the transition. */
+  actorRoles?: string[] | null
+  /**
+   * When true, skip the proof gate (caller already attached proof in-request,
+   * e.g. tech photoUrl before status flip).
+   */
+  proofAlreadyAttached?: boolean
+}
+
 export async function updateStatus(
   id: string,
   nextStatus: string,
   actorId?: string | null,
+  opts?: UpdateStatusOptions,
 ): Promise<TicketRecord> {
   if (!isTicketStatus(nextStatus)) throw new Error(`סטטוס לא חוקי: ${nextStatus}`)
+
+  const {
+    actorCanOverrideResolve,
+    memoryTicketHasResolveProof,
+    RESOLVE_OVERRIDE_REASON_REQUIRED_HE,
+    RESOLVE_PROOF_REQUIRED_HE,
+    ticketHasResolveProof,
+  } = await import('@/modules/tickets/proof-gate')
+
+  async function enforceResolveProof(): Promise<'proof' | 'override'> {
+    if (nextStatus !== 'resolved') return 'proof'
+    if (opts?.proofAlreadyAttached) return 'proof'
+    const hasProof = await ticketHasResolveProof(id)
+    if (hasProof) return 'proof'
+    // Memory backend: attachments table may be empty — check messages.
+    if (!(await supabaseReady())) {
+      const mem = memGet(id)
+      if (mem && memoryTicketHasResolveProof(mem.messages ?? [])) return 'proof'
+    }
+    const reason = opts?.overrideReason?.trim()
+    if (actorCanOverrideResolve(opts?.actorRoles) && reason) {
+      return 'override'
+    }
+    if (actorCanOverrideResolve(opts?.actorRoles) && !reason) {
+      throw new Error(RESOLVE_OVERRIDE_REASON_REQUIRED_HE)
+    }
+    throw new Error(RESOLVE_PROOF_REQUIRED_HE)
+  }
 
   if (await supabaseReady()) {
     const current = await getTicketForMutation(id)
     if (!current) throw new Error('תקלה לא נמצאה')
     const from = current.status as TicketStatus
     assertTransition(from, nextStatus)
+    const proofMode = await enforceResolveProof()
     const supabase = createSystemClient('tickets_service')
     const patch: Record<string, unknown> = { status: nextStatus }
     if (nextStatus === 'resolved') patch.resolved_at = new Date().toISOString()
@@ -686,13 +728,29 @@ export async function updateStatus(
       from,
       to: nextStatus,
     })
+    if (proofMode === 'override' && nextStatus === 'resolved') {
+      await appendEvent(id, 'resolve_override', actorId ?? null, {
+        reason: opts?.overrideReason?.trim(),
+        from,
+        to: nextStatus,
+      })
+    }
     return data as TicketRecord
   }
 
   const current = memGet(id)
   if (!current) throw new Error('תקלה לא נמצאה')
   assertTransition(current.status as TicketStatus, nextStatus)
-  return memToRecord(memUpdateStatus(id, nextStatus, null, actorId))
+  const proofMode = await enforceResolveProof()
+  const updated = memToRecord(memUpdateStatus(id, nextStatus, null, actorId))
+  if (proofMode === 'override' && nextStatus === 'resolved') {
+    await appendEvent(id, 'resolve_override', actorId ?? null, {
+      reason: opts?.overrideReason?.trim(),
+      from: current.status,
+      to: nextStatus,
+    })
+  }
+  return updated
 }
 
 export async function assign(

@@ -353,11 +353,15 @@ async function landMulti(
   }
 }
 
-/** A recording without a transcript stays a review item. It does not become a ticket. */
+/**
+ * Recording without a usable transcript → Ari review task.
+ * Prefer linking to a placeholder ticket (with stashed audio) when one was opened.
+ */
 export async function landVoiceReview(input: {
   waId: string
   store: DeskStore | null
   dryRun: boolean
+  ticketId?: string | null
 }): Promise<void> {
   addTask({
     title: 'הקלטה ממתינה לתמלול',
@@ -365,15 +369,21 @@ export async function landVoiceReview(input: {
     storeCode: input.store?.code ?? null,
     assignee: null,
     dueAt: null,
-    ticketId: null,
+    ticketId: input.ticketId ?? null,
     documentId: null,
     spendId: null,
     needsClarification: true,
-    clarification: 'ההקלטה הגיעה בלי תמלול',
+    clarification: input.ticketId
+      ? 'ההקלטה צורפה לתקלה — נדרש תמלול / השלמת תיאור'
+      : 'ההקלטה הגיעה בלי תמלול',
   })
   await remember()
   await notifyAriOnDesk(
-    ariNote('הקלטה לבדיקה', input.store?.code || '—', 'תמלול'),
+    ariNote(
+      'הקלטה לבדיקה',
+      input.store?.code || '—',
+      input.ticketId ? `תמלול · ${input.ticketId.slice(0, 8)}` : 'תמלול',
+    ),
     input.dryRun,
   )
 }

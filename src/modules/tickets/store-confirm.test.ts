@@ -1,5 +1,10 @@
 import { describe, expect, it, beforeEach } from 'vitest'
-import { memReset, memCreate, DEMO_TECH_ID } from '@/lib/data/memory-store'
+import {
+  memReset,
+  memCreate,
+  memAddMessage,
+  DEMO_TECH_ID,
+} from '@/lib/data/memory-store'
 import { updateStatus } from '@/modules/tickets/service'
 import { confirmStoreFix } from './store-confirm'
 import { israelStoresAsRows } from '@/modules/stores/israel-stores'
@@ -21,6 +26,12 @@ describe('store confirm close', () => {
       assigned_to: DEMO_TECH_ID,
     })
     await updateStatus(created.id, 'in_progress')
+    memAddMessage(created.id, {
+      channel: 'tech',
+      direction: 'inbound',
+      body: 'בוצע',
+      media_url: 'https://cdn.example/proof.jpg',
+    })
     await updateStatus(created.id, 'resolved')
 
     const result = await confirmStoreFix({

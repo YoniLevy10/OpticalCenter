@@ -34,7 +34,9 @@ describe('Search dataset seed (≥50 tickets)', () => {
       if (i % 11 === 0) {
         await assign(t.id, DEMO_TECH_ID)
         await updateStatus(t.id, 'in_progress')
-        await updateStatus(t.id, 'resolved')
+        await updateStatus(t.id, 'resolved', null, {
+          proofAlreadyAttached: true,
+        })
       } else if (i % 7 === 0) {
         await assign(t.id, DEMO_TECH_ID)
         await updateStatus(t.id, 'in_progress')

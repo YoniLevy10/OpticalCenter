@@ -37,6 +37,10 @@ async function seed(status: TicketStatus = 'new') {
   for (const next of path) {
     if (next === 'assigned') {
       current = await assign(current.id, DEMO_TECH_ID)
+    } else if (next === 'resolved') {
+      current = await updateStatus(current.id, next, null, {
+        proofAlreadyAttached: true,
+      })
     } else {
       current = await updateStatus(current.id, next)
     }
@@ -82,12 +86,16 @@ describe('Ticket lifecycle transitions', () => {
 
   it('allows HQ quick-close new → resolved and assigned → resolved', async () => {
     const fromNew = await seed('new')
-    const closedNew = await updateStatus(fromNew.id, 'resolved')
+    const closedNew = await updateStatus(fromNew.id, 'resolved', null, {
+      proofAlreadyAttached: true,
+    })
     expect(closedNew.status).toBe('resolved')
     expect(closedNew.resolved_at).toBeTruthy()
 
     const fromAssigned = await seed('assigned')
-    const closedAssigned = await updateStatus(fromAssigned.id, 'resolved')
+    const closedAssigned = await updateStatus(fromAssigned.id, 'resolved', null, {
+      proofAlreadyAttached: true,
+    })
     expect(closedAssigned.status).toBe('resolved')
     expect(closedAssigned.resolved_at).toBeTruthy()
   })

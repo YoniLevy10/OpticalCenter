@@ -13,7 +13,9 @@
 | Auth | Google (Gmail מאושר) או מייל+סיסמה שסופקו ע״י מנהל; ללא כניסה פתוחה | `/login` + allowlist + Users admin |
 | תפקידים | 4 בלבד: מנהל מערכת, תפעול, חנות, טכנאי | `docs/ROLES_AND_ACCESS.md` |
 | עובדי חנות | פורטל `/store` — לא HQ מלא | `store_employee` role + `/store/report` |
-| מדיה | תמונה + וידאו (עד 3), Bamakor-style | web + WA + tech upload |
+| מדיה | תמונה + וידאו (עד 3), Bamakor-style; הקלטות WA נשמרות כ־`kind: audio` עם נגן ב־Evidence; כישלון תמלול → תקלת placeholder + אודיו + משימת ארי | web + WA + tech upload; `AI_GATEWAY_API_KEY` / `OPENAI_API_KEY` לתמלול |
+| הוכחת סיום | סגירה ל־`resolved` דורשת תמונה או וידאו; ארי (`global_maintenance`) יכול חריגה עם סיבה → `resolve_override` ב־ticket_events | `updateStatus` proof gate |
+| ביקור משולב | `service_visits` + `service_visit_tickets`; שיגור per-ticket עם `vendor_dispatches.visit_id` | `/api/ops/visits` + multi-select בתור/סניף |
 | Phase D | PDF מתוזמן + email — **הושלם** (`/api/cron/monthly-report`); i18n FR, OAuth domain, Push — **אחרי** go-live IL | «בקרוב» ל־Push / i18n |
 
 ## שלב D — אחרי go-live IL

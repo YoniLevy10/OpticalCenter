@@ -21,6 +21,14 @@ function isVideo(a: Attachment): boolean {
   return a.kind === 'video' || /\.(mp4|webm)(\?|$)/i.test(a.url)
 }
 
+function isAudio(a: Attachment): boolean {
+  return (
+    a.kind === 'audio' ||
+    /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i.test(a.url) ||
+    a.url.includes('audio/')
+  )
+}
+
 /**
  * HQ must be able to inspect what the store actually photographed. Raw URLs
  * were never the UX. Uses plain <img> — attachment URLs are arbitrary remote
@@ -38,9 +46,14 @@ export function EvidenceGrid({
 
   if (attachments.length === 0) return null
 
-  const images = attachments.filter((a) => isImage(a) && !isVideo(a))
+  const images = attachments.filter(
+    (a) => isImage(a) && !isVideo(a) && !isAudio(a),
+  )
   const videos = attachments.filter(isVideo)
-  const files = attachments.filter((a) => !isImage(a) && !isVideo(a))
+  const audios = attachments.filter(isAudio)
+  const files = attachments.filter(
+    (a) => !isImage(a) && !isVideo(a) && !isAudio(a),
+  )
 
   return (
     <div className={className}>
@@ -91,6 +104,23 @@ export function EvidenceGrid({
                 controls
                 className="max-h-48 w-full rounded-[var(--radius-md)] border border-border bg-black"
               />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {audios.length > 0 ? (
+        <ul className="mt-2 space-y-2">
+          {audios.map((a) => (
+            <li key={a.id}>
+              <audio
+                src={a.url}
+                controls
+                className="w-full"
+                preload="metadata"
+              >
+                הדפדפן לא תומך בנגן שמע
+              </audio>
             </li>
           ))}
         </ul>

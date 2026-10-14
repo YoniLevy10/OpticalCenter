@@ -120,16 +120,46 @@ describe('WhatsApp desk loop', () => {
     expect(ledgerDecisions().some((item) => item.id === `doc:${doc?.id}`)).toBe(true)
   })
 
-  it('keeps a recording without a transcript off the ticket list', async () => {
+  it('opens a placeholder ticket with audio when transcription fails and store is known', async () => {
     const waId = '972501234504'
     const before = memListTickets().length
+    await processInboundMessage(msg({ text: 'STORE_6018', waId }), dry)
     const opened = await processInboundMessage(
       msg({
         text: null,
         waId,
         messageId: 'voice-1',
         mediaKind: 'audio',
-        mediaUrl: 'meta-media:voice1',
+        mediaUrl: 'https://example.com/voice-review.ogg',
+      }),
+      dry,
+    )
+    expect(opened.reply).toContain('ההקלטה התקבלה')
+    expect(opened.ticketId).toBeTruthy()
+    expect(memListTickets().length).toBe(before + 1)
+    const ticket = memListTickets().find((t) => t.id === opened.ticketId)
+    expect(ticket?.description).toMatch(/תמלול/)
+    expect(
+      ticket?.messages.some(
+        (m) => m.media_url === 'https://example.com/voice-review.ogg',
+      ),
+    ).toBe(true)
+    const task = listTasks().find((row) => row.title.includes('תמלול'))
+    expect(task?.needsClarification).toBe(true)
+    expect(task?.ticketId).toBe(opened.ticketId)
+    expect(ledgerDecisions().some((item) => item.id === `task:${task?.id}`)).toBe(true)
+  })
+
+  it('stashes audio for Ari review without a ticket when store is unknown', async () => {
+    const waId = '972501234514'
+    const before = memListTickets().length
+    const opened = await processInboundMessage(
+      msg({
+        text: null,
+        waId,
+        messageId: 'voice-nostore',
+        mediaKind: 'audio',
+        mediaUrl: 'https://example.com/voice-nostore.ogg',
       }),
       dry,
     )
@@ -138,7 +168,6 @@ describe('WhatsApp desk loop', () => {
     expect(memListTickets().length).toBe(before)
     const task = listTasks().find((row) => row.title.includes('תמלול'))
     expect(task?.needsClarification).toBe(true)
-    expect(ledgerDecisions().some((item) => item.id === `task:${task?.id}`)).toBe(true)
   })
 
   it('splits several items and turns the money part into a spend', async () => {

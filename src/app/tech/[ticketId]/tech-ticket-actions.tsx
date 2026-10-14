@@ -10,11 +10,12 @@ import { BottomSheet } from '@/components/ui/overlay'
 import { ErrorState } from '@/components/ui/primitives'
 import { useToast } from '@/components/ui/toast'
 import { nextStatusActions } from '@/modules/tickets/tech'
+import { validateMediaFile } from '@/modules/tickets/media-limits'
 
 /**
  * One primary action for field techs:
  * waiting → התחל טיפול
- * in progress → סיימתי (note + confirm)
+ * in progress → סיימתי (note + proof media + confirm)
  */
 export function TechTicketActions({
   ticketId,
@@ -35,6 +36,7 @@ export function TechTicketActions({
   const [error, setError] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [note, setNote] = useState('')
+  const [proofFile, setProofFile] = useState<File | null>(null)
 
   const isUnassigned = !assignedTo
   const isMine = Boolean(techId && assignedTo === techId)
@@ -72,11 +74,55 @@ export function TechTicketActions({
       }
       toast.push({ title: success, tone: 'success' })
       setNote('')
+      setProofFile(null)
       setSheetOpen(false)
       startTransition(() => router.refresh())
     } catch {
       setError('אין חיבור — נסו שוב כשהרשת חוזרת')
       toast.push({ title: 'שגיאת רשת', tone: 'critical' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resolveWithProof() {
+    if (!proofFile || !note.trim()) return
+    const check = validateMediaFile(proofFile)
+    if (!check.ok) {
+      setError(check.error)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      // Persist proof first so the resolve gate sees the attachment.
+      const form = new FormData()
+      form.append('file', proofFile)
+      const up = await fetch(`/api/tickets/${ticketId}/attachments`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: form,
+      })
+      const upData = (await up.json().catch(() => ({}))) as {
+        error?: string
+        urls?: string[]
+      }
+      if (!up.ok) {
+        setError(upData.error ?? 'העלאת הוכחה נכשלה')
+        toast.push({ title: 'העלאת הוכחה נכשלה', tone: 'critical' })
+        return
+      }
+
+      // Attachment already persisted — resolve without re-inserting photoUrl.
+      void upData
+      await submit(
+        {
+          status: 'resolved',
+          note: note.trim(),
+          resolution_note: note.trim(),
+        },
+        'העבודה הושלמה',
+      )
     } finally {
       setBusy(false)
     }
@@ -138,7 +184,7 @@ export function TechTicketActions({
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title="סיום העבודה"
-        description="כתבו בקצרה מה בוצע"
+        description="נדרשים הערה + תמונה או וידאו כהוכחה"
       >
         <div className="space-y-4">
           <Field label="הערה" htmlFor="tech-resolve-note">
@@ -150,21 +196,21 @@ export function TechTicketActions({
               placeholder="לדוגמה: הוחלף חלק, נבדק שהכל תקין"
             />
           </Field>
+          <Field label="הוכחת ביצוע (תמונה או וידאו)" htmlFor="tech-resolve-proof">
+            <input
+              id="tech-resolve-proof"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              className="t-control w-full text-ink"
+              onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+            />
+          </Field>
           <Button
             type="button"
             variant="resolve"
             size="block"
-            disabled={busy || !note.trim()}
-            onClick={() =>
-              void submit(
-                {
-                  status: 'resolved',
-                  note: note.trim(),
-                  resolution_note: note.trim(),
-                },
-                'העבודה הושלמה',
-              )
-            }
+            disabled={busy || !note.trim() || !proofFile}
+            onClick={() => void resolveWithProof()}
           >
             אישור
           </Button>

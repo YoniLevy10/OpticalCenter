@@ -73,6 +73,7 @@ async function dispatchMemory(input: {
   idempotencyKey: string
   actorId?: string | null
   note?: string
+  visitId?: string | null
 }): Promise<MemPartnerDispatch> {
   const existing = memFindDispatchByIdempotency(input.idempotencyKey)
   if (existing) return existing
@@ -135,6 +136,7 @@ async function dispatchMemory(input: {
     dispatch_id: row.id,
     status: row.status,
     idempotency_key: input.idempotencyKey,
+    visit_id: input.visitId ?? null,
   })
   return row
 }
@@ -145,6 +147,7 @@ async function dispatchSupabase(input: {
   idempotencyKey: string
   actorId?: string | null
   note?: string
+  visitId?: string | null
 }): Promise<MemPartnerDispatch> {
   const supabase = createSystemClient('partner_dispatch')
 
@@ -186,6 +189,7 @@ async function dispatchSupabase(input: {
       status: 'queued',
       request_hmac: hmac,
       payload,
+      ...(input.visitId ? { visit_id: input.visitId } : {}),
     })
     .select('*')
     .single()
@@ -241,6 +245,7 @@ async function dispatchSupabase(input: {
     dispatch_id: updated.id,
     status,
     idempotency_key: input.idempotencyKey,
+    visit_id: input.visitId ?? null,
   })
 
   return rowToDispatch(updated)
@@ -251,6 +256,7 @@ async function dispatchSupabase(input: {
  * - Idempotent by (ticket_id, client key)
  * - HMAC-SHA256 over canonical JSON body
  * - Persists to Supabase when available; memory otherwise
+ * - Optional visitId links the dispatch to a service_visits row
  */
 export async function dispatchToVendor(input: {
   ticketId: string
@@ -258,6 +264,7 @@ export async function dispatchToVendor(input: {
   idempotencyKey: string
   actorId?: string | null
   note?: string
+  visitId?: string | null
 }): Promise<MemPartnerDispatch> {
   const { executionBlockReason } = await import('@/modules/spend/policy')
   const { spendForTicket } = await import('@/lib/data/ops-ledger')

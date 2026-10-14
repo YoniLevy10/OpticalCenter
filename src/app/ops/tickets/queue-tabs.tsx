@@ -7,17 +7,24 @@ import { cn } from '@/lib/utils'
 import {
   queueHref,
   type QueueFilters,
+  type QueueView,
 } from '@/modules/tickets/queue'
 
-type Tab = 'open' | 'resolved'
+type Tab = Extract<
+  QueueView,
+  'open' | 'attention' | 'urgent' | 'stuck' | 'resolved'
+>
 
 const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: 'open', label: 'פתוחות' },
+  { key: 'attention', label: 'דורש תשומת לב' },
+  { key: 'urgent', label: 'דחופות' },
+  { key: 'stuck', label: 'תקועות' },
   { key: 'resolved', label: 'הסתיימו' },
 ]
 
 /**
- * Queue open/resolved control — native tab semantics (not Next Link) so
+ * Queue view control — native tab semantics (not Next Link) so
  * role=tab is never stripped; sliding pill matches Segmented craft.
  * Preserves search/store filters when switching views.
  */
@@ -49,7 +56,7 @@ export function QueueTabs({
       role="tablist"
       aria-label={p('סינון תקלות')}
       aria-orientation="horizontal"
-      className="relative flex w-full gap-0.5 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
+      className="relative flex w-full gap-0.5 overflow-x-auto rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
     >
       <span
         aria-hidden
@@ -76,7 +83,7 @@ export function QueueTabs({
               router.push(queueHref(filters, { view: tab.key }))
             }
             className={cn(
-              'relative z-[1] t-control flex flex-1 items-center justify-center rounded-[var(--radius-sm)] py-2.5 transition-colors duration-[var(--dur-1)]',
+              'relative z-[1] t-control flex min-w-[4.5rem] flex-1 items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] px-2 py-2.5 transition-colors duration-[var(--dur-1)]',
               selected ? 'text-ink' : 'text-ink-3',
             )}
           >

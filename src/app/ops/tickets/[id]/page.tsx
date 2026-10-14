@@ -307,6 +307,9 @@ export default async function TicketDetailPage({
               assignee?.full_name || assignee?.email || null
             }
             technicians={techOptions}
+            canOverrideResolve={Boolean(
+              actor?.memberships.some((m) => m.role === 'global_maintenance'),
+            )}
           />
         </div>
       </div>
