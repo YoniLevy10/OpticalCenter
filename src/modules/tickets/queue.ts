@@ -22,6 +22,7 @@ export type QueueView =
   | 'urgent'
   | 'unassigned'
   | 'attention'
+  | 'stuck'
   | 'open'
   | 'resolved'
 
@@ -33,6 +34,7 @@ export const QUEUE_VIEWS: { key: QueueView; label: string }[] = [
   { key: 'urgent', label: 'דחופות' },
   { key: 'unassigned', label: 'ללא אחראי' },
   { key: 'attention', label: 'דורש תשומת לב' },
+  { key: 'stuck', label: 'תקועות' },
   { key: 'open', label: 'פתוחות' },
   { key: 'resolved', label: 'נפתרו' },
 ]
@@ -77,6 +79,7 @@ export type QueueFilters = {
   view: QueueView
   status?: string
   priority?: string
+  category?: string
   store?: string
   tech?: string
   q?: string
@@ -111,6 +114,19 @@ export function isBreached(t: QueueTicket, now = new Date()): boolean {
   )
 }
 
+/** Waiting states or SLA breach while still open. */
+export function isStuck(t: QueueTicket, now = new Date()): boolean {
+  if (!isOpen(t.status)) return false
+  if (
+    t.status === 'waiting_parts' ||
+    t.status === 'waiting_vendor' ||
+    t.status === 'awaiting_info'
+  ) {
+    return true
+  }
+  return isBreached(t, now)
+}
+
 /** Needs a human decision now: breached, critical, or open and unowned. */
 export function needsAttention(t: QueueTicket, now = new Date()): boolean {
   if (!isOpen(t.status)) return false
@@ -135,6 +151,8 @@ function matchesView(
   switch (view) {
     case 'attention':
       return needsAttention(t, now)
+    case 'stuck':
+      return isStuck(t, now)
     case 'open':
       return isOpen(t.status)
     case 'unassigned':
@@ -199,6 +217,7 @@ export function applyQueue(
     if (!matchesView(t, filters.view, now, filters.actorId)) return false
     if (filters.status && t.status !== filters.status) return false
     if (filters.priority && t.priority !== filters.priority) return false
+    if (filters.category && t.category !== filters.category) return false
     if (filters.store) {
       const want = canonicalStoreCode(filters.store)
       const code = t.stores?.code
@@ -263,6 +282,7 @@ export function parseQueueParams(sp: Record<string, string | undefined>): QueueF
     sort,
     status: sp.status?.trim() || undefined,
     priority: sp.priority?.trim() || undefined,
+    category: sp.category?.trim() || undefined,
     store: sp.store?.trim()
       ? canonicalStoreCode(sp.store.trim())
       : undefined,
@@ -283,6 +303,7 @@ export function queueHref(
   if (merged.sort && merged.sort !== 'newest') params.set('sort', merged.sort)
   if (merged.status) params.set('status', merged.status)
   if (merged.priority) params.set('priority', merged.priority)
+  if (merged.category) params.set('category', merged.category)
   if (merged.store) params.set('store', merged.store)
   if (merged.tech) params.set('tech', merged.tech)
   if (merged.q) params.set('q', merged.q)
@@ -292,7 +313,11 @@ export function queueHref(
 }
 
 export function activeFilterCount(filters: QueueFilters): number {
-  return [filters.status, filters.priority, filters.store, filters.tech].filter(
-    Boolean,
-  ).length
+  return [
+    filters.status,
+    filters.priority,
+    filters.category,
+    filters.store,
+    filters.tech,
+  ].filter(Boolean).length
 }

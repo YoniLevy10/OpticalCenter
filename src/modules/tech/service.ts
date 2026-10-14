@@ -123,15 +123,69 @@ export async function patchTechTicket(opts: {
     throw new Error('אין הרשאה לעדכן תקלה של טכנאי אחר')
   }
 
+  const photoUrl = opts.photoUrl?.trim()
+  let attachedProof = false
+  if (photoUrl) {
+    const { appendEvent } = await import('@/modules/tickets/service')
+    const kind =
+      /\.(mp4|webm)(\?|$)/i.test(photoUrl) ||
+      photoUrl.startsWith('data:video/')
+        ? 'video'
+        : 'image'
+    await appendEvent(opts.ticketId, 'tech_photo', opts.techId, {
+      photo_url: photoUrl,
+      kind,
+    })
+    if (!(await supabaseReady())) {
+      const { memAddMessage } = await import('@/lib/data/memory-store')
+      memAddMessage(opts.ticketId, {
+        channel: 'tech',
+        direction: 'inbound',
+        body: note ?? null,
+        media_url: photoUrl,
+      })
+      attachedProof = true
+    } else {
+      const { createSystemClient } = await import('@/lib/supabase/system')
+      const supabase = createSystemClient('tech_attachment_insert')
+      await supabase.from('ticket_attachments').insert({
+        ticket_id: opts.ticketId,
+        url: photoUrl,
+        kind,
+      })
+      attachedProof = true
+    }
+  }
+
   if (opts.status && opts.status !== current.status) {
     if (!canTechTransition(current.status, opts.status)) {
       throw new Error(`מעבר מ-${current.status} ל-${opts.status} אינו מותר`)
     }
 
+    if (opts.status === 'resolved' && !attachedProof && !photoUrl) {
+      // Fall through to updateStatus proof gate (may still have prior attachments).
+    }
+
     if (!(await supabaseReady()) && memGet(opts.ticketId)) {
-      memUpdateStatus(opts.ticketId, opts.status, note ?? null, opts.techId)
+      if (opts.status === 'resolved') {
+        await updateStatus(opts.ticketId, opts.status, opts.techId, {
+          proofAlreadyAttached: attachedProof,
+        })
+      } else {
+        memUpdateStatus(opts.ticketId, opts.status, note ?? null, opts.techId)
+      }
+      if (note) {
+        const { appendEvent } = await import('@/modules/tickets/service')
+        await appendEvent(opts.ticketId, 'tech_note', opts.techId, {
+          note,
+          resolution_note: note,
+          to_status: opts.status,
+        })
+      }
     } else {
-      await updateStatus(opts.ticketId, opts.status, opts.techId)
+      await updateStatus(opts.ticketId, opts.status, opts.techId, {
+        proofAlreadyAttached: attachedProof,
+      })
       if (note) {
         const { appendEvent } = await import('@/modules/tickets/service')
         await appendEvent(opts.ticketId, 'tech_note', opts.techId, {
@@ -144,30 +198,6 @@ export async function patchTechTicket(opts: {
   } else if (note) {
     const { appendEvent } = await import('@/modules/tickets/service')
     await appendEvent(opts.ticketId, 'tech_note', opts.techId, { note })
-  }
-
-  if (opts.photoUrl?.trim()) {
-    const { appendEvent } = await import('@/modules/tickets/service')
-    await appendEvent(opts.ticketId, 'tech_photo', opts.techId, {
-      photo_url: opts.photoUrl.trim(),
-    })
-    if (!(await supabaseReady())) {
-      const { memAddMessage } = await import('@/lib/data/memory-store')
-      memAddMessage(opts.ticketId, {
-        channel: 'tech',
-        direction: 'inbound',
-        body: note ?? null,
-        media_url: opts.photoUrl.trim(),
-      })
-    } else {
-      const { createSystemClient } = await import('@/lib/supabase/system')
-      const supabase = createSystemClient('tech_attachment_insert')
-      await supabase.from('ticket_attachments').insert({
-        ticket_id: opts.ticketId,
-        url: opts.photoUrl.trim(),
-        kind: 'image',
-      })
-    }
   }
 
   const refreshed = await getTechTicket(opts.ticketId)

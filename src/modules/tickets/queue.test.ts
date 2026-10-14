@@ -173,4 +173,33 @@ describe('queueHref / parseQueueParams', () => {
     const urgent = applyQueue(ALL, { view: 'urgent', sort: 'urgency' }, NOW)
     expect(urgent.map((t) => t.id)).toEqual(['breached', 'critical'])
   })
+
+  it('filters by category and stuck view', () => {
+    const waiting = ticket({
+      id: 'waiting',
+      status: 'waiting_parts',
+      priority: 'medium',
+      category: 'hvac',
+      assigned_to: 'tech-2',
+    })
+    const electrical = ticket({
+      id: 'elec',
+      status: 'in_progress',
+      priority: 'low',
+      category: 'electrical',
+      assigned_to: 'tech-2',
+      sla_resolve_by: '2026-08-16T20:00:00.000Z',
+    })
+    const rows = [...ALL, waiting, electrical]
+    expect(
+      applyQueue(rows, { view: 'stuck', sort: 'newest' }, NOW).map((t) => t.id),
+    ).toEqual(expect.arrayContaining(['waiting', 'breached']))
+    expect(
+      applyQueue(
+        rows,
+        { view: 'open', category: 'electrical', sort: 'newest' },
+        NOW,
+      ).map((t) => t.id),
+    ).toEqual(['elec'])
+  })
 })

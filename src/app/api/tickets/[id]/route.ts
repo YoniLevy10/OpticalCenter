@@ -31,6 +31,8 @@ const patchSchema = z
     status: z.enum(TICKET_STATUSES).optional(),
     assignedTo: z.string().uuid().optional(),
     note: z.string().trim().max(2000).optional(),
+    /** Ari (global_maintenance) override when resolving without image/video. */
+    overrideReason: z.string().trim().min(3).max(2000).optional(),
   })
   .refine((v) => v.status != null || v.assignedTo != null || Boolean(v.note), {
     message: 'יש לציין status, assignedTo או note',
@@ -104,7 +106,10 @@ export async function PATCH(
       assignedTechId = parsed.data.assignedTo
     }
     if (parsed.data.status) {
-      ticket = await updateStatus(id, parsed.data.status, actor.id)
+      ticket = await updateStatus(id, parsed.data.status, actor.id, {
+        overrideReason: parsed.data.overrideReason,
+        actorRoles: actor.memberships.map((m) => m.role),
+      })
     }
     if (parsed.data.note) {
       const { appendEvent } = await import('@/modules/tickets/service')

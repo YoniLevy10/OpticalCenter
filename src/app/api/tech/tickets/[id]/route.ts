@@ -33,9 +33,11 @@ const BodySchema = z.object({
         !v ||
         v === '' ||
         /^https?:\/\//i.test(v) ||
-        /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(v),
+        /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(v) ||
+        /^data:video\/(mp4|webm);base64,/i.test(v),
       {
-        message: 'photoUrl must be http(s) or compressed data:image URL',
+        message:
+          'photoUrl must be http(s) or compressed data:image / data:video URL',
       },
     ),
   claim: z.boolean().optional(),

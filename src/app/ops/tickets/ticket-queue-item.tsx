@@ -21,6 +21,8 @@ import {
   plainOpenForHe,
   storeLabel,
 } from '@/components/ops/plain-labels'
+import { useVisitSelection } from './visit-selection-context'
+import { RESOLVE_PROOF_REQUIRED_HE } from '@/modules/tickets/proof-gate'
 
 const HQ_STATUS_OPTIONS: TicketStatus[] = [
   'assigned',
@@ -58,18 +60,26 @@ function displayNum(t: RowTicket): string {
 export function TicketQueueItem({
   ticket,
   assigneeLabel,
+  selectable = false,
+  canOverrideResolve = false,
 }: {
   ticket: RowTicket
   view: 'open' | 'resolved'
   assigneeLabel: string
+  selectable?: boolean
+  canOverrideResolve?: boolean
 }) {
   const router = useRouter()
   const toast = useToast()
   const { locale } = useLocale()
   const p = usePhrase()
-  const [pending, startTransition] = useTransition()
+  const visitSelection = useVisitSelection()
+  const [, startTransition] = useTransition()
+  const [pending, setPendingBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [overrideOpen, setOverrideOpen] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
   const [status, setStatus] = useState<TicketStatus>(
     (ticket.status as TicketStatus) || 'assigned',
   )
@@ -80,9 +90,10 @@ export function TicketQueueItem({
   const disabled = busy || pending
   const critical =
     ticket.priority === 'critical' || ticket.priority === 'high' || openFor.overdue
+  const selected = visitSelection?.selected.has(ticket.id) ?? false
 
   async function patch(body: Record<string, unknown>, successText: string) {
-    if (busy || pending) return false
+    if (busy || pending) return { ok: false as const, error: null as string | null }
     setBusy(true)
     try {
       const res = await fetch(`/api/tickets/${ticket.id}`, {
@@ -93,19 +104,21 @@ export function TicketQueueItem({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.push({
-          title:
-            typeof data.error === 'string' ? data.error : 'העדכון נכשל',
-          tone: 'critical',
-        })
-        return false
+        const err =
+          typeof data.error === 'string' ? data.error : 'העדכון נכשל'
+        toast.push({ title: err, tone: 'critical' })
+        return { ok: false as const, error: err }
       }
       toast.push({ title: successText, tone: 'success' })
-      startTransition(() => router.refresh())
-      return true
+      startTransition(() => {
+        setPendingBusy(true)
+        router.refresh()
+        setPendingBusy(false)
+      })
+      return { ok: true as const, error: null }
     } catch {
       toast.push({ title: 'שגיאת רשת', tone: 'critical' })
-      return false
+      return { ok: false as const, error: 'network' }
     } finally {
       setBusy(false)
     }
@@ -122,7 +135,15 @@ export function TicketQueueItem({
   }
 
   async function resolveTicket() {
-    await patch({ status: 'resolved' }, 'התקלה הסתיימה')
+    const result = await patch({ status: 'resolved' }, 'התקלה הסתיימה')
+    if (
+      !result.ok &&
+      canOverrideResolve &&
+      result.error?.includes('תמונה או וידאו')
+    ) {
+      setOverrideReason('')
+      setOverrideOpen(true)
+    }
   }
 
   if (!open) {
@@ -156,9 +177,22 @@ export function TicketQueueItem({
       className={cn(
         'border-b border-border bg-surface last:border-b-0',
         'transition-colors duration-[var(--dur-1)] hover:bg-surface-sunken/40',
+        selected && 'bg-[var(--tenant-soft)]/40',
       )}
     >
       <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4">
+        {selectable && visitSelection ? (
+          <label className="flex shrink-0 items-center self-start pt-1">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--tenant)]"
+              checked={selected}
+              onChange={() => visitSelection.toggle(ticket.id)}
+              aria-label={`בחירה לביקור ${displayNum(ticket)}`}
+            />
+          </label>
+        ) : null}
+
         <Link
           href={`/ops/tickets/${ticket.id}`}
           className="min-w-0 flex-1 space-y-1.5"
@@ -256,6 +290,11 @@ export function TicketQueueItem({
               disabled={disabled}
             />
           </label>
+          {status === 'resolved' && canOverrideResolve ? (
+            <p className="t-caption text-ink-3">
+              סגירה רגילה דורשת תמונה/וידאו. בלי הוכחה — השתמשו בחריגת ארי.
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="primary"
@@ -267,12 +306,64 @@ export function TicketQueueItem({
                 const body: Record<string, unknown> = { status }
                 const trimmed = note.trim()
                 if (trimmed) body.note = trimmed
-                const ok = await patch(body, 'התקלה עודכנה')
-                if (ok) setSheetOpen(false)
+                if (status === 'resolved' && canOverrideResolve && trimmed) {
+                  body.overrideReason = trimmed
+                }
+                const result = await patch(body, 'התקלה עודכנה')
+                if (result.ok) setSheetOpen(false)
+                else if (
+                  status === 'resolved' &&
+                  canOverrideResolve &&
+                  result.error?.includes('תמונה או וידאו')
+                ) {
+                  setSheetOpen(false)
+                  setOverrideOpen(true)
+                }
               })()
             }
           >
             שמור עדכון
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+        title="סגירה ללא הוכחה"
+        description={RESOLVE_PROOF_REQUIRED_HE}
+      >
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="t-caption text-ink-2">סיבת חריגה (חובה)</span>
+            <Textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="למשל: תקלה קריטית שטופלה מרחוק / אין גישה לצילום"
+              rows={3}
+              disabled={disabled}
+            />
+          </label>
+          <Button
+            type="button"
+            variant="primary"
+            size="touch"
+            className="w-full"
+            disabled={disabled || overrideReason.trim().length < 3}
+            onClick={() =>
+              void (async () => {
+                const result = await patch(
+                  {
+                    status: 'resolved',
+                    overrideReason: overrideReason.trim(),
+                  },
+                  'התקלה נסגרה בחריגה',
+                )
+                if (result.ok) setOverrideOpen(false)
+              })()
+            }
+          >
+            אישור חריגה
           </Button>
         </div>
       </BottomSheet>

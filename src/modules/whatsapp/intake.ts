@@ -35,13 +35,22 @@ import { handoffReply, isStatusQuestion, statusReply, voiceNeedsReviewReply } fr
 import { transcribeVoice } from './voice'
 import { spendForTicket } from '@/lib/data/ops-ledger'
 import { landVoiceReview, lookupStore, routeInboundToDesk } from './desk-route'
+import { isNonIssueAck } from './non-issue'
 
 function ticketSpendApproved(ticketId: string): boolean | null {
   const spend = spendForTicket(ticketId)
   if (!spend) return null
   return spend.status === 'approved' && !spend.needsReapproval
 }
-import { isNonIssueAck } from './non-issue'
+
+function attachmentKindFromMedia(
+  mediaKind: InboundMessage['mediaKind'] | undefined,
+): 'image' | 'video' | 'document' | 'audio' {
+  if (mediaKind === 'document') return 'document'
+  if (mediaKind === 'video') return 'video'
+  if (mediaKind === 'audio') return 'audio'
+  return 'image'
+}
 
 type CountryRow = {
   id: string
@@ -797,12 +806,7 @@ async function createTicketFromIntake(params: {
         await client.from('ticket_attachments').insert({
           ticket_id: ticket.id,
           url: resolvedUrl,
-          kind:
-            mediaKind === 'document'
-              ? 'document'
-              : mediaKind === 'video'
-                ? 'video'
-                : 'image',
+          kind: attachmentKindFromMedia(mediaKind),
         })
       }
     } catch (e) {
@@ -886,12 +890,7 @@ async function attachMediaToActiveTicket(params: {
         await client.from('ticket_attachments').insert({
           ticket_id: ticketId,
           url: resolved.url,
-          kind:
-            message.mediaKind === 'document'
-              ? 'document'
-              : message.mediaKind === 'video'
-                ? 'video'
-                : 'image',
+          kind: attachmentKindFromMedia(message.mediaKind),
         })
       }
     } catch (e) {
@@ -1031,17 +1030,108 @@ export async function processInboundMessage(
         country.whatsapp_access_token,
       )
       if (!transcribed.text) {
+        const deskStore = lookupStore(session.store_code)
+        const store = session.store_code
+          ? await resolveStoreByCode(
+              supabase,
+              country.id || session.country_id || MEM_COUNTRY_ID,
+              session.store_code,
+            )
+          : null
+        // Stash Meta media before the URL expires — prefer a placeholder ticket
+        // with the audio attached + Ari review task when the store is known.
+        let reviewTicketId: string | null = null
+        if (store && message.mediaUrl) {
+          try {
+            const opened = await createTicketFromIntake({
+              store,
+              country,
+              description:
+                'הקלטה ממתינה לתמלול — נדרשת בדיקת ארי',
+              decision: {
+                summary: 'הקלטה ממתינה לתמלול',
+                category: 'other',
+                priority: 'medium',
+                asset: null,
+                needsClarification: true,
+                clarificationQuestion: 'מה התקלה בהקלטה?',
+                possibleDuplicateHint: null,
+                ai: null,
+                rules: {
+                  category: 'other',
+                  priority: 'medium',
+                  applied: [
+                    {
+                      id: 'voice_needs_review',
+                      reason: 'הקלטה ללא תמלול',
+                    },
+                  ],
+                  fromAi: false,
+                },
+                provider: 'rules',
+              },
+              mediaUrl: message.mediaUrl,
+              mediaKind: 'audio',
+              waId: message.waId,
+              messageId: message.messageId,
+              source: inferSourceFromText(message.text) || 'whatsapp',
+              inboundText: null,
+              useMemory: !supabase,
+            })
+            reviewTicketId = opened.ticketId
+            await updateSession(supabase, session, {
+              state: 'done',
+              active_ticket_id: opened.ticketId,
+              pending_media_url: null,
+              pending_media_kind: null,
+            })
+            session = {
+              ...session,
+              state: 'done',
+              active_ticket_id: opened.ticketId,
+              pending_media_url: null,
+              pending_media_kind: null,
+            }
+          } catch (err) {
+            logEvent('whatsapp:intake', 'warn', 'voice_placeholder_ticket_failed', {
+              error: err instanceof Error ? err.message : String(err),
+            })
+            await updateSession(supabase, session, {
+              pending_media_url: message.mediaUrl,
+              pending_media_kind: 'audio',
+            })
+          }
+        } else if (message.mediaUrl) {
+          await updateSession(supabase, session, {
+            pending_media_url: message.mediaUrl,
+            pending_media_kind: 'audio',
+          })
+        }
         await landVoiceReview({
           waId: message.waId,
-          store: lookupStore(session.store_code),
+          store: deskStore,
           dryRun: options?.skipOutboundGraph === true,
+          ticketId: reviewTicketId,
         })
         const reply = await craftIntakeReply(
           voiceNeedsReviewReply(),
           'intake_voice_review',
         )
-        await sendReply(supabase, message, country, reply, null, options, session)
-        return { ok: true, reply, state: session.state }
+        await sendReply(
+          supabase,
+          message,
+          country,
+          reply,
+          reviewTicketId,
+          options,
+          session,
+        )
+        return {
+          ok: true,
+          reply,
+          ticketId: reviewTicketId ?? undefined,
+          state: session.state,
+        }
       }
       message = { ...message, text: transcribed.text }
       text = transcribed.text

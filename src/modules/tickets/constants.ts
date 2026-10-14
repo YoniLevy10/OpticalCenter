@@ -106,6 +106,8 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   store_confirmed: 'אישור חנות',
   partner_dispatched: 'שיגור לספק',
   lifecycle_nudge: 'תזכורת מחזור',
+  resolve_override: 'סגירה ללא הוכחה (חריגה)',
+  service_visit_created: 'נוצר ביקור שירות',
 }
 
 

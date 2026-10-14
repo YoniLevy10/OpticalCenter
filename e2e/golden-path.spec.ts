@@ -39,7 +39,10 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/ops/tickets?view=open', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()
-    await expect(page.getByText(/אבן גבירול|172|מזגן/).first()).toBeVisible()
+    // Scope to ticket rows — store <option> labels also contain אבן גבירול.
+    await expect(
+      page.getByRole('article').filter({ hasText: /מזגן/ }).first(),
+    ).toBeVisible()
 
     await page.goto(`/ops/tickets/${ticketId}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(/מזגן הראשי/).first()).toBeVisible()

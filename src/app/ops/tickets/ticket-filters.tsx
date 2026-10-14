@@ -13,6 +13,8 @@ import {
 } from '@/modules/tickets/queue'
 import {
   OPEN_TICKET_STATUSES,
+  TICKET_CATEGORIES,
+  TICKET_CATEGORY_LABELS_HE,
   TICKET_PRIORITY_LABELS_HE,
   TICKET_STATUS_LABELS_HE,
   type TicketPriority,
@@ -23,13 +25,20 @@ import { cn } from '@/lib/utils'
 
 const PRIORITIES: TicketPriority[] = ['critical', 'high', 'medium', 'low']
 
+export type StoreFilterOption = {
+  code: string
+  name: string
+}
+
 function FilterFields({
   draft,
   setDraft,
+  stores,
   layout = 'stack',
 }: {
   draft: QueueFilters
   setDraft: (next: QueueFilters) => void
+  stores: StoreFilterOption[]
   /** stack = mobile sheet; row = desktop toolbar */
   layout?: 'stack' | 'row'
 }) {
@@ -40,13 +49,55 @@ function FilterFields({
   const tr = usePhrase()
   const field =
     layout === 'row'
-      ? 'flex min-w-[8.5rem] flex-col gap-1'
+      ? 'flex min-w-[7.5rem] max-w-[12rem] flex-1 flex-col gap-1'
       : 'flex flex-col gap-1.5'
   const selectCls =
     't-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink'
 
   return (
     <div className={wrap}>
+      <label className={field}>
+        <span className="t-caption text-ink-2">{tr('חנות')}</span>
+        <select
+          className={selectCls}
+          value={draft.store ?? ''}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              store: e.target.value || undefined,
+            })
+          }
+        >
+          <option value="">{tr('הכל')}</option>
+          {stores.map((s) => (
+            <option key={s.code} value={s.code}>
+              #{s.code} · {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className={field}>
+        <span className="t-caption text-ink-2">{tr('סוג')}</span>
+        <select
+          className={selectCls}
+          value={draft.category ?? ''}
+          onChange={(e) =>
+            setDraft({
+              ...draft,
+              category: e.target.value || undefined,
+            })
+          }
+        >
+          <option value="">{tr('הכל')}</option>
+          {TICKET_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {tr(TICKET_CATEGORY_LABELS_HE[cat])}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className={field}>
         <span className="t-caption text-ink-2">{tr('עדיפות')}</span>
         <select
@@ -109,7 +160,11 @@ function FilterFields({
   )
 }
 
-export function TicketFilters() {
+export function TicketFilters({
+  stores = [],
+}: {
+  stores?: StoreFilterOption[]
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
@@ -132,10 +187,12 @@ export function TicketFilters() {
 
   return (
     <>
-      {/* Desktop inline filters — horizontal row (was broken as stacked columns) */}
-      <div className="hidden shrink-0 md:block">
+      {/* Desktop inline filters — lg+ only so tablet (iPad 768) stays sheet-based
+          and does not force horizontal page overflow. */}
+      <div className="hidden min-w-0 max-w-full shrink lg:block">
         <FilterFields
           layout="row"
+          stores={stores}
           draft={filters}
           setDraft={(next) =>
             apply({ ...next, view: filters.view || 'open', sort: 'newest' })
@@ -143,8 +200,8 @@ export function TicketFilters() {
         />
       </div>
 
-      {/* Mobile filter sheet trigger */}
-      <div className="md:hidden">
+      {/* Mobile / tablet filter sheet trigger */}
+      <div className="lg:hidden">
         <Button
           type="button"
           variant="secondary"
@@ -176,7 +233,7 @@ export function TicketFilters() {
         detent="half"
       >
         <div className="flex flex-col gap-5">
-          <FilterFields draft={draft} setDraft={setDraft} />
+          <FilterFields draft={draft} setDraft={setDraft} stores={stores} />
           <div className="flex gap-2">
             <Button
               type="button"
@@ -188,8 +245,9 @@ export function TicketFilters() {
                   ...draft,
                   status: undefined,
                   priority: undefined,
+                  category: undefined,
                   tech: undefined,
-                  store: filters.store,
+                  store: undefined,
                   view: filters.view || 'open',
                   sort: 'newest',
                   q: filters.q,
@@ -209,7 +267,6 @@ export function TicketFilters() {
                   view: filters.view || 'open',
                   sort: 'newest',
                   q: filters.q,
-                  store: filters.store,
                 })
               }
             >
