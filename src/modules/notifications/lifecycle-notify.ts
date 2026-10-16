@@ -19,7 +19,12 @@ import {
   type LifecycleEvent,
   type LifecycleTicket,
 } from './lifecycle'
-import { storeConfirmUrl } from '@/modules/tickets/store-confirm'
+import {
+  STORE_CONFIRM_BUTTON_TITLE,
+  STORE_CONFIRM_WA_HINT,
+  storeConfirmButtonId,
+  storeConfirmUrl,
+} from '@/modules/tickets/store-confirm'
 import { notifyTechnicianAssignedPush } from '@/modules/push/send'
 
 const LIFECYCLE_AI_SITUATION: Record<LifecycleEvent, WhatsAppAiSituation> = {
@@ -37,9 +42,10 @@ export async function buildLifecycleMessage(
   opts?: { enhance?: boolean },
 ): Promise<string> {
   const base = lifecycleTemplate(event, ticket)
+  // Resolved: WA button / reply is primary; portal link is secondary fallback.
   const withLink =
     event === 'resolved'
-      ? `${base}\n${storeConfirmUrl(ticket.id)}`
+      ? `${base}\n${STORE_CONFIRM_WA_HINT}\n(גיבוי בפורטל: ${storeConfirmUrl(ticket.id)})`
       : base
   // Never AI-rewrite "assigned" — the model often flips perspective and tells
   // the store reporter they were assigned as the technician.
@@ -47,6 +53,10 @@ export async function buildLifecycleMessage(
   return enhanceWhatsAppMessage(withLink, {
     situation: LIFECYCLE_AI_SITUATION[event],
   })
+}
+
+function resolvedConfirmButtons(ticketId: string) {
+  return [{ id: storeConfirmButtonId(ticketId), title: STORE_CONFIRM_BUTTON_TITLE }]
 }
 
 async function persistOutbound(
@@ -104,8 +114,10 @@ export async function notifyReporter(
     const purpose = opts?.purpose ?? 'status_update'
     const ready = await supabaseReady()
     const supabase = ready ? createSystemClient('lifecycle_notify') : undefined
+    const buttons =
+      event === 'resolved' ? resolvedConfirmButtons(ticket.id) : undefined
 
-    const result = await sendWhatsAppText({
+    let result = await sendWhatsAppText({
       toWaId: phone,
       text,
       phoneNumberId: opts?.phoneNumberId,
@@ -113,7 +125,28 @@ export async function notifyReporter(
       supabase: supabase && ready ? supabase : undefined,
       forceDryRun: !ready,
       purpose,
+      buttons,
     })
+
+    // Interactive buttons require an open 24h window; fall back to plain text
+    // (still includes «מאשר» + portal backup link).
+    if (
+      buttons &&
+      !result.ok &&
+      !result.skippedByPolicy &&
+      result.error &&
+      /24|חלון|template/i.test(result.error)
+    ) {
+      result = await sendWhatsAppText({
+        toWaId: phone,
+        text,
+        phoneNumberId: opts?.phoneNumberId,
+        ticketId: ticket.id,
+        supabase: supabase && ready ? supabase : undefined,
+        forceDryRun: !ready,
+        purpose,
+      })
+    }
 
     if (result.skippedByPolicy) {
       return { sent: false, skipped: 'cost_policy' }
@@ -125,6 +158,7 @@ export async function notifyReporter(
         dryRun: result.dryRun,
         ok: result.ok,
         purpose,
+        buttons: buttons?.map((b) => b.id) ?? null,
       })
     }
 

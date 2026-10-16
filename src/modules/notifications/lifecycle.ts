@@ -42,7 +42,7 @@ export function lifecycleTemplate(
     case 'waiting_parts':
       return `ממתינים לחלקים לתקלה ${display} — עדכון יישלח.`
     case 'resolved':
-      return `התקלה ${display} טופלה בחנות ${storeName}.\nנא לאשר שהבעיה נפתרה — לחצו על הקישור או היכנסו לפורטל החנות.`
+      return `התקלה ${display} טופלה בחנות ${storeName}.\nנא לאשר שהבעיה נפתרה בוואטסאפ — לחצו «אשר תיקון» או השיבו «מאשר».`
     case 'closed':
       return `התקלה ${display} נסגרה לאחר אישור החנות. תודה!`
   }

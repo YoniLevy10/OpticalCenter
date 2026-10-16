@@ -18,6 +18,8 @@ export type InboundMessage = {
   timestamp: string | null
   /** Optional override (simulator / deep-link hint). */
   sourceHint?: TicketSource | null
+  /** Interactive button / list reply id from Cloud API (e.g. store_confirm:<uuid>). */
+  interactiveId?: string | null
 }
 
 export type IntakeResult = {

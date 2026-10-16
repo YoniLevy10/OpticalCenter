@@ -6,6 +6,7 @@ import { canonicalStoreCode } from '@/modules/stores/israel-stores'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Panel } from '@/components/ui/primitives'
 import { StoreReportForm } from './store-report-form'
+import { StoreWaPrimaryNotice } from '../wa-primary-notice'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,10 +32,14 @@ export default async function StoreReportPage() {
     <div className="flex flex-col gap-5 stagger">
       <OpsPageHero
         eyebrow={`#${locked.code}`}
-        title="דיווח תקלה"
-        status={locked.name}
+        title="דיווח גיבוי"
+        status={`${locked.name} · הערוץ העיקרי הוא WhatsApp`}
       />
+      <StoreWaPrimaryNotice storeCode={locked.code} mode="report" />
       <Panel elevated className="px-4 py-5 md:px-5">
+        <p className="t-caption mb-4 text-ink-3">
+          טופס אתר — רק אם אין גישה לוואטסאפ כרגע.
+        </p>
         <StoreReportForm
           storeCode={locked.code}
           storeName={locked.name}

@@ -8,6 +8,7 @@ import { Panel, KeyValue } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { StoreConfirmButton } from '../store-confirm-button'
+import { StoreWaPrimaryNotice } from '../../wa-primary-notice'
 import {
   TICKET_CATEGORY_LABELS_HE,
   type TicketStatus,
@@ -53,6 +54,13 @@ export default async function StoreTicketPage({
           </KeyValue>
         </dl>
       </Panel>
+
+      {ticket.status === 'resolved' ? (
+        <StoreWaPrimaryNotice
+          storeCode={ticket.stores?.code ?? '172'}
+          mode="confirm"
+        />
+      ) : null}
 
       <StoreConfirmButton
         ticketId={ticket.id}
