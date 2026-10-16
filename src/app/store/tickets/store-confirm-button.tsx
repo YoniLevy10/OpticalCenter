@@ -50,7 +50,7 @@ export function StoreConfirmButton({
   return (
     <div className="space-y-3">
       <Notice tone="progress">
-        הטכנאי סיים טיפול. אשרו שהבעיה נפתרה — בלי לרדוף אחרי אף אחד.
+        גיבוי באתר: אשרו שהבעיה נפתרה. עדיף לאשר בוואטסאפ (כפתור או «מאשר»).
       </Notice>
       {error ? <Notice tone="critical">{error}</Notice> : null}
       <form

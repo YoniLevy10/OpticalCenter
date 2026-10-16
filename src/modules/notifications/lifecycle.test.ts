@@ -28,6 +28,7 @@ describe('lifecycleTemplate', () => {
     expect(lifecycleTemplate('in_progress', ticket)).toMatch(/התחיל טיפול/)
     expect(lifecycleTemplate('waiting_parts', ticket)).toMatch(/חלקים/)
     expect(lifecycleTemplate('resolved', ticket)).toMatch(/טופלה/)
+    expect(lifecycleTemplate('resolved', ticket)).toMatch(/וואטסאפ|מאשר/)
     expect(lifecycleTemplate('closed', ticket)).toMatch(/נסגרה/)
   })
 
@@ -44,5 +45,17 @@ describe('isLifecycleEvent', () => {
     expect(isLifecycleEvent('assigned')).toBe(true)
     expect(isLifecycleEvent('new')).toBe(false)
     expect(isLifecycleEvent('cancelled')).toBe(false)
+  })
+})
+
+describe('buildLifecycleMessage resolved (WA-primary)', () => {
+  it('includes WA confirm hint and portal backup link', async () => {
+    const { buildLifecycleMessage } = await import('./lifecycle-notify')
+    const text = await buildLifecycleMessage('resolved', ticket, {
+      enhance: false,
+    })
+    expect(text).toMatch(/מאשר|אשר תיקון/)
+    expect(text).toContain(`/store/tickets/${ticket.id}`)
+    expect(text).toMatch(/גיבוי/)
   })
 })

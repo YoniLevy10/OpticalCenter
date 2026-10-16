@@ -61,7 +61,7 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
           mediaKind = 'document'
           fileName = msg.document?.filename?.trim() || null
         } else if (type === 'interactive') {
-          const buttonId = msg.interactive?.button_reply?.id
+          const buttonId = msg.interactive?.button_reply?.id ?? null
           text =
             buttonId === 'desk_approve'
               ? 'לאשר'
@@ -69,8 +69,22 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
                 ? 'לדחות'
                 : buttonId === 'desk_info'
                   ? 'לבקש מידע'
-                  : msg.interactive?.button_reply?.title?.trim() || null
-          if (!text) continue
+                  : buttonId?.startsWith('store_confirm:')
+                    ? 'מאשר'
+                    : msg.interactive?.button_reply?.title?.trim() || null
+          if (!text && !buttonId) continue
+          out.push({
+            messageId: msg.id,
+            waId: msg.from,
+            phoneNumberId,
+            text,
+            mediaUrl: null,
+            mediaKind: null,
+            fileName: null,
+            timestamp: msg.timestamp ?? null,
+            interactiveId: buttonId,
+          })
+          continue
         } else if (type === 'video') {
           text = msg.video?.caption?.trim() || null
           mediaUrl = msg.video?.id ? `meta-media:${msg.video.id}` : null

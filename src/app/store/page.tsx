@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
 import type { QueueTicket } from '@/modules/tickets/queue'
+import { StoreWaPrimaryNotice } from './wa-primary-notice'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,14 +49,18 @@ export default async function StoreHomePage() {
         title="התקלות שלי"
         status={
           mine.length === 0
-            ? 'אין דיווחים פתוחים כרגע'
+            ? 'אין דיווחים פתוחים כרגע — דווחו בוואטסאפ'
             : `${mine.length} דיווחים מהחנות`
         }
       />
 
-      <Button asChild variant="primary" size="block">
-        <Link href="/store/report">דיווח תקלה חדשה</Link>
-      </Button>
+      {store ? (
+        <StoreWaPrimaryNotice storeCode={store.code} mode="home" />
+      ) : (
+        <Button asChild variant="secondary" size="block">
+          <Link href="/store/report">דיווח גיבוי באתר</Link>
+        </Button>
+      )}
 
       <Panel flush elevated className="overflow-hidden">
         {mine.length === 0 ? (

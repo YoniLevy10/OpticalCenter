@@ -23,7 +23,11 @@ export function StoreShell({
 
   const links = [
     { href: '/store', label: p('התקלות שלי'), match: '/store' },
-    { href: '/store/report', label: p('דיווח חדש'), match: '/store/report' },
+    {
+      href: '/store/report',
+      label: p('דיווח גיבוי'),
+      match: '/store/report',
+    },
   ]
 
   return (
