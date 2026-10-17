@@ -22,6 +22,7 @@ function isProductionRuntime(): boolean {
 }
 
 export const ALL_NAV_TOOLS: NavTool[] = [
+  { id: 'alerts', href: '/ops/alerts', label: 'התראות' },
   { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
   { id: 'tasks', href: '/ops/tasks', label: 'משימות' },
   { id: 'approvals', href: '/ops/approvals', label: 'אישורים' },
@@ -99,6 +100,12 @@ export function canAccessInbox(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
+/** Alerts center — HQ desk scan (Ari). */
+export function canAccessAlerts(actor: Actor | null): boolean {
+  if (!actor) return true
+  return hasHq(actor)
+}
+
 export function canAccessActivity(actor: Actor | null): boolean {
   if (!actor) return true
   return hasHq(actor)
@@ -110,6 +117,7 @@ export function canAccessPrintQr(actor: Actor | null): boolean {
 }
 
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
+  alerts: canAccessAlerts,
   inbox: canAccessInbox,
   tasks: canAccessTasks,
   professionals: canAccessProfessionals,

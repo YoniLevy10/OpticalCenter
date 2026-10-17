@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
+  Activity,
   BarChart3,
+  Bell,
   Box,
   CheckSquare,
   ClipboardCheck,
@@ -24,7 +26,6 @@ import {
   Truck,
   UserRound,
   Users,
-  Activity,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -86,6 +87,12 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'תפעול',
     items: [
+      {
+        href: '/ops/alerts',
+        label: 'התראות',
+        icon: Bell,
+        match: '/ops/alerts',
+      },
       { href: '/ops/stores', label: 'חנויות', icon: Store, match: '/ops/stores' },
       {
         href: '/ops/inbox',
@@ -182,6 +189,7 @@ const HREF_KEY: Record<string, MessageKey> = {
   '/ops/tickets': 'nav.tickets',
   '/ops/approvals': 'nav.approvals',
   '/ops/tasks': 'nav.tasks',
+  '/ops/alerts': 'nav.alerts',
   '/ops/stores': 'nav.stores',
   '/ops/inbox': 'nav.whatsapp',
   '/ops/professionals': 'nav.professionals',
