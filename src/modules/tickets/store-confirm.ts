@@ -139,11 +139,86 @@ export function storeConfirmUrl(ticketId: string): string {
   return `${appUrl}/store/tickets/${ticketId}`
 }
 
+/**
+ * Store reports the fix did not hold → back to in_progress.
+ * Preserves ticket history (events/messages); only clears resolved_at via status transition.
+ */
+export async function rejectStoreFix(input: {
+  ticketId: string
+  actorLabel?: string | null
+  reason?: string | null
+}): Promise<{ id: string; status: string }> {
+  const actorLabel = input.actorLabel?.trim() || 'store'
+  const reason = input.reason?.trim() || 'לא נפתר — דיווח חנות בוואטסאפ'
+
+  if (!(await supabaseReady())) {
+    const ticket = memGet(input.ticketId)
+    if (!ticket) throw new Error('תקלה לא נמצאה')
+    if (ticket.status !== 'resolved') {
+      throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
+    }
+    memAddEvent(
+      ticket.id,
+      'store_rejected',
+      { by: actorLabel, reason },
+      null,
+    )
+    const reopened = await updateStatus(ticket.id, 'in_progress')
+    return { id: reopened.id, status: reopened.status }
+  }
+
+  const supabase = createSystemClient('store_confirm')
+  const { data: row, error } = await supabase
+    .from('tickets')
+    .select('id, status')
+    .eq('id', input.ticketId)
+    .maybeSingle()
+
+  if (error) {
+    if (isSupabaseSchemaError(error)) {
+      return rejectStoreFixMemoryFallback(input, actorLabel, reason)
+    }
+    throw new Error(error.message)
+  }
+  if (!row) throw new Error('תקלה לא נמצאה')
+  if (row.status !== 'resolved') {
+    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
+  }
+
+  await appendEvent(input.ticketId, 'store_rejected', null, {
+    by: actorLabel,
+    reason,
+  })
+  const reopened = await updateStatus(input.ticketId, 'in_progress')
+  return { id: reopened.id, status: reopened.status }
+}
+
+async function rejectStoreFixMemoryFallback(
+  input: { ticketId: string; actorLabel?: string | null; reason?: string | null },
+  actorLabel: string,
+  reason: string,
+) {
+  const ticket = memGet(input.ticketId)
+  if (!ticket) throw new Error('תקלה לא נמצאה')
+  if (ticket.status !== 'resolved') {
+    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
+  }
+  memAddEvent(ticket.id, 'store_rejected', { by: actorLabel, reason }, null)
+  const reopened = await updateStatus(ticket.id, 'in_progress')
+  return { id: reopened.id, status: reopened.status }
+}
+
 export {
   STORE_CONFIRM_BUTTON_PREFIX,
   STORE_CONFIRM_BUTTON_TITLE,
   STORE_CONFIRM_WA_HINT,
+  STORE_REJECT_BUTTON_PREFIX,
+  STORE_REJECT_BUTTON_TITLE,
   isStoreConfirmReply,
+  isStoreRejectReply,
   parseStoreConfirmButtonId,
+  parseStoreRejectButtonId,
   storeConfirmButtonId,
+  storeRejectButtonId,
+  formatAwaitingConfirmChoice,
 } from './wa-store-confirm'

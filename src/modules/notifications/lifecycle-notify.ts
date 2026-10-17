@@ -6,13 +6,21 @@ import { send019Sms } from '@/lib/sms/019'
 import { buildTechnicianAssignedSms, resolveTechnicianNotifyPhone } from './tech-assign-sms'
 import type { TechNotifyProfile } from './tech-assign-sms'
 import { createSystemClient } from '@/lib/supabase/system'
-import { sendWhatsAppText } from '@/modules/whatsapp/send'
+import {
+  isWhatsAppOutsideWindowError,
+  sendWhatsAppTemplate,
+  sendWhatsAppText,
+} from '@/modules/whatsapp/send'
 import {
   enhanceWhatsAppMessage,
   type WhatsAppAiSituation,
 } from '@/modules/whatsapp/ai'
 import type { OutboundPurpose } from '@/modules/whatsapp/cost-policy'
 import { normalizePhoneDigits } from '@/lib/phone'
+import {
+  defaultSessionTemplateLang,
+  META_WA_TEMPLATES,
+} from '@/modules/whatsapp/templates'
 import {
   isLifecycleEvent,
   lifecycleTemplate,
@@ -22,8 +30,10 @@ import {
 import {
   STORE_CONFIRM_BUTTON_TITLE,
   STORE_CONFIRM_WA_HINT,
+  STORE_REJECT_BUTTON_TITLE,
   storeConfirmButtonId,
   storeConfirmUrl,
+  storeRejectButtonId,
 } from '@/modules/tickets/store-confirm'
 import { notifyTechnicianAssignedPush } from '@/modules/push/send'
 
@@ -56,7 +66,10 @@ export async function buildLifecycleMessage(
 }
 
 function resolvedConfirmButtons(ticketId: string) {
-  return [{ id: storeConfirmButtonId(ticketId), title: STORE_CONFIRM_BUTTON_TITLE }]
+  return [
+    { id: storeConfirmButtonId(ticketId), title: STORE_CONFIRM_BUTTON_TITLE },
+    { id: storeRejectButtonId(ticketId), title: STORE_REJECT_BUTTON_TITLE },
+  ]
 }
 
 async function persistOutbound(
@@ -128,24 +141,58 @@ export async function notifyReporter(
       buttons,
     })
 
-    // Interactive buttons require an open 24h window; fall back to plain text
-    // (still includes «מאשר» + portal backup link).
-    if (
-      buttons &&
+    const outsideWindow =
       !result.ok &&
       !result.skippedByPolicy &&
-      result.error &&
-      /24|חלון|template/i.test(result.error)
-    ) {
-      result = await sendWhatsAppText({
+      isWhatsAppOutsideWindowError(
+        result.error,
+        result.errorCode,
+        result.errorSubcode,
+      )
+
+    // Interactive + free text both fail outside the 24h care window.
+    // Do not assume plain text bypasses it — use an approved utility template.
+    if (outsideWindow) {
+      const display =
+        ticket.display_number ||
+        (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+      const templateResult = await sendWhatsAppTemplate({
         toWaId: phone,
-        text,
+        templateName: META_WA_TEMPLATES.ticketUpdate.metaName,
+        languageCode:
+          META_WA_TEMPLATES.ticketUpdate.language || defaultSessionTemplateLang(),
+        bodyParameters: [display],
         phoneNumberId: opts?.phoneNumberId,
         ticketId: ticket.id,
         supabase: supabase && ready ? supabase : undefined,
         forceDryRun: !ready,
         purpose,
       })
+      if (templateResult.ok) {
+        result = templateResult
+        logEvent('lifecycle:notify', 'info', 'resolved_sent_via_template', {
+          ticketId: ticket.id,
+          templateName: META_WA_TEMPLATES.ticketUpdate.metaName,
+        })
+      } else {
+        // Last resort: session reopen template (no body vars).
+        const followup = await sendWhatsAppTemplate({
+          toWaId: phone,
+          templateName: META_WA_TEMPLATES.followup.metaName,
+          languageCode: defaultSessionTemplateLang(),
+          phoneNumberId: opts?.phoneNumberId,
+          ticketId: ticket.id,
+          supabase: supabase && ready ? supabase : undefined,
+          forceDryRun: !ready,
+          purpose,
+        })
+        result = followup
+        logEvent('lifecycle:notify', 'info', 'resolved_sent_via_followup_template', {
+          ticketId: ticket.id,
+          ok: followup.ok,
+          error: followup.error,
+        })
+      }
     }
 
     if (result.skippedByPolicy) {
@@ -159,6 +206,7 @@ export async function notifyReporter(
         ok: result.ok,
         purpose,
         buttons: buttons?.map((b) => b.id) ?? null,
+        outsideWindow,
       })
     }
 

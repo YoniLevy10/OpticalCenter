@@ -37,11 +37,18 @@ import { spendForTicket } from '@/lib/data/ops-ledger'
 import { landVoiceReview, lookupStore, routeInboundToDesk } from './desk-route'
 import { isAriSender } from './classify'
 import { isNonIssueAck } from './non-issue'
-import { confirmStoreFix } from '@/modules/tickets/store-confirm'
 import {
+  confirmStoreFix,
+  rejectStoreFix,
+} from '@/modules/tickets/store-confirm'
+import {
+  formatAwaitingConfirmChoice,
   isStoreConfirmReply,
+  isStoreRejectReply,
   parseStoreConfirmButtonId,
+  parseStoreRejectButtonId,
 } from '@/modules/tickets/wa-store-confirm'
+import { resolveStoreConfirmTarget } from '@/modules/tickets/wa-store-confirm-resolve'
 import { getById } from '@/modules/tickets/service'
 import { normalizePhoneDigits } from '@/lib/phone'
 
@@ -54,64 +61,6 @@ function ticketSpendApproved(ticketId: string): boolean | null {
 function phoneTail(waId: string): string {
   const digits = normalizePhoneDigits(waId) || waId.replace(/\D/g, '')
   return digits.slice(-9)
-}
-
-function memResolvedForReporter(waId: string): string | null {
-  const tail = phoneTail(waId)
-  const mine = memListTickets()
-    .filter(
-      (ticket) =>
-        ticket.status === 'resolved' &&
-        Boolean(ticket.reporter_phone) &&
-        ticket.reporter_phone!.includes(tail),
-    )
-    .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
-  return mine[0]?.id ?? null
-}
-
-async function resolveConfirmTicketId(input: {
-  interactiveId?: string | null
-  waId: string
-  activeTicketId: string | null
-  supabase: SupabaseClient | null
-}): Promise<string | null> {
-  const fromButton = parseStoreConfirmButtonId(input.interactiveId)
-  if (fromButton) return fromButton
-
-  if (input.activeTicketId) {
-    try {
-      const active = await getById(input.activeTicketId)
-      if (active?.status === 'resolved') return active.id
-    } catch {
-      // fall through
-    }
-  }
-
-  if (!input.supabase) {
-    return memResolvedForReporter(input.waId)
-  }
-
-  const digits = normalizePhoneDigits(input.waId)
-  const tail = phoneTail(input.waId)
-  const { data } = await input.supabase
-    .from('tickets')
-    .select('id, reporter_phone, updated_at')
-    .eq('status', 'resolved')
-    .order('updated_at', { ascending: false })
-    .limit(40)
-
-  const hit = (data ?? []).find((row) => {
-    const phone = row.reporter_phone as string | null
-    if (!phone) return false
-    const normalized = normalizePhoneDigits(phone)
-    if (!normalized) return phone.includes(tail)
-    return (
-      (digits != null && normalized === digits) ||
-      normalized.endsWith(tail) ||
-      phone.includes(tail)
-    )
-  })
-  return (hit?.id as string | undefined) ?? memResolvedForReporter(input.waId)
 }
 
 function attachmentKindFromMedia(
@@ -1210,21 +1159,99 @@ export async function processInboundMessage(
 
     const spoken = message.text?.trim() || text
 
-    // Store confirms a resolved fix via WA button or «מאשר» — primary close path.
-    // Skip for Ari desk phones (their «לאשר» is spend approval, not store confirm).
+    // Store confirms / rejects a resolved fix via WA — primary close path.
+    // Skip free-text for Ari desk phones (their «לאשר» / «מאשר» is spend approval).
+    // Button ids still go through sender authorization (webhook ≠ person auth).
     const confirmButtonId = parseStoreConfirmButtonId(message.interactiveId)
+    const rejectButtonId = parseStoreRejectButtonId(message.interactiveId)
+    const ariDesk = isAriSender(message.waId)
     const wantsConfirm =
       Boolean(confirmButtonId) ||
-      (!isAriSender(message.waId) && isStoreConfirmReply(spoken))
-    if (wantsConfirm) {
-      const ticketId = await resolveConfirmTicketId({
+      (!ariDesk && !rejectButtonId && isStoreConfirmReply(spoken))
+    const wantsReject =
+      Boolean(rejectButtonId) ||
+      (!ariDesk && !confirmButtonId && isStoreRejectReply(spoken))
+
+    if (wantsConfirm || wantsReject) {
+      const resolved = await resolveStoreConfirmTarget({
         interactiveId: message.interactiveId,
         waId: message.waId,
-        activeTicketId: session.active_ticket_id,
         supabase,
+        mode: wantsReject ? 'reject' : 'confirm',
       })
-      if (ticketId) {
+
+      if (resolved.outcome === 'unauthorized') {
+        const reply = await craftIntakeReply(
+          'אין הרשאה לאשר או לדחות תקלה זו ממספר זה. פנו לארי אם זו טעות.',
+          'intake_generic_error',
+        )
+        await sendReply(supabase, message, country, reply, null, options, session)
+        logEvent('whatsapp:intake', 'warn', 'store_confirm_unauthorized', {
+          waId: message.waId,
+          interactiveId: message.interactiveId,
+        })
+        return { ok: false, reply, error: 'store_confirm_unauthorized' }
+      }
+
+      if (resolved.outcome === 'ambiguous') {
+        const reply = await craftIntakeReply(
+          formatAwaitingConfirmChoice(resolved.tickets),
+          'intake_non_issue_ack',
+        )
+        await sendReply(supabase, message, country, reply, null, options, session)
+        return { ok: true, reply, state: session.state }
+      }
+
+      if (resolved.outcome === 'unavailable') {
+        const reply = await craftIntakeReply(
+          'לא הצלחנו לאמת את התקלה כרגע. נסו שוב בעוד רגע או פנו לארי — לא נפתח דיווח חדש.',
+          'intake_generic_error',
+        )
+        await sendReply(supabase, message, country, reply, null, options, session)
+        return { ok: false, reply, error: 'store_confirm_unavailable' }
+      }
+
+      if (resolved.outcome === 'ok') {
+        const ticketId = resolved.ticketId
         try {
+          if (wantsReject) {
+            const result = await rejectStoreFix({
+              ticketId,
+              actorLabel: `wa:${message.waId}`,
+              reason: spoken || 'לא נפתר',
+            })
+            const detail = await getById(ticketId).catch(() => null)
+            const display =
+              detail?.display_number ||
+              (detail?.number != null
+                ? `OC-${detail.number}`
+                : ticketId.slice(0, 8))
+            const reply = await craftIntakeReply(
+              `קיבלנו — התקלה ${display} חזרה לטיפול (${result.status === 'in_progress' ? 'בטיפול' : result.status}). ההיסטוריה נשמרה.`,
+              'intake_follow_up',
+            )
+            await sendReply(
+              supabase,
+              message,
+              country,
+              reply,
+              ticketId,
+              options,
+              session,
+            )
+            logEvent('whatsapp:intake', 'info', 'store_reject_via_wa', {
+              ticketId,
+              waId: message.waId,
+              viaButton: Boolean(rejectButtonId),
+            })
+            return {
+              ok: true,
+              reply,
+              ticketId,
+              state: session.state,
+            }
+          }
+
           const result = await confirmStoreFix({
             ticketId,
             actorLabel: `wa:${message.waId}`,
@@ -1263,11 +1290,12 @@ export async function processInboundMessage(
           logEvent('whatsapp:intake', 'warn', 'store_confirm_via_wa_failed', {
             ticketId,
             error: err instanceof Error ? err.message : String(err),
+            mode: wantsReject ? 'reject' : 'confirm',
           })
           const reply = await craftIntakeReply(
             err instanceof Error
               ? err.message
-              : 'לא הצלחנו לאשר את התיקון כרגע. נסו שוב או פנו לארי.',
+              : 'לא הצלחנו לעדכן את התקלה כרגע. נסו שוב או פנו לארי.',
             'intake_generic_error',
           )
           await sendReply(
@@ -1279,13 +1307,26 @@ export async function processInboundMessage(
             options,
             session,
           )
-          return { ok: false, reply, ticketId, error: 'store_confirm_failed' }
+          return {
+            ok: false,
+            reply,
+            ticketId,
+            error: wantsReject ? 'store_reject_failed' : 'store_confirm_failed',
+          }
         }
       }
-      // Explicit confirm (button or phrase) with nothing awaiting — don't open a ticket.
-      if (confirmButtonId || isStoreConfirmReply(spoken)) {
+
+      // Explicit confirm/reject with nothing awaiting — don't open a ticket.
+      if (
+        confirmButtonId ||
+        rejectButtonId ||
+        isStoreConfirmReply(spoken) ||
+        isStoreRejectReply(spoken)
+      ) {
         const reply = await craftIntakeReply(
-          'אין כרגע תקלה שממתינה לאישור תיקון מהחנות. אם יש תקלה חדשה — שלחו STORE_ וקוד החנות.',
+          wantsReject
+            ? 'אין כרגע תקלה בסטטוס «נפתרה» לדיווח שלא נפתר. אם יש תקלה חדשה — שלחו STORE_ וקוד החנות.'
+            : 'אין כרגע תקלה שממתינה לאישור תיקון מהחנות. אם יש תקלה חדשה — שלחו STORE_ וקוד החנות.',
           'intake_non_issue_ack',
         )
         await sendReply(supabase, message, country, reply, null, options, session)
