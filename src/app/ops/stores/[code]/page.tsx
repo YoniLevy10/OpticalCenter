@@ -23,7 +23,13 @@ import { StoreDirectoryPanel } from '../store-directory-panel'
 import { StoreAssetsPanel } from './store-assets-panel'
 import { StoreSecondaryActions } from './store-secondary-actions'
 import { StoreVisitDispatch } from './store-visit-dispatch'
-import { areaManagerForStore, listAudits, listContactsForStore } from '@/lib/data/ops-ledger'
+import {
+  areaManagerForStore,
+  listAudits,
+  listContactsForStore,
+  spendForTicket,
+} from '@/lib/data/ops-ledger'
+import { executionBlockReason } from '@/modules/spend/policy'
 import { regionLabel } from '@/modules/stores/regions'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
@@ -186,6 +192,7 @@ export default async function StoreDetailPage({
               id: t.id,
               label: displayNum(t),
               title: t.title || t.description,
+              spendBlock: executionBlockReason(spendForTicket(t.id)),
             }))}
             vendors={(vendorsResult.vendors ?? []).map((v) => ({
               id: v.id,

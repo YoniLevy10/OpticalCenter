@@ -4,8 +4,14 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { BottomSheet } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
+import {
+  VisitConfirmSheet,
+  buildVisitIdempotencyKey,
+  scheduledAtToIso,
+  useSubmitGuard,
+  type VisitResult,
+} from './visit-confirm-sheet'
 import {
   VisitSelectionProvider,
   useVisitSelection,
@@ -28,7 +34,10 @@ function VisitBarInner({
   const [open, setOpen] = useState(false)
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? '')
   const [notes, setNotes] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [result, setResult] = useState<VisitResult | null>(null)
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null)
+  const { busy, run } = useSubmitGuard()
 
   const selectedTickets = useMemo(() => {
     if (!selection) return [] as VisitSelectableTicket[]
@@ -62,20 +71,40 @@ function VisitBarInner({
     )
   }
 
-  async function dispatchVisit() {
-    if (!canOpen || storeIds.length !== 1) {
+  function openSheet() {
+    if (!canOpen || storeIds.length !== 1) return
+    setResult(null)
+    setIdempotencyKey(
+      buildVisitIdempotencyKey({
+        storeId: storeIds[0]!,
+        vendorId: vendorId || vendors[0]?.id || '',
+        ticketIds: selectedTickets.map((t) => t.id),
+      }),
+    )
+    setOpen(true)
+  }
+
+  async function postVisit(opts?: {
+    retryFailedOnly?: boolean
+    retryTicketIds?: string[]
+  }) {
+    if (!canOpen || storeIds.length !== 1 || !vendorId) {
       toast.push({
-        title: 'יש לבחור תקלות מחנות אחת בלבד',
+        title: 'יש לבחור תקלות מחנות אחת וספק',
         tone: 'critical',
       })
       return
     }
-    if (!vendorId) {
-      toast.push({ title: 'בחרו ספק', tone: 'critical' })
-      return
-    }
-    setBusy(true)
-    try {
+    const key =
+      idempotencyKey ??
+      buildVisitIdempotencyKey({
+        storeId: storeIds[0]!,
+        vendorId,
+        ticketIds: selectedTickets.map((t) => t.id),
+      })
+    setIdempotencyKey(key)
+
+    await run(async () => {
       const res = await fetch('/api/ops/visits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,10 +114,14 @@ function VisitBarInner({
           ticketIds: selectedTickets.map((t) => t.id),
           vendorId,
           notes: notes.trim() || undefined,
+          scheduledAt: scheduledAtToIso(scheduledAt),
+          idempotencyKey: key,
+          retryFailedOnly: opts?.retryFailedOnly ?? false,
+          retryTicketIds: opts?.retryTicketIds,
         }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
+      if (!res.ok && res.status !== 207) {
         toast.push({
           title:
             typeof data.error === 'string' ? data.error : 'שיגור הביקור נכשל',
@@ -96,19 +129,34 @@ function VisitBarInner({
         })
         return
       }
-      toast.push({
-        title: `ביקור שובץ · ${selectedTickets.length} תקלות`,
-        tone: 'success',
-      })
-      selection?.clear()
-      setOpen(false)
-      setNotes('')
-      startTransition(() => router.refresh())
-    } catch {
-      toast.push({ title: 'שגיאת רשת', tone: 'critical' })
-    } finally {
-      setBusy(false)
-    }
+      const visit = data.visit as VisitResult | undefined
+      if (!visit?.items) {
+        toast.push({ title: 'תשובה לא תקינה מהשרת', tone: 'critical' })
+        return
+      }
+      setResult(visit)
+      const failed = visit.items.filter((i) => i.can_retry).length
+      if (failed === 0 && visit.status === 'dispatched') {
+        toast.push({
+          title: `ביקור שובץ · ${selectedTickets.length} תקלות`,
+          tone: 'success',
+        })
+        selection?.clear()
+        startTransition(() => router.refresh())
+      } else if (failed > 0) {
+        toast.push({
+          title: `שיגור חלקי · ${failed} נכשלו`,
+          tone: 'critical',
+        })
+        startTransition(() => router.refresh())
+      } else {
+        toast.push({
+          title: 'ביקור עודכן',
+          tone: 'neutral',
+        })
+        startTransition(() => router.refresh())
+      }
+    })
   }
 
   return (
@@ -131,75 +179,59 @@ function VisitBarInner({
           variant="primary"
           size="sm"
           disabled={!canOpen || vendors.length === 0}
-          onClick={() => setOpen(true)}
+          onClick={openSheet}
         >
           <Truck className="h-3.5 w-3.5" aria-hidden />
           שיגור ביקור
         </Button>
       </div>
 
-      <BottomSheet
+      <VisitConfirmSheet
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) setResult(null)
+        }}
         title="שיגור ביקור משולב"
-        description={
-          storeCodes[0]
-            ? `חנות #${storeCodes[0]} · ${selectedTickets.length} תקלות`
-            : undefined
+        storeLabel={storeCodes[0] ? `חנות #${storeCodes[0]}` : 'חנות'}
+        tickets={selectedTickets.map((t) => ({
+          id: t.id,
+          label: t.label,
+          title: t.title,
+          spendBlock: t.spendBlock,
+        }))}
+        vendors={vendors}
+        vendorId={vendorId}
+        onVendorIdChange={(id) => {
+          setVendorId(id)
+          if (storeIds[0]) {
+            setIdempotencyKey(
+              buildVisitIdempotencyKey({
+                storeId: storeIds[0],
+                vendorId: id,
+                ticketIds: selectedTickets.map((t) => t.id),
+              }),
+            )
+          }
+        }}
+        notes={notes}
+        onNotesChange={setNotes}
+        scheduledAt={scheduledAt}
+        onScheduledAtChange={setScheduledAt}
+        busy={busy}
+        canSubmit={canOpen}
+        result={result}
+        onSubmit={() => void postVisit()}
+        onRetryFailed={() =>
+          void postVisit({ retryFailedOnly: true })
         }
-      >
-        <div className="flex flex-col gap-4">
-          {!canOpen ? (
-            <p className="t-body text-[var(--signal-critical)]">
-              יש לסנן לפי חנות ולבחור תקלות מאותה חנות בלבד
-            </p>
-          ) : null}
-          <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">ספק / בעל מקצוע</span>
-            <select
-              className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
-              value={vendorId}
-              onChange={(e) => setVendorId(e.target.value)}
-              disabled={busy}
-            >
-              {vendors.length === 0 ? (
-                <option value="">אין ספקים פעילים</option>
-              ) : (
-                vendors.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="t-caption text-ink-2">הערה (אופציונלי)</span>
-            <textarea
-              className="t-control min-h-[5rem] rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-ink"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={busy}
-              placeholder="תיאום ביקור, שעת הגעה…"
-            />
-          </label>
-          <ul className="t-caption max-h-32 space-y-1 overflow-y-auto text-ink-2">
-            {selectedTickets.map((t) => (
-              <li key={t.id}>{t.label}</li>
-            ))}
-          </ul>
-          <Button
-            type="button"
-            variant="primary"
-            size="touch"
-            className="w-full"
-            disabled={busy || !canOpen || !vendorId}
-            onClick={() => void dispatchVisit()}
-          >
-            אישור שיגור
-          </Button>
-        </div>
-      </BottomSheet>
+        onRetryTicket={(ticketId) =>
+          void postVisit({
+            retryFailedOnly: true,
+            retryTicketIds: [ticketId],
+          })
+        }
+      />
     </>
   )
 }
@@ -216,9 +248,6 @@ export function VisitMultiSelectBar({
   return (
     <VisitSelectionProvider tickets={tickets}>
       <VisitBarInner vendors={vendors} storeFilter={storeFilter} />
-      {/* Selection checkboxes live on TicketQueueItem via the same provider —
-          page must wrap both bar and list. This export is the bar-only tree;
-          page uses VisitQueueShell for shared provider. */}
     </VisitSelectionProvider>
   )
 }

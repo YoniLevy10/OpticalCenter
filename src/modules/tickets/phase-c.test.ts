@@ -83,6 +83,7 @@ describe('Phase C — partner dispatch', () => {
     })
     expect(a.id).toBe(b.id)
     expect(a.request_hmac).toMatch(/^[a-f0-9]{64}$/)
-    expect(a.status).toBe('sent')
+    // No vendor webhook in demo → labeled (never fake "sent")
+    expect(a.status).toBe('labeled')
   })
 })
