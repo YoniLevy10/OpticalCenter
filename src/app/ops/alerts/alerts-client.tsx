@@ -13,8 +13,8 @@ import type {
   AlertSource,
   AlertSourceHealth,
   OpsAlert,
-} from '@/modules/alerts/center'
-import { filterAlerts, splitAlertBuckets } from '@/modules/alerts/center'
+} from '@/modules/alerts/types'
+import { filterAlerts, splitAlertBuckets } from '@/modules/alerts/types'
 
 const BUCKETS: { key: AlertBucket | 'open'; label: string }[] = [
   { key: 'open', label: 'פעולות פתוחות' },

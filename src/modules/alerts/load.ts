@@ -13,11 +13,8 @@ import {
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { listTickets } from '@/modules/tickets/service'
-import {
-  composeAlertsCenter,
-  type AlertMessage,
-  type AlertsCenterResult,
-} from './center'
+import { composeAlertsCenter } from './center'
+import type { AlertMessage, AlertsCenterResult } from './types'
 
 function historySummary(event: {
   event_type: string

@@ -3,6 +3,9 @@
  * surfaces into one deduped action list. Not a parallel notification engine:
  * items appear only while their source still needs attention, and page loads
  * never send WA/email.
+ *
+ * Auth helpers stay here (server-only call sites). Client UI must import from
+ * `./types` so the browser bundle never pulls `@/lib/auth/types` → `node:crypto`.
  */
 
 import { isBreached, type QueueTicket } from '@/modules/tickets/queue'
@@ -14,61 +17,25 @@ import type { Locale } from '@/lib/i18n/locale'
 import { phrase } from '@/lib/i18n/phrases'
 import type { Actor } from '@/lib/auth/types'
 import { actorHasHqAccess } from '@/lib/auth/types'
+import type {
+  AlertBucket,
+  AlertMessage,
+  AlertSeverity,
+  AlertSource,
+  AlertsCenterResult,
+  OpsAlert,
+} from './types'
 
-export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low'
-
-/** UI buckets for Ari’s daily scan. */
-export type AlertBucket = 'urgent_overdue' | 'needs_decision' | 'waiting'
-
-export type AlertSource =
-  | 'ticket'
-  | 'spend'
-  | 'document'
-  | 'verify'
-  | 'task'
-  | 'conflict'
-  | 'store_confirm'
-
-export type OpsAlert = {
-  /** Stable dedupe key = underlying item (`ticket:…`, `spend:…`, …). */
-  id: string
-  source: AlertSource
-  title: string
-  reasons: string[]
-  severity: AlertSeverity
-  owner: string
-  /** ISO timestamp from the freshest contributing source. */
-  at: string
-  nextAction: string
-  href: string
-  bucket: AlertBucket
-  storeCode: string
-  storeName: string
-  ticketId?: string
-  spendId?: string
-}
-
-export type AlertMessage = {
-  id: string
-  at: string
-  summary: string
-  href: string | null
-  ticketId?: string
-}
-
-export type AlertSourceHealth = {
-  tickets: 'ok' | 'failed'
-  ledger: 'ok' | 'failed'
-  history: 'ok' | 'failed'
-}
-
-export type AlertsCenterResult = {
-  open: OpsAlert[]
-  history: AlertMessage[]
-  sources: AlertSourceHealth
-  /** True when at least one live source failed — UI must not claim “all quiet”. */
-  partialFailure: boolean
-}
+export type {
+  AlertBucket,
+  AlertMessage,
+  AlertSeverity,
+  AlertSource,
+  AlertSourceHealth,
+  AlertsCenterResult,
+  OpsAlert,
+} from './types'
+export { filterAlerts, splitAlertBuckets } from './types'
 
 const WAITING_STATUSES = new Set([
   'awaiting_info',
@@ -322,40 +289,6 @@ export function buildOpenAlerts(input: {
   })
 }
 
-export function filterAlerts(
-  alerts: OpsAlert[],
-  filters: {
-    bucket?: AlertBucket | 'all' | 'open'
-    storeCode?: string | null
-    source?: AlertSource | 'all'
-    q?: string | null
-  },
-): OpsAlert[] {
-  const q = filters.q?.trim().toLowerCase() ?? ''
-  const store = filters.storeCode?.trim() ?? ''
-  return alerts.filter((alert) => {
-    if (filters.bucket && filters.bucket !== 'all' && filters.bucket !== 'open') {
-      if (alert.bucket !== filters.bucket) return false
-    }
-    if (store && alert.storeCode !== store) return false
-    if (filters.source && filters.source !== 'all' && alert.source !== filters.source) {
-      return false
-    }
-    if (!q) return true
-    const hay = [
-      alert.title,
-      alert.owner,
-      alert.nextAction,
-      alert.storeCode,
-      alert.storeName,
-      ...alert.reasons,
-    ]
-      .join(' ')
-      .toLowerCase()
-    return hay.includes(q)
-  })
-}
-
 /** HQ desk only — store/tech roles use their portals, not the alerts center. */
 export function canAccessAlertsCenter(actor: Actor | null): boolean {
   if (!actor) return true // demo entry already gated by the page
@@ -374,14 +307,6 @@ export function scopeAlertsForActor(
   if (!actor) return alerts
   if (!actorHasHqAccess(actor)) return []
   return alerts
-}
-
-export function splitAlertBuckets(alerts: OpsAlert[]): Record<AlertBucket, OpsAlert[]> {
-  return {
-    urgent_overdue: alerts.filter((a) => a.bucket === 'urgent_overdue'),
-    needs_decision: alerts.filter((a) => a.bucket === 'needs_decision'),
-    waiting: alerts.filter((a) => a.bucket === 'waiting'),
-  }
 }
 
 /**
