@@ -23,8 +23,8 @@ import {
   mergeEvidence,
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
-import { TicketMidragPanel } from './ticket-midrag-panel'
 import { PreferredVendorsPanel } from './preferred-vendors-panel'
+import { TicketRfqDraftPanel } from './ticket-rfq-draft-panel'
 import { Tx } from '@/components/i18n/tx'
 import { TECH_COMPLETION } from '@/modules/tech/completion-copy'
 import { Timeline } from '@/components/ui/timeline'
@@ -354,10 +354,36 @@ export default async function TicketDetailPage({
           }))}
         />
 
-        {/* Midrag is body content — not next to assign/close */}
-        <TicketMidragPanel
+        {/* C07: preferred + book pros + Midrag deep-link (replaces orphan Midrag-only panel) */}
+        <PreferredVendorsPanel
+          ticketId={ticket.id}
           category={ticket.category}
+          regionId={ticket.region_id ?? 'center'}
           city={ticket.stores?.city ?? null}
+          initialMatches={vendors.matches.slice(0, 4).map((row) => ({
+            id: row.id,
+            name: row.name,
+            specialties: row.specialties,
+            preferred: row.preferred,
+            coverage_regions: row.coverage_regions ?? undefined,
+            contact_phone: row.contact_phone ?? null,
+            notes: row.notes ?? null,
+            score: row.score,
+            reason: row.reason,
+            dispatchable: row.dispatchable,
+          }))}
+        />
+
+        <TicketRfqDraftPanel
+          ticketId={ticket.id}
+          ticketLabel={
+            ticket.display_number ||
+            (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+          }
+          storeId={ticket.store_id}
+          storeCode={ticket.stores?.code ?? ''}
+          storeName={ticket.stores?.name ?? storeHeading}
+          trade={ticket.category}
         />
 
         {/* Single mount: sticky dock on mobile, inline panel on md+ */}
