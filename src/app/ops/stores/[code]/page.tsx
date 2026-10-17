@@ -102,7 +102,7 @@ export default async function StoreDetailPage({
 
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-xl flex-col gap-5 stagger">
+      <div className="mx-auto flex max-w-xl flex-col gap-5">
         <PageToolbar
           backHref="/ops/stores"
           backLabel="חזרה לחנויות"

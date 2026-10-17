@@ -7,12 +7,8 @@ import {
   CheckCircle2,
   ClipboardCheck,
   ClipboardList,
-  FileText,
-  ListChecks,
-  Plus,
   Search,
   Store,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
@@ -138,14 +134,11 @@ export default async function OpsDashboardPage() {
           }
         />
 
+        {/* Primary actions only — secondary routes live in the sidebar. */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <DashShortcut href="/ops/tickets?view=open" label="תקלות" icon={ClipboardList} />
-          <DashShortcut href="/report" label="דיווח חדש" icon={Plus} />
-          <DashShortcut href="/ops/professionals" label="אנשי מקצוע" icon={UserRound} />
-          <DashShortcut href="/ops/tickets?view=open&tech=none" label="בלי שיוך" icon={Search} />
+          <DashShortcut href="/ops/tickets?view=stuck" label="תקועות" icon={AlertTriangle} />
           <DashShortcut href="/ops/approvals" label="אישורים" icon={ClipboardCheck} />
-          <DashShortcut href="/ops/tasks" label="משימות" icon={ListChecks} />
-          <DashShortcut href="/ops/documents" label="מסמכים" icon={FileText} />
           <DashShortcut href="/ops/stores" label="סניפים" icon={Store} />
         </div>
 

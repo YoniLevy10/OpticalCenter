@@ -24,7 +24,11 @@ import {
 } from '@/modules/tickets/attachments'
 import { TicketActions } from './ticket-actions'
 import { TicketMidragPanel } from './ticket-midrag-panel'
+import { PreferredVendorsPanel } from './preferred-vendors-panel'
 import { Tx } from '@/components/i18n/tx'
+import { TECH_COMPLETION } from '@/modules/tech/completion-copy'
+import { Timeline } from '@/components/ui/timeline'
+import { buildActivityDesc } from '@/modules/tickets/activity'
 import { phrase } from '@/lib/i18n/phrases'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
@@ -184,9 +188,27 @@ export default async function TicketDetailPage({
     storyLines.push(p('הסתיימה'))
   }
 
+  const treatmentSummary = (() => {
+    const events = ticket.events ?? []
+    for (let i = events.length - 1; i >= 0; i -= 1) {
+      const e = events[i]
+      if (e.event_type !== 'tech_note') continue
+      const payload = (e.payload ?? {}) as {
+        resolution_note?: string
+        note?: string
+        to_status?: string
+      }
+      const text = (payload.resolution_note ?? payload.note)?.trim()
+      if (text && (payload.to_status === 'resolved' || payload.resolution_note)) {
+        return text
+      }
+    }
+    return null
+  })()
+
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq stagger md:pb-0">
+      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq md:pb-0">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
         <OpsPageHero
@@ -207,7 +229,9 @@ export default async function TicketDetailPage({
                     : 'text-ink-2',
                 )}
               >
-                {openFor.text}
+                {ticket.status === 'resolved'
+                  ? 'ממתינה לאישור חנות'
+                  : openFor.text}
               </span>
             </>
           }
@@ -233,6 +257,17 @@ export default async function TicketDetailPage({
             </KeyValue>
           </dl>
         </Panel>
+
+        {treatmentSummary ? (
+          <Panel elevated>
+            <p className="t-section mb-2 text-ink">
+              {TECH_COMPLETION.treatmentLabel}
+            </p>
+            <p className="t-body whitespace-pre-wrap text-ink-2">
+              {treatmentSummary}
+            </p>
+          </Panel>
+        ) : null}
 
         {hits.length > 0 ? (
           <Panel elevated>
@@ -260,17 +295,20 @@ export default async function TicketDetailPage({
           </Panel>
         ) : null}
 
-        <Panel elevated>
-          <p className="t-section mb-3 text-ink">
-            <Tx text="מה קרה עד עכשיו" />
-          </p>
-          <ul className="space-y-2">
-            {storyLines.map((line) => (
-              <li key={line} className="t-body text-ink-2">
-                · {line}
-              </li>
-            ))}
-          </ul>
+        <Panel elevated flush className="overflow-hidden">
+          <div className="border-b border-border px-5 py-3">
+            <p className="t-section text-ink">
+              <Tx text="מה קרה עד עכשיו" />
+            </p>
+            {storyLines.length > 0 ? (
+              <p className="t-caption mt-1 text-ink-3">
+                {storyLines.join(' · ')}
+              </p>
+            ) : null}
+          </div>
+          <Timeline
+            items={buildActivityDesc(ticket.messages ?? [], ticket.events ?? [])}
+          />
         </Panel>
 
         <TicketTrialPanel
@@ -289,6 +327,24 @@ export default async function TicketDetailPage({
           storeCode={ticket.stores?.code ?? ''}
           storeName={ticket.stores?.name ?? storeHeading}
           matches={people}
+        />
+
+        <PreferredVendorsPanel
+          ticketId={ticket.id}
+          category={ticket.category}
+          regionId={ticket.region_id ?? 'center'}
+          city={ticket.stores?.city ?? null}
+          initialMatches={vendors.matches.slice(0, 4).map((row) => ({
+            id: row.id,
+            name: row.name,
+            specialties: row.specialties,
+            preferred: row.preferred,
+            coverage_regions: row.coverage_regions ?? undefined,
+            contact_phone: row.contact_phone ?? null,
+            notes: row.notes ?? null,
+            score: row.score,
+            reason: row.reason,
+          }))}
         />
 
         {/* Midrag is body content — not next to assign/close */}

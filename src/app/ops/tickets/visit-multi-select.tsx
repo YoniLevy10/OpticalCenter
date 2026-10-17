@@ -124,7 +124,11 @@ function VisitBarInner({
       if (!res.ok && res.status !== 207) {
         toast.push({
           title:
-            typeof data.error === 'string' ? data.error : 'שיגור הביקור נכשל',
+            typeof data.error === 'string'
+              ? data.error
+              : res.status === 400
+                ? 'בקשה לא תקינה — בדקו מזהי חנות/תקלה/ספק'
+                : 'שיגור הביקור נכשל',
           tone: 'critical',
         })
         return
@@ -161,9 +165,10 @@ function VisitBarInner({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-border bg-surface-sunken/40 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--tenant-line)] bg-[var(--tenant-soft)] px-3 py-2.5">
         <p className="t-body flex-1 text-ink">
-          נבחרו {selectedTickets.length}
+          ביקור משולב · נבחרו{' '}
+          <span className="t-num font-semibold">{selectedTickets.length}</span>
           {storeCodes[0] ? ` · חנות #${storeCodes[0]}` : ''}
         </p>
         <Button

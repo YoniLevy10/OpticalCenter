@@ -26,7 +26,7 @@ export function TechJobList({
     return (
       <Panel flush elevated className="overflow-hidden">
         <EmptyState
-          title="אין עבודות כרגע 🎉"
+          title="אין עבודות כרגע"
           description="כשמשייכים לך תקלה — היא תופיע כאן."
           icon={ClipboardList}
           className="py-12"

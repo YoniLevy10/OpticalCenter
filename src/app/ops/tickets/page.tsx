@@ -179,7 +179,7 @@ export default async function TicketsPage({
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5 stagger">
+      <div className="flex flex-col gap-5">
         <OpsPageHero
           largeTitle
           title={translate(locale, 'tickets.title')}
@@ -205,6 +205,12 @@ export default async function TicketsPage({
         </div>
         <p className="t-caption text-ink-3">
           <Tx text="מיון: מהחדש לישן" />
+          {canDispatchVisit && view !== 'resolved' ? (
+            <>
+              {' · '}
+              <Tx text="סננו חנות ואז סמנו תקלות לביקור משולב" />
+            </>
+          ) : null}
         </p>
 
         {listError ? (
@@ -239,7 +245,7 @@ export default async function TicketsPage({
             <Panel flush elevated className="overflow-hidden">
               {rows.length === 0 ? (
                 <EmptyState
-                  title="אין תקלות פתוחות 🎉"
+                  title="אין תקלות פתוחות"
                   description="כשתדווח תקלה חדשה — היא תופיע כאן."
                   icon={PartyPopper}
                 />
@@ -270,7 +276,7 @@ export default async function TicketsPage({
                 title={
                   view === 'resolved'
                     ? 'אין תקלות שהסתיימו עדיין'
-                    : 'אין תקלות פתוחות 🎉'
+                    : 'אין תקלות פתוחות'
                 }
                 description={
                   view === 'open'

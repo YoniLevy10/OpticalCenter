@@ -106,7 +106,11 @@ export function StoreVisitDispatch({
       if (!res.ok && res.status !== 207) {
         toast.push({
           title:
-            typeof data.error === 'string' ? data.error : 'שיגור הביקור נכשל',
+            typeof data.error === 'string'
+              ? data.error
+              : res.status === 400
+                ? 'בקשה לא תקינה — בדקו מזהי חנות/תקלה/ספק'
+                : 'שיגור הביקור נכשל',
           tone: 'critical',
         })
         return
@@ -139,11 +143,14 @@ export function StoreVisitDispatch({
 
   return (
     <Panel elevated>
-      <p className="t-section mb-3 text-ink">שיגור ביקור משולב</p>
+      <p className="t-section mb-1 text-ink">שיגור ביקור משולב</p>
+      <p className="t-caption mb-3 text-ink-3">
+        סמנו תקלות בחנות זו ושלחו ביקור אחד לספק
+      </p>
       <ul className="mb-3 space-y-2">
         {tickets.map((t) => (
           <li key={t.id}>
-            <label className="flex cursor-pointer items-start gap-2">
+            <label className="flex cursor-pointer items-start gap-2 rounded-[var(--radius-sm)] px-1 py-1.5 hover:bg-surface-sunken/50">
               <input
                 type="checkbox"
                 className="mt-1 h-4 w-4 accent-[var(--tenant)]"
@@ -167,6 +174,11 @@ export function StoreVisitDispatch({
           </li>
         ))}
       </ul>
+      {vendors.length === 0 ? (
+        <p className="t-body mb-2 text-[var(--signal-warning)]" role="status">
+          אין ספקים פעילים לשיגור — הוסיפו ספק במאגר
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="primary"
