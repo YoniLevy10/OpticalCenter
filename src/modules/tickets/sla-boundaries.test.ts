@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SLA_WINDOWS,
   computeSlaTimestamps,
+  recomputeSlaOnPriorityChange,
   getSlaBreachKind,
   formatSlaLabelHe,
   isSlaBreached,
@@ -72,6 +73,22 @@ describe('SLA windows & breach boundaries', () => {
         now: new Date('2026-01-01T14:00:00.000Z'),
       }),
     ).toBe(false)
+  })
+
+  it('priority change SLA is anchored to created_at not now', () => {
+    const createdAt = '2026-01-01T00:00:00.000Z'
+    const fromCreated = recomputeSlaOnPriorityChange({
+      priority: 'medium',
+      createdAt,
+    })
+    const fromNow = computeSlaTimestamps(
+      'medium',
+      new Date('2026-01-02T12:00:00.000Z'),
+    )
+    expect(fromCreated.sla_respond_by).toBe(
+      computeSlaTimestamps('medium', new Date(createdAt)).sla_respond_by,
+    )
+    expect(fromCreated.sla_respond_by).not.toBe(fromNow.sla_respond_by)
   })
 
   it('respond breach when still new past respond deadline', () => {

@@ -55,6 +55,30 @@ export function computeSlaTimestamps(
   }
 }
 
+/**
+ * Recalculate SLA after a priority change.
+ * Always anchored to ticket created_at — never resets the clock to "now"
+ * (which would clear an overdue breach incorrectly).
+ */
+export function recomputeSlaOnPriorityChange(params: {
+  priority: TicketPriority
+  createdAt: string | Date
+  windows?: SlaWindows
+}): { sla_respond_by: string; sla_resolve_by: string } {
+  const created =
+    params.createdAt instanceof Date
+      ? params.createdAt
+      : new Date(params.createdAt)
+  if (Number.isNaN(created.getTime())) {
+    throw new Error('מועד פתיחה לא חוקי לחישוב SLA')
+  }
+  return computeSlaTimestamps(
+    params.priority,
+    created,
+    params.windows ?? SLA_WINDOWS,
+  )
+}
+
 export type SlaBreachKind = 'respond' | 'resolve' | 'none'
 
 export function isSlaBreached(opts: {

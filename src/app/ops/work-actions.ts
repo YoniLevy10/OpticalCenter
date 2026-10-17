@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
-import { actorHasHqAccess } from '@/lib/auth/types'
 import {
   addCatalogItem,
   addDocument,
@@ -23,8 +22,16 @@ import {
   toggleTask,
 } from '@/lib/data/ops-ledger'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
-import { updatePriority } from '@/modules/tickets/service'
-import { TICKET_PRIORITIES, type TicketPriority } from '@/modules/tickets/constants'
+import {
+  correctClassification,
+  updatePriority,
+} from '@/modules/tickets/service'
+import {
+  TICKET_CATEGORIES,
+  TICKET_PRIORITIES,
+  type TicketPriority,
+} from '@/modules/tickets/constants'
+import { canCorrectTicketClassification } from '@/modules/tickets/classification-explain'
 import { importDriveLink } from '@/modules/drive/import'
 import { parseDriveLink } from '@/modules/drive/folder'
 import { syncDriveFolder } from '@/modules/drive/sync'
@@ -55,8 +62,7 @@ function storeManagerLabel(storeCode: string) {
 
 export async function setTicketPriority(ticketId: string, priority: TicketPriority) {
   const actor = await getServerActor()
-  if (!actor && !shouldAllowDemoEntry()) throw new Error('נדרשת כניסה')
-  if (actor && !actorHasHqAccess(actor) && !shouldAllowDemoEntry()) {
+  if (!canCorrectTicketClassification(actor, shouldAllowDemoEntry())) {
     throw new Error('אין הרשאה לשנות דחיפות')
   }
   if (!TICKET_PRIORITIES.includes(priority)) throw new Error('עדיפות לא חוקית')
@@ -64,9 +70,53 @@ export async function setTicketPriority(ticketId: string, priority: TicketPriori
   const before = await getById(ticketId)
   await updatePriority(ticketId, priority, actor?.id ?? null)
   if (before && before.priority !== priority) {
-    recordClassificationCorrection(ticketId, before.priority, priority)
+    recordClassificationCorrection(ticketId, before.priority, priority, {
+      fromPriority: before.priority,
+      toPriority: priority,
+      fromCategory: before.category,
+      toCategory: before.category,
+    })
   }
   await refresh(`/ops/tickets/${ticketId}`)
+  revalidatePath('/ops/tickets')
+}
+
+export async function correctTicketClassification(input: {
+  ticketId: string
+  category: string
+  priority: TicketPriority
+  reason?: string
+}) {
+  const actor = await getServerActor()
+  if (!canCorrectTicketClassification(actor, shouldAllowDemoEntry())) {
+    throw new Error('אין הרשאה לתקן סיווג')
+  }
+  if (!TICKET_PRIORITIES.includes(input.priority)) throw new Error('עדיפות לא חוקית')
+  if (!(TICKET_CATEGORIES as readonly string[]).includes(input.category)) {
+    throw new Error('קטגוריה לא חוקית')
+  }
+  const { getById } = await import('@/modules/tickets/service')
+  const before = await getById(input.ticketId)
+  if (!before) throw new Error('תקלה לא נמצאה')
+  await correctClassification(input.ticketId, {
+    category: input.category,
+    priority: input.priority,
+    reason: input.reason?.trim() || null,
+    actorId: actor?.id ?? null,
+  })
+  recordClassificationCorrection(
+    input.ticketId,
+    before.priority,
+    input.priority,
+    {
+      fromCategory: before.category,
+      toCategory: input.category,
+      fromPriority: before.priority,
+      toPriority: input.priority,
+      reason: input.reason?.trim() || null,
+    },
+  )
+  await refresh(`/ops/tickets/${input.ticketId}`)
   revalidatePath('/ops/tickets')
 }
 
@@ -327,10 +377,20 @@ export async function addOutcomeAction(formData: FormData) {
 }
 
 export async function correctCategoryAction(formData: FormData) {
+  const ticketId = String(formData.get('ticketId') || '')
+  const from = String(formData.get('from') || '')
+  const to = String(formData.get('to') || '')
+  const priority = String(formData.get('priority') || '') as TicketPriority
+  const reason = String(formData.get('reason') || '')
+  if (TICKET_PRIORITIES.includes(priority) && to) {
+    await correctTicketClassification({
+      ticketId,
+      category: to,
+      priority,
+      reason,
+    })
+    return
+  }
   await actorName()
-  recordClassificationCorrection(
-    String(formData.get('ticketId') || ''),
-    String(formData.get('from') || ''),
-    String(formData.get('to') || ''),
-  )
+  recordClassificationCorrection(ticketId, from, to)
 }

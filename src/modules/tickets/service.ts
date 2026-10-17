@@ -12,15 +12,28 @@ import {
   memDeleteTicket,
   memListTickets,
   memUpdatePriority,
+  memUpdateClassification,
   memUpdateStatus,
   supabaseReady,
   type MemTicket,
 } from '@/lib/data/memory-store'
 import { memListUsers } from '@/lib/auth/memory-memberships'
-import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
+import {
+  normalizeTicketCategory,
+  OPEN_TICKET_STATUSES,
+  TICKET_CATEGORIES,
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+  type TicketPriority,
+  type TicketStatus,
+} from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { OPEN_TICKET_STATUSES, TICKET_PRIORITIES, TICKET_STATUSES } from '@/modules/tickets/constants'
-import { computeSlaTimestamps, windowsFromSettings } from '@/modules/tickets/sla'
+import {
+  computeSlaTimestamps,
+  recomputeSlaOnPriorityChange,
+  windowsFromSettings,
+} from '@/modules/tickets/sla'
+import { mergeAiRawAfterManualCorrection } from '@/modules/tickets/classification-explain'
 import { getSettings } from '@/modules/settings/service'
 import { assertTransition, isTicketStatus } from '@/modules/tickets/transitions'
 import type { TicketRow } from '@/modules/stores/data'
@@ -60,6 +73,8 @@ export type TicketRecord = {
   closed_at: string | null
   created_at: string
   updated_at: string
+  ai_summary?: string | null
+  ai_raw?: Record<string, unknown> | null
 }
 
 export type TicketMessage = {
@@ -145,6 +160,8 @@ function memToRecord(t: MemTicket): TicketRecord {
     closed_at: t.closed_at,
     created_at: t.created_at,
     updated_at: t.updated_at,
+    ai_summary: t.ai_summary ?? null,
+    ai_raw: t.ai_raw ?? null,
   }
 }
 
@@ -554,6 +571,8 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
       reporterName: input.reporterName,
       title: input.title,
       language: input.language,
+      ai_summary: input.aiSummary ?? null,
+      ai_raw: input.aiRaw ?? null,
       ...sla,
     }),
   )
@@ -631,11 +650,16 @@ export async function updatePriority(
 ): Promise<TicketRecord> {
   if (!TICKET_PRIORITIES.includes(priority)) throw new Error('עדיפות לא חוקית')
   const { settings } = await getSettings()
-  const sla = computeSlaTimestamps(priority, new Date(), windowsFromSettings(settings))
+  const windows = windowsFromSettings(settings)
 
   if (await supabaseReady()) {
     const current = await getTicketForMutation(id)
     if (!current) throw new Error('תקלה לא נמצאה')
+    const sla = recomputeSlaOnPriorityChange({
+      priority,
+      createdAt: current.created_at,
+      windows,
+    })
     const supabase = createSystemClient('tickets_service')
     const { data, error } = await supabase
       .from('tickets')
@@ -647,13 +671,126 @@ export async function updatePriority(
     await appendEvent(id, 'priority_changed', actorId ?? null, {
       from: current.priority,
       to: priority,
+      sla_respond_by: sla.sla_respond_by,
+      sla_resolve_by: sla.sla_resolve_by,
+      anchored_to: 'created_at',
     })
     return data as TicketRecord
   }
 
   const current = memGet(id)
   if (!current) throw new Error('תקלה לא נמצאה')
+  const sla = recomputeSlaOnPriorityChange({
+    priority,
+    createdAt: current.created_at,
+    windows,
+  })
   return memToRecord(memUpdatePriority(id, priority, sla, actorId ?? null))
+}
+
+export type CorrectClassificationInput = {
+  category: string
+  priority: TicketPriority
+  reason?: string | null
+  actorId?: string | null
+}
+
+/**
+ * HQ correction of category + priority with before/after audit.
+ * SLA is recomputed from created_at (never reset to now).
+ */
+export async function correctClassification(
+  id: string,
+  input: CorrectClassificationInput,
+): Promise<TicketRecord> {
+  if (!TICKET_PRIORITIES.includes(input.priority)) {
+    throw new Error('עדיפות לא חוקית')
+  }
+  const category = normalizeTicketCategory(input.category)
+  if (!(TICKET_CATEGORIES as readonly string[]).includes(category)) {
+    throw new Error('קטגוריה לא חוקית')
+  }
+  const { settings } = await getSettings()
+  const windows = windowsFromSettings(settings)
+
+  if (await supabaseReady()) {
+    const current = await getTicketForMutation(id)
+    if (!current) throw new Error('תקלה לא נמצאה')
+    const detail = await getById(id)
+    const sla = recomputeSlaOnPriorityChange({
+      priority: input.priority,
+      createdAt: current.created_at,
+      windows,
+    })
+    const nextRaw = mergeAiRawAfterManualCorrection(detail?.ai_raw ?? null, {
+      fromCategory: current.category,
+      fromPriority: current.priority,
+      toCategory: category,
+      toPriority: input.priority,
+      reason: input.reason,
+      actorId: input.actorId,
+    })
+    const supabase = createSystemClient('tickets_service')
+    const patch: Record<string, unknown> = {
+      category,
+      priority: input.priority,
+      ...sla,
+      ai_raw: nextRaw,
+    }
+    let { data, error } = await supabase
+      .from('tickets')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error && /ai_raw|column/i.test(error.message)) {
+      delete patch.ai_raw
+      ;({ data, error } = await supabase
+        .from('tickets')
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single())
+    }
+    if (error) throw new Error(error.message)
+    await appendEvent(id, 'classification_corrected', input.actorId ?? null, {
+      from: { category: current.category, priority: current.priority },
+      to: { category, priority: input.priority },
+      reason: input.reason?.trim() || null,
+      sla_respond_by: sla.sla_respond_by,
+      sla_resolve_by: sla.sla_resolve_by,
+      anchored_to: 'created_at',
+    })
+    return data as TicketRecord
+  }
+
+  const current = memGet(id)
+  if (!current) throw new Error('תקלה לא נמצאה')
+  const sla = recomputeSlaOnPriorityChange({
+    priority: input.priority,
+    createdAt: current.created_at,
+    windows,
+  })
+  const nextRaw = mergeAiRawAfterManualCorrection(current.ai_raw ?? null, {
+    fromCategory: current.category,
+    fromPriority: String(current.priority),
+    toCategory: category,
+    toPriority: input.priority,
+    reason: input.reason,
+    actorId: input.actorId,
+  })
+  return memToRecord(
+    memUpdateClassification(id, {
+      category,
+      priority: input.priority,
+      sla,
+      ai_raw: nextRaw,
+      actorId: input.actorId,
+      reason: input.reason,
+      fromCategory: current.category,
+      fromPriority: String(current.priority),
+    }),
+  )
 }
 
 export type UpdateStatusOptions = {

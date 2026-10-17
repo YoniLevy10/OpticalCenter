@@ -108,6 +108,8 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   lifecycle_nudge: 'תזכורת מחזור',
   resolve_override: 'סגירה ללא הוכחה (חריגה)',
   service_visit_created: 'נוצר ביקור שירות',
+  classification_corrected: 'תיקון סיווג',
+  priority_changed: 'שינוי דחיפות',
 }
 
 

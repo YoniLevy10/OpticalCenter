@@ -122,7 +122,18 @@ type Ledger = {
   units: AssetUnit[]
   movements: StockMovement[]
   outcomes: VendorOutcome[]
-  corrections: { id: string; ticketId: string; from: string; to: string; at: string }[]
+  corrections: {
+    id: string
+    ticketId: string
+    from: string
+    to: string
+    at: string
+    fromCategory?: string
+    toCategory?: string
+    fromPriority?: string
+    toPriority?: string
+    reason?: string | null
+  }[]
 }
 
 function seedContacts(): DirectoryContact[] {
@@ -775,13 +786,29 @@ export function addOutcome(outcome: VendorOutcome) {
   return outcome
 }
 
-export function recordClassificationCorrection(ticketId: string, from: string, to: string) {
+export function recordClassificationCorrection(
+  ticketId: string,
+  from: string,
+  to: string,
+  detail?: {
+    fromCategory?: string
+    toCategory?: string
+    fromPriority?: string
+    toPriority?: string
+    reason?: string | null
+  },
+) {
   ledger.corrections.push({
     id: crypto.randomUUID(),
     ticketId,
     from,
     to,
     at: new Date().toISOString(),
+    fromCategory: detail?.fromCategory,
+    toCategory: detail?.toCategory,
+    fromPriority: detail?.fromPriority ?? from,
+    toPriority: detail?.toPriority ?? to,
+    reason: detail?.reason ?? null,
   })
 }
 
