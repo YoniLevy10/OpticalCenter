@@ -31,7 +31,7 @@ import {
   TICKET_PRIORITIES,
   type TicketPriority,
 } from '@/modules/tickets/constants'
-import { canCorrectTicketClassification } from '@/modules/tickets/classification-explain'
+import { canCorrectTicketClassification } from '@/modules/tickets/classification-auth'
 import { importDriveLink } from '@/modules/drive/import'
 import { parseDriveLink } from '@/modules/drive/folder'
 import { syncDriveFolder } from '@/modules/drive/sync'

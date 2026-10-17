@@ -1,7 +1,5 @@
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { TICKET_CATEGORY_LABELS_HE, TICKET_PRIORITY_LABELS_HE } from '@/modules/tickets/constants'
-import type { Actor } from '@/lib/auth/types'
-import { actorHasHqAccess } from '@/lib/auth/types'
 
 /** Where the current category/priority came from — never a fake confidence score. */
 export type ClassificationSource = 'rules' | 'model' | 'manual'
@@ -212,16 +210,6 @@ export function explainClassification(params: {
     aiSummary: ai?.summary?.trim() || params.aiSummary?.trim() || null,
     corrected,
   }
-}
-
-/** HQ (or demo without actor) may correct classification. */
-export function canCorrectTicketClassification(
-  actor: Actor | null,
-  demoAllowed = false,
-): boolean {
-  if (actor && actorHasHqAccess(actor)) return true
-  if (!actor && demoAllowed) return true
-  return false
 }
 
 export function mergeAiRawAfterManualCorrection(

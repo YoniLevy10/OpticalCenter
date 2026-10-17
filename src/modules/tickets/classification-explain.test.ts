@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  canCorrectTicketClassification,
   explainClassification,
   mergeAiRawAfterManualCorrection,
   buildAiRawFromIntake,
 } from '@/modules/tickets/classification-explain'
+import { canCorrectTicketClassification } from '@/modules/tickets/classification-auth'
 import { applyIntakeRules } from '@/modules/whatsapp/agent/rules'
 import {
   correctClassification,

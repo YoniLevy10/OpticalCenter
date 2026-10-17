@@ -29,7 +29,7 @@ import { phrase } from '@/lib/i18n/phrases'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
-import { canCorrectTicketClassification } from '@/modules/tickets/classification-explain'
+import { canCorrectTicketClassification } from '@/modules/tickets/classification-auth'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 import {
   plainAgoHe,
