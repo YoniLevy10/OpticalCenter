@@ -1,5 +1,6 @@
 import type { IlRegionCode } from '@/modules/stores/regions'
 import { regionCodeFromId } from '@/modules/stores/regions'
+import { isDispatchableVendor } from './dispatchability'
 
 export type MatchableVendor = {
   id: string
@@ -10,11 +11,15 @@ export type MatchableVendor = {
   coverage_regions?: string[] | null
   contact_phone?: string | null
   notes?: string | null
+  /** Partner webhook — present ⇒ digital dispatch channel. */
+  webhook_url?: string | null
 }
 
 export type VendorMatch = MatchableVendor & {
   score: number
   reason: string
+  /** True when a partner webhook exists — not dial-only. */
+  dispatchable: boolean
 }
 
 /**
@@ -64,7 +69,12 @@ export function matchPreferredVendors(
     }
     if (specs.includes(category)) score += 10
 
-    scored.push({ ...v, score, reason })
+    scored.push({
+      ...v,
+      score,
+      reason,
+      dispatchable: isDispatchableVendor(v),
+    })
   }
 
   return scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'he'))

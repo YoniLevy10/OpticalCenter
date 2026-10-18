@@ -343,6 +343,35 @@ export type MemProfessional = {
   deleted_at: string | null
 }
 
+/** C07 RFQ draft — status is always draft in memory (no auto-send). */
+export type MemRfqDraft = {
+  id: string
+  status: 'draft'
+  store_id: string | null
+  store_code: string | null
+  store_name: string | null
+  trade: string
+  ticket_ids: string[]
+  document_notes: string[]
+  timing_note: string | null
+  body_text: string
+  recipient_hints: string[]
+  quotes: {
+    id: string
+    source: string
+    quoted_at: string
+    currency: 'ILS' | 'EUR' | 'USD'
+    amount: number | null
+    vat_included: boolean | null
+    valid_until: string | null
+    notes: string | null
+    captured_at: string
+  }[]
+  created_at: string
+  updated_at: string
+  created_by: string | null
+}
+
 type GlobalMem = {
   tickets: Map<string, MemTicket>
   sessions: Map<string, MemSession>
@@ -350,6 +379,7 @@ type GlobalMem = {
   assets: Map<string, MemAsset>
   vendors: Map<string, MemVendor>
   professionals: Map<string, MemProfessional>
+  rfqDrafts: Map<string, MemRfqDraft>
   dispatches: Map<string, MemPartnerDispatch>
   pushSubs: Map<string, MemPushSubscription>
   inboxMessages: Map<string, MemInboxMessage[]>
@@ -394,6 +424,7 @@ function store(): GlobalMem {
       assets: new Map(),
       vendors: new Map(),
       professionals: new Map(),
+      rfqDrafts: new Map(),
       dispatches: new Map(),
       pushSubs: new Map(),
       inboxMessages: new Map(),
@@ -418,6 +449,7 @@ function store(): GlobalMem {
   seedDemoVendors(mem)
   if (!mem.professionals) mem.professionals = new Map()
   seedDemoProfessionals(mem)
+  if (!mem.rfqDrafts) mem.rfqDrafts = new Map()
   if (!mem.dispatches) mem.dispatches = new Map()
   if (!mem.pushSubs) mem.pushSubs = new Map()
   if (!mem.inboxMessages) mem.inboxMessages = new Map()
@@ -527,6 +559,12 @@ function seedDemoVendors(mem: GlobalMem) {
 function ensurePreferredVendors(mem: GlobalMem, now: string) {
   for (const s of PREFERRED_VENDOR_SEEDS) {
     if (mem.vendors.has(s.id)) continue
+    // One national HVAC preferred keeps a demo webhook so C07 can show
+    // "שיגור דיגיטלי" vs dial-only peers (others stay phone-only).
+    const webhook =
+      s.id === 'vendor-pref-hvac-center'
+        ? 'https://partners.example.invalid/maintainos-hook'
+        : null
     mem.vendors.set(s.id, {
       id: s.id,
       name: s.name,
@@ -534,7 +572,7 @@ function ensurePreferredVendors(mem: GlobalMem, now: string) {
       contact_email: null,
       specialties: s.specialties,
       active: true,
-      webhook_url: null,
+      webhook_url: webhook,
       hmac_secret: `secret-${s.id}`,
       preferred: true,
       coverage_regions: [...s.coverage_regions],
@@ -546,6 +584,12 @@ function ensurePreferredVendors(mem: GlobalMem, now: string) {
     if (v.preferred == null) v.preferred = false
     if (!v.coverage_regions) v.coverage_regions = []
     if (v.notes === undefined) v.notes = null
+  }
+  // Backfill C07 demo dispatch channel on the center HVAC preferred.
+  const hvacCenter = mem.vendors.get('vendor-pref-hvac-center')
+  if (hvacCenter && !hvacCenter.webhook_url) {
+    hvacCenter.webhook_url =
+      'https://partners.example.invalid/maintainos-hook'
   }
 }
 
@@ -758,6 +802,7 @@ export function memReset() {
     assets: new Map(),
     vendors: new Map(),
     professionals: new Map(),
+    rfqDrafts: new Map(),
     dispatches: new Map(),
     pushSubs: new Map(),
     inboxMessages: new Map(),
@@ -1498,6 +1543,23 @@ export function memListVendors(activeOnly = false): MemVendor[] {
   const all = [...store().vendors.values()]
   const filtered = activeOnly ? all.filter((v) => v.active) : all
   return filtered.sort((a, b) => a.name.localeCompare(b.name, 'he'))
+}
+
+export function memListRfqDrafts(ticketId?: string): MemRfqDraft[] {
+  let all = [...store().rfqDrafts.values()]
+  if (ticketId) {
+    all = all.filter((d) => d.ticket_ids.includes(ticketId))
+  }
+  return all.sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+}
+
+export function memGetRfqDraft(id: string): MemRfqDraft | null {
+  return store().rfqDrafts.get(id) ?? null
+}
+
+export function memSaveRfqDraft(draft: MemRfqDraft): MemRfqDraft {
+  store().rfqDrafts.set(draft.id, draft)
+  return draft
 }
 
 /** Ranked contact book — most used / recently contacted first. */
