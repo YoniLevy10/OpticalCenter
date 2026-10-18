@@ -56,7 +56,8 @@ describe('POST /api/ops/visits — demo non-UUID ids', () => {
     const body = {
       storeId: ticket!.store_id,
       ticketIds: [ticket!.id],
-      vendorId: 'vendor-pref-hvac-center',
+      // C07: center HVAC has a demo webhook; north stays dial-only (labeled).
+      vendorId: 'vendor-pref-hvac-north',
       idempotencyKey: 'demo-non-uuid-visit-1',
     }
     expect(body.storeId).toMatch(/^il-store-/)
@@ -75,7 +76,7 @@ describe('POST /api/ops/visits — demo non-UUID ids', () => {
     expect(json.error).toBeUndefined()
     expect(json.visit?.id).toBeTruthy()
     expect(json.visit.items).toHaveLength(1)
-    // No webhook on preferred seed → labeled, not fake "sent"
+    // Dial-only preferred seed → labeled, not fake "sent"
     expect(json.visit.items[0].status).toBe('labeled')
     expect(json.visit.status).toBe('dispatched')
   })
