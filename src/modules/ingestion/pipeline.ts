@@ -23,6 +23,10 @@ export type IngestedFile = {
 const TYPE_HINTS: { test: RegExp; docType: string }[] = [
   { test: /כיבוי|אש|fire/i, docType: 'fire' },
   { test: /חשמל|electric/i, docType: 'electrical' },
+  // C08 — specific calibrations before generic hearing
+  { test: /כיול[\s_\-]*א|hearing[_\s\-]?a(?![a-z])/i, docType: 'hearing_a' },
+  { test: /כיול[\s_\-]*ב|hearing[_\s\-]?b(?![a-z])/i, docType: 'hearing_b' },
+  { test: /כיול[\s_\-]*ג|hearing[_\s\-]?c(?![a-z])/i, docType: 'hearing_c' },
   { test: /שמיעה|hearing/i, docType: 'hearing' },
   { test: /מלאי|inventory|stock/i, docType: 'inventory' },
 ]
