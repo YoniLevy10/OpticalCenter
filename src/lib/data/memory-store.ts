@@ -2,6 +2,8 @@ import { DEMO_STORES, type StoreRow } from '@/modules/stores/data'
 import { canonicalStoreCode, ISRAEL_STORES } from '@/modules/stores/israel-stores'
 import { computeSlaTimestamps } from '@/modules/tickets/sla'
 import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
+import { buildAiRawFromIntake } from '@/modules/tickets/classification-explain'
+import { applyIntakeRules } from '@/modules/whatsapp/agent/rules'
 import { PREFERRED_VENDOR_SEEDS } from '@/modules/vendors/preferred-seed'
 import { TRIAL_FAULTS } from '@/modules/demo/trial-scenario'
 
@@ -31,6 +33,10 @@ export type MemTicket = {
   resolution_note: string | null
   store_confirmed_at: string | null
   store_confirmed_by: string | null
+  /** WhatsApp AI intake summary (optional). */
+  ai_summary: string | null
+  /** Raw AI + rules audit payload (optional). */
+  ai_raw: Record<string, unknown> | null
   created_at: string
   updated_at: string
   stores: {
@@ -674,6 +680,16 @@ function backfillTrialFaults(mem: GlobalMem) {
       ticket.reporter_name = branch.managerName
       ticket.reporter_phone = branch.managerPhone
     }
+    if (!ticket.ai_raw) {
+      const rules = applyIntakeRules({ text: fault.description })
+      ticket.ai_raw = buildAiRawFromIntake({
+        provider: 'rules',
+        rules,
+        ai: null,
+        original: fault.description,
+      })
+      ticket.ai_summary = ticket.ai_summary ?? fault.title
+    }
     if (ticket.sla_respond_by && ticket.sla_resolve_by) continue
     const created = new Date(ticket.created_at)
     const sla = fault.breachHours
@@ -705,6 +721,13 @@ function seedTrialFaults(mem: GlobalMem) {
           ).toISOString(),
         }
       : computeSlaTimestamps(fault.priority, createdDate)
+    const rules = applyIntakeRules({ text: fault.description })
+    const aiRaw = buildAiRawFromIntake({
+      provider: 'rules',
+      rules,
+      ai: null,
+      original: fault.description,
+    })
     memCreate({
       id: fault.id,
       store,
@@ -718,6 +741,8 @@ function seedTrialFaults(mem: GlobalMem) {
       createdAt: createdDate.toISOString(),
       status: fault.assignDemoTech ? 'assigned' : 'new',
       assigned_to: fault.assignDemoTech ? DEMO_TECH_ID : null,
+      ai_summary: fault.title,
+      ai_raw: aiRaw,
       ...sla,
     })
   }
@@ -929,6 +954,8 @@ export function memCreate(input: {
   status?: TicketStatus | string
   assigned_to?: string | null
   createdAt?: string
+  ai_summary?: string | null
+  ai_raw?: Record<string, unknown> | null
 }): MemTicket {
   const mem = store()
   if (input.id && mem.tickets.has(input.id)) {
@@ -970,6 +997,8 @@ export function memCreate(input: {
     resolution_note: null,
     store_confirmed_at: null,
     store_confirmed_by: null,
+    ai_summary: input.ai_summary ?? null,
+    ai_raw: input.ai_raw ?? null,
     created_at: now,
     updated_at: now,
     stores: {
@@ -1028,6 +1057,50 @@ export function memUpdatePriority(
     event_type: 'priority_changed',
     actor_id: actorId,
     payload: { from, to: priority },
+    created_at: ticket.updated_at,
+  })
+  return ticket
+}
+
+export function memUpdateClassification(
+  id: string,
+  patch: {
+    category: string
+    priority: string
+    sla: { sla_respond_by: string; sla_resolve_by: string }
+    ai_raw: Record<string, unknown> | null
+    actorId?: string | null
+    reason?: string | null
+    fromCategory: string
+    fromPriority: string
+  },
+): MemTicket {
+  const ticket = store().tickets.get(id)
+  if (!ticket) throw new Error('תקלה לא נמצאה')
+  ticket.category = patch.category
+  ticket.priority = patch.priority
+  ticket.sla_respond_by = patch.sla.sla_respond_by
+  ticket.sla_resolve_by = patch.sla.sla_resolve_by
+  ticket.ai_raw = patch.ai_raw
+  ticket.updated_at = new Date().toISOString()
+  ticket.events.push({
+    id: `${id}-ev-${ticket.events.length + 1}`,
+    ticket_id: id,
+    event_type: 'classification_corrected',
+    actor_id: patch.actorId ?? null,
+    payload: {
+      from: {
+        category: patch.fromCategory,
+        priority: patch.fromPriority,
+      },
+      to: {
+        category: patch.category,
+        priority: patch.priority,
+      },
+      reason: patch.reason?.trim() || null,
+      sla_respond_by: patch.sla.sla_respond_by,
+      sla_resolve_by: patch.sla.sla_resolve_by,
+    },
     created_at: ticket.updated_at,
   })
   return ticket

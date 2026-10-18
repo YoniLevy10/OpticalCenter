@@ -33,6 +33,7 @@ import { phrase } from '@/lib/i18n/phrases'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
+import { canCorrectTicketClassification } from '@/modules/tickets/classification-auth'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 import {
   plainAgoHe,
@@ -327,6 +328,12 @@ export default async function TicketDetailPage({
           storeCode={ticket.stores?.code ?? ''}
           storeName={ticket.stores?.name ?? storeHeading}
           matches={people}
+          aiRaw={ticket.ai_raw ?? null}
+          aiSummary={ticket.ai_summary ?? null}
+          canCorrect={canCorrectTicketClassification(
+            actor,
+            shouldAllowDemoEntry(),
+          )}
         />
 
         <PreferredVendorsPanel
