@@ -77,6 +77,8 @@ export type TrialSpendSeed = {
   id: string
   storeCode: string
   ticketId: string | null
+  /** Optional asset for B01 cumulative true cost demos. */
+  assetId?: string | null
   reason: string
   vendorName: string
   requestedAmount: number
@@ -91,6 +93,7 @@ export const TRIAL_SPENDS: readonly TrialSpendSeed[] = [
     id: 'trial-spend-6001',
     storeCode: '6001',
     ticketId: 'trial-6001-electrical',
+    assetId: 'asset-demo-opt01',
     reason: 'חשמלאי חירום ללוח',
     vendorName: 'חשמלנט · חשמל',
     requestedAmount: 1800,
@@ -102,6 +105,7 @@ export const TRIAL_SPENDS: readonly TrialSpendSeed[] = [
     id: 'trial-spend-6006',
     storeCode: '6006',
     ticketId: 'trial-6006-hvac',
+    assetId: 'asset-demo-ac04',
     reason: 'מילוי גז וטיפול במזגן אולם',
     vendorName: 'קלימה סנטר · מיזוג',
     requestedAmount: 2400,

@@ -6,6 +6,8 @@ import { fetchStores } from '@/modules/stores/data'
 import { listTickets } from '@/modules/tickets/service'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { listSpends } from '@/lib/data/ops-ledger'
+import { spendAmountForTrueCost, spendsContributeToTrueCost } from '@/modules/spend/true-cost'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +35,13 @@ export default async function AssetsPage() {
     number: t.number,
   }))
 
+  const assetTrueCost: Record<string, number> = {}
+  for (const spend of listSpends()) {
+    if (!spend.assetId || !spendsContributeToTrueCost(spend)) continue
+    assetTrueCost[spend.assetId] =
+      (assetTrueCost[spend.assetId] ?? 0) + spendAmountForTrueCost(spend)
+  }
+
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
@@ -47,6 +56,7 @@ export default async function AssetsPage() {
             name: s.name,
           }))}
           tickets={tickets}
+          assetTrueCost={assetTrueCost}
         />
       </div>
     </OpsAppShell>

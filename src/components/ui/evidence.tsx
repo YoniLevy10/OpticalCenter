@@ -9,6 +9,7 @@ export type Attachment = {
   id: string
   url: string
   kind?: string | null
+  proof_role?: string | null
 }
 
 function isImage(a: Attachment): boolean {
@@ -46,17 +47,86 @@ export function EvidenceGrid({
 
   if (attachments.length === 0) return null
 
-  const images = attachments.filter(
+  const before = attachments.filter((a) => a.proof_role === 'before' || a.kind === 'before')
+  const after = attachments.filter((a) => a.proof_role === 'after' || a.kind === 'after')
+  const pairedIds = new Set([...before, ...after].map((a) => a.id))
+  const rest = attachments.filter((a) => !pairedIds.has(a.id))
+
+  const images = rest.filter(
     (a) => isImage(a) && !isVideo(a) && !isAudio(a),
   )
-  const videos = attachments.filter(isVideo)
-  const audios = attachments.filter(isAudio)
-  const files = attachments.filter(
+  const videos = rest.filter(isVideo)
+  const audios = rest.filter(isAudio)
+  const files = rest.filter(
     (a) => !isImage(a) && !isVideo(a) && !isAudio(a),
   )
 
+  function renderThumb(a: Attachment, label: string) {
+    const broken = failed.has(a.id)
+    if (isVideo(a)) {
+      return (
+        <li key={a.id} className="space-y-1">
+          <p className="t-meta text-ink-2">{label}</p>
+          <video
+            src={a.url}
+            controls
+            className="max-h-40 w-full rounded-[var(--radius-md)] border border-border bg-black"
+          />
+        </li>
+      )
+    }
+    return (
+      <li key={a.id} className="space-y-1">
+        <p className="t-meta text-ink-2">{label}</p>
+        <button
+          type="button"
+          aria-label={`הגדלת תמונה — ${label}`}
+          onClick={() => !broken && setActive(a)}
+          className={cn(
+            'relative block aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-sunken transition-opacity duration-[var(--dur-1)]',
+            !broken && 'hover:opacity-90',
+          )}
+        >
+          {broken ? (
+            <span className="flex h-full w-full items-center justify-center">
+              <ImageOff className="h-4 w-4 text-ink-3" aria-hidden />
+            </span>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={a.url}
+              alt={label}
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={() => setFailed((prev) => new Set(prev).add(a.id))}
+            />
+          )}
+        </button>
+      </li>
+    )
+  }
+
   return (
     <div className={className}>
+      {before.length > 0 || after.length > 0 ? (
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <ul className="space-y-2">
+            {before.length > 0 ? (
+              before.map((a) => renderThumb(a, 'לפני'))
+            ) : (
+              <li className="t-meta text-ink-3">אין תמונת לפני</li>
+            )}
+          </ul>
+          <ul className="space-y-2">
+            {after.length > 0 ? (
+              after.map((a) => renderThumb(a, 'אחרי'))
+            ) : (
+              <li className="t-meta text-ink-3">אין תמונת אחרי</li>
+            )}
+          </ul>
+        </div>
+      ) : null}
+
       {images.length > 0 ? (
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {images.map((a) => {

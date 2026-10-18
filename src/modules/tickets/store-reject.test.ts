@@ -31,8 +31,16 @@ describe('rejectStoreFix', () => {
     memAddMessage(created.id, {
       channel: 'tech',
       direction: 'inbound',
-      body: 'תוקן',
-      media_url: 'https://cdn.example/p.jpg',
+      body: 'before',
+      media_url: 'https://cdn.example/before.jpg',
+      proof_role: 'before',
+    })
+    memAddMessage(created.id, {
+      channel: 'tech',
+      direction: 'inbound',
+      body: 'after',
+      media_url: 'https://cdn.example/after.jpg',
+      proof_role: 'after',
     })
     await updateStatus(created.id, 'resolved')
     const before = memGet(created.id)!

@@ -46,11 +46,16 @@ import { findRecurrences, recurrenceBasis, suggestPrevention } from '@/modules/t
 import { getLocale } from '@/lib/i18n/server'
 import { translate, type MessageKey } from '@/lib/i18n/messages'
 import { TicketTrialPanel } from './ticket-trial-panel'
+import { TicketTrueCostPanel } from './ticket-true-cost'
+import { TicketEtaPanel } from './ticket-eta-panel'
 import { matchProfessionalsForFault } from '@/modules/professionals/match-fault'
 import { listProfessionals } from '@/modules/professionals/service'
 import { suggestVendorsForTicket } from '@/modules/vendors/service'
 import { windowsFromSettings } from '@/modules/tickets/sla'
 import { getSettings } from '@/modules/settings/service'
+import { spendsForAsset, spendsForTicket } from '@/lib/data/ops-ledger'
+import { formatQualityHoldHe, isQualityHoldActive } from '@/modules/tickets/quality-hold'
+import { formatRepairEtaHe } from '@/modules/tickets/repair-eta'
 
 export const dynamic = 'force-dynamic'
 
@@ -112,6 +117,7 @@ export default async function TicketDetailPage({
       description: ticket.description,
       status: ticket.status,
       createdAt: ticket.created_at,
+      assetId: ticket.asset_id ?? null,
     },
     (history.tickets ?? []).map((row) => ({
       id: row.id,
@@ -120,9 +126,16 @@ export default async function TicketDetailPage({
       description: row.description,
       status: row.status,
       createdAt: row.created_at,
+      assetId: row.asset_id ?? null,
       resolutionNote: null,
     })),
   )
+  const ticketSpends = spendsForTicket(ticket.id)
+  const assetSpends = ticket.asset_id ? spendsForAsset(ticket.asset_id) : []
+  const holdLabel = formatQualityHoldHe(ticket.quality_hold_until)
+  const holdActive =
+    ticket.status === 'resolved' && isQualityHoldActive(ticket.quality_hold_until)
+  const etaLabel = formatRepairEtaHe(ticket.repair_eta_at)
   const prevention = suggestPrevention(hits)
   const tx = (key: MessageKey, vars?: Record<string, string | number>) =>
     translate(locale, key, vars)
@@ -256,6 +269,12 @@ export default async function TicketDetailPage({
             <KeyValue label={tx('ticket.category')}>
               {categoryLabel}
             </KeyValue>
+            {etaLabel ? (
+              <KeyValue label={tx('ticket.eta')}>{etaLabel}</KeyValue>
+            ) : null}
+            {holdLabel && (holdActive || ticket.status === 'resolved') ? (
+              <KeyValue label={tx('ticket.qualityHold')}>{holdLabel}</KeyValue>
+            ) : null}
           </dl>
         </Panel>
 
@@ -269,6 +288,18 @@ export default async function TicketDetailPage({
             </p>
           </Panel>
         ) : null}
+
+        <TicketTrueCostPanel
+          ticketSpends={ticketSpends}
+          assetSpends={assetSpends}
+          locale={locale}
+        />
+
+        <TicketEtaPanel
+          ticketId={ticket.id}
+          initialEtaAt={ticket.repair_eta_at ?? null}
+          status={ticket.status}
+        />
 
         {hits.length > 0 ? (
           <Panel elevated>
@@ -327,6 +358,7 @@ export default async function TicketDetailPage({
           storeId={ticket.store_id}
           storeCode={ticket.stores?.code ?? ''}
           storeName={ticket.stores?.name ?? storeHeading}
+          assetId={ticket.asset_id ?? null}
           matches={people}
           aiRaw={ticket.ai_raw ?? null}
           aiSummary={ticket.ai_summary ?? null}

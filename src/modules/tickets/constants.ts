@@ -108,6 +108,8 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   partner_dispatched: 'שיגור לספק',
   lifecycle_nudge: 'תזכורת מחזור',
   resolve_override: 'סגירה ללא הוכחה (חריגה)',
+  quality_hold_override: 'סגירה לפני תום החזקת איכות',
+  repair_eta_set: 'עודכן מועד הגעה משוער',
   service_visit_created: 'נוצר ביקור שירות',
   classification_corrected: 'תיקון סיווג',
   priority_changed: 'שינוי דחיפות',

@@ -26,6 +26,7 @@ export type TicketRow = {
   source: string
   created_at: string
   store_id: string
+  asset_id?: string | null
   organization_id?: string
   country_id?: string
   region_id?: string
@@ -36,6 +37,8 @@ export type TicketRow = {
   sla_resolve_by?: string | null
   first_response_at?: string | null
   resolved_at?: string | null
+  quality_hold_until?: string | null
+  repair_eta_at?: string | null
   stores?: {
     code: string
     name: string

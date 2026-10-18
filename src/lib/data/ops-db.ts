@@ -101,6 +101,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         storeCode: String(row.store_code ?? ''),
         storeName: String(row.store_name ?? ''),
         ticketId: row.ticket_id ? String(row.ticket_id) : null,
+        assetId: row.asset_id ? String(row.asset_id) : null,
         reason: String(row.reason ?? ''),
         vendorName: row.vendor_name ? String(row.vendor_name) : null,
         requestedAmount: Number(row.requested_amount ?? 0),
@@ -187,6 +188,7 @@ export async function persistOpsLedger(): Promise<void> {
       store_code: spend.storeCode,
       store_name: spend.storeName,
       ticket_id: asUuid(spend.ticketId),
+      asset_id: asUuid(spend.assetId),
       reason: spend.reason,
       vendor_name: spend.vendorName,
       requested_amount: spend.requestedAmount,
@@ -245,6 +247,7 @@ const OPTIONAL_COLUMNS = [
   'local_updated_at',
   'fields_locked',
   'origin_wa_id',
+  'asset_id',
 ] as const
 
 async function upsertFlexible(
@@ -253,7 +256,12 @@ async function upsertFlexible(
   rows: Record<string, unknown>[],
 ) {
   if (!rows.length) return
-  const drops: Array<readonly string[] | null> = [null, ['origin_wa_id'], OPTIONAL_COLUMNS]
+  const drops: Array<readonly string[] | null> = [
+    null,
+    ['origin_wa_id'],
+    ['asset_id'],
+    OPTIONAL_COLUMNS,
+  ]
   let lastError: unknown = null
   for (const drop of drops) {
     const body = drop

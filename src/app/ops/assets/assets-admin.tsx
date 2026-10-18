@@ -116,9 +116,12 @@ function ticketLabel(t: AssetTicketHint) {
 export function AssetsAdmin({
   stores,
   tickets = [],
+  assetTrueCost = {},
 }: {
   stores: StoreOpt[]
   tickets?: AssetTicketHint[]
+  /** B01 — cumulative true cost by asset id (₪). */
+  assetTrueCost?: Record<string, number>
 }) {
   const [assets, setAssets] = useState<AssetRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -174,9 +177,10 @@ export function AssetsAdmin({
       const last = related[0] ?? null
       const treated = related.filter((t) => !isOpenTicket(t.status)).length
       const open = related.filter((t) => isOpenTicket(t.status)).length
-      return { asset: a, status, last, treated, open, related }
+      const trueCost = assetTrueCost[a.id] ?? 0
+      return { asset: a, status, last, treated, open, related, trueCost }
     })
-  }, [assets, tickets])
+  }, [assets, tickets, assetTrueCost])
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -395,7 +399,7 @@ export function AssetsAdmin({
           <>
             {/* Mobile cards */}
             <div className="divide-y divide-border md:hidden">
-              {filtered.map(({ asset: a, status, last, treated, open }) => (
+              {filtered.map(({ asset: a, status, last, treated, open, trueCost }) => (
                 <article
                   key={a.id}
                   data-asset-id={a.id}
@@ -439,6 +443,9 @@ export function AssetsAdmin({
                     </p>
                     <p className="t-meta mt-1 text-ink-3">
                       בטיפול: {open} · טופלו: {treated}
+                      {trueCost > 0
+                        ? ` · עלות אמיתית ₪${Math.round(trueCost).toLocaleString('he-IL')}`
+                        : ''}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
@@ -495,12 +502,13 @@ export function AssetsAdmin({
                   <TH className="w-[100px]">סטטוס</TH>
                   <TH>תקלה אחרונה</TH>
                   <TH className="w-[110px]">היסטוריה</TH>
+                  <TH className="w-[100px]">עלות</TH>
                   <TH className="w-[200px]" align="end">
                     פעולות
                   </TH>
                 </THead>
                 <TBody>
-                  {filtered.map(({ asset: a, status, last, treated, open }) => (
+                  {filtered.map(({ asset: a, status, last, treated, open, trueCost }) => (
                     <TR
                       key={a.id}
                       className={cn(
@@ -562,6 +570,13 @@ export function AssetsAdmin({
                       <TD>
                         <span className="t-caption t-num text-ink-2">
                           {open}/{treated}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span className="t-caption t-num text-ink-2">
+                          {trueCost > 0
+                            ? `₪${Math.round(trueCost).toLocaleString('he-IL')}`
+                            : '—'}
                         </span>
                       </TD>
                       <TD align="end">

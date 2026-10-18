@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useId, useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ImagePlus, Play, Upload } from 'lucide-react'
+import { Check, Play, Upload } from 'lucide-react'
 import { useOnline } from '@/hooks/use-online'
 import { Button } from '@/components/ui/button'
 import { Textarea, Field } from '@/components/ui/input'
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 /**
  * Field tech primary action:
  * waiting → התחל טיפול
- * in progress → סיימתי (treatment summary + proof + server save)
+ * in progress → סיימתי (treatment summary + before/after proof + server save)
  * Success copy is always «נשלח לאישור החנות» — never «נסגר».
  */
 export function TechTicketActions({
@@ -40,14 +40,15 @@ export function TechTicketActions({
   const toast = useToast()
   const online = useOnline()
   const [, startTransition] = useTransition()
-  const proofInputId = useId()
+  const beforeInputId = useId()
+  const afterInputId = useId()
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState<CompletionPhase>('idle')
   const [error, setError] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [note, setNote] = useState('')
-  const [proofFile, setProofFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [beforeFile, setBeforeFile] = useState<File | null>(null)
+  const [afterFile, setAfterFile] = useState<File | null>(null)
 
   const isUnassigned = !assignedTo
   const isMine = Boolean(techId && assignedTo === techId)
@@ -57,17 +58,11 @@ export function TechTicketActions({
   const canResolve = actions.includes('resolved')
   const phaseLabel = completionBusyLabel(phase)
   const canSubmit =
-    treatmentSummaryValid(note) && Boolean(proofFile) && !busy && online
-
-  useEffect(() => {
-    if (!proofFile || !proofFile.type.startsWith('image/')) {
-      setPreviewUrl(null)
-      return
-    }
-    const url = URL.createObjectURL(proofFile)
-    setPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [proofFile])
+    treatmentSummaryValid(note) &&
+    Boolean(beforeFile) &&
+    Boolean(afterFile) &&
+    !busy &&
+    online
 
   async function patchTicket(
     body: Record<string, unknown>,
@@ -115,14 +110,23 @@ export function TechTicketActions({
     }
   }
 
+  async function uploadProof(file: File, role: 'before' | 'after') {
+    const check = validateMediaFile(file)
+    if (!check.ok) throw new Error(check.error)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('proof_role', role)
+    const up = await fetch(`/api/tickets/${ticketId}/attachments`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: form,
+    })
+    const upData = (await up.json().catch(() => ({}))) as { error?: string }
+    if (!up.ok) throw new Error(upData.error ?? 'העלאת הוכחה נכשלה')
+  }
+
   async function resolveWithProof() {
-    if (!proofFile || !treatmentSummaryValid(note)) return
-    const check = validateMediaFile(proofFile)
-    if (!check.ok) {
-      setError(check.error)
-      setPhase('error')
-      return
-    }
+    if (!beforeFile || !afterFile || !treatmentSummaryValid(note)) return
     if (!online) {
       setError('אין חיבור — נסו שוב כשהרשת חוזרת')
       setPhase('error')
@@ -132,22 +136,8 @@ export function TechTicketActions({
     setError(null)
     setPhase('uploading')
     try {
-      const form = new FormData()
-      form.append('file', proofFile)
-      const up = await fetch(`/api/tickets/${ticketId}/attachments`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: form,
-      })
-      const upData = (await up.json().catch(() => ({}))) as {
-        error?: string
-      }
-      if (!up.ok) {
-        setError(upData.error ?? 'העלאת הוכחה נכשלה')
-        toast.push({ title: 'העלאת הוכחה נכשלה', tone: 'critical' })
-        setPhase('error')
-        return
-      }
+      await uploadProof(beforeFile, 'before')
+      await uploadProof(afterFile, 'after')
 
       setPhase('saving')
       const saved = await patchTicket({
@@ -162,13 +152,18 @@ export function TechTicketActions({
         return
       }
 
-      // Success toast only after upload + server save.
       toast.push({ title: TECH_COMPLETION.successToast, tone: 'success' })
       setPhase('done')
       setNote('')
-      setProofFile(null)
+      setBeforeFile(null)
+      setAfterFile(null)
       setSheetOpen(false)
       startTransition(() => router.refresh())
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'העלאת הוכחה נכשלה'
+      setError(msg)
+      toast.push({ title: 'העלאת הוכחה נכשלה', tone: 'critical' })
+      setPhase('error')
     } finally {
       setBusy(false)
       setPhase((prev) => (prev === 'done' || prev === 'error' ? prev : 'idle'))
@@ -273,47 +268,33 @@ export function TechTicketActions({
           </Field>
 
           <Field
-            label={TECH_COMPLETION.proofLabel}
-            htmlFor={proofInputId}
+            label={TECH_COMPLETION.proofBeforeLabel}
+            htmlFor={beforeInputId}
             hint={TECH_COMPLETION.proofHint}
           >
-            <label
-              htmlFor={proofInputId}
-              className={cn(
-                'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-border bg-sunken px-4 py-5 text-center transition-colors',
-                busy ? 'pointer-events-none opacity-60' : 'hover:border-border-strong',
-              )}
-            >
-              {previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt=""
-                  className="h-28 w-full rounded-[var(--radius-sm)] object-cover"
-                />
-              ) : (
-                <ImagePlus className="h-7 w-7 text-ink-3" aria-hidden />
-              )}
-              <span className="t-control text-ink">
-                {proofFile ? proofFile.name : 'בחירת קובץ מהמצלמה או מהגלריה'}
-              </span>
-              {proofFile ? (
-                <span className="t-caption t-num text-ink-3">
-                  {(proofFile.size / 1024).toFixed(0)} KB · {proofFile.type || 'קובץ'}
-                </span>
-              ) : (
-                <span className="t-caption text-ink-3">JPEG / PNG / WebP / MP4 / WebM</span>
-              )}
-              <input
-                id={proofInputId}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-                capture="environment"
-                className="sr-only"
-                disabled={busy}
-                onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
+            <input
+              id={beforeInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              capture="environment"
+              className="t-control w-full text-ink"
+              disabled={busy}
+              onChange={(e) => setBeforeFile(e.target.files?.[0] ?? null)}
+            />
+          </Field>
+          <Field
+            label={TECH_COMPLETION.proofAfterLabel}
+            htmlFor={afterInputId}
+          >
+            <input
+              id={afterInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              capture="environment"
+              className="t-control w-full text-ink"
+              disabled={busy}
+              onChange={(e) => setAfterFile(e.target.files?.[0] ?? null)}
+            />
           </Field>
 
           {phaseLabel ? (

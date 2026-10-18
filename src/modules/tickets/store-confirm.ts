@@ -9,49 +9,37 @@ import { createSystemClient } from '@/lib/supabase/system'
 import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import { updateStatus, appendEvent, getById } from '@/modules/tickets/service'
 import { notifyReporter } from '@/modules/notifications/lifecycle-notify'
+import {
+  isQualityHoldActive,
+  formatQualityHoldHe,
+} from '@/modules/tickets/quality-hold'
 
 /**
- * Store staff confirms the fix → ticket closes without Ari chasing.
- * HQ may still force-close from resolved without confirmation.
+ * Store staff confirms the fix.
+ * B03: stamps store_confirmed_* immediately, but final close waits for
+ * quality hold (30 days) unless Ari overrides via updateStatus.
  */
 export async function confirmStoreFix(input: {
   ticketId: string
   actorLabel?: string | null
-}): Promise<{ id: string; status: string; store_confirmed_at: string }> {
+}): Promise<{
+  id: string
+  status: string
+  store_confirmed_at: string
+  quality_hold_until?: string | null
+  pending_final_close?: boolean
+}> {
   const now = new Date().toISOString()
   const actorLabel = input.actorLabel?.trim() || 'store'
 
   if (!(await supabaseReady())) {
-    const ticket = memGet(input.ticketId)
-    if (!ticket) throw new Error('תקלה לא נמצאה')
-    if (ticket.status === 'closed') {
-      return {
-        id: ticket.id,
-        status: ticket.status,
-        store_confirmed_at: ticket.store_confirmed_at ?? now,
-      }
-    }
-    if (ticket.status !== 'resolved') {
-      throw new Error('ניתן לאשר רק תקלה שנפתרה')
-    }
-    ticket.store_confirmed_at = now
-    ticket.store_confirmed_by = actorLabel
-    ticket.updated_at = now
-    memAddEvent(ticket.id, 'store_confirmed', { by: actorLabel }, null)
-    const closed = await updateStatus(ticket.id, 'closed')
-    const detail = await getById(closed.id)
-    if (detail) await notifyReporter(detail, 'closed')
-    return {
-      id: closed.id,
-      status: closed.status,
-      store_confirmed_at: now,
-    }
+    return confirmStoreFixMemoryFallback(input, now, actorLabel)
   }
 
   const supabase = createSystemClient('store_confirm')
   const { data: row, error } = await supabase
     .from('tickets')
-    .select('id, status, store_confirmed_at')
+    .select('id, status, store_confirmed_at, quality_hold_until')
     .eq('id', input.ticketId)
     .maybeSingle()
 
@@ -67,6 +55,7 @@ export async function confirmStoreFix(input: {
       id: row.id,
       status: row.status,
       store_confirmed_at: (row.store_confirmed_at as string) ?? now,
+      quality_hold_until: (row.quality_hold_until as string) ?? null,
     }
   }
   if (row.status !== 'resolved') {
@@ -90,6 +79,18 @@ export async function confirmStoreFix(input: {
   }
 
   await appendEvent(input.ticketId, 'store_confirmed', null, { by: actorLabel })
+
+  const holdUntil = (row.quality_hold_until as string | null) ?? null
+  if (isQualityHoldActive(holdUntil, new Date(now))) {
+    return {
+      id: row.id,
+      status: 'resolved',
+      store_confirmed_at: now,
+      quality_hold_until: holdUntil,
+      pending_final_close: true,
+    }
+  }
+
   const closed = await updateStatus(input.ticketId, 'closed')
   const detail = await getById(closed.id)
   if (detail) await notifyReporter(detail, 'closed')
@@ -98,6 +99,7 @@ export async function confirmStoreFix(input: {
     id: closed.id,
     status: closed.status,
     store_confirmed_at: now,
+    quality_hold_until: holdUntil,
   }
 }
 
@@ -113,6 +115,7 @@ async function confirmStoreFixMemoryFallback(
       id: ticket.id,
       status: ticket.status,
       store_confirmed_at: ticket.store_confirmed_at ?? now,
+      quality_hold_until: ticket.quality_hold_until ?? null,
     }
   }
   if (ticket.status !== 'resolved') {
@@ -122,12 +125,34 @@ async function confirmStoreFixMemoryFallback(
   ticket.store_confirmed_by = actorLabel
   ticket.updated_at = now
   memAddEvent(ticket.id, 'store_confirmed', { by: actorLabel }, null)
+
+  if (isQualityHoldActive(ticket.quality_hold_until, new Date(now))) {
+    return {
+      id: ticket.id,
+      status: 'resolved',
+      store_confirmed_at: now,
+      quality_hold_until: ticket.quality_hold_until ?? null,
+      pending_final_close: true,
+    }
+  }
+
   const closed = await updateStatus(ticket.id, 'closed')
+  const detail = await getById(closed.id)
+  if (detail) await notifyReporter(detail, 'closed')
   return {
     id: closed.id,
     status: closed.status,
     store_confirmed_at: now,
+    quality_hold_until: ticket.quality_hold_until ?? null,
   }
+}
+
+/** Human-readable hold status for store/HQ UI. */
+export function storeConfirmHoldMessage(
+  holdUntil: string | null | undefined,
+  now = new Date(),
+): string | null {
+  return formatQualityHoldHe(holdUntil, now)
 }
 
 export function storeConfirmUrl(ticketId: string): string {
