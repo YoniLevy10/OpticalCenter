@@ -14,6 +14,8 @@ export type VisitSelectableTicket = {
   storeCode: string
   storeId: string
   label: string
+  title?: string
+  spendBlock?: string | null
 }
 
 type VisitSelectionContextValue = {

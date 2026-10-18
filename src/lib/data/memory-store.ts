@@ -291,9 +291,11 @@ export type MemPartnerDispatch = {
   ticket_id: string
   vendor_id: string
   idempotency_key: string
-  status: 'queued' | 'sent' | 'failed' | 'ack'
+  /** labeled = no live channel; never claim sent unless webhook/ack succeeded */
+  status: 'queued' | 'sent' | 'failed' | 'ack' | 'labeled'
   request_hmac: string
   payload: Record<string, unknown>
+  last_error: string | null
   created_at: string
   updated_at: string
 }

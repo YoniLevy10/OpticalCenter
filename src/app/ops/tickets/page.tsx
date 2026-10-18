@@ -35,6 +35,8 @@ import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
 import { translate } from '@/lib/i18n/messages'
 import { listVendors } from '@/modules/vendors/service'
+import { spendForTicket } from '@/lib/data/ops-ledger'
+import { executionBlockReason } from '@/modules/spend/policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -228,6 +230,8 @@ export default async function TicketsPage({
               label:
                 t.display_number ||
                 (t.number != null ? `OC-${t.number}` : t.id.slice(0, 8)),
+              title: t.title || t.description,
+              spendBlock: executionBlockReason(spendForTicket(t.id)),
             }))}
             vendors={vendorOptions}
             storeFilter={storeCode}
