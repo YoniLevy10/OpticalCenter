@@ -5,6 +5,7 @@ import {
   getById,
   getTicketForMutation,
   listInternalTechnicians,
+  setRepairEta,
   updateStatus,
   type TicketRecord,
 } from '@/modules/tickets/service'
@@ -33,10 +34,21 @@ const patchSchema = z
     note: z.string().trim().max(2000).optional(),
     /** Ari (global_maintenance) override when resolving without image/video. */
     overrideReason: z.string().trim().min(3).max(2000).optional(),
+    /** B03 — close before quality hold ends (requires overrideReason). */
+    qualityHoldOverride: z.boolean().optional(),
+    /** B04 — repair ETA ISO string, or null to clear. */
+    repairEtaAt: z.union([z.string().datetime(), z.null()]).optional(),
   })
-  .refine((v) => v.status != null || v.assignedTo != null || Boolean(v.note), {
-    message: 'יש לציין status, assignedTo או note',
-  })
+  .refine(
+    (v) =>
+      v.status != null ||
+      v.assignedTo != null ||
+      Boolean(v.note) ||
+      v.repairEtaAt !== undefined,
+    {
+      message: 'יש לציין status, assignedTo, note או repairEtaAt',
+    },
+  )
 
 async function resolveTechProfile(assignedTo: string) {
   const techs = await listInternalTechnicians()
@@ -109,7 +121,11 @@ export async function PATCH(
       ticket = await updateStatus(id, parsed.data.status, actor.id, {
         overrideReason: parsed.data.overrideReason,
         actorRoles: actor.memberships.map((m) => m.role),
+        qualityHoldOverride: parsed.data.qualityHoldOverride,
       })
+    }
+    if (parsed.data.repairEtaAt !== undefined) {
+      ticket = await setRepairEta(id, parsed.data.repairEtaAt, actor.id)
     }
     if (parsed.data.note) {
       const { appendEvent } = await import('@/modules/tickets/service')

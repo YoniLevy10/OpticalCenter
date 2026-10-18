@@ -71,6 +71,11 @@ export type TicketRecord = {
   first_response_at: string | null
   resolved_at: string | null
   closed_at: string | null
+  /** B03 — end of 30-day quality hold (ISO). */
+  quality_hold_until?: string | null
+  quality_hold_started_at?: string | null
+  /** B04 — estimated repair / arrival time (ISO). */
+  repair_eta_at?: string | null
   created_at: string
   updated_at: string
   ai_summary?: string | null
@@ -140,7 +145,7 @@ function memToRecord(t: MemTicket): TicketRecord {
     country_id: t.country_id,
     region_id: t.region_id,
     store_id: t.store_id,
-    asset_id: null,
+    asset_id: t.asset_id ?? null,
     number: t.number,
     display_number: t.display_number,
     category: t.category,
@@ -158,6 +163,9 @@ function memToRecord(t: MemTicket): TicketRecord {
     first_response_at: t.first_response_at ?? null,
     resolved_at: t.resolved_at,
     closed_at: t.closed_at,
+    quality_hold_until: t.quality_hold_until ?? null,
+    quality_hold_started_at: t.quality_hold_started_at ?? null,
+    repair_eta_at: t.repair_eta_at ?? null,
     created_at: t.created_at,
     updated_at: t.updated_at,
     ai_summary: t.ai_summary ?? null,
@@ -181,11 +189,15 @@ export type ListTicketsQuery = {
 
 /** Columns needed for queue / dashboard rows — skip city/address bloat. */
 const LIST_SELECT_BASE =
-  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at'
+  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, asset_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at'
 
-/** Lean row for lifecycle mutations / RBAC — no messages or events. */
+/** Lean row for lifecycle mutations / RBAC — no messages or events.
+ * B03/B04 columns are loaded via select('*') fallback when present. */
 const MUTATION_SELECT =
-  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, assigned_to, title, reporter_phone, reporter_name, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, closed_at, language, stores ( id, code, name, city, address )'
+  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, asset_id, assigned_to, title, reporter_phone, reporter_name, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, closed_at, language, stores ( id, code, name, city, address )'
+
+const MUTATION_SELECT_WITH_HOLD =
+  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, asset_id, assigned_to, title, reporter_phone, reporter_name, sla_respond_by, sla_resolve_by, first_response_at, resolved_at, closed_at, quality_hold_until, quality_hold_started_at, repair_eta_at, language, stores ( id, code, name, city, address )'
 
 async function queryTicketsList(
   supabase: SupabaseClient,
@@ -414,19 +426,37 @@ export async function getTicketForMutation(
 > {
   if (await supabaseReady()) {
     const supabase = opts?.client ?? createSystemClient('tickets_service')
-    const { data: ticket, error } = await supabase
+    let ticket: Record<string, unknown> | null = null
+    const rich = await supabase
       .from('tickets')
-      .select(MUTATION_SELECT)
+      .select(MUTATION_SELECT_WITH_HOLD)
       .eq('id', id)
       .maybeSingle()
-    if (error) throw new Error(error.message)
+    if (rich.error) {
+      const { isMissingColumnError, isSupabaseSchemaError } = await import(
+        '@/lib/supabase/schema-fallback'
+      )
+      if (isMissingColumnError(rich.error) || isSupabaseSchemaError(rich.error)) {
+        const lean = await supabase
+          .from('tickets')
+          .select(MUTATION_SELECT)
+          .eq('id', id)
+          .maybeSingle()
+        if (lean.error) throw new Error(lean.error.message)
+        ticket = lean.data as Record<string, unknown> | null
+      } else {
+        throw new Error(rich.error.message)
+      }
+    } else {
+      ticket = rich.data as Record<string, unknown> | null
+    }
     if (!ticket) return null
     let assignee: TicketDetail['assignee'] = null
     if (ticket.assigned_to) {
       const { data } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone')
-        .eq('id', ticket.assigned_to)
+        .eq('id', ticket.assigned_to as string)
         .maybeSingle()
       assignee = (data as TicketDetail['assignee']) ?? null
     }
@@ -571,6 +601,7 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
       reporterName: input.reporterName,
       title: input.title,
       language: input.language,
+      assetId: input.assetId ?? null,
       ai_summary: input.aiSummary ?? null,
       ai_raw: input.aiRaw ?? null,
       ...sla,
@@ -794,7 +825,7 @@ export async function correctClassification(
 }
 
 export type UpdateStatusOptions = {
-  /** Required when resolving without image/video proof (Ari / global_maintenance). */
+  /** Required when resolving without before/after proof (Ari / global_maintenance). */
   overrideReason?: string | null
   /** Membership roles for the actor performing the transition. */
   actorRoles?: string[] | null
@@ -803,6 +834,11 @@ export type UpdateStatusOptions = {
    * e.g. tech photoUrl before status flip).
    */
   proofAlreadyAttached?: boolean
+  /**
+   * B03 — allow closing before quality hold ends (Ari / global_maintenance).
+   * Requires overrideReason.
+   */
+  qualityHoldOverride?: boolean
 }
 
 export async function updateStatus(
@@ -820,6 +856,12 @@ export async function updateStatus(
     RESOLVE_PROOF_REQUIRED_HE,
     ticketHasResolveProof,
   } = await import('@/modules/tickets/proof-gate')
+  const {
+    isQualityHoldActive,
+    qualityHoldUntilFrom,
+    QUALITY_HOLD_BLOCK_CLOSE_HE,
+    QUALITY_HOLD_OVERRIDE_REASON_REQUIRED_HE,
+  } = await import('@/modules/tickets/quality-hold')
 
   async function enforceResolveProof(): Promise<'proof' | 'override'> {
     if (nextStatus !== 'resolved') return 'proof'
@@ -841,18 +883,41 @@ export async function updateStatus(
     throw new Error(RESOLVE_PROOF_REQUIRED_HE)
   }
 
+  function enforceQualityHoldClose(
+    holdUntil: string | null | undefined,
+  ): 'ok' | 'override' {
+    if (nextStatus !== 'closed') return 'ok'
+    if (!isQualityHoldActive(holdUntil)) return 'ok'
+    if (opts?.qualityHoldOverride && actorCanOverrideResolve(opts?.actorRoles)) {
+      const reason = opts?.overrideReason?.trim()
+      if (!reason) throw new Error(QUALITY_HOLD_OVERRIDE_REASON_REQUIRED_HE)
+      return 'override'
+    }
+    throw new Error(QUALITY_HOLD_BLOCK_CLOSE_HE)
+  }
+
   if (await supabaseReady()) {
     const current = await getTicketForMutation(id)
     if (!current) throw new Error('תקלה לא נמצאה')
     const from = current.status as TicketStatus
     assertTransition(from, nextStatus)
     const proofMode = await enforceResolveProof()
+    const holdMode = enforceQualityHoldClose(
+      (current as TicketRecord).quality_hold_until,
+    )
     const supabase = createSystemClient('tickets_service')
+    const nowIso = new Date().toISOString()
     const patch: Record<string, unknown> = { status: nextStatus }
-    if (nextStatus === 'resolved') patch.resolved_at = new Date().toISOString()
-    if (nextStatus === 'closed') patch.closed_at = new Date().toISOString()
+    if (nextStatus === 'resolved') {
+      patch.resolved_at = nowIso
+      patch.quality_hold_started_at = nowIso
+      patch.quality_hold_until = qualityHoldUntilFrom(nowIso).toISOString()
+    }
+    if (nextStatus === 'closed') patch.closed_at = nowIso
     if (nextStatus === 'in_progress' && from === 'resolved') {
       patch.resolved_at = null
+      patch.quality_hold_until = null
+      patch.quality_hold_started_at = null
     }
     const { data, error } = await supabase
       .from('tickets')
@@ -860,13 +925,46 @@ export async function updateStatus(
       .eq('id', id)
       .select('*')
       .single()
-    if (error) throw new Error(error.message)
+    if (error) {
+      // Fail-open: strip new columns if migration not applied yet.
+      const { isMissingColumnError, isSupabaseSchemaError } = await import(
+        '@/lib/supabase/schema-fallback'
+      )
+      if (isMissingColumnError(error) || isSupabaseSchemaError(error)) {
+        const lean: Record<string, unknown> = { status: nextStatus }
+        if (nextStatus === 'resolved') lean.resolved_at = nowIso
+        if (nextStatus === 'closed') lean.closed_at = nowIso
+        if (nextStatus === 'in_progress' && from === 'resolved') {
+          lean.resolved_at = null
+        }
+        const retry = await supabase
+          .from('tickets')
+          .update(lean)
+          .eq('id', id)
+          .select('*')
+          .single()
+        if (retry.error) throw new Error(retry.error.message)
+        await appendEvent(id, 'status_changed', actorId ?? null, {
+          from,
+          to: nextStatus,
+        })
+        return retry.data as TicketRecord
+      }
+      throw new Error(error.message)
+    }
     await appendEvent(id, 'status_changed', actorId ?? null, {
       from,
       to: nextStatus,
     })
     if (proofMode === 'override' && nextStatus === 'resolved') {
       await appendEvent(id, 'resolve_override', actorId ?? null, {
+        reason: opts?.overrideReason?.trim(),
+        from,
+        to: nextStatus,
+      })
+    }
+    if (holdMode === 'override' && nextStatus === 'closed') {
+      await appendEvent(id, 'quality_hold_override', actorId ?? null, {
         reason: opts?.overrideReason?.trim(),
         from,
         to: nextStatus,
@@ -879,9 +977,17 @@ export async function updateStatus(
   if (!current) throw new Error('תקלה לא נמצאה')
   assertTransition(current.status as TicketStatus, nextStatus)
   const proofMode = await enforceResolveProof()
+  const holdMode = enforceQualityHoldClose(current.quality_hold_until)
   const updated = memToRecord(memUpdateStatus(id, nextStatus, null, actorId))
   if (proofMode === 'override' && nextStatus === 'resolved') {
     await appendEvent(id, 'resolve_override', actorId ?? null, {
+      reason: opts?.overrideReason?.trim(),
+      from: current.status,
+      to: nextStatus,
+    })
+  }
+  if (holdMode === 'override' && nextStatus === 'closed') {
+    await appendEvent(id, 'quality_hold_override', actorId ?? null, {
       reason: opts?.overrideReason?.trim(),
       from: current.status,
       to: nextStatus,
@@ -946,6 +1052,60 @@ export async function assign(
 /** Alias used by some callers */
 export const assignTicket = assign
 export const updateTicketStatus = updateStatus
+
+/** B04 — set / clear repair ETA (HQ or dispatch). */
+export async function setRepairEta(
+  id: string,
+  etaAt: string | Date | null,
+  actorId?: string | null,
+): Promise<TicketRecord> {
+  const { parseRepairEta, REPAIR_ETA_REQUIRED_HE, REPAIR_ETA_SET_EVENT } =
+    await import('@/modules/tickets/repair-eta')
+
+  let iso: string | null = null
+  if (etaAt != null && etaAt !== '') {
+    const parsed = parseRepairEta(etaAt)
+    if (!parsed) throw new Error(REPAIR_ETA_REQUIRED_HE)
+    iso = parsed.toISOString()
+  }
+
+  if (await supabaseReady()) {
+    const current = await getTicketForMutation(id)
+    if (!current) throw new Error('תקלה לא נמצאה')
+    const supabase = createSystemClient('tickets_service')
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ repair_eta_at: iso })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) {
+      const { isMissingColumnError, isSupabaseSchemaError } = await import(
+        '@/lib/supabase/schema-fallback'
+      )
+      if (isMissingColumnError(error) || isSupabaseSchemaError(error)) {
+        // Fail-open: column not migrated yet — keep memory mirror if present.
+        const mem = memGet(id)
+        if (mem) {
+          const { memSetRepairEta } = await import('@/lib/data/memory-store')
+          return memToRecord(memSetRepairEta(id, iso, actorId ?? null))
+        }
+        throw new Error('עמודת מועד הגעה עדיין לא זמינה במסד')
+      }
+      throw new Error(error.message)
+    }
+    await appendEvent(id, REPAIR_ETA_SET_EVENT, actorId ?? null, {
+      from: (current as TicketRecord).repair_eta_at ?? null,
+      to: iso,
+    })
+    return data as TicketRecord
+  }
+
+  const current = memGet(id)
+  if (!current) throw new Error('תקלה לא נמצאה')
+  const { memSetRepairEta } = await import('@/lib/data/memory-store')
+  return memToRecord(memSetRepairEta(id, iso, actorId ?? null))
+}
 
 export async function appendEvent(
   ticketId: string,

@@ -6,6 +6,8 @@ export type SpendRequest = {
   storeCode: string
   storeName: string
   ticketId: string | null
+  /** Optional link to asset for cumulative true cost (B01). */
+  assetId?: string | null
   reason: string
   vendorName: string | null
   requestedAmount: number

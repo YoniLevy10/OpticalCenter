@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { memAddMessage, supabaseReady } from '@/lib/data/memory-store'
 import type { MediaKind } from '@/modules/tickets/media-limits'
+import type { ProofRole } from '@/modules/tickets/proof-gate'
+import { isMissingColumnError, isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 
 const BUCKET = 'ticket-media'
 
@@ -9,21 +11,33 @@ export async function persistTicketAttachment(
   ticketId: string,
   url: string,
   kind: MediaKind | 'document',
+  proofRole?: ProofRole | null,
 ): Promise<void> {
   if (await supabaseReady()) {
     const supabase = createAdminClient()
-    await supabase.from('ticket_attachments').insert({
+    const row: Record<string, unknown> = {
       ticket_id: ticketId,
       url,
       kind,
-    })
+    }
+    if (proofRole) row.proof_role = proofRole
+    const { error } = await supabase.from('ticket_attachments').insert(row)
+    if (error && (isMissingColumnError(error) || isSupabaseSchemaError(error))) {
+      // Fail-open without proof_role when migration not applied yet.
+      const { proof_role: _drop, ...withoutRole } = row
+      void _drop
+      await supabase.from('ticket_attachments').insert(withoutRole)
+      return
+    }
+    if (error) throw new Error(error.message)
     return
   }
   memAddMessage(ticketId, {
     channel: 'web',
     direction: 'inbound',
-    body: null,
+    body: proofRole ?? null,
     media_url: url,
+    proof_role: proofRole ?? null,
   })
 }
 

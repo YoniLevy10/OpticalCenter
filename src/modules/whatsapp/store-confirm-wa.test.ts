@@ -49,10 +49,21 @@ async function seedResolved(opts: {
   memAddMessage(created.id, {
     channel: 'tech',
     direction: 'inbound',
-    body: 'בוצע',
-    media_url: 'https://cdn.example/proof.jpg',
+    body: 'before',
+    media_url: 'https://cdn.example/before.jpg',
+    proof_role: 'before',
+  })
+  memAddMessage(created.id, {
+    channel: 'tech',
+    direction: 'inbound',
+    body: 'after',
+    media_url: 'https://cdn.example/after.jpg',
+    proof_role: 'after',
   })
   await updateStatus(created.id, 'resolved')
+  // B03 quality hold starts on resolve — expire so WA confirm can close in tests.
+  const mem = memGet(created.id)!
+  mem.quality_hold_until = new Date(Date.now() - 1000).toISOString()
   return created
 }
 
@@ -69,6 +80,9 @@ describe('store confirm via WhatsApp (C02 hardening)', () => {
       waId,
       description: 'מזגן לא מקרר',
     })
+    // Expire quality hold so WA confirm can finalize close in this test.
+    const mem = memGet(created.id)!
+    mem.quality_hold_until = new Date(Date.now() - 1000).toISOString()
 
     const result = await processInboundMessage(
       msg({
@@ -92,6 +106,7 @@ describe('store confirm via WhatsApp (C02 hardening)', () => {
       waId,
       description: 'קצר חשמלי',
     })
+    memGet(created.id)!.quality_hold_until = new Date(Date.now() - 1000).toISOString()
 
     const result = await processInboundMessage(msg({ waId, text: 'מאשר' }), {
       skipOutboundGraph: true,

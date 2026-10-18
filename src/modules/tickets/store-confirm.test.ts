@@ -3,11 +3,29 @@ import {
   memReset,
   memCreate,
   memAddMessage,
+  memGet,
   DEMO_TECH_ID,
 } from '@/lib/data/memory-store'
 import { updateStatus } from '@/modules/tickets/service'
 import { confirmStoreFix } from './store-confirm'
 import { israelStoresAsRows } from '@/modules/stores/israel-stores'
+
+function attachPair(ticketId: string) {
+  memAddMessage(ticketId, {
+    channel: 'tech',
+    direction: 'inbound',
+    body: 'before',
+    media_url: 'https://cdn.example/before.jpg',
+    proof_role: 'before',
+  })
+  memAddMessage(ticketId, {
+    channel: 'tech',
+    direction: 'inbound',
+    body: 'after',
+    media_url: 'https://cdn.example/after.jpg',
+    proof_role: 'after',
+  })
+}
 
 describe('store confirm close', () => {
   beforeEach(() => {
@@ -15,7 +33,7 @@ describe('store confirm close', () => {
     memReset()
   })
 
-  it('closes a resolved ticket after store confirmation', async () => {
+  it('stamps confirm but holds final close during quality window', async () => {
     const store = israelStoresAsRows().find((s) => s.code === '6006')!
     const created = memCreate({
       store,
@@ -26,13 +44,34 @@ describe('store confirm close', () => {
       assigned_to: DEMO_TECH_ID,
     })
     await updateStatus(created.id, 'in_progress')
-    memAddMessage(created.id, {
-      channel: 'tech',
-      direction: 'inbound',
-      body: 'בוצע',
-      media_url: 'https://cdn.example/proof.jpg',
-    })
+    attachPair(created.id)
     await updateStatus(created.id, 'resolved')
+
+    const result = await confirmStoreFix({
+      ticketId: created.id,
+      actorLabel: 'מנהל חנות',
+    })
+    expect(result.status).toBe('resolved')
+    expect(result.pending_final_close).toBe(true)
+    expect(result.store_confirmed_at).toBeTruthy()
+    expect(memGet(created.id)?.status).toBe('resolved')
+  })
+
+  it('closes after quality hold has ended', async () => {
+    const store = israelStoresAsRows().find((s) => s.code === '6006')!
+    const created = memCreate({
+      store,
+      description: 'hold הסתיים',
+      priority: 'medium',
+      category: 'hvac',
+      status: 'assigned',
+      assigned_to: DEMO_TECH_ID,
+    })
+    await updateStatus(created.id, 'in_progress')
+    attachPair(created.id)
+    await updateStatus(created.id, 'resolved')
+    const mem = memGet(created.id)!
+    mem.quality_hold_until = new Date(Date.now() - 1000).toISOString()
 
     const result = await confirmStoreFix({
       ticketId: created.id,

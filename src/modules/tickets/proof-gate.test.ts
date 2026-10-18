@@ -3,6 +3,7 @@ import {
   actorCanOverrideResolve,
   isProofAttachmentKind,
   memoryTicketHasResolveProof,
+  proofPairFromAttachments,
   RESOLVE_OVERRIDE_REASON_REQUIRED_HE,
   RESOLVE_PROOF_REQUIRED_HE,
 } from '@/modules/tickets/proof-gate'
@@ -19,12 +20,43 @@ process.env.MAINTAINOS_FORCE_MEMORY = '1'
 
 const store = () => israelStoresAsRows().find((s) => s.code === '6018')!
 
+function attachBeforeAfter(ticketId: string) {
+  memAddMessage(ticketId, {
+    channel: 'tech',
+    direction: 'inbound',
+    body: 'before',
+    media_url: 'https://cdn.example/before.jpg',
+    proof_role: 'before',
+  })
+  memAddMessage(ticketId, {
+    channel: 'tech',
+    direction: 'inbound',
+    body: 'after',
+    media_url: 'https://cdn.example/after.jpg',
+    proof_role: 'after',
+  })
+}
+
 describe('proof gate helpers', () => {
-  it('accepts only image and video as proof kinds', () => {
+  it('accepts image, video, before, after as proof kinds', () => {
     expect(isProofAttachmentKind('image')).toBe(true)
     expect(isProofAttachmentKind('video')).toBe(true)
+    expect(isProofAttachmentKind('before')).toBe(true)
+    expect(isProofAttachmentKind('after')).toBe(true)
     expect(isProofAttachmentKind('audio')).toBe(false)
     expect(isProofAttachmentKind('document')).toBe(false)
+  })
+
+  it('requires before+after pair', () => {
+    expect(
+      proofPairFromAttachments([{ kind: 'image', proof_role: 'before' }]).complete,
+    ).toBe(false)
+    expect(
+      proofPairFromAttachments([
+        { kind: 'image', proof_role: 'before' },
+        { kind: 'image', proof_role: 'after' },
+      ]).complete,
+    ).toBe(true)
   })
 
   it('allows only global_maintenance to override', () => {
@@ -35,17 +67,26 @@ describe('proof gate helpers', () => {
     )
   })
 
-  it('treats message media as memory proof', () => {
+  it('treats paired message media as memory proof', () => {
     expect(
       memoryTicketHasResolveProof([
         { media_url: 'https://cdn.example/proof.jpg', channel: 'tech' },
       ]),
-    ).toBe(true)
+    ).toBe(false)
     expect(
       memoryTicketHasResolveProof([
-        { media_url: 'https://cdn.example/clip.ogg', channel: 'whatsapp' },
+        {
+          media_url: 'https://cdn.example/before.jpg',
+          channel: 'tech',
+          proof_role: 'before',
+        },
+        {
+          media_url: 'https://cdn.example/after.jpg',
+          channel: 'tech',
+          proof_role: 'after',
+        },
       ]),
-    ).toBe(false)
+    ).toBe(true)
   })
 })
 
@@ -55,7 +96,7 @@ describe('updateStatus resolve proof gate (memory)', () => {
     memReset()
   })
 
-  it('blocks resolve without image/video proof', async () => {
+  it('blocks resolve without before/after proof', async () => {
     const ticket = memCreate({
       store: store(),
       description: 'בדיקת הוכחה',
@@ -67,6 +108,29 @@ describe('updateStatus resolve proof gate (memory)', () => {
     await expect(
       updateStatus(ticket.id, 'resolved', 'hq-1', {
         actorRoles: ['global_admin'],
+      }),
+    ).rejects.toThrow(RESOLVE_PROOF_REQUIRED_HE)
+  })
+
+  it('blocks resolve with only one side of the pair', async () => {
+    const ticket = memCreate({
+      store: store(),
+      description: 'רק לפני',
+      category: 'hvac',
+      priority: 'medium',
+      source: 'demo',
+      status: 'in_progress',
+    })
+    memAddMessage(ticket.id, {
+      channel: 'tech',
+      direction: 'inbound',
+      body: 'before',
+      media_url: 'https://cdn.example/before.jpg',
+      proof_role: 'before',
+    })
+    await expect(
+      updateStatus(ticket.id, 'resolved', 'tech-1', {
+        actorRoles: ['internal_technician'],
       }),
     ).rejects.toThrow(RESOLVE_PROOF_REQUIRED_HE)
   })
@@ -105,24 +169,20 @@ describe('updateStatus resolve proof gate (memory)', () => {
     ).rejects.toThrow(RESOLVE_OVERRIDE_REASON_REQUIRED_HE)
   })
 
-  it('allows resolve when proof media is attached', async () => {
+  it('allows resolve when before and after proof are attached', async () => {
     const ticket = memCreate({
       store: store(),
-      description: 'עם תמונה',
+      description: 'עם תמונות',
       category: 'plumbing',
       priority: 'medium',
       source: 'demo',
       status: 'in_progress',
     })
-    memAddMessage(ticket.id, {
-      channel: 'tech',
-      direction: 'inbound',
-      body: 'בוצע',
-      media_url: 'https://cdn.example/done.jpg',
-    })
+    attachBeforeAfter(ticket.id)
     const updated = await updateStatus(ticket.id, 'resolved', 'tech-1', {
       actorRoles: ['internal_technician'],
     })
     expect(updated.status).toBe('resolved')
+    expect(updated.quality_hold_until).toBeTruthy()
   })
 })

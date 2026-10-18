@@ -14,6 +14,8 @@ export type TicketEvidence = {
   id: string
   url: string
   kind?: string | null
+  /** B02 — before | after for repair proof pair. */
+  proof_role?: string | null
 }
 
 function inferMediaKind(url: string): string {
@@ -29,7 +31,12 @@ function inferMediaKind(url: string): string {
   return 'image'
 }
 
-type MessageLike = { id: string; media_url?: string | null }
+type MessageLike = {
+  id: string
+  media_url?: string | null
+  proof_role?: string | null
+  body?: string | null
+}
 
 export async function fetchTicketAttachments(
   ticketId: string,
@@ -38,11 +45,21 @@ export async function fetchTicketAttachments(
     const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('ticket_attachments')
-      .select('id, url, kind, created_at')
+      .select('id, url, kind, proof_role, created_at')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true })
 
-    if (error || !data) return []
+    if (error) {
+      // Fail-open when proof_role column is missing (migration not applied).
+      const fallback = await supabase
+        .from('ticket_attachments')
+        .select('id, url, kind, created_at')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true })
+      if (fallback.error || !fallback.data) return []
+      return fallback.data as TicketEvidence[]
+    }
+    if (!data) return []
     return data as TicketEvidence[]
   } catch {
     // Memory backend or missing migrations — evidence is simply absent.
@@ -79,10 +96,17 @@ export function mergeEvidence(
   for (const m of messages) {
     if (!m.media_url || !usable(m.media_url) || seen.has(m.media_url)) continue
     seen.add(m.media_url)
+    const role =
+      m.proof_role === 'before' || m.proof_role === 'after'
+        ? m.proof_role
+        : m.body === 'before' || m.body === 'after'
+          ? m.body
+          : null
     out.push({
       id: `msg-${m.id}`,
       url: m.media_url,
       kind: inferMediaKind(m.media_url),
+      proof_role: role,
     })
   }
 
@@ -106,6 +130,7 @@ export async function attachReportPhotos(
         ticket_id: ticketId,
         url,
         kind: 'image',
+        proof_role: 'before',
       })),
     )
     return
@@ -115,8 +140,9 @@ export async function attachReportPhotos(
     memAddMessage(ticketId, {
       channel: 'web',
       direction: 'inbound',
-      body: null,
+      body: 'before',
       media_url: url,
+      proof_role: 'before',
     })
   }
 }

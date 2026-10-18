@@ -7,7 +7,7 @@ import {
 } from '@/modules/tickets/service'
 import { canTransition, ALLOWED_TRANSITIONS } from '@/modules/tickets/transitions'
 import type { TicketStatus } from '@/modules/tickets/constants'
-import { DEMO_TECH_ID } from '@/lib/data/memory-store'
+import { DEMO_TECH_ID, memGet } from '@/lib/data/memory-store'
 
 process.env.MAINTAINOS_FORCE_MEMORY = '1'
 
@@ -41,6 +41,11 @@ async function seed(status: TicketStatus = 'new') {
       current = await updateStatus(current.id, next, null, {
         proofAlreadyAttached: true,
       })
+    } else if (next === 'closed') {
+      // Expire quality hold so seed can reach closed without Ari override.
+      const mem = memGet(current.id)
+      if (mem) mem.quality_hold_until = new Date(Date.now() - 1000).toISOString()
+      current = await updateStatus(current.id, next)
     } else {
       current = await updateStatus(current.id, next)
     }

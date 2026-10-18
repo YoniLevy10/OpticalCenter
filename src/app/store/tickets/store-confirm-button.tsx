@@ -8,17 +8,21 @@ import { Notice } from '@/components/ui/primitives'
 export function StoreConfirmButton({
   ticketId,
   initialStatus,
+  qualityHoldUntil,
 }: {
   ticketId: string
   initialStatus: string
+  qualityHoldUntil?: string | null
 }) {
   const router = useRouter()
   const [status, setStatus] = useState(initialStatus)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(initialStatus === 'closed')
+  const [holdPending, setHoldPending] = useState(false)
+  const [holdUntil, setHoldUntil] = useState(qualityHoldUntil ?? null)
 
-  if (status !== 'resolved' && !done) return null
+  if (status !== 'resolved' && !done && !holdPending) return null
 
   async function confirm() {
     setBusy(true)
@@ -29,10 +33,21 @@ export function StoreConfirmButton({
         headers: { 'content-type': 'application/json' },
         body: '{}',
       })
-      const json = await res.json().catch(() => ({}))
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string
+        status?: string
+        pending_final_close?: boolean
+        quality_hold_until?: string | null
+      }
       if (!res.ok) throw new Error(json.error || 'אישור נכשל')
-      setStatus('closed')
-      setDone(true)
+      if (json.pending_final_close) {
+        setHoldPending(true)
+        setHoldUntil(json.quality_hold_until ?? holdUntil)
+        setStatus('resolved')
+      } else {
+        setStatus('closed')
+        setDone(true)
+      }
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאה')
@@ -44,6 +59,21 @@ export function StoreConfirmButton({
   if (done || status === 'closed') {
     return (
       <Notice tone="success">תודה — האישור נקלט והתקלה נסגרה.</Notice>
+    )
+  }
+
+  if (holdPending) {
+    const dateLabel = holdUntil
+      ? new Date(holdUntil).toLocaleDateString('he-IL', {
+          day: 'numeric',
+          month: 'short',
+        })
+      : '30 יום'
+    return (
+      <Notice tone="progress">
+        תודה — האישור נקלט. התקלה בהחזקת איכות עד {dateLabel}; סגירה סופית
+        אחרי תקופת המעקב.
+      </Notice>
     )
   }
 

@@ -47,6 +47,12 @@ export async function POST(
       return NextResponse.json({ error: 'עד 3 קבצים' }, { status: 400 })
     }
 
+    const rawRole = String(form.get('proof_role') || form.get('proofRole') || '')
+      .trim()
+      .toLowerCase()
+    const proofRole =
+      rawRole === 'before' || rawRole === 'after' ? (rawRole as 'before' | 'after') : null
+
     const urls = await Promise.all(
       files.map(async (file) => {
         const check = validateMediaFile(file)
@@ -54,7 +60,7 @@ export async function POST(
           throw new Error(check.error)
         }
         const url = await uploadTicketMediaFile(ticketId, file, check.kind)
-        await persistTicketAttachment(ticketId, url, check.kind)
+        await persistTicketAttachment(ticketId, url, check.kind, proofRole)
         return url
       }),
     )

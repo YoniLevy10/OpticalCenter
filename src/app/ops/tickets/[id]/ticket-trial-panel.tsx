@@ -50,6 +50,7 @@ export function TicketTrialPanel({
   storeId,
   storeCode,
   storeName,
+  assetId,
   matches,
   aiRaw,
   aiSummary,
@@ -69,6 +70,7 @@ export function TicketTrialPanel({
   storeId: string
   storeCode: string
   storeName: string
+  assetId?: string | null
   matches: MatchRow[]
   aiRaw?: Record<string, unknown> | null
   aiSummary?: string | null
@@ -387,6 +389,7 @@ export function TicketTrialPanel({
           <input type="hidden" name="storeId" value={storeId} />
           <input type="hidden" name="storeCode" value={storeCode} />
           <input type="hidden" name="storeName" value={storeName} />
+          {assetId ? <input type="hidden" name="assetId" value={assetId} /> : null}
           <input type="hidden" name="priority" value={current} />
           <input type="hidden" name="category" value={currentCategory} />
           <Input name="amount" type="number" min={1} required placeholder={t('ticket.payAmount')} aria-label={t('ticket.payAmount')} />

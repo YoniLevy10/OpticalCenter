@@ -13,6 +13,8 @@ import {
   TICKET_CATEGORY_LABELS_HE,
   type TicketStatus,
 } from '@/modules/tickets/constants'
+import { formatRepairEtaHe } from '@/modules/tickets/repair-eta'
+import { formatQualityHoldHe, isQualityHoldActive } from '@/modules/tickets/quality-hold'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +35,12 @@ export default async function StoreTicketPage({
   }
   if (!ticket) notFound()
 
+  const etaLabel = formatRepairEtaHe(ticket.repair_eta_at)
+  const holdLabel =
+    ticket.status === 'resolved' && isQualityHoldActive(ticket.quality_hold_until)
+      ? formatQualityHoldHe(ticket.quality_hold_until)
+      : null
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-5 stagger">
       <OpsPageHero
@@ -52,6 +60,12 @@ export default async function StoreTicketPage({
               ticket.assignee?.email ||
               '—'}
           </KeyValue>
+          {etaLabel ? (
+            <KeyValue label="מועד הגעה משוער">{etaLabel}</KeyValue>
+          ) : null}
+          {holdLabel ? (
+            <KeyValue label="החזקת איכות">{holdLabel}</KeyValue>
+          ) : null}
         </dl>
       </Panel>
 
@@ -65,6 +79,7 @@ export default async function StoreTicketPage({
       <StoreConfirmButton
         ticketId={ticket.id}
         initialStatus={ticket.status}
+        qualityHoldUntil={ticket.quality_hold_until ?? null}
       />
 
       <Button asChild variant="ghost" size="touch" className="self-start">

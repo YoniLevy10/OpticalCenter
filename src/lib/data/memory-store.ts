@@ -13,6 +13,7 @@ export type MemTicket = {
   country_id: string
   region_id: string
   store_id: string
+  asset_id?: string | null
   number: number | null
   display_number: string | null
   category: string
@@ -37,6 +38,11 @@ export type MemTicket = {
   ai_summary: string | null
   /** Raw AI + rules audit payload (optional). */
   ai_raw: Record<string, unknown> | null
+  /** B03 — quality hold window end (ISO). */
+  quality_hold_until?: string | null
+  quality_hold_started_at?: string | null
+  /** B04 — repair ETA (ISO). */
+  repair_eta_at?: string | null
   created_at: string
   updated_at: string
   stores: {
@@ -59,6 +65,7 @@ export type MemTicket = {
     direction: string
     body: string | null
     media_url?: string | null
+    proof_role?: string | null
     created_at: string
   }[]
   events: {
@@ -998,6 +1005,7 @@ export function memCreate(input: {
   sla_resolve_by?: string
   status?: TicketStatus | string
   assigned_to?: string | null
+  assetId?: string | null
   createdAt?: string
   ai_summary?: string | null
   ai_raw?: Record<string, unknown> | null
@@ -1022,6 +1030,7 @@ export function memCreate(input: {
         : MEM_COUNTRY_ID,
     region_id: ('region_id' in input.store && input.store.region_id) || 'ta',
     store_id: input.store.id,
+    asset_id: input.assetId ?? null,
     number,
     display_number: `OC-${number}`,
     category: input.category ?? 'other',
@@ -1044,6 +1053,9 @@ export function memCreate(input: {
     store_confirmed_by: null,
     ai_summary: input.ai_summary ?? null,
     ai_raw: input.ai_raw ?? null,
+    quality_hold_until: null,
+    quality_hold_started_at: null,
+    repair_eta_at: null,
     created_at: now,
     updated_at: now,
     stores: {
@@ -1165,10 +1177,17 @@ export function memUpdateStatus(
   if (nextStatus === 'resolved') {
     ticket.resolved_at = ticket.updated_at
     if (resolutionNote?.trim()) ticket.resolution_note = resolutionNote.trim()
+    // B03 — start 30-day quality hold on resolve
+    ticket.quality_hold_started_at = ticket.updated_at
+    const holdUntil = new Date(ticket.updated_at)
+    holdUntil.setUTCDate(holdUntil.getUTCDate() + 30)
+    ticket.quality_hold_until = holdUntil.toISOString()
   }
   if (nextStatus === 'closed') ticket.closed_at = ticket.updated_at
   if (nextStatus === 'in_progress' && from === 'resolved') {
     ticket.resolved_at = null
+    ticket.quality_hold_until = null
+    ticket.quality_hold_started_at = null
   }
   ticket.events.push({
     id: `${id}-ev-${ticket.events.length + 1}`,
@@ -1268,6 +1287,7 @@ export function memAddMessage(
     body: string | null
     media_url?: string | null
     wa_message_id?: string | null
+    proof_role?: string | null
   },
 ) {
   const ticket = store().tickets.get(ticketId)
@@ -1279,11 +1299,33 @@ export function memAddMessage(
     direction: msg.direction,
     body: msg.body,
     media_url: msg.media_url ?? null,
+    proof_role: msg.proof_role ?? null,
     created_at: new Date().toISOString(),
   }
   ticket.messages.push(row)
   ticket.updated_at = row.created_at
   return row
+}
+
+export function memSetRepairEta(
+  ticketId: string,
+  etaAt: string | null,
+  actorId: string | null = null,
+): MemTicket {
+  const ticket = store().tickets.get(ticketId)
+  if (!ticket) throw new Error('תקלה לא נמצאה')
+  const previous = ticket.repair_eta_at ?? null
+  ticket.repair_eta_at = etaAt
+  ticket.updated_at = new Date().toISOString()
+  ticket.events.push({
+    id: `${ticketId}-ev-${ticket.events.length + 1}`,
+    ticket_id: ticketId,
+    event_type: 'repair_eta_set',
+    actor_id: actorId,
+    payload: { from: previous, to: etaAt },
+    created_at: ticket.updated_at,
+  })
+  return ticket
 }
 
 export function memGetSession(waId: string): MemSession | undefined {
