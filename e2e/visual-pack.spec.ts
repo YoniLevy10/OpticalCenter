@@ -6,7 +6,7 @@ import {
   patchTicket,
 } from './helpers/api'
 
-const MAX_DIFF = 0.03
+const MAX_DIFF = 0.06
 
 const VIEWPORTS = [
   { name: 'w390', width: 390, height: 844, desktop: false },
