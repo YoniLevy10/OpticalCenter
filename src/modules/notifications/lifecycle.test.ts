@@ -55,6 +55,7 @@ describe('buildLifecycleMessage resolved (WA-primary)', () => {
       enhance: false,
     })
     expect(text).toMatch(/מאשר|אשר תיקון/)
+    expect(text).toMatch(/לא נפתר/)
     expect(text).toContain(`/store/tickets/${ticket.id}`)
     expect(text).toMatch(/גיבוי/)
   })

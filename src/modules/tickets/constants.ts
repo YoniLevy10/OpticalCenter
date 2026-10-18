@@ -104,6 +104,7 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   hq_note: 'הערת מוקד',
   tech_photo: 'תמונת טכנאי',
   store_confirmed: 'אישור חנות',
+  store_rejected: 'החנות דיווחה שלא נפתר',
   partner_dispatched: 'שיגור לספק',
   lifecycle_nudge: 'תזכורת מחזור',
   resolve_override: 'סגירה ללא הוכחה (חריגה)',

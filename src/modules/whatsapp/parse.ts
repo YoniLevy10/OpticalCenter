@@ -71,7 +71,9 @@ export function parseWhatsAppWebhook(body: unknown): InboundMessage[] {
                   ? 'לבקש מידע'
                   : buttonId?.startsWith('store_confirm:')
                     ? 'מאשר'
-                    : msg.interactive?.button_reply?.title?.trim() || null
+                    : buttonId?.startsWith('store_reject:')
+                      ? 'לא נפתר'
+                      : msg.interactive?.button_reply?.title?.trim() || null
           if (!text && !buttonId) continue
           out.push({
             messageId: msg.id,

@@ -59,18 +59,29 @@ type GraphErrorBody = {
   }
 }
 
+/** True when Meta rejects free-form / interactive send outside the 24h care window. */
+export function isWhatsAppOutsideWindowError(
+  error?: string | null,
+  errorCode?: number | null,
+  errorSubcode?: number | null,
+): boolean {
+  if (
+    errorCode === 131047 ||
+    errorCode === 131026 ||
+    errorSubcode === 2018034
+  ) {
+    return true
+  }
+  return Boolean(error && /24|חלון|template|outside.*window/i.test(error))
+}
+
 function hebrewGraphError(json: GraphErrorBody, status: number): string {
   const code = json.error?.code
   const sub = json.error?.error_subcode
   const msg = json.error?.message || `Graph API ${status}`
 
   // Outside 24h customer-care window / template required
-  if (
-    code === 131047 ||
-    code === 131026 ||
-    sub === 2018034 ||
-    /24\s*hour|outside.*window|template/i.test(msg)
-  ) {
+  if (isWhatsAppOutsideWindowError(msg, code, sub)) {
     return (
       'חלון 24 השעות של WhatsApp פג — נדרשת הודעת תבנית (template) מאושרת. ' +
       `(${msg})`
