@@ -7,7 +7,11 @@ import {
   listTasks,
 } from '@/lib/data/ops-ledger'
 import { ISRAEL_STORES } from '@/modules/stores/israel-stores'
-import { isDocumentOverdue } from '@/modules/documents/rules'
+import {
+  documentTypeLabel,
+  isDocumentDueSoon,
+  isDocumentOverdue,
+} from '@/modules/documents/rules'
 import { invoiceVariance } from '@/modules/spend/policy'
 import type { Locale } from '@/lib/i18n/locale'
 import { phrase } from '@/lib/i18n/phrases'
@@ -42,19 +46,23 @@ export function ledgerDecisions(now = new Date(), locale: Locale = 'he'): Decisi
   }
 
   for (const doc of listDocuments()) {
-    if (!isDocumentOverdue(doc, now) && doc.intakeStatus !== 'needs_review') continue
+    const overdue = isDocumentOverdue(doc, now)
+    const dueSoon = isDocumentDueSoon(doc, now)
+    if (!overdue && !dueSoon && doc.intakeStatus !== 'needs_review') continue
     items.push({
       id: `doc:${doc.id}`,
       kind: 'document',
-      title: doc.docType,
+      title: documentTypeLabel(doc.docType),
       storeCode: doc.storeCode,
       storeName: doc.storeName,
       owner: doc.owner || phrase(locale, 'לא הוגדר'),
-      urgency: isDocumentOverdue(doc, now) ? 'overdue' : 'today',
+      urgency: overdue ? 'overdue' : 'today',
       action:
         doc.intakeStatus === 'needs_review'
           ? phrase(locale, 'לבדוק מסמך')
-          : phrase(locale, 'לחדש מסמך'),
+          : dueSoon && !overdue
+            ? 'תזכורת חודש מראש'
+            : phrase(locale, 'לחדש מסמך'),
       href: '/ops/documents',
     })
   }

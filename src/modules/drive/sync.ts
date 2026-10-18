@@ -7,7 +7,7 @@ import {
   type DriveSyncState,
 } from '@/lib/data/ops-ledger'
 import type { StoreDocument } from '@/modules/documents/rules'
-import { DOCUMENT_TYPES } from '@/modules/documents/rules'
+import { documentTypeLabel } from '@/modules/documents/rules'
 import { markSourceDeleted, runIngestPipeline, type IngestedFile } from '@/modules/ingestion/pipeline'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
 import { expiryFromText } from './import'
@@ -66,6 +66,9 @@ const SHORT_TYPE: Record<string, string> = {
   fire: 'כיבוי',
   electrical: 'חשמל',
   hearing: 'שמיעה',
+  hearing_a: 'כיול-א',
+  hearing_b: 'כיול-ב',
+  hearing_c: 'כיול-ג',
 }
 
 export function resolveStoreCode(input: {
@@ -111,7 +114,7 @@ export function mirrorFolderName(storeCode: string, storeName: string): string {
 }
 
 export function documentMirrorText(doc: StoreDocument): string {
-  const type = DOCUMENT_TYPES.find((row) => row.key === doc.docType)?.label ?? doc.docType
+  const type = documentTypeLabel(doc.docType)
   const expiry = doc.extractedExpiry ? doc.extractedExpiry.slice(0, 10) : ''
   return [
     `סניף ${doc.storeCode} ${doc.storeName}`.trim(),

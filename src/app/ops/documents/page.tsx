@@ -8,7 +8,14 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listDocuments, listFiles, getDriveSync } from '@/lib/data/ops-ledger'
 import { hydrateOpsLedger } from '@/lib/data/ops-db'
-import { DOCUMENT_TYPES, documentClock, isDocumentOverdue } from '@/modules/documents/rules'
+import {
+  documentClock,
+  documentTypeLabel,
+  isDocumentDueSoon,
+  isDocumentOverdue,
+  isHearingCalibrationType,
+  selectableDocumentTypes,
+} from '@/modules/documents/rules'
 import { driveCanWrite, driveFolderUrl } from '@/modules/drive/folder'
 import { addDocumentAction, ingestFileAction, renewDocumentAction } from '../work-actions'
 import { DriveImportForm } from './drive-import-form'
@@ -82,13 +89,17 @@ export default async function DocumentsPage() {
             </Field>
             <Field label="סוג מסמך" htmlFor="doc-type">
               <select id="doc-type" name="docType" className="h-11 rounded-md border border-border bg-surface px-2">
-                {DOCUMENT_TYPES.map((type) => (
+                {selectableDocumentTypes().map((type) => (
                   <option key={type.key} value={type.key}>
                     {type.label}
+                    {type.hearingCalibration ? ' · כיול שמיעה' : ''}
                   </option>
                 ))}
               </select>
             </Field>
+            <p className="t-meta text-ink-2">
+              כיולי שמיעה: כיול א · כיול ב · כיול ג — תזכורת חודש לפני תוקף.
+            </p>
             <Button type="submit">שמירת מסמך</Button>
           </form>
         </Panel>
@@ -103,12 +114,14 @@ export default async function DocumentsPage() {
           documents.map((doc) => (
             <Panel key={doc.id} elevated>
               <p className="t-body">
-                {doc.storeCode || 'בלי סניף'} · {DOCUMENT_TYPES.find((type) => type.key === doc.docType)?.label ?? doc.docType} · גרסה {doc.version}
+                {doc.storeCode || 'בלי סניף'} · {documentTypeLabel(doc.docType)} · גרסה {doc.version}
+                {isHearingCalibrationType(doc.docType) ? ' · כיול שמיעה' : ''}
               </p>
               <p className="t-meta text-ink-2">
                 {FILE_STATUS[doc.intakeStatus]}
                 {doc.intakeReason ? ` · ${doc.intakeReason}` : ''} · {CLOCK[documentClock(doc)]}
                 {isDocumentOverdue(doc) ? ' · באיחור' : ''}
+                {!isDocumentOverdue(doc) && isDocumentDueSoon(doc) ? ' · תזכורת חודש מראש' : ''}
                 {doc.renewed ? ' · הוחלף' : ''}
               </p>
               {doc.sourceUrl ? (
