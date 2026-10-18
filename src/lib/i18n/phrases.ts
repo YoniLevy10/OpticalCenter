@@ -371,6 +371,79 @@ const PHRASES: Record<string, { en: string; fr: string }> = {
   משויך: { en: 'Assigned', fr: 'Affecté' },
   החל: { en: 'Apply', fr: 'Appliquer' },
   'מיון: מהחדש לישן': { en: 'Sort: newest first', fr: 'Tri : plus récent d’abord' },
+  'סננו חנות ואז סמנו תקלות לביקור משולב': {
+    en: 'Filter by store, then select tickets for a combined visit',
+    fr: 'Filtrez par magasin, puis sélectionnez les tickets pour une visite combinée',
+  },
+  'ממתינה לאישור חנות': {
+    en: 'Awaiting store confirmation',
+    fr: 'En attente de confirmation magasin',
+  },
+  'סיכום טיפול': {
+    en: 'Treatment summary',
+    fr: 'Résumé du traitement',
+  },
+  'מה בוצע בשטח — יוצג לחנות ולארי לפני אישור סגירה': {
+    en: 'What was done on site — shown to the store and Ari before close approval',
+    fr: 'Ce qui a été fait sur place — visible magasin et Ari avant clôture',
+  },
+  'לדוגמה: הוחלף פילטר, נבדק זרימה, אין נזילה': {
+    en: 'e.g. filter replaced, flow checked, no leak',
+    fr: 'ex. filtre remplacé, débit vérifié, pas de fuite',
+  },
+  'הוכחת ביצוע (תמונה או וידאו)': {
+    en: 'Proof of work (photo or video)',
+    fr: 'Preuve (photo ou vidéo)',
+  },
+  'חובה לפני שליחה לאישור החנות': {
+    en: 'Required before sending for store approval',
+    fr: 'Obligatoire avant envoi pour validation magasin',
+  },
+  'שלח לאישור החנות': {
+    en: 'Send for store approval',
+    fr: 'Envoyer pour validation magasin',
+  },
+  'נשלח לאישור החנות': {
+    en: 'Sent for store approval',
+    fr: 'Envoyé pour validation magasin',
+  },
+  'החנות תאשר ב־WhatsApp. הסטטוס עדיין לא «נסגר».': {
+    en: 'The store will confirm on WhatsApp. Status is not “closed” yet.',
+    fr: 'Le magasin confirmera via WhatsApp. Statut pas encore « fermé ».',
+  },
+  'סיום עבודה': { en: 'Finish job', fr: 'Terminer le travail' },
+  'סיכום טיפול + הוכחה — ואז שליחה לאישור החנות': {
+    en: 'Treatment summary + proof — then send for store approval',
+    fr: 'Résumé + preuve — puis envoi pour validation magasin',
+  },
+  'סיימתי · שלח לאישור': {
+    en: 'Done · send for approval',
+    fr: 'Terminé · envoyer pour validation',
+  },
+  'בחירת קובץ מהמצלמה או מהגלריה': {
+    en: 'Choose a file from camera or gallery',
+    fr: 'Choisir un fichier (caméra ou galerie)',
+  },
+  'עדיין אין הוכחת ביצוע': {
+    en: 'No proof attached yet',
+    fr: 'Pas encore de preuve',
+  },
+  'בסיום — צרפו תמונה או וידאו יחד עם סיכום הטיפול.': {
+    en: 'When finishing — attach a photo or video with the treatment summary.',
+    fr: 'À la fin — joignez une photo/vidéo avec le résumé du traitement.',
+  },
+  'אין הרשאה לעבודה זו': {
+    en: 'No permission for this job',
+    fr: 'Pas d’autorisation pour ce travail',
+  },
+  'העבודה משויכת לטכנאי אחר, או שאין לכם גישה.': {
+    en: 'This job is assigned to another tech, or you lack access.',
+    fr: 'Travail assigné à un autre tech, ou accès refusé.',
+  },
+  'החנות אישרה · התקלה נסגרה': {
+    en: 'Store confirmed · ticket closed',
+    fr: 'Magasin confirmé · ticket fermé',
+  },
   'שגיאה בטעינה': { en: 'Could not load', fr: 'Échec du chargement' },
   'אין תקלות שהסתיימו עדיין': { en: 'No closed faults yet', fr: 'Aucune panne terminée pour l’instant' },
   'אין תקלות פתוחות 🎉': { en: 'No open faults', fr: 'Aucune panne ouverte' },

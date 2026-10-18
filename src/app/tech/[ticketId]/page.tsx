@@ -4,7 +4,7 @@ import { TechShell } from '@/components/layout/tech-shell'
 import { RefreshButton } from '@/components/layout/refresh-button'
 import { techHref } from '@/lib/tech-href'
 import { TechTicketActions } from '@/app/tech/[ticketId]/tech-ticket-actions'
-import { Panel, ErrorState } from '@/components/ui/primitives'
+import { Panel, ErrorState, EmptyState } from '@/components/ui/primitives'
 import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import type { TicketStatus } from '@/modules/tickets/constants'
@@ -23,8 +23,29 @@ import {
   actorCanOpenTechTicket,
 } from '@/lib/auth/ticket-scope'
 import { storeLabel } from '@/components/ops/plain-labels'
+import { TECH_COMPLETION } from '@/modules/tech/completion-copy'
 
 export const dynamic = 'force-dynamic'
+
+function treatmentFromEvents(
+  events: { event_type: string; payload: unknown }[] | undefined,
+): string | null {
+  if (!events?.length) return null
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    const e = events[i]
+    if (e.event_type !== 'tech_note') continue
+    const payload = (e.payload ?? {}) as {
+      resolution_note?: string
+      note?: string
+      to_status?: string
+    }
+    const text = (payload.resolution_note ?? payload.note)?.trim()
+    if (text && (payload.to_status === 'resolved' || payload.resolution_note)) {
+      return text
+    }
+  }
+  return null
+}
 
 export default async function TechTicketDetailPage({
   params,
@@ -77,7 +98,20 @@ export default async function TechTicketDetailPage({
     : false
   const openedByHq = actor ? actorCanAccessTicket(actor, full) : false
   if (!openedByTech && !openedByHq && !(!actor && shouldAllowDemoEntry())) {
-    notFound()
+    return (
+      <TechShell
+        title="עבודה"
+        backHref={techHref('/tech', techId)}
+        enablePullToRefresh
+        headerActions={<RefreshButton label="רענון" />}
+      >
+        <ErrorState
+          title="אין הרשאה לעבודה זו"
+          description="העבודה משויכת לטכנאי אחר, או שאין לכם גישה."
+          action={<RefreshButton label="רענון" />}
+        />
+      </TechShell>
+    )
   }
 
   const fullTicket = await getById(ticketId).catch(() => null)
@@ -88,6 +122,10 @@ export default async function TechTicketDetailPage({
   const address = [ticket.stores?.address, ticket.stores?.city]
     .filter(Boolean)
     .join(', ')
+  const treatment = treatmentFromEvents(fullTicket?.events)
+  const num =
+    ticket.display_number ||
+    (ticket.number != null ? `OC-${ticket.number}` : null)
 
   return (
     <TechShell
@@ -104,9 +142,16 @@ export default async function TechTicketDetailPage({
         />
       }
     >
-      <div className="space-y-4 stagger">
+      <div className="space-y-4">
         <Panel elevated>
-          <StatusLabel status={ticket.status as TicketStatus} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusLabel status={ticket.status as TicketStatus} />
+            {num ? (
+              <span className="t-num t-caption text-ink-3" data-live="ticket-no">
+                {num}
+              </span>
+            ) : null}
+          </div>
           <p className="t-lead mt-4 whitespace-pre-wrap leading-relaxed text-ink">
             {ticket.description || ticket.title || 'ללא תיאור'}
           </p>
@@ -118,10 +163,26 @@ export default async function TechTicketDetailPage({
           ) : null}
         </Panel>
 
+        {treatment ? (
+          <Panel elevated>
+            <p className="t-section mb-2 text-ink">
+              {TECH_COMPLETION.treatmentLabel}
+            </p>
+            <p className="t-body whitespace-pre-wrap text-ink-2">{treatment}</p>
+          </Panel>
+        ) : null}
+
         {attachments.length > 0 ? (
           <Panel elevated>
             <p className="t-section mb-3 text-ink">תיעוד</p>
             <EvidenceGrid attachments={attachments} />
+          </Panel>
+        ) : ticket.status === 'in_progress' ? (
+          <Panel elevated>
+            <EmptyState
+              title="עדיין אין הוכחת ביצוע"
+              description="בסיום — צרפו תמונה או וידאו יחד עם סיכום הטיפול."
+            />
           </Panel>
         ) : null}
       </div>
