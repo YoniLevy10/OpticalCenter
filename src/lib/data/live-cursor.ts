@@ -7,9 +7,9 @@ import {
 } from '@/lib/data/ops-ledger'
 import {
   memGetSettings,
-  memInboxFingerprint,
   memListAssets,
   memListDispatches,
+  memListInboxMessages,
   memListProfessionals,
   memListSessions,
   memListStores,
@@ -77,7 +77,14 @@ export function internalLiveCursor(): string {
       spends,
       tasks,
       documents,
-      memInboxFingerprint(),
+      memListSessions()
+        .map((session) => {
+          const messages = memListInboxMessages(session.wa_id)
+          const last = messages.at(-1)
+          return `${session.wa_id}:${messages.length}:${last?.id ?? ''}:${last?.created_at ?? ''}`
+        })
+        .sort()
+        .join('\n'),
       memListDispatches()
         .map((row) => `${row.id}:${row.status}:${row.updated_at}`)
         .sort()

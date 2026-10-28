@@ -521,14 +521,14 @@ export function spendForTicket(ticketId: string): SpendRequest | null {
 
 /** All non-rejected spends linked to a ticket (for true-cost rollups). */
 export function spendsForTicket(ticketId: string): SpendRequest[] {
-  return ledger.spends.filter(
+  return opsLedger().spends.filter(
     (row) => row.ticketId === ticketId && row.status !== 'rejected',
   )
 }
 
 /** All non-rejected spends linked to an asset. */
 export function spendsForAsset(assetId: string): SpendRequest[] {
-  return ledger.spends.filter(
+  return opsLedger().spends.filter(
     (row) => row.assetId === assetId && row.status !== 'rejected',
   )
 }

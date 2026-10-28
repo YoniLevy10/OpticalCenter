@@ -11,7 +11,6 @@ import type { TicketStatus } from '@/modules/tickets/constants'
 import { fetchTechTicket, isTicketRef } from '@/modules/tickets/tech'
 import { getById } from '@/modules/tickets/service'
 import { fetchTicketAttachments, mergeEvidence } from '@/modules/tickets/attachments'
-import { hasBeforeEvidence } from '@/modules/tickets/proof'
 import {
   getServerActor,
   resolveServerTechId,
@@ -121,13 +120,6 @@ export default async function TechTicketDetailPage({
     [...(ticket.attachments ?? []), ...storedAttachments],
     fullTicket?.messages ?? [],
   )
-  const hasIntakePhoto = hasBeforeEvidence(
-    attachments,
-    (fullTicket?.messages ?? []).map((message) => ({
-      url: message.media_url,
-      kind: message.kind,
-    })),
-  )
   const address = [ticket.stores?.address, ticket.stores?.city]
     .filter(Boolean)
     .join(', ')
@@ -148,7 +140,6 @@ export default async function TechTicketDetailPage({
           techId={techId}
           status={ticket.status}
           assignedTo={ticket.assigned_to}
-          hasIntakePhoto={hasIntakePhoto}
         />
       }
     >

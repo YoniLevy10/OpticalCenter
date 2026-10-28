@@ -17,7 +17,15 @@ import { getStoreByCode } from '@/modules/stores/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { listTickets } from '@/modules/tickets/service'
-import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
+import { OPEN_TICKET_STATUSES, TICKET_CATEGORY_LABELS_HE } from '@/modules/tickets/constants'
+import { listAssets } from '@/modules/assets/service'
+import { findRecurrences, type HistoryTicket } from '@/modules/tickets/recurrence'
+import {
+  countedApprovedAmount,
+  countedPendingAmount,
+  formatShekels,
+  summarizeAssetSpend,
+} from '@/modules/spend/asset-cost'
 import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
 import { StoreDirectoryPanel } from '../store-directory-panel'
@@ -30,6 +38,7 @@ import {
   listAudits,
   listContactsForStore,
   listDocuments,
+  listSpends,
   spendForTicket,
 } from '@/lib/data/ops-ledger'
 import { executionBlockReason } from '@/modules/spend/policy'
@@ -107,6 +116,66 @@ export default async function StoreDetailPage({
   const openTickets = tickets.filter((t) => t.store_id === store.id)
   const openCount = openTickets.length
   const recent = openTickets.slice(0, 12)
+  const historyResult = await listTickets({
+    storeCode: store.code,
+    limit: 80,
+  }).catch(() => ({ tickets: [] as typeof tickets }))
+  const storeTickets = historyResult.tickets.filter(
+    (t) => t.store_id === store.id || t.stores?.code === store.code,
+  )
+  const history: HistoryTicket[] = storeTickets.map((ticket) => ({
+    id: ticket.id,
+    storeId: ticket.store_id,
+    category: ticket.category,
+    assetId: ticket.asset_id ?? null,
+    description: ticket.description,
+    status: ticket.status,
+    createdAt: ticket.created_at,
+    resolvedAt: ticket.resolved_at ?? null,
+  }))
+  const seenRepeats = new Set<string>()
+  const repeatRows: { id: string; title: string; category: string; count: number }[] = []
+  for (const ticket of storeTickets) {
+    const current = history.find((row) => row.id === ticket.id)
+    if (!current) continue
+    const hits = findRecurrences(current, history)
+    if (hits.length === 0) continue
+    const key = `${ticket.category}:${ticket.asset_id ?? ''}`
+    if (seenRepeats.has(key)) continue
+    seenRepeats.add(key)
+    repeatRows.push({
+      id: ticket.id,
+      title: ticket.title || ticket.description,
+      category: TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category,
+      count: hits.length,
+    })
+  }
+  const storeSpends = listSpends().filter((spend) => spend.storeCode === store.code)
+  const approvedSpend = storeSpends.reduce(
+    (sum, spend) => sum + (countedApprovedAmount(spend) ?? 0),
+    0,
+  )
+  const pendingSpend = storeSpends.reduce(
+    (sum, spend) => sum + (countedPendingAmount(spend) ?? 0),
+    0,
+  )
+  const { assets: allAssets } = await listAssets().catch(() => ({
+    assets: [] as Awaited<ReturnType<typeof listAssets>>['assets'],
+  }))
+  const storeAssets = allAssets.filter(
+    (asset) => asset.store_id === store.id || asset.store_code === store.code,
+  )
+  const assetLines = storeAssets.map((asset) => {
+    const cost = summarizeAssetSpend(
+      storeSpends,
+      history.map((row) => ({ id: row.id, assetId: row.assetId })),
+      asset.id,
+    )
+    const repeats = history.filter(
+      (row) => row.assetId === asset.id && findRecurrences(row, history).length > 0,
+    ).length
+    return { asset, cost, repeats }
+  })
 
   return (
     <OpsAppShell>
