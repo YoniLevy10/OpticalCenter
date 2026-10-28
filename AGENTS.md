@@ -62,11 +62,16 @@ docker compose -f docker-compose.base44.yml exec -T web npx vitest run src/lib/p
 Playwright (`npm run test:e2e`) is **not** runnable here without
 `npx playwright install --with-deps chromium`; it also builds for `next start`.
 
+## Gotcha fixed here
+
+- `public/favicon.ico` and `src/app/favicon.ico` were byte-identical duplicates,
+  so Next raised "A conflicting public file and page file was found for path
+  /favicon.ico" and served it as 500. The app-router copy was removed;
+  `public/favicon.ico` is the one `src/app/layout.tsx` metadata references, so
+  keep it if icons are reworked.
+
 ## Known pre-existing noise
 
-- `A conflicting public file and page file was found for path /favicon.ico`
-  (`public/favicon.ico` + `src/app/favicon.ico`) — harmless, favicon returns 500
-  in dev only.
 - Sentry logs "Failed to register diagnostics-channel injection hooks" because
   no DSN is configured. Harmless.
 
