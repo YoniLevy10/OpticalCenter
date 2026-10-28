@@ -1,0 +1,63 @@
+# Base44 sandbox development stack for MILO (Next.js 15).
+#
+# Runs the cloned source with the Next dev server (live reload) on host port 3000.
+# No external services are required: the app runs with its documented in-memory
+# demo backend (MAINTAINOS_FORCE_MEMORY=1), the same configuration its CI and
+# Playwright suite use. Data lives in the Node process and resets on restart.
+#
+# Real WhatsApp / Google Drive / SMS / Supabase credentials are optional
+# integrations — see .env.example and docs/DEPLOYMENT.md.
+
+services:
+  web:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    labels:
+      base44.project: MILO
+      base44.kind: web
+      base44.port: "3000"
+    command:
+      - sh
+      - -ec
+      - |
+        CI=true npm ci --no-audit --no-fund
+        exec npm run dev -- -H 0.0.0.0 -p 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      # Bind-mount friendly file watching
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      # Documented local demo backend: in-memory data + demo actor cookie.
+      - MAINTAINOS_FORCE_MEMORY=${MAINTAINOS_FORCE_MEMORY:-1}
+      - MAINTAINOS_ALLOW_TEST_AUTH=${MAINTAINOS_ALLOW_TEST_AUTH:-1}
+      - DEMO_TECH_ID=11111111-1111-4111-8111-111111111111
+      # Public origin of this preview (variable reference, never a literal host).
+      - NEXT_PUBLIC_APP_URL=https://3000-${BASE44_PUBLIC_HOST_SUFFIX}
+      # Sandbox / preview host allowlists (see next.config.ts gate).
+      - BASE44_PREVIEW_MODE
+      - BASE44_PUBLIC_HOST_SUFFIX
+      - BASE44_SANDBOX_HOST_DOMAIN
+    restart: on-failure
+    healthcheck:
+      # Probes the app's own /api/health route (returns the active backend).
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          fetch('http://127.0.0.1:3000/api/health')
+            .then((r) => process.exit(r.ok ? 0 : 1))
+            .catch(() => process.exit(1))
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 300s
+
+volumes:
+  node_modules:
