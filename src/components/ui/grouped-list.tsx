@@ -24,7 +24,7 @@ export function GroupedSection({
       {title ? (
         <h2 className="t-caption px-4 text-ink-3 md:px-1">{p(title)}</h2>
       ) : null}
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/80 bg-surface">
+      <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
         <div className="divide-y divide-border">{children}</div>
       </div>
       {footer ? (

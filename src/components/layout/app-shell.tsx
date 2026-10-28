@@ -28,19 +28,15 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import {
-  sectionChipClass,
-  sectionIconClass,
-  sectionMark,
-} from '@/components/ops/section-palette'
 import type { NavTool } from '@/lib/auth/nav-access'
 import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
 import { SideDrawer } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SkipLink } from '@/components/layout/skip-link'
+import { LiveSync } from '@/components/layout/live-sync'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
-import { ThemeToggleOnDark } from '@/components/theme/theme-toggle'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
 import { LargeTitleScrollSync } from '@/components/ops/large-title'
 import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
@@ -139,7 +135,7 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
       },
       {
         href: '/ops/pilot',
-        label: 'פיילוט',
+        label: 'ROI',
         icon: Activity,
         match: '/ops/pilot',
       },
@@ -244,17 +240,13 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
-        active ? 'text-ink' : 'text-ink-2',
+        'sidebar-nav-link relative flex h-8 items-center gap-2 rounded-lg px-2 text-sm transition-colors',
+        active
+          ? 'font-medium text-sidebar-accent-foreground'
+          : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
       )}
     >
-      <Icon
-        className={cn(
-          'h-4 w-4 shrink-0',
-          active ? 'text-[var(--tenant)]' : 'text-ink-3',
-        )}
-        aria-hidden
-      />
+      <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
       <NavText href={item.href} fallback={item.label} />
     </Link>
   )
@@ -271,7 +263,6 @@ function DrawerNavLink({
 }) {
   const active = isActive(pathname, item.match)
   const Icon = item.icon
-  const mark = sectionMark(item.href)
 
   return (
     <Link
@@ -279,20 +270,13 @@ function DrawerNavLink({
       aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
       className={cn(
-        't-body flex min-h-[var(--tap)] items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors',
+        'flex min-h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
         active
-          ? 'bg-[var(--tenant-soft)] font-medium text-[var(--tenant)]'
-          : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
+          ? 'bg-accent font-medium text-accent-foreground'
+          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
       )}
     >
-      <span
-        className={cn(
-          'flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-          sectionChipClass[mark],
-        )}
-      >
-        <Icon className={cn('h-4 w-4', sectionIconClass[mark])} aria-hidden />
-      </span>
+      <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
       <NavText href={item.href} fallback={item.label} />
     </Link>
   )
@@ -313,8 +297,8 @@ function pageTitle(
 function TenantMark() {
   return (
     <BrandMark
-      size={36}
-      className="h-9 w-9 rounded-[var(--radius-md)] shadow-[var(--shadow-1)]"
+      size={28}
+      className="h-7 w-7 rounded-md"
       alt=""
     />
   )
@@ -338,33 +322,26 @@ export function AppShell({
   return (
     <div className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden">
       <SkipLink />
+      <LiveSync />
       <LargeTitleScrollSync />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label={p('תפריט צד')}
-        className="apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e border-border/80 text-ink start-0 md:flex"
+        className="apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e text-sidebar-foreground start-0 md:flex"
         style={{ width: 'var(--nav-w)' }}
       >
-        <div
-          className="border-b border-border/70 px-5"
-          style={{ height: 'var(--topbar-h)' }}
-        >
+        <div className="flex h-14 items-center px-4">
           <Link
             href="/ops/dashboard"
-            className="flex h-full items-center gap-2.5 rounded-[var(--radius-md)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+            className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <TenantMark />
-            <div className="min-w-0">
-              <p className="t-body-strong truncate text-ink">MILO</p>
-              <p className="t-caption truncate text-ink-3">
-                {t('nav.tenant')}
-              </p>
-            </div>
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">MILO</p>
           </Link>
         </div>
 
-        <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-ink-3">{t('nav.control')}</p>
+        <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-2 pb-4">
+          <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{t('nav.control')}</p>
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
@@ -374,8 +351,8 @@ export function AppShell({
           </ul>
 
           {toolGroups.map((group) => (
-            <div key={group.label} className="mt-6">
-              <p className="t-caption mb-2 px-2.5 text-ink-3">
+            <div key={group.label} className="mt-5">
+              <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">
                 {group.label === 'מערכת' ? t('nav.system') : t('nav.operations')}
               </p>
               <ul className="flex flex-col gap-1">
@@ -389,32 +366,21 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="border-t border-border/70 p-3">
-          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
-            <span className="t-caption text-ink-3">{t('nav.language')}</span>
-            <LocaleSwitcher tone="onDark" />
+        <div className="border-t p-2">
+          <div className="flex items-center gap-2 rounded-lg px-2 py-2">
+            <TenantMark />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-sidebar-foreground">
+                {t('nav.tenant')}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
-            <span className="t-caption text-ink-3">{t('nav.theme')}</span>
-            <ThemeToggleOnDark />
-          </div>
-          <div className="px-2.5">
-            <LogoutButton className="w-full justify-start px-0 text-ink-2 hover:text-ink" />
-          </div>
-          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
-            />
-            <span className="t-caption truncate text-ink-3">
-              {t('nav.tenant')}
-            </span>
-          </div>
+          <LogoutButton className="w-full justify-start" />
         </div>
       </aside>
 
       {/* ---------- Mobile top bar ---------- */}
-      <header className="apple-glass safe-pt z-30 shrink-0 border-b border-white/50 md:hidden">
+      <header className="apple-glass safe-pt z-30 shrink-0 border-b border-border md:hidden">
         <div
           className="flex items-center gap-2.5 px-4"
           style={{ height: 'var(--topbar-h)' }}
@@ -451,11 +417,21 @@ export function AppShell({
       {/* ---------- Content ---------- */}
       <div
         className={cn(
-          'flex min-h-0 min-w-0 flex-1 flex-col md:block md:ps-[var(--nav-w)]',
+          'flex min-h-0 min-w-0 flex-1 flex-col md:ps-[var(--nav-w)]',
           !fillMain &&
             'max-md:pb-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b))]',
         )}
       >
+        <header className="sticky top-0 z-20 hidden h-12 shrink-0 items-center justify-between gap-3 border-b bg-background px-4 md:flex">
+          <p className="truncate text-sm font-medium text-foreground">
+            {pageTitle(pathname, t)}
+          </p>
+          <div className="flex items-center gap-2">
+            <SystemStatusBanner compact />
+            <LocaleSwitcher />
+            <ThemeToggle compact />
+          </div>
+        </header>
         <PullToRefresh
           disabled={fillMain}
           className={cn(
@@ -470,12 +446,9 @@ export function AppShell({
               'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
               fillMain
                 ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
-                : 'scroll-edge-fade min-h-0 flex-1 overflow-y-auto overscroll-y-auto px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
+                : 'min-h-0 flex-1 overflow-y-auto overscroll-y-auto px-4 pt-4 pb-nav md:overflow-visible md:px-6 md:pt-4',
             )}
           >
-            <div className="mb-4 hidden justify-end md:flex">
-              <SystemStatusBanner compact />
-            </div>
             {children}
           </main>
         </PullToRefresh>
@@ -484,13 +457,10 @@ export function AppShell({
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
         aria-label={p('ניווט תחתון')}
-        className="fixed inset-x-3 z-30 md:hidden"
-        style={{ bottom: 'calc(var(--safe-b) + var(--bottomnav-gap))' }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden"
+        style={{ paddingBottom: 'var(--safe-b)' }}
       >
-        <ul
-          className="apple-glass flex overflow-hidden rounded-[28px]"
-          style={{ height: 'var(--bottomnav-h)' }}
-        >
+        <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
           {PRIMARY.map((item) => {
             const active = isActive(pathname, item.match)
             const Icon = item.icon

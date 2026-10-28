@@ -11,7 +11,7 @@ type Props = {
   businessPhone?: string | null
   label?: string
   className?: string
-  size?: 'sm' | 'default'
+  size?: 'sm' | 'default' | 'block'
   variant?: 'primary' | 'secondary'
 }
 
@@ -42,7 +42,7 @@ export function WhatsAppShareButton({
     <Button
       type="button"
       variant={variant}
-      size={size === 'sm' ? 'sm' : undefined}
+      size={size === 'sm' ? 'sm' : size === 'block' ? 'block' : undefined}
       className={cn(className)}
       onClick={() => void onClick()}
     >

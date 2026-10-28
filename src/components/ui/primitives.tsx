@@ -11,7 +11,7 @@ export function Panel({
   children,
   className,
   flush,
-  elevated,
+  elevated: _elevated,
   ...rest
 }: {
   children: React.ReactNode
@@ -24,8 +24,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border bg-surface',
-        elevated && 'shadow-[var(--shadow-1)]',
+        'rounded-xl border border-border bg-card text-card-foreground shadow-[var(--shadow-1)]',
         !flush && 'p-5',
         className,
       )}
@@ -46,7 +45,7 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex shrink-0 min-h-11 items-center justify-between gap-3 border-b border-border bg-[var(--surface-sunken)] px-4">
+    <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b px-4">
       <div className="flex items-baseline gap-2">
         <h2 className="t-section text-ink">
           <Tx text={title} />
@@ -143,7 +142,10 @@ export function ErrorState({
   action?: React.ReactNode
 }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3">
+    <div
+      role="alert"
+      className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3"
+    >
       <p className="t-body-strong text-[var(--signal-critical)]">
         <Tx text={title} />
       </p>

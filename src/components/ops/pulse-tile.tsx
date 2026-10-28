@@ -6,26 +6,11 @@ import { cn } from '@/lib/utils'
 export type PulseTone = 'neutral' | 'critical' | 'warning' | 'ok'
 export type PulseMark = PulseTone | 'progress'
 
-const toneDot: Record<PulseTone, string> = {
-  critical: 'bg-[var(--signal-critical)]',
-  warning: 'bg-[var(--signal-warning)]',
-  ok: 'bg-[var(--signal-resolved)]',
-  neutral: 'bg-[var(--signal-idle)]',
-}
-
 const toneValue: Record<PulseTone, string> = {
-  critical: 'text-[var(--signal-critical)]',
+  critical: 'text-primary',
   warning: 'text-[var(--signal-warning)]',
-  ok: 'text-ink',
-  neutral: 'text-ink',
-}
-
-const toneChip: Record<PulseMark, string> = {
-  critical: 'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]',
-  warning: 'bg-[var(--signal-warning-soft)] text-[var(--signal-warning)]',
-  ok: 'bg-[var(--signal-resolved-soft)] text-[var(--signal-resolved)]',
-  progress: 'bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
-  neutral: 'bg-[var(--signal-progress-soft)] text-[var(--signal-progress)]',
+  ok: 'text-foreground',
+  neutral: 'text-foreground',
 }
 
 export function PulseTile({
@@ -40,7 +25,7 @@ export function PulseTile({
   value: number | string
   label: string
   tone?: PulseTone
-  /** Kept for call sites. The chip takes color only from a live alert. */
+  /** Kept for call sites. Color comes from a live alert only. */
   mark?: PulseMark
   icon?: LucideIcon
 }) {
@@ -48,45 +33,33 @@ export function PulseTile({
   const quiet = !Number.isFinite(numeric) || numeric === 0
   const shown = quiet ? 'neutral' : tone
   const alert = !quiet && (shown === 'critical' || shown === 'warning')
-  const chip = alert
-    ? toneChip[shown]
-    : 'bg-[var(--tenant-soft)] text-[var(--tenant)]'
   const className = cn(
-    'flex min-h-[5.25rem] flex-col justify-center gap-1 rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3 shadow-[var(--shadow-1)] transition-[background,border-color,box-shadow,transform] duration-[var(--dur-1)]',
-    href &&
-      'group active:opacity-90 md:hover:shadow-[var(--shadow-2)] md:hover:-translate-y-0.5',
+    'flex flex-col gap-3 rounded-xl border border-border bg-card p-5 text-foreground shadow-[var(--shadow-1)] transition-colors',
+    href && 'hover:border-border-strong hover:bg-accent',
   )
 
   const inner = (
     <>
-      <span className="flex items-center gap-2.5">
-        {Icon ? (
-          <span
-            aria-hidden
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]',
-              chip,
-            )}
-          >
-            <Icon className="h-4 w-4" strokeWidth={2} />
-          </span>
-        ) : (
-          <span
-            aria-hidden
-            className={cn('size-2.5 shrink-0 rounded-full', toneDot[shown])}
-          />
-        )}
+      {Icon ? (
+        <span
+          aria-hidden
+          className="flex size-8 items-center justify-center rounded-md bg-muted text-ink-2 shadow-sm"
+        >
+          <Icon className="h-4 w-4" strokeWidth={2} />
+        </span>
+      ) : null}
+      <span className="flex flex-col gap-1">
+        <span className="text-sm text-muted-foreground">
+          <Tx text={label} />
+        </span>
         <span
           className={cn(
-            't-display t-num leading-none tracking-tight',
-            toneValue[shown],
+            'text-3xl font-semibold tabular-nums tracking-tight',
+            alert ? toneValue[shown] : 'text-foreground',
           )}
         >
           {value}
         </span>
-      </span>
-      <span className="t-caption text-ink-2">
-        <Tx text={label} />
       </span>
     </>
   )

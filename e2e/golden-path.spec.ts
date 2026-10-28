@@ -80,7 +80,8 @@ test.describe('Golden Path — WhatsApp → HQ → Tech → Resolve', () => {
     const resolve = await patchTechTicket(request, ticketId, {
       status: 'resolved',
       note: 'הוחלף מדחס / נבדק בשטח',
-      photoUrl: 'https://example.com/qa-photo.jpg',
+      beforePhotoUrl: 'https://example.com/qa-before.jpg',
+      afterPhotoUrl: 'https://example.com/qa-photo.jpg',
     })
     expect(resolve.status).toBe(200)
 

@@ -73,7 +73,7 @@ export function applyThemeClass(dark: boolean) {
   root.dataset.theme = dark ? 'dark' : 'light'
   root.style.colorScheme = dark ? 'dark' : 'light'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', dark ? '#222220' : '#f7f6f2')
+  if (meta) meta.setAttribute('content', dark ? '#101012' : '#e6e2d8')
 }
 
 /** Inline boot script — keep in sync with resolveDark / storage key / hours / TZ. */

@@ -172,6 +172,9 @@ export async function submitSpend(formData: FormData) {
       : `בקשת הוצאה מסניף ${String(formData.get('storeCode') || '')} בלי שם ספק. נדרשת הצעת מחיר לפני אישור.`,
   )
   await refresh('/ops/approvals')
+  const linkedTicket = String(formData.get('ticketId') || '').trim()
+  if (linkedTicket) revalidatePath(`/ops/tickets/${linkedTicket}`)
+  revalidatePath('/ops/assets')
 }
 
 export async function decideSpendAction(formData: FormData) {

@@ -10,6 +10,7 @@ import {
   type SpendStatus,
 } from '@/modules/spend/policy'
 import { proposeSyncedValue } from '@/modules/stores/directory-rules'
+import { BRANCH_CATALOG } from '@/modules/documents/branch-catalog'
 import {
   renewDocument,
   type StoreDocument,
@@ -193,7 +194,12 @@ function seedLedger(): Ledger {
   }
 }
 
-let ledger = seedLedger()
+function opsLedger(): Ledger {
+  const g = globalThis as typeof globalThis & { __maintainosLedger?: Ledger }
+  if (!g.__maintainosLedger) g.__maintainosLedger = seedLedger()
+  return g.__maintainosLedger
+}
+
 ensureTrialSpends()
 
 function trialSpendRows(): SpendRequest[] {
@@ -230,8 +236,8 @@ function trialSpendRows(): SpendRequest[] {
 
 function ensureTrialSpends() {
   for (const row of trialSpendRows()) {
-    if (ledger.spends.some((spend) => spend.id === row.id)) continue
-    ledger.spends.push(row)
+    if (opsLedger().spends.some((spend) => spend.id === row.id)) continue
+    opsLedger().spends.push(row)
   }
 }
 
@@ -255,24 +261,34 @@ function emptyDriveSync(): DriveSyncState {
   }
 }
 
-let driveSync = emptyDriveSync()
+function readDriveSync(): DriveSyncState {
+  const g = globalThis as typeof globalThis & { __maintainosDriveSync?: DriveSyncState }
+  if (!g.__maintainosDriveSync) g.__maintainosDriveSync = emptyDriveSync()
+  return g.__maintainosDriveSync
+}
+
+function writeDriveSync(next: DriveSyncState) {
+  const g = globalThis as typeof globalThis & { __maintainosDriveSync?: DriveSyncState }
+  g.__maintainosDriveSync = next
+}
 
 export function getDriveSync(): DriveSyncState {
-  return driveSync
+  return readDriveSync()
 }
 
 export function setDriveSync(patch: Partial<DriveSyncState>) {
-  driveSync = { ...driveSync, ...patch }
+  writeDriveSync({ ...readDriveSync(), ...patch })
 }
 
 export function applyDriveMirror(files: IngestedFile[], documents: StoreDocument[]) {
-  ledger.files = files
-  ledger.documents = documents
+  opsLedger().files = files
+  opsLedger().documents = documents
 }
 
 export function resetOpsLedger() {
-  ledger = seedLedger()
-  driveSync = emptyDriveSync()
+  const g = globalThis as typeof globalThis & { __maintainosLedger?: Ledger }
+  g.__maintainosLedger = seedLedger()
+  writeDriveSync(emptyDriveSync())
   ensureTrialSpends()
 }
 
@@ -282,26 +298,26 @@ export function replacePersistedOps(next: {
   spends?: Ledger['spends']
   tasks?: Ledger['tasks']
 }) {
-  if (next.files) ledger.files = next.files
-  if (next.documents) ledger.documents = next.documents
-  if (next.spends) ledger.spends = next.spends
-  if (next.tasks) ledger.tasks = next.tasks
+  if (next.files) opsLedger().files = next.files
+  if (next.documents) opsLedger().documents = next.documents
+  if (next.spends) opsLedger().spends = next.spends
+  if (next.tasks) opsLedger().tasks = next.tasks
 }
 
 function audit(entry: Omit<AuditEntry, 'id' | 'at'>, at = new Date().toISOString()) {
-  ledger.audits.unshift({
-    id: `audit-${ledger.audits.length + 1}-${entry.field}`,
+  opsLedger().audits.unshift({
+    id: `audit-${opsLedger().audits.length + 1}-${entry.field}`,
     at,
     ...entry,
   })
 }
 
 export function listAudits(): AuditEntry[] {
-  return ledger.audits
+  return opsLedger().audits
 }
 
 export function listContacts(storeId?: string): DirectoryContact[] {
-  return ledger.contacts.filter((contact) => {
+  return opsLedger().contacts.filter((contact) => {
     if (!storeId) return true
     return contact.storeIds.includes(storeId)
   })
@@ -311,7 +327,7 @@ export function listContacts(storeId?: string): DirectoryContact[] {
 export function listContactsForStore(storeId: string, code: string): DirectoryContact[] {
   const canonical = canonicalStoreCode(code)
   const keys = new Set([storeId, israelStoreId(code), israelStoreId(canonical)])
-  return ledger.contacts.filter(
+  return opsLedger().contacts.filter(
     (contact) => contact.isActive && contact.storeIds.some((id) => keys.has(id)),
   )
 }
@@ -334,7 +350,7 @@ export function upsertContact(
 ): DirectoryContact {
   const phone = input.phone.trim()
   if (input.id) {
-    const current = ledger.contacts.find((contact) => contact.id === input.id)
+    const current = opsLedger().contacts.find((contact) => contact.id === input.id)
     if (!current) throw new Error('איש קשר לא נמצא')
     if (current.phone !== phone) {
       audit({
@@ -365,7 +381,7 @@ export function upsertContact(
     storeIds: [...new Set(input.storeIds)],
     isActive: true,
   }
-  ledger.contacts.push(contact)
+  opsLedger().contacts.push(contact)
   audit({
     actor: input.actor,
     entity: 'contact',
@@ -378,7 +394,7 @@ export function upsertContact(
 }
 
 export function setContactActive(id: string, isActive: boolean, actor: string) {
-  const contact = ledger.contacts.find((row) => row.id === id)
+  const contact = opsLedger().contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
   audit({
     actor,
@@ -393,7 +409,7 @@ export function setContactActive(id: string, isActive: boolean, actor: string) {
 }
 
 export function verifyContactPhone(id: string, actor: string) {
-  const contact = ledger.contacts.find((row) => row.id === id)
+  const contact = opsLedger().contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
   audit({
     actor,
@@ -408,9 +424,9 @@ export function verifyContactPhone(id: string, actor: string) {
 }
 
 export function proposeContactPhone(id: string, incoming: string, actor: string) {
-  const contact = ledger.contacts.find((row) => row.id === id)
+  const contact = opsLedger().contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
-  const overlay = ledger.overlays.find((row) => row.storeId === contact.storeIds[0])
+  const overlay = opsLedger().overlays.find((row) => row.storeId === contact.storeIds[0])
   const proposal = proposeSyncedValue({
     field: 'phone',
     current: contact.phone,
@@ -419,8 +435,8 @@ export function proposeContactPhone(id: string, incoming: string, actor: string)
     needsVerification: contact.phoneStatus === 'needs_verification',
   })
   if (proposal.action === 'conflict') {
-    ledger.conflicts.unshift({
-      id: `conflict-${ledger.conflicts.length + 1}`,
+    opsLedger().conflicts.unshift({
+      id: `conflict-${opsLedger().conflicts.length + 1}`,
       entity: 'contact',
       entityId: id,
       field: 'phone',
@@ -446,11 +462,11 @@ export function proposeContactPhone(id: string, incoming: string, actor: string)
 }
 
 export function listConflicts(): FieldConflict[] {
-  return ledger.conflicts.filter((row) => !row.resolved)
+  return opsLedger().conflicts.filter((row) => !row.resolved)
 }
 
 export function resolveConflict(id: string, keep: 'current' | 'incoming', actor: string) {
-  const conflict = ledger.conflicts.find((row) => row.id === id)
+  const conflict = opsLedger().conflicts.find((row) => row.id === id)
   if (!conflict) throw new Error('סתירה לא נמצאה')
   conflict.resolved = true
   audit({
@@ -462,17 +478,17 @@ export function resolveConflict(id: string, keep: 'current' | 'incoming', actor:
     next: keep === 'incoming' ? conflict.incoming : conflict.current,
   })
   if (keep === 'incoming' && conflict.entity === 'contact') {
-    const contact = ledger.contacts.find((row) => row.id === conflict.entityId)
+    const contact = opsLedger().contacts.find((row) => row.id === conflict.entityId)
     if (contact) contact.phone = conflict.incoming
   }
   return conflict
 }
 
 export function setAreaManager(storeId: string, name: string, actor: string) {
-  let overlay = ledger.overlays.find((row) => row.storeId === storeId)
+  let overlay = opsLedger().overlays.find((row) => row.storeId === storeId)
   if (!overlay) {
     overlay = { storeId, areaManager: null, locks: [] }
-    ledger.overlays.push(overlay)
+    opsLedger().overlays.push(overlay)
   }
   audit({
     actor,
@@ -488,17 +504,17 @@ export function setAreaManager(storeId: string, name: string, actor: string) {
 }
 
 export function areaManagerFor(storeId: string): string | null {
-  return ledger.overlays.find((row) => row.storeId === storeId)?.areaManager ?? null
+  return opsLedger().overlays.find((row) => row.storeId === storeId)?.areaManager ?? null
 }
 
 export function listSpends(): SpendRequest[] {
   ensureTrialSpends()
-  return [...ledger.spends]
+  return [...opsLedger().spends]
 }
 
 export function spendForTicket(ticketId: string): SpendRequest | null {
   return (
-    ledger.spends.find((row) => row.ticketId === ticketId && row.status !== 'rejected') ??
+    opsLedger().spends.find((row) => row.ticketId === ticketId && row.status !== 'rejected') ??
     null
   )
 }
@@ -559,7 +575,7 @@ export function createSpend(
     createdAt: now,
     updatedAt: now,
   }
-  ledger.spends.unshift(spend)
+  opsLedger().spends.unshift(spend)
   audit({
     actor: input.actor,
     entity: 'spend',
@@ -577,7 +593,7 @@ export function applySpendDecision(
   actor: string,
   approvedAmount?: number | null,
 ): SpendRequest {
-  const spend = ledger.spends.find((row) => row.id === id)
+  const spend = opsLedger().spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   const previous = spend.status
   const next = decideSpend(spend, decision, actor, approvedAmount)
@@ -597,14 +613,14 @@ export function reviseSpend(
   id: string,
   patch: { requestedAmount?: number; vendorName?: string | null; scope?: string | null },
 ): SpendRequest {
-  const spend = ledger.spends.find((row) => row.id === id)
+  const spend = opsLedger().spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   Object.assign(spend, withCommercialChange(spend, patch))
   return spend
 }
 
 export function recordActualSpend(id: string, actualAmount: number, actor: string): SpendRequest {
-  const spend = ledger.spends.find((row) => row.id === id)
+  const spend = opsLedger().spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   audit({
     actor,
@@ -619,15 +635,84 @@ export function recordActualSpend(id: string, actualAmount: number, actor: strin
   return spend
 }
 
+function branchDocument(row: (typeof BRANCH_CATALOG)[number], now: string): StoreDocument {
+  const store = row.storeCode
+    ? ISRAEL_STORES.find((item) => item.code === row.storeCode)
+    : undefined
+  return {
+    id: row.id,
+    storeId: store ? israelStoreId(store.code) : '',
+    storeCode: row.storeCode,
+    storeName: store?.name ?? 'לבדיקה',
+    docType: row.kind,
+    sourceUrl: row.sourceUrl,
+    extractedExpiry: row.expiry ? `${row.expiry}T00:00:00.000Z` : null,
+    computedNextCheck: null,
+    owner: store?.managerName ?? 'ארי',
+    intakeStatus: row.status,
+    intakeReason: row.reason,
+    version: 1,
+    previousId: null,
+    renewed: false,
+    createdAt: now,
+    fieldsLocked: false,
+    localUpdatedAt: now,
+  }
+}
+
+function ensureBranchDocuments() {
+  const ledger = opsLedger()
+  const now = '2026-10-28T00:00:00.000Z'
+  const byId = new Map(BRANCH_CATALOG.map((row) => [row.id, row]))
+  const fileIds = new Set(BRANCH_CATALOG.map((row) => row.fileId))
+  ledger.documents = ledger.documents.filter(
+    (doc) => !doc.id.startsWith('branch-') || byId.has(doc.id),
+  )
+  ledger.files = ledger.files.filter(
+    (file) => !file.id.startsWith('branch-file-') || fileIds.has(file.id),
+  )
+  for (const doc of ledger.documents) {
+    const row = byId.get(doc.id)
+    if (!row || doc.fieldsLocked || doc.renewed) continue
+    Object.assign(doc, branchDocument(row, doc.createdAt || now))
+  }
+  for (const row of BRANCH_CATALOG) {
+    if (!ledger.documents.some((doc) => doc.id === row.id)) {
+      ledger.documents.push(branchDocument(row, now))
+    }
+    if (!ledger.files.some((file) => file.id === row.fileId)) {
+      ledger.files.push({
+        id: row.fileId,
+        name: row.name,
+        mime: 'application/pdf',
+        sourceUrl: row.sourceUrl,
+        stage: 'validate',
+        docType: row.kind,
+        storeCode: row.storeCode || null,
+        extractedText: row.summary,
+        status: row.status,
+        reason: row.reason,
+        versionOf: null,
+        deletedInSource: false,
+        driveFileId: null,
+        driveModifiedTime: null,
+        origin: null,
+        localUpdatedAt: now,
+      })
+    }
+  }
+}
+
 export function listDocuments(): StoreDocument[] {
-  return ledger.documents
+  ensureBranchDocuments()
+  return opsLedger().documents
 }
 
 export function decideStoredDocument(
   id: string,
   decision: 'approved' | 'rejected' | 'needs_info',
 ): StoreDocument {
-  const doc = ledger.documents.find((row) => row.id === id)
+  const doc = opsLedger().documents.find((row) => row.id === id)
   if (!doc) throw new Error('מסמך לא נמצא')
   if (decision === 'approved') {
     doc.intakeStatus = 'ingested'
@@ -656,7 +741,7 @@ export function addDocument(
     renewed: false,
     createdAt: new Date().toISOString(),
   }
-  ledger.documents.unshift(doc)
+  opsLedger().documents.unshift(doc)
   return doc
 }
 
@@ -664,18 +749,18 @@ export function renewStoredDocument(
   id: string,
   nextFile: { sourceUrl: string; extractedExpiry: string | null },
 ) {
-  const current = ledger.documents.find((row) => row.id === id)
+  const current = opsLedger().documents.find((row) => row.id === id)
   if (!current) throw new Error('מסמך לא נמצא')
   const result = renewDocument(current, nextFile)
   result.next.localUpdatedAt = new Date().toISOString()
   result.next.fieldsLocked = true
   Object.assign(current, result.closed)
-  ledger.documents.unshift(result.next)
+  opsLedger().documents.unshift(result.next)
   return result
 }
 
 export function listTasks(): OpsTask[] {
-  return ledger.tasks
+  return opsLedger().tasks
 }
 
 export function addTask(input: Omit<OpsTask, 'id' | 'done' | 'createdAt'>): OpsTask {
@@ -685,7 +770,7 @@ export function addTask(input: Omit<OpsTask, 'id' | 'done' | 'createdAt'>): OpsT
     done: false,
     createdAt: new Date().toISOString(),
   }
-  ledger.tasks.unshift(task)
+  opsLedger().tasks.unshift(task)
   return task
 }
 
@@ -733,14 +818,15 @@ export function addTasksFromTranscript(
 }
 
 export function toggleTask(id: string, done: boolean): OpsTask {
-  const task = ledger.tasks.find((row) => row.id === id)
+  const task = opsLedger().tasks.find((row) => row.id === id)
   if (!task) throw new Error('משימה לא נמצאה')
   task.done = done
   return task
 }
 
 export function listFiles(): IngestedFile[] {
-  return ledger.files
+  ensureBranchDocuments()
+  return opsLedger().files
 }
 
 export function ingestFile(input: {
@@ -759,46 +845,46 @@ export function ingestFile(input: {
     storeCodeHint: input.storeCodeHint,
     extractedText: input.extractedText,
     knownStoreCodes: input.knownStoreCodes,
-    existingNames: ledger.files.map((row) => row.name),
+    existingNames: opsLedger().files.map((row) => row.name),
   })
-  ledger.files.unshift(file)
+  opsLedger().files.unshift(file)
   return file
 }
 
 export function noteDriveDeleted(id: string): IngestedFile {
-  const file = ledger.files.find((row) => row.id === id)
+  const file = opsLedger().files.find((row) => row.id === id)
   if (!file) throw new Error('קובץ לא נמצא')
   Object.assign(file, markSourceDeleted(file))
   return file
 }
 
 export function listCatalog(): CatalogItem[] {
-  return ledger.catalog
+  return opsLedger().catalog
 }
 
 export function listStock(): StockQty[] {
-  return ledger.stock
+  return opsLedger().stock
 }
 
 export function addCatalogItem(name: string, sku: string): CatalogItem {
   const item = { id: crypto.randomUUID(), name: name.trim(), sku: sku.trim() }
-  ledger.catalog.push(item)
+  opsLedger().catalog.push(item)
   return item
 }
 
 export function moveStock(movement: Omit<StockMovement, 'id'>): StockQty[] {
   const full = { ...movement, id: crypto.randomUUID() }
-  ledger.movements.push(full)
-  ledger.stock = applyMovement(ledger.stock, full)
-  return ledger.stock
+  opsLedger().movements.push(full)
+  opsLedger().stock = applyMovement(opsLedger().stock, full)
+  return opsLedger().stock
 }
 
 export function listOutcomes(): VendorOutcome[] {
-  return ledger.outcomes
+  return opsLedger().outcomes
 }
 
 export function addOutcome(outcome: VendorOutcome) {
-  ledger.outcomes.push(outcome)
+  opsLedger().outcomes.push(outcome)
   return outcome
 }
 
@@ -814,7 +900,7 @@ export function recordClassificationCorrection(
     reason?: string | null
   },
 ) {
-  ledger.corrections.push({
+  opsLedger().corrections.push({
     id: crypto.randomUUID(),
     ticketId,
     from,
@@ -829,5 +915,5 @@ export function recordClassificationCorrection(
 }
 
 export function listClassificationCorrections() {
-  return ledger.corrections
+  return opsLedger().corrections
 }

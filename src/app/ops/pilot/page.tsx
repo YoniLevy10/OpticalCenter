@@ -7,13 +7,15 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listTickets } from '@/modules/tickets/service'
 import { findRecurrences } from '@/modules/tickets/recurrence'
 import { computePilotMetrics, type PilotSample } from '@/modules/pilot/metrics'
-import { listClassificationCorrections, listFiles, listSpends } from '@/lib/data/ops-ledger'
+import { listFiles, listSpends } from '@/lib/data/ops-ledger'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PilotPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
+  await hydrateOpsLedger()
   const { tickets } = await listTickets({ limit: 300 }).catch(() => ({
     tickets: [],
   }))
@@ -25,17 +27,21 @@ export default async function PilotPage() {
         id: ticket.id,
         storeId: ticket.store_id,
         category: ticket.category,
+        assetId: ticket.asset_id ?? null,
         description: ticket.description,
         status: ticket.status,
         createdAt: ticket.created_at,
+        resolvedAt: ticket.resolved_at ?? null,
       },
       tickets.map((row) => ({
         id: row.id,
         storeId: row.store_id,
         category: row.category,
+        assetId: row.asset_id ?? null,
         description: row.description,
         status: row.status,
         createdAt: row.created_at,
+        resolvedAt: row.resolved_at ?? null,
       })),
     )
     const spend = spends.find((row) => row.ticketId === ticket.id)
@@ -61,30 +67,48 @@ export default async function PilotPage() {
     correctedManually: file.status === 'needs_review',
   }))
   const metrics = computePilotMetrics([...samples, ...fileSamples])
+  const money = spends.reduce(
+    (sum, spend) => {
+      sum.requested += spend.requestedAmount
+      if (spend.status === 'approved') {
+        sum.approved += spend.approvedAmount ?? spend.requestedAmount
+      }
+      if (spend.status === 'pending' || spend.status === 'needs_info') {
+        sum.waiting += spend.requestedAmount
+      }
+      sum.actual += spend.actualAmount ?? 0
+      return sum
+    },
+    { requested: 0, approved: 0, waiting: 0, actual: 0 },
+  )
+  const shekel = (amount: number) =>
+    new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      maximumFractionDigits: 0,
+    }).format(amount)
 
   return (
     <OpsAppShell>
       <div className="mx-auto flex max-w-xl flex-col gap-5">
         <OpsPageHero
-          title="מדדי פיילוט"
-          status="דיווח, אישור הוצאה, ומסמך שפג תוקף"
+          title="ROI"
+          status={`${metrics.repeats} תקלות חוזרות · ${shekel(money.approved)} אושרו`}
         />
         <Panel elevated>
           <dl className="divide-y divide-border">
+            <KeyValue label="מבוקש">{shekel(money.requested)}</KeyValue>
+            <KeyValue label="אושר">{shekel(money.approved)}</KeyValue>
+            <KeyValue label="ממתין">{shekel(money.waiting)}</KeyValue>
+            <KeyValue label="בפועל">{shekel(money.actual)}</KeyValue>
+            <KeyValue label="תקלות חוזרות">{metrics.repeats}</KeyValue>
             <KeyValue label="חציון שעות טיפול">
               {metrics.medianResolveHours?.toFixed(1) ?? '—'}
             </KeyValue>
             <KeyValue label="חציון שעות לאישור">
               {metrics.medianApprovalHours?.toFixed(1) ?? '—'}
             </KeyValue>
-            <KeyValue label="תקלות חוזרות">{metrics.repeats}</KeyValue>
-            <KeyValue label="פניות מחוץ למערכת">{metrics.outsideSystem}</KeyValue>
-            <KeyValue label="קליטה נקייה">
-              {metrics.cleanIngestRate == null
-                ? '—'
-                : `${Math.round(metrics.cleanIngestRate * 100)}%`}
-            </KeyValue>
-            <KeyValue label="תיקוני סיווג">{listClassificationCorrections().length}</KeyValue>
+            <KeyValue label="עלות המערכת בחודש">{shekel(10_000)}</KeyValue>
           </dl>
         </Panel>
       </div>

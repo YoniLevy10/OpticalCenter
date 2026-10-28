@@ -12,10 +12,18 @@ export type Attachment = {
   proof_role?: string | null
 }
 
+function proofCaption(kind?: string | null): string | null {
+  if (kind === 'proof_before') return 'לפני'
+  if (kind === 'proof_after') return 'אחרי'
+  return null
+}
+
 function isImage(a: Attachment): boolean {
-  if (a.kind === 'video') return false
-  if (a.kind && a.kind !== 'image') return false
-  return true
+  if (isVideo(a)) return false
+  if (!a.kind || a.kind === 'image' || a.kind === 'proof_before' || a.kind === 'proof_after') {
+    return true
+  }
+  return false
 }
 
 function isVideo(a: Attachment): boolean {
@@ -150,7 +158,7 @@ export function EvidenceGrid({
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={a.url}
-                      alt="תיעוד מהשטח"
+                      alt={proofCaption(a.kind) ?? 'תיעוד מהשטח'}
                       loading="lazy"
                       className="h-full w-full object-cover"
                       onError={() =>
@@ -158,6 +166,11 @@ export function EvidenceGrid({
                       }
                     />
                   )}
+                  {proofCaption(a.kind) ? (
+                    <span className="t-caption pointer-events-none absolute inset-x-1 bottom-1 rounded-[var(--radius-md)] bg-ink px-1.5 py-0.5 text-center text-surface">
+                      {proofCaption(a.kind)}
+                    </span>
+                  ) : null}
                 </button>
               </li>
             )

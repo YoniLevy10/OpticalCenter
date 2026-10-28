@@ -6,8 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
-const overlayClass =
-  'fixed inset-0 z-40 animate-fade bg-[rgba(18,18,20,0.35)] backdrop-blur-[2px]'
+const overlayClass = 'fixed inset-0 z-40 animate-fade bg-black/40'
 
 function CloseButton() {
   const p = usePhrase()
@@ -48,7 +47,7 @@ export function Modal({
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
           className={cn(
-            'fixed start-1/2 top-1/2 z-50 flex max-h-[min(90dvh,720px)] w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 flex-col animate-scale-in overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)] rtl:translate-x-1/2',
+            'fixed start-1/2 top-1/2 z-50 flex max-h-[min(90dvh,720px)] w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 flex-col animate-scale-in overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg rtl:translate-x-1/2',
             className,
           )}
         >
@@ -145,7 +144,7 @@ export function BottomSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-3 z-50 flex animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
+          className="fixed inset-x-0 z-50 flex animate-slide-up flex-col overflow-hidden rounded-t-xl border bg-card text-card-foreground shadow-lg"
           style={{
             bottom: 'calc(var(--safe-b) + 10px)',
             paddingBottom: '8px',
@@ -205,7 +204,7 @@ export function SideDrawer({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="apple-glass safe-pt safe-pb fixed inset-y-3 start-3 z-50 flex w-[min(86vw,320px)] animate-drawer-in flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/50 outline-none"
+          className="safe-pt safe-pb fixed inset-y-0 start-0 z-50 flex w-[min(86vw,18rem)] animate-drawer-in flex-col overflow-hidden border-e bg-background outline-none"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
             <Dialog.Title className="t-section text-ink">{p(title)}</Dialog.Title>

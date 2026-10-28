@@ -23,7 +23,7 @@ export function Table({
 export function THead({ children }: { children: React.ReactNode }) {
   return (
     <thead>
-      <tr className="sticky top-0 z-10 border-b border-border bg-sunken/50 backdrop-blur-sm">{children}</tr>
+      <tr className="sticky top-0 z-10 border-b bg-muted/50">{children}</tr>
     </thead>
   )
 }
@@ -93,7 +93,7 @@ export function TR({
   return (
     <tr
       className={cn(
-        'group border-b border-border/70 transition-colors duration-[var(--dur-1)] hover:bg-canvas focus-within:bg-canvas',
+        'group border-b transition-colors hover:bg-background/80 focus-within:bg-background/80',
         edgeClass,
         className,
       )}

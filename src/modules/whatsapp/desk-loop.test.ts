@@ -95,6 +95,24 @@ describe('WhatsApp desk loop', () => {
     const after = listSpends().find((row) => row.id === spend?.id)
     expect(after?.status).toBe('approved')
     expect(canExecuteSpend(after)).toBe(true)
+    expect(after?.ticketId).toBeNull()
+  })
+
+  it('links a money message to the one open ticket on the session', async () => {
+    const waId = '972501234506'
+    await processInboundMessage(msg({ text: 'STORE_6018', waId, messageId: 'link-store' }), dry)
+    const opened = await processInboundMessage(
+      msg({ text: 'המזגן לא עובד', waId, messageId: 'link-fault' }),
+      dry,
+    )
+    expect(opened.ticketId).toBeTruthy()
+    await processInboundMessage(
+      msg({ text: '₪250 לספק', waId, messageId: 'link-money' }),
+      dry,
+    )
+    const spend = listSpends().find((row) => row.originWaId === waId)
+    expect(spend?.ticketId).toBe(opened.ticketId)
+    expect(spend?.status).toBe('pending')
   })
 
   it('holds a PDF without a date for review', async () => {

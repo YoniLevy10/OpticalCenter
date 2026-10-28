@@ -7,6 +7,8 @@ import { usePhrase } from '@/components/i18n/locale-provider'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { BrandMark } from '@/components/brand/brand-mark'
+import { SkipLink } from '@/components/layout/skip-link'
+import { LiveSync } from '@/components/layout/live-sync'
 import { cn } from '@/lib/utils'
 
 export function StoreShell({
@@ -32,7 +34,9 @@ export function StoreShell({
 
   return (
     <div className="ops-atmosphere dvh-screen text-ink">
-      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-white/50">
+      <SkipLink />
+      <LiveSync />
+      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark size={32} className="rounded-[var(--radius-md)]" alt="" />
@@ -52,14 +56,17 @@ export function StoreShell({
             <LogoutButton size="sm" variant="secondary" />
           </div>
         </div>
-        <nav className="flex px-2">
+        <nav aria-label={p('ניווט חנות')} className="flex px-2">
           {links.map((item) => {
             const active =
-              pathname === item.match || pathname.startsWith(`${item.match}/`)
+              item.href === '/store'
+                ? pathname === '/store'
+                : pathname === item.match || pathname.startsWith(`${item.match}/`)
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'press-scale t-control mx-1 mb-2 flex-1 rounded-md py-2.5 text-center transition-colors',
                   active
@@ -75,7 +82,8 @@ export function StoreShell({
       </header>
       <main
         id="main-content"
-        className="safe-pb scroll-edge-fade mx-auto max-w-lg px-4 py-5"
+        tabIndex={-1}
+        className="safe-pb scroll-edge-fade mx-auto max-w-lg px-4 py-5 outline-none"
       >
         {children}
       </main>

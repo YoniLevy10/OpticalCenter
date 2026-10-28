@@ -4,6 +4,7 @@ import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   Panel,
+  PanelHeader,
   KeyValue,
   EmptyState,
 } from '@/components/ui/primitives'
@@ -23,13 +24,16 @@ import { StoreDirectoryPanel } from '../store-directory-panel'
 import { StoreAssetsPanel } from './store-assets-panel'
 import { StoreSecondaryActions } from './store-secondary-actions'
 import { StoreVisitDispatch } from './store-visit-dispatch'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
 import {
   areaManagerForStore,
   listAudits,
   listContactsForStore,
+  listDocuments,
   spendForTicket,
 } from '@/lib/data/ops-ledger'
 import { executionBlockReason } from '@/modules/spend/policy'
+import { documentTypeLabel, isDocumentOverdue } from '@/modules/documents/rules'
 import { regionLabel } from '@/modules/stores/regions'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
@@ -64,6 +68,10 @@ export default async function StoreDetailPage({
 
   const { store } = await getStoreByCode(code)
   if (!store) notFound()
+  await hydrateOpsLedger()
+  const storeDocuments = listDocuments().filter(
+    (doc) => doc.storeCode === store.code && !doc.renewed,
+  )
 
   const businessPhone = await resolveWhatsAppBusinessPhone()
   const deepLink = businessPhone
@@ -130,6 +138,75 @@ export default async function StoreDetailPage({
           }
         />
 
+        <section className="grid grid-cols-3 gap-px overflow-hidden rounded-xl bg-border">
+            <div className="bg-card px-3 py-3">
+            <p className="text-xs text-muted-foreground">{p('פתוחות')}</p>
+            <p className="mt-1 text-sm font-medium tabular-nums">{openCount}</p>
+          </div>
+            <div className="bg-card px-3 py-3">
+            <p className="text-xs text-muted-foreground">{p('חזרו')}</p>
+            <p className="mt-1 text-sm font-medium tabular-nums">{repeatRows.length}</p>
+          </div>
+            <div className="bg-card px-3 py-3">
+            <p className="text-xs text-muted-foreground">{p('שולם')}</p>
+            <p className="mt-1 text-sm font-medium tabular-nums">
+              {approvedSpend > 0 ? formatShekels(approvedSpend) : p('אין עלות')}
+            </p>
+            {pendingSpend > 0 ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {p('ממתין')} {formatShekels(pendingSpend)}
+              </p>
+            ) : null}
+          </div>
+        </section>
+
+        <Panel flush>
+          <PanelHeader title="ציוד" meta={storeAssets.length ? String(storeAssets.length) : undefined} />
+          {assetLines.length === 0 ? (
+            <p className="t-body px-4 py-6 text-ink-2">{p('אין ציוד מקושר לסניף הזה.')}</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {assetLines.map(({ asset, cost, repeats }) => (
+                <li key={asset.id} className="flex items-baseline justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="t-body text-ink">{asset.name}</p>
+                    <p className="t-meta text-ink-3">
+                      {TICKET_CATEGORY_LABELS_HE[asset.asset_type] ?? asset.asset_type}
+                      {repeats > 0 ? ` · ${repeats} ${p('חזרו')}` : ''}
+                    </p>
+                  </div>
+                  <span className="t-meta t-num shrink-0 text-ink">
+                    {cost.approved > 0 ? formatShekels(cost.approved) : '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel flush>
+          <PanelHeader
+            title="תקלות שחזרו"
+            meta={repeatRows.length ? String(repeatRows.length) : undefined}
+          />
+          {repeatRows.length === 0 ? (
+            <p className="t-body px-4 py-6 text-ink-2">{p('אין תקלה שחזרה בסניף הזה.')}</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {repeatRows.slice(0, 8).map((row) => (
+                <li key={row.id}>
+                  <Link href={`/ops/tickets/${row.id}`} className="block px-4 py-3">
+                    <p className="t-body text-ink">{row.title}</p>
+                    <p className="t-meta text-ink-3">
+                      {row.category} · {row.count} {p('פעמים')}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
         <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
@@ -145,6 +222,35 @@ export default async function StoreDetailPage({
               {store.is_active === false ? 'מושבת' : 'פעיל'}
             </KeyValue>
           </dl>
+        </Panel>
+
+        <Panel elevated>
+          <p className="t-section mb-3 text-ink">תיקיית סניף</p>
+          {storeDocuments.length === 0 ? (
+            <p className="t-meta text-ink-2">אין מסמכים בתיקייה הזו.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {storeDocuments.map((doc) => {
+                const expiry = doc.extractedExpiry?.slice(0, 10)
+                const shown = expiry
+                  ? `${expiry.slice(8, 10)}.${expiry.slice(5, 7)}.${expiry.slice(0, 4)}`
+                  : 'אין תאריך'
+                return (
+                  <li key={doc.id} className="py-3">
+                    <p className="t-body">
+                      {documentTypeLabel(doc.docType)} · {shown}
+                      {isDocumentOverdue(doc) ? ' · באיחור' : ''}
+                    </p>
+                    {doc.sourceUrl ? (
+                      <a className="t-meta text-ink underline" href={doc.sourceUrl} target="_blank" rel="noreferrer">
+                        קובץ המקור
+                      </a>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </Panel>
 
         <Panel elevated className="overflow-hidden">

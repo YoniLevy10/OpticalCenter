@@ -27,7 +27,9 @@ export default async function TasksPage() {
           status="נשמרות בשרת, עם סניף, אחראי ומועד"
         />
         <Panel elevated>
-          <form action={addTaskAction} className="grid gap-3">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">+ משימה</summary>
+            <form action={addTaskAction} className="mt-3 grid gap-3">
             <Field label="משימה" htmlFor="task-title">
               <Input id="task-title" name="title" placeholder="מה צריך לעשות" required />
             </Field>
@@ -44,10 +46,11 @@ export default async function TasksPage() {
               <Input id="task-ticket" name="ticketId" placeholder="מספר תקלה, אם יש" />
             </Field>
             <Button type="submit">הוספה</Button>
-          </form>
-        </Panel>
-        <Panel elevated>
-          <form action={voiceTasksAction} className="grid gap-3">
+            </form>
+          </details>
+          <details className="mt-3">
+            <summary className="t-body cursor-pointer text-ink">הכתבה</summary>
+            <form action={voiceTasksAction} className="mt-3 grid gap-3">
             <Field
               label="פיצול מהקלטה"
               htmlFor="task-transcript"
@@ -60,8 +63,9 @@ export default async function TasksPage() {
                 required
               />
             </Field>
-            <Button type="submit" variant="secondary">פיצול מהקלטה</Button>
-          </form>
+            <Button type="submit" variant="secondary">פיצול</Button>
+            </form>
+          </details>
         </Panel>
         {tasks.map((task) => (
           <Panel key={task.id} elevated>

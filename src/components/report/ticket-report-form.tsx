@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select } from '@/components/ui/input'
@@ -70,8 +70,15 @@ export function TicketReportForm({
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{
+    store?: string
+    description?: string
+  }>({})
   const [ticketId, setTicketId] = useState<string | null>(null)
   const [display, setDisplay] = useState<string | null>(null)
+  const storeRef = useRef<HTMLSelectElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+  const successRef = useRef<HTMLDivElement>(null)
 
   const classified = useMemo(() => {
     if (!description.trim()) return null
@@ -152,10 +159,26 @@ export function TicketReportForm({
     setMedia((prev) => prev.filter((p) => p.id !== id))
   }
 
+  useEffect(() => {
+    if (ticketId) successRef.current?.focus()
+  }, [ticketId])
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     // Guard double-tap before React re-renders disabled state (cellular lag).
     if (busy || ticketId) return
+    const nextErrors: { store?: string; description?: string } = {}
+    if (!locked && !storeCode) nextErrors.store = 'בחרו חנות'
+    if (!description.trim()) nextErrors.description = 'תארו את התקלה'
+    setFieldErrors(nextErrors)
+    if (nextErrors.store) {
+      storeRef.current?.focus()
+      return
+    }
+    if (nextErrors.description) {
+      descriptionRef.current?.focus()
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -199,16 +222,22 @@ export function TicketReportForm({
     setAssetId('')
     setMedia([])
     setError(null)
+    setFieldErrors({})
   }
 
   if (ticketId) {
     if (mode === 'ops') {
-      return (
-        <div className="space-y-4 text-center">
-          <Notice tone="progress">
-            התקלה נפתחה
-            {display ? ` · ${display}` : ''}
-          </Notice>
+    return (
+      <div
+        ref={successRef}
+        tabIndex={-1}
+        role="status"
+        className="space-y-4 text-center outline-none"
+      >
+        <Notice tone="progress">
+          התקלה נפתחה
+          {display ? ` · ${display}` : ''}
+        </Notice>
           <p className="t-body text-ink-2">אפשר לשייך טכנאי או להמשיך לטפל מהתור.</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild variant="primary" size="block">
@@ -228,7 +257,12 @@ export function TicketReportForm({
     }
 
     return (
-      <div className="space-y-4 text-center">
+      <div
+        ref={successRef}
+        tabIndex={-1}
+        role="status"
+        className="space-y-4 text-center outline-none"
+      >
         <Notice tone="progress">
           הדיווח התקבל
           {display ? ` · ${display}` : ''}
@@ -257,16 +291,22 @@ export function TicketReportForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form noValidate onSubmit={onSubmit} className="space-y-4">
       {error ? <ErrorState title="שגיאה" description={error} /> : null}
 
       {!locked ? (
-        <Field label="חנות" htmlFor="report-store">
+        <Field label="חנות" htmlFor="report-store" error={fieldErrors.store}>
           <Select
+            ref={storeRef}
             id="report-store"
             required
             value={storeCode}
-            onChange={(e) => setStoreCode(e.target.value)}
+            aria-invalid={fieldErrors.store ? true : undefined}
+            aria-describedby={fieldErrors.store ? 'report-store-error' : undefined}
+            onChange={(e) => {
+              setStoreCode(e.target.value)
+              setFieldErrors((prev) => ({ ...prev, store: undefined }))
+            }}
           >
             <option value="">בחרו חנות…</option>
             {stores.map((s) => (
@@ -287,13 +327,21 @@ export function TicketReportForm({
         />
       ) : null}
 
-      <Field label="תיאור התקלה" htmlFor="report-desc">
+      <Field label="תיאור התקלה" htmlFor="report-desc" error={fieldErrors.description}>
         <Textarea
+          ref={descriptionRef}
           id="report-desc"
           required
           rows={4}
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          aria-invalid={fieldErrors.description ? true : undefined}
+          aria-describedby={
+            fieldErrors.description ? 'report-desc-error' : undefined
+          }
+          onChange={(e) => {
+            setDescription(e.target.value)
+            setFieldErrors((prev) => ({ ...prev, description: undefined }))
+          }}
           placeholder="לדוגמה: מזגן לא מקרר / נזילה ליד הדלפק"
         />
       </Field>
@@ -420,7 +468,7 @@ export function TicketReportForm({
         type="submit"
         variant="primary"
         size="block"
-        disabled={busy || !storeCode || !description.trim()}
+        disabled={busy}
       >
         {busy ? 'שולח…' : 'שליחת דיווח'}
       </Button>

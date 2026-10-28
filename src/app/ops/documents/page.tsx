@@ -13,7 +13,6 @@ import {
   documentTypeLabel,
   isDocumentDueSoon,
   isDocumentOverdue,
-  isHearingCalibrationType,
   selectableDocumentTypes,
 } from '@/modules/documents/rules'
 import { driveCanWrite, driveFolderUrl } from '@/modules/drive/folder'
@@ -34,12 +33,31 @@ const CLOCK = {
   missing: 'אין תאריך',
 } as const
 
+function expiryLabel(iso: string | null): string {
+  if (!iso) return 'אין תאריך'
+  const [year, month, day] = iso.slice(0, 10).split('-')
+  if (!year || !month || !day) return 'אין תאריך'
+  return `${day}.${month}.${year}`
+}
+
 export default async function DocumentsPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
   await hydrateOpsLedger()
-  const documents = listDocuments()
+  const documents = listDocuments().filter((doc) => !doc.renewed)
   const files = listFiles()
+  const folders = new Map<string, typeof documents>()
+  for (const doc of documents) {
+    const key = doc.storeCode || 'review'
+    const group = folders.get(key) ?? []
+    group.push(doc)
+    folders.set(key, group)
+  }
+  const folderKeys = [...folders.keys()].sort((a, b) => {
+    if (a === 'review') return 1
+    if (b === 'review') return -1
+    return a.localeCompare(b, 'en')
+  })
   const review = files.filter((file) => file.status !== 'ingested').length
   const sync = getDriveSync()
   const folderId = sync.rootFolderId || process.env.GOOGLE_DRIVE_FOLDER_ID?.trim() || null
@@ -54,15 +72,12 @@ export default async function DocumentsPage() {
           title="מסמכים ותוקף"
           status={
             review
-              ? `${review} קבצים דורשים בדיקה`
-              : 'תוקף מהמסמך נשמר בנפרד ממועד שחושב'
+              ? `${folderKeys.length} תיקיות סניף · ${review} קבצים דורשים בדיקה`
+              : `${folderKeys.length} תיקיות סניף`
           }
         />
         <Panel elevated>
-          <h2 className="t-section mb-1 text-ink">סנכרון עם גוגל דרייב</h2>
-          <p className="t-body mb-4 text-ink-2">
-            ארי ממשיך לעבוד בתיקיות. קובץ חדש או עדכון אצלו נכנס לכאן, ומסמך שנשמר כאן נכתב לתיקיית הסניף. עריכה שלו גוברת, וקובץ שלו לא נמחק ולא נדרס. מה שלא ברור נשאר לבדיקה.
-          </p>
+          <h2 className="t-section mb-3 text-ink">גוגל דרייב</h2>
           <DriveImportForm
             connectedFolder={folderId ? driveFolderUrl(folderId) : null}
             statusLine={statusLine}
@@ -70,8 +85,9 @@ export default async function DocumentsPage() {
           />
         </Panel>
         <Panel elevated>
-          <h2 className="t-section mb-3 text-ink">מסמך ידני</h2>
-          <form action={addDocumentAction} className="grid gap-3">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">מסמך חדש</summary>
+            <form action={addDocumentAction} className="mt-3 grid gap-3">
             <Field label="קוד סניף" htmlFor="doc-store">
               <Input id="doc-store" name="storeCode" placeholder="6018" required />
             </Field>
@@ -101,9 +117,10 @@ export default async function DocumentsPage() {
               כיולי שמיעה: כיול א · כיול ב · כיול ג — תזכורת חודש לפני תוקף.
             </p>
             <Button type="submit">שמירת מסמך</Button>
-          </form>
+            </form>
+          </details>
         </Panel>
-        {documents.length === 0 ? (
+        {folderKeys.length === 0 ? (
           <Panel elevated>
             <EmptyState
               title="אין מסמכים במעקב"
@@ -111,38 +128,49 @@ export default async function DocumentsPage() {
             />
           </Panel>
         ) : (
-          documents.map((doc) => (
-            <Panel key={doc.id} elevated>
-              <p className="t-body">
-                {doc.storeCode || 'בלי סניף'} · {documentTypeLabel(doc.docType)} · גרסה {doc.version}
-                {isHearingCalibrationType(doc.docType) ? ' · כיול שמיעה' : ''}
-              </p>
-              <p className="t-meta text-ink-2">
-                {FILE_STATUS[doc.intakeStatus]}
-                {doc.intakeReason ? ` · ${doc.intakeReason}` : ''} · {CLOCK[documentClock(doc)]}
-                {isDocumentOverdue(doc) ? ' · באיחור' : ''}
-                {!isDocumentOverdue(doc) && isDocumentDueSoon(doc) ? ' · תזכורת חודש מראש' : ''}
-                {doc.renewed ? ' · הוחלף' : ''}
-              </p>
-              {doc.sourceUrl ? (
-                <a className="t-meta text-ink underline" href={doc.sourceUrl} target="_blank" rel="noreferrer">
-                  קובץ המקור
-                </a>
-              ) : null}
-              {!doc.renewed ? (
-                <form action={renewDocumentAction} className="mt-3 flex flex-wrap gap-2">
-                  <input type="hidden" name="id" value={doc.id} />
-                  <Input name="sourceUrl" placeholder="קישור למסמך המעודכן" aria-label="קישור למסמך המעודכן" required />
-                  <Input name="expiry" type="date" aria-label="תוקף חדש" />
-                  <Button type="submit" size="sm">חידוש</Button>
-                </form>
-              ) : null}
-            </Panel>
-          ))
+          folderKeys.map((key) => {
+            const rows = folders.get(key) ?? []
+            const title = key === 'review' ? 'לבדיקה' : `${key} ${rows[0]?.storeName ?? ''}`.trim()
+            return (
+              <Panel key={key} elevated>
+                <h2 className="t-section text-ink">{title}</h2>
+                <ul className="mt-3 divide-y divide-border">
+                  {rows.map((doc) => (
+                    <li key={doc.id} className="py-3">
+                      <p className="t-body">
+                        {documentTypeLabel(doc.docType)} · {expiryLabel(doc.extractedExpiry)}
+                      </p>
+                      <p className="t-meta text-ink-2">
+                        {FILE_STATUS[doc.intakeStatus]}
+                        {doc.intakeReason ? ` · ${doc.intakeReason}` : ''} · {CLOCK[documentClock(doc)]}
+                        {isDocumentOverdue(doc) ? ' · באיחור' : ''}
+                        {!isDocumentOverdue(doc) && isDocumentDueSoon(doc) ? ' · תזכורת חודש מראש' : ''}
+                      </p>
+                      {doc.sourceUrl ? (
+                        <a className="t-meta text-ink underline" href={doc.sourceUrl} target="_blank" rel="noreferrer">
+                          קובץ המקור
+                        </a>
+                      ) : null}
+                      <details className="mt-2">
+                        <summary className="t-meta cursor-pointer text-ink-2">חידוש</summary>
+                        <form action={renewDocumentAction} className="mt-2 flex flex-wrap gap-2">
+                          <input type="hidden" name="id" value={doc.id} />
+                          <Input name="sourceUrl" placeholder="קישור למסמך המעודכן" aria-label="קישור למסמך המעודכן" required />
+                          <Input name="expiry" type="date" aria-label="תוקף חדש" />
+                          <Button type="submit" size="sm">חידוש</Button>
+                        </form>
+                      </details>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )
+          })
         )}
         <Panel elevated>
-          <h2 className="t-section mb-3 text-ink">קליטה ידנית של קובץ</h2>
-          <form action={ingestFileAction} className="grid gap-3">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">קליטת קובץ</summary>
+            <form action={ingestFileAction} className="mt-3 grid gap-3">
             <Field label="שם קובץ" htmlFor="file-name">
               <Input id="file-name" name="name" required />
             </Field>
@@ -157,25 +185,26 @@ export default async function DocumentsPage() {
             </Field>
             <input type="hidden" name="mime" value="application/pdf" />
             <Button type="submit">קליטה</Button>
-          </form>
-          <ul className="mt-4 space-y-2">
-            {files.map((file) => (
-              <li key={file.id} className="t-meta text-ink-2">
-                {file.name} · {FILE_STATUS[file.status]}
-                {file.reason ? ` · ${file.reason}` : ''}
-                {file.versionOf ? ' · גרסה מעודכנת' : ''}
-                {file.deletedInSource ? ' · נמחק במקור' : ''}
-                {file.sourceUrl ? (
-                  <>
-                    {' · '}
-                    <a className="underline" href={file.sourceUrl} target="_blank" rel="noreferrer">
-                      מקור
-                    </a>
-                  </>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+            </form>
+            <ul className="mt-4 space-y-2">
+              {files.map((file) => (
+                <li key={file.id} className="t-meta text-ink-2">
+                  {file.name} · {FILE_STATUS[file.status]}
+                  {file.reason ? ` · ${file.reason}` : ''}
+                  {file.versionOf ? ' · גרסה מעודכנת' : ''}
+                  {file.deletedInSource ? ' · נמחק במקור' : ''}
+                  {file.sourceUrl ? (
+                    <>
+                      {' · '}
+                      <a className="underline" href={file.sourceUrl} target="_blank" rel="noreferrer">
+                        מקור
+                      </a>
+                    </>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </details>
         </Panel>
       </div>
     </OpsAppShell>

@@ -173,7 +173,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
             return (
               <li key={item.title} className="flex gap-3">
                 <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-surface/80 text-[var(--tenant)] shadow-[var(--shadow-1)] ring-1 ring-[var(--tenant-line)]"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted text-foreground"
                   aria-hidden
                 >
                   <Icon className="h-5 w-5" strokeWidth={1.75} />
@@ -216,7 +216,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
           </div>
 
           <div
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[var(--shadow-pop)]"
+            className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm"
           >
             {googleOAuthReady ? (
               <>

@@ -2,6 +2,7 @@
 
 import { BackButton } from '@/components/layout/back-button'
 import { SkipLink } from '@/components/layout/skip-link'
+import { LiveSync } from '@/components/layout/live-sync'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { BrandMark } from '@/components/brand/brand-mark'
@@ -45,7 +46,7 @@ export function TechShell({
       id="main-content"
       tabIndex={-1}
       className={cn(
-        'scroll-edge-fade mx-auto w-full max-w-xl px-4 pt-5 outline-none',
+        'mx-auto w-full max-w-xl px-4 pt-5 outline-none',
         actions ? 'pb-actions scroll-pb-actions' : 'pb-8',
       )}
     >
@@ -56,7 +57,8 @@ export function TechShell({
   return (
     <div className="ops-atmosphere dvh-screen text-ink">
       <SkipLink />
-      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-white/50">
+      <LiveSync />
+      <header className="apple-glass safe-pt sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex max-w-xl items-start gap-2.5 px-4 py-3.5">
           {backHref ? <BackButton href={backHref} label={backLabel} /> : null}
           {!backHref ? (
@@ -83,10 +85,10 @@ export function TechShell({
       {actions ? (
         <div
           aria-label={p('פעולות עבודה')}
-          className="apple-glass fixed inset-x-3 z-40 rounded-xl border border-white/50"
-          style={{ bottom: 'calc(var(--safe-b) + 12px)' }}
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background"
+          style={{ paddingBottom: 'var(--safe-b)' }}
         >
-          <div className="mx-auto w-full max-w-xl px-3 py-3">{actions}</div>
+          <div className="mx-auto w-full max-w-xl px-4 py-3">{actions}</div>
         </div>
       ) : null}
     </div>

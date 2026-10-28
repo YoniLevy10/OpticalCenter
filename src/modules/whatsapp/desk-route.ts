@@ -218,18 +218,24 @@ async function applyAriDecision(
   }
 }
 
+function linkedOpenTicketId(openTicketId?: string | null): string | null {
+  const id = openTicketId?.trim()
+  return id || null
+}
+
 async function landMoney(
   text: string,
   waId: string,
   store: DeskStore | null,
   dryRun: boolean,
+  openTicketId?: string | null,
 ): Promise<DeskRouteResult> {
   const amount = parseMoneyAmount(text)
   const spend = createSpend({
     storeId: store?.id ?? '',
     storeCode: store?.code ?? '',
     storeName: store?.name ?? 'לא צוין',
-    ticketId: null,
+    ticketId: linkedOpenTicketId(openTicketId),
     reason: text,
     vendorName: null,
     requestedAmount: amount ?? 0,
@@ -311,6 +317,7 @@ async function landMulti(
   waId: string,
   store: DeskStore | null,
   dryRun: boolean,
+  openTicketId?: string | null,
 ): Promise<DeskRouteResult> {
   const { tasks, spends } = addTasksFromTranscript(text, 'whatsapp')
   for (const spend of spends) {
@@ -322,6 +329,7 @@ async function landMulti(
     }
     spend.originWaId = waId
     spend.requestedBy = 'וואטסאפ'
+    spend.ticketId = linkedOpenTicketId(openTicketId)
     const amount = parseMoneyAmount(spend.reason)
     if (amount != null) {
       spend.requestedAmount = amount
@@ -400,6 +408,8 @@ export async function routeInboundToDesk(input: {
   waId: string
   sessionStore: DeskStore | null
   dryRun: boolean
+  /** Set only when the intake session already points at one open ticket. */
+  openTicketId?: string | null
 }): Promise<DeskRouteResult | null> {
   if (isAriSender(input.waId)) {
     const decision = parseDeskDecision(input.text)
@@ -409,7 +419,13 @@ export async function routeInboundToDesk(input: {
   if (kind === 'fault') return null
   const store = resolveStore(input.text, input.sessionStore)
   if (kind === 'money') {
-    return landMoney(input.text?.trim() || '', input.waId, store, input.dryRun)
+    return landMoney(
+      input.text?.trim() || '',
+      input.waId,
+      store,
+      input.dryRun,
+      input.openTicketId,
+    )
   }
   if (kind === 'document') {
     return landDocument({
@@ -421,7 +437,13 @@ export async function routeInboundToDesk(input: {
       dryRun: input.dryRun,
     })
   }
-  return landMulti(input.text?.trim() || '', input.waId, store, input.dryRun)
+  return landMulti(
+    input.text?.trim() || '',
+    input.waId,
+    store,
+    input.dryRun,
+    input.openTicketId,
+  )
 }
 
 /** Dispatch stays blocked until Ari approves. Used by the intake loop check. */

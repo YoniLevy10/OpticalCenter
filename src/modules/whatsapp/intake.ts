@@ -14,10 +14,11 @@ import {
 import { logEvent } from '@/lib/logging'
 import {
   normalizeTicketCategory,
+  OPEN_TICKET_STATUSES,
   parseStoreCodeFromText,
 } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { createTicket } from '@/modules/tickets/service'
+import { createTicket, getTicketForMutation } from '@/modules/tickets/service'
 import {
   findPossibleDuplicateTicket,
   runIntakeAgent,
@@ -1388,12 +1389,24 @@ export async function processInboundMessage(
       return { ok: true, reply, ticketId: session.active_ticket_id, state: 'done' }
     }
 
+    let openTicketId: string | null = null
+    if (session.active_ticket_id) {
+      const linked = await getTicketForMutation(session.active_ticket_id).catch(() => null)
+      if (
+        linked &&
+        (OPEN_TICKET_STATUSES as readonly string[]).includes(linked.status)
+      ) {
+        openTicketId = linked.id
+      }
+    }
+
     const desk = await routeInboundToDesk({
       text: spoken ?? null,
       mediaKind: message.mediaKind,
       fileName: message.fileName,
       mediaUrl: message.mediaUrl,
       waId: message.waId,
+      openTicketId,
       sessionStore: session.store_id
         ? {
             id: session.store_id,

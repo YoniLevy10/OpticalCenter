@@ -28,7 +28,7 @@ export const ALL_NAV_TOOLS: NavTool[] = [
   { id: 'approvals', href: '/ops/approvals', label: 'אישורים' },
   { id: 'documents', href: '/ops/documents', label: 'מסמכים' },
   { id: 'inventory', href: '/ops/inventory', label: 'מלאי' },
-  { id: 'pilot', href: '/ops/pilot', label: 'פיילוט' },
+  { id: 'pilot', href: '/ops/pilot', label: 'ROI' },
   { id: 'professionals', href: '/ops/professionals', label: 'אנשי מקצוע' },
   { id: 'assets', href: '/ops/assets', label: 'נכסים' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },

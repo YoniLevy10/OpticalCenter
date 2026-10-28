@@ -53,6 +53,7 @@ export type QueueTicket = {
   status: string
   priority: string
   category?: string
+  asset_id?: string | null
   description: string
   title?: string | null
   source?: string

@@ -89,6 +89,7 @@ export type TicketMessage = {
   direction: string
   body: string | null
   media_url?: string | null
+  kind?: string | null
   created_at: string
 }
 

@@ -15,6 +15,11 @@ export type DecisionItem = {
   href: string
   ticketId?: string
   spendId?: string
+  /** Live SLA figure. Critical is a number color, not a badge. */
+  sla?: string
+  slaCritical?: boolean
+  cost?: string
+  repeat?: string
 }
 
 function startOfDay(now: Date): number {

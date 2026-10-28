@@ -14,26 +14,26 @@ import { cn } from '@/lib/utils'
  * `critical` is a SIGNAL colour and never a tenant colour.
  */
 const buttonVariants = cva(
-  't-control inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] transition-[background-color,border-color,color,opacity,box-shadow,transform] duration-[var(--dur-1)] ease-[var(--ease)] active:opacity-90 disabled:pointer-events-none disabled:opacity-40',
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         primary:
-          'press-scale bg-[var(--tenant)] text-[var(--tenant-contrast)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),var(--shadow-1)] hover:bg-[var(--tenant-hover)]',
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
         secondary:
-          'border border-border bg-surface text-ink hover:border-border-strong hover:bg-surface-sunken/50',
-        ghost: 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
+          'border border-input bg-background text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground',
+        ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground',
         critical:
-          'border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] text-[var(--signal-critical)] hover:bg-[color-mix(in_srgb,var(--signal-critical)_10%,white)]',
+          'border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15',
         resolve:
-          'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
+          'bg-[var(--signal-resolved)] text-white shadow-sm hover:opacity-90',
       },
       size: {
-        sm: 'h-8 px-2.5',
-        md: 'h-9 px-3.5',
-        /** Touch target floor for mobile and technician surfaces (48px). */
-        touch: 'h-12 px-4 t-control-lg',
-        block: 'h-12 w-full px-4 t-control-lg',
+        sm: 'h-8 gap-1.5 px-3',
+        md: 'h-9 px-4',
+        /** Touch target for mobile and technician surfaces. */
+        touch: 'h-11 px-4',
+        block: 'h-11 w-full px-4',
       },
     },
     defaultVariants: { variant: 'secondary', size: 'md' },

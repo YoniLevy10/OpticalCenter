@@ -69,6 +69,9 @@ const SHORT_TYPE: Record<string, string> = {
   hearing_a: 'כיול-א',
   hearing_b: 'כיול-ב',
   hearing_c: 'כיול-ג',
+  hearing_booth: 'תא-שמיעה',
+  hearing_meter: 'כיול-אודיומטר',
+  hearing_tymp: 'טימפנומטר',
 }
 
 export function resolveStoreCode(input: {

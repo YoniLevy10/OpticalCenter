@@ -1,3 +1,5 @@
+import { readHearingForm } from '@/modules/documents/read-form'
+
 export type IngestStage = 'identify' | 'extract' | 'assign' | 'validate'
 
 export type IngestedFile = {
@@ -31,8 +33,12 @@ const TYPE_HINTS: { test: RegExp; docType: string }[] = [
   { test: /מלאי|inventory|stock/i, docType: 'inventory' },
 ]
 
-export function identifyFile(name: string, mime: string): string | null {
-  const hay = `${name} ${mime}`
+export function identifyFile(name: string, mime: string, text?: string | null): string | null {
+  if (text?.trim()) {
+    const kind = readHearingForm(text).kind
+    if (kind) return kind
+  }
+  const hay = `${name} ${text ?? ''} ${mime}`
   return TYPE_HINTS.find((hint) => hint.test.test(hay))?.docType ?? null
 }
 
@@ -46,9 +52,11 @@ export function runIngestPipeline(input: {
   knownStoreCodes: string[]
   existingNames: string[]
 }): IngestedFile {
-  const docType = identifyFile(input.name, input.mime)
   const text = input.extractedText?.trim() || null
-  const hinted = input.storeCodeHint?.trim() || null
+  const read = text ? readHearingForm(text) : null
+  const docType = identifyFile(input.name, input.mime, text)
+  const hinted =
+    input.storeCodeHint?.trim() || (read?.confident ? read.storeCode : null) || null
   const storeKnown = hinted ? input.knownStoreCodes.includes(hinted) : false
   const duplicate = input.existingNames.includes(input.name)
 

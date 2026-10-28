@@ -10,7 +10,8 @@ import { EvidenceGrid } from '@/components/ui/evidence'
 import type { TicketStatus } from '@/modules/tickets/constants'
 import { fetchTechTicket, isTicketRef } from '@/modules/tickets/tech'
 import { getById } from '@/modules/tickets/service'
-import { mergeEvidence } from '@/modules/tickets/attachments'
+import { fetchTicketAttachments, mergeEvidence } from '@/modules/tickets/attachments'
+import { hasBeforeEvidence } from '@/modules/tickets/proof'
 import {
   getServerActor,
   resolveServerTechId,
@@ -115,9 +116,17 @@ export default async function TechTicketDetailPage({
   }
 
   const fullTicket = await getById(ticketId).catch(() => null)
+  const storedAttachments = await fetchTicketAttachments(ticketId).catch(() => [])
   const attachments = mergeEvidence(
-    ticket.attachments ?? [],
+    [...(ticket.attachments ?? []), ...storedAttachments],
     fullTicket?.messages ?? [],
+  )
+  const hasIntakePhoto = hasBeforeEvidence(
+    attachments,
+    (fullTicket?.messages ?? []).map((message) => ({
+      url: message.media_url,
+      kind: message.kind,
+    })),
   )
   const address = [ticket.stores?.address, ticket.stores?.city]
     .filter(Boolean)
@@ -139,6 +148,7 @@ export default async function TechTicketDetailPage({
           techId={techId}
           status={ticket.status}
           assignedTo={ticket.assigned_to}
+          hasIntakePhoto={hasIntakePhoto}
         />
       }
     >

@@ -67,6 +67,9 @@ export const DOCUMENT_TYPES: readonly DocumentTypeDef[] = [
     monthAheadReminder: true,
     hearingCalibration: true,
   },
+  { key: 'hearing_booth', label: 'תא שמיעה', cycleMonths: 24 },
+  { key: 'hearing_meter', label: 'כיול אודיומטר', cycleMonths: 12 },
+  { key: 'hearing_tymp', label: 'טימפנומטר', cycleMonths: 12 },
   /**
    * Legacy single annual hearing check — still readable in UI;
    * new docs should use hearing_a / hearing_b / hearing_c.

@@ -689,6 +689,35 @@ const PHRASES: Record<string, { en: string; fr: string }> = {
   },
   'הורדת PNG': { en: 'Download PNG', fr: 'Télécharger le PNG' },
   'בדיקת קישור': { en: 'Test the link', fr: 'Tester le lien' },
+  'ניווט חנות': { en: 'Store navigation', fr: 'Navigation magasin' },
+  'WhatsApp הוא הערוץ הראשי לדיווח. הטופס כאן הוא גיבוי כשאין קליטה.': {
+    en: 'WhatsApp is the main way to report. This form is the backup when there is no signal.',
+    fr: 'WhatsApp est le canal principal. Ce formulaire est le secours sans réseau.',
+  },
+  'דיווח ב-WhatsApp': { en: 'Report on WhatsApp', fr: 'Signaler sur WhatsApp' },
+  'טופס גיבוי': { en: 'Backup form', fr: 'Formulaire de secours' },
+  'בחרו חנות': { en: 'Choose a store', fr: 'Choisissez un magasin' },
+  'תארו את התקלה': { en: 'Describe the fault', fr: 'Décrivez la panne' },
+  'התקלה נסגרה אחרי האישור. אין צורך בטיפול נוסף.': {
+    en: 'The fault closed after confirmation. Nothing else is needed.',
+    fr: 'La panne est close après confirmation. Rien d’autre n’est nécessaire.',
+  },
+  'לא ניתן לטעון את הדשבורד': {
+    en: 'The dashboard could not be loaded',
+    fr: 'Impossible de charger le tableau de bord',
+  },
+  'לא ניתן לטעון את התקלות': {
+    en: 'Faults could not be loaded',
+    fr: 'Impossible de charger les pannes',
+  },
+  'התחל טיפול בתקלה הזו': {
+    en: 'Start work on this fault',
+    fr: 'Commencer le traitement de cette panne',
+  },
+  'סיימתי — פתיחת תיעוד סיום': {
+    en: 'Done — open the completion note',
+    fr: 'Terminé — ouvrir le compte-rendu',
+  },
 }
 
 export function phrase(

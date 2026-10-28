@@ -8,7 +8,7 @@ import { listVendors } from '@/modules/vendors/service'
 import { listRecentAuditEvents } from '@/modules/audit/service'
 import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES, type TicketStatus } from '@/modules/tickets/constants'
-import { Notice, Panel } from '@/components/ui/primitives'
+import { Panel } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { listOutcomes } from '@/lib/data/ops-ledger'
@@ -85,18 +85,11 @@ export default async function VendorsPage() {
           title="ספקים"
           status={`${activeCount} פעילים · ${preferredCount} מועדפים`}
         />
-        <Notice tone="neutral">
-          <span className="t-body-strong block">
-            מאגר מועדפים + אנשי מקצוע ממידרג
-          </span>
-          <span className="t-meta text-ink-2 block mt-1">
-            שמרו אנשי קשר מתקלה — יופיעו מדורגים עם חיוג מהיר.
-          </span>
-        </Notice>
         <VendorsAdmin initialVendors={enriched} />
         <Panel elevated>
-          <p className="t-section mb-3">תוצאת טיפול</p>
-          <form action={addOutcomeAction} className="grid gap-2 md:grid-cols-2">
+          <details>
+            <summary className="t-body cursor-pointer text-ink">תוצאת טיפול</summary>
+            <form action={addOutcomeAction} className="mt-3 grid gap-2 md:grid-cols-2">
             <Input name="vendorName" placeholder="שם ספק" required />
             <Input name="category" placeholder="סוג תקלה" defaultValue="hvac" />
             <Input name="region" placeholder="אזור" />
@@ -108,7 +101,8 @@ export default async function VendorsPage() {
               <input type="checkbox" name="success" defaultChecked /> הצליח
             </label>
             <Button type="submit">שמירה</Button>
-          </form>
+            </form>
+          </details>
           <ul className="mt-3 space-y-1">
             {rankKnownVendors(listOutcomes(), 'hvac').map((row) => (
               <li key={`${row.vendorName}-${row.price}`} className="t-meta text-ink-2">

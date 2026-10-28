@@ -57,16 +57,28 @@ function DecisionRow({
   return (
     <li className="flex flex-col gap-2 bg-surface px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
-        <Link href={`/ops/stores/${item.storeCode}`} className="t-meta text-ink underline">
-          {item.storeCode} · {item.storeName}
-        </Link>
-        <span className="t-meta text-ink-3">{item.owner}</span>
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+          <Link href={item.href} className="t-body text-ink">
+            {item.title}
+          </Link>
+          <Link href={`/ops/stores/${item.storeCode}`} className="t-meta text-ink-2">
+            {item.storeCode} · {item.storeName}
+          </Link>
+        </div>
+        <span className="t-meta shrink-0 text-ink-3">{item.owner}</span>
       </div>
-      <Link href={item.href} className="t-body text-ink">
-        {item.title}
-      </Link>
+      {item.sla || item.cost || item.repeat ? (
+        <p className="t-meta flex flex-wrap items-baseline gap-x-3 gap-y-1 text-ink-2">
+          {item.sla ? (
+            <span className={item.slaCritical ? 't-num text-[var(--signal-critical)]' : 't-num'}>
+              {item.sla}
+            </span>
+          ) : null}
+          {item.cost ? <span className="t-num text-ink">{item.cost}</span> : null}
+          {item.repeat ? <span>{item.repeat}</span> : null}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="t-meta text-ink-2">{item.action}</span>
         {item.ticketId ? (
           <>
             <select

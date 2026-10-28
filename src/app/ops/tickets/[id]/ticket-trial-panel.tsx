@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import {
   TICKET_CATEGORIES,
@@ -45,8 +44,6 @@ export function TicketTrialPanel({
   slaResolveBy,
   firstResponseAt,
   resolvedAt,
-  respondHours,
-  resolveHours,
   storeId,
   storeCode,
   storeName,
@@ -335,16 +332,10 @@ export function TicketTrialPanel({
       </Panel>
 
       <Panel elevated>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="t-section text-ink">{t('ticket.slaTitle')}</p>
-          <Link href="/ops/settings" className="t-meta text-[var(--tenant)]">
-            {t('ticket.slaSettings')}
-          </Link>
-        </div>
         <p
           className={cn(
             't-body',
-            breach === 'none' ? 'text-ink-2' : 'text-[var(--signal-critical)]',
+            breach === 'none' ? 'text-ink' : 'text-[var(--signal-critical)]',
           )}
         >
           {breachText}
@@ -353,10 +344,6 @@ export function TicketTrialPanel({
           {t('ticket.slaRespond')} {when(slaRespondBy)} · {t('ticket.slaResolve')}{' '}
           {when(slaResolveBy)}
         </p>
-        <p className="t-meta mt-1 text-ink-3">
-          {t('ticket.slaWindow', { respond: respondHours, resolve: resolveHours })}
-        </p>
-        <p className="t-caption mt-2 text-ink-3">{t('ticket.slaHint')}</p>
       </Panel>
 
       <Panel elevated>

@@ -8,7 +8,7 @@ import { useLocale, usePhrase } from '@/components/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 const fieldBase =
-  'field-text w-full rounded-[var(--radius-md)] border border-border bg-surface text-ink placeholder:text-ink-3 transition-all duration-[var(--dur-1)] hover:border-border-strong focus:border-[color-mix(in_srgb,var(--tenant)_40%,var(--border-strong))] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tenant)_12%,transparent)] disabled:opacity-50'
+  'field-text w-full rounded-md border border-input bg-transparent text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50'
 
 export const Input = React.forwardRef<
   HTMLInputElement,
@@ -77,21 +77,35 @@ export function Field({
   label,
   htmlFor,
   hint,
+  error,
   children,
 }: {
   label: string
   htmlFor?: string
   hint?: string
+  /** Shown under the control and linked via `${htmlFor}-error`. */
+  error?: string | null
   children: React.ReactNode
 }) {
   const p = usePhrase()
+  const hintId = htmlFor && hint ? `${htmlFor}-hint` : undefined
+  const errorId = htmlFor && error ? `${htmlFor}-error` : undefined
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={htmlFor} className="t-caption block text-ink-2">
         {p(label)}
       </label>
       {children}
-      {hint ? <p className="t-caption text-ink-3">{p(hint)}</p> : null}
+      {hint ? (
+        <p id={hintId} className="t-caption text-ink-3">
+          {p(hint)}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} role="alert" className="t-caption text-[var(--signal-critical)]">
+          {p(error)}
+        </p>
+      ) : null}
     </div>
   )
 }
