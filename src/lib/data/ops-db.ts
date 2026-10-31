@@ -1,3 +1,5 @@
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSystemClient } from '@/lib/supabase/system'
 import {
@@ -32,8 +34,67 @@ function skipped(err: unknown): boolean {
   )
 }
 
+/** Keep a hand-entered expiry in the local snapshot. The next page load rereads that file. */
+export async function patchDevDocumentExpiry(id: string, extractedExpiry: string): Promise<void> {
+  if (process.env.NODE_ENV === 'production' || (await supabaseReady())) return
+  const file = join(process.cwd(), '.local', 'ari-mail-ledger.json')
+  if (!existsSync(file)) return
+  const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+    documents?: Array<{ id?: string; extractedExpiry?: string | null; fieldsLocked?: boolean; localUpdatedAt?: string | null }>
+  }
+  const doc = parsed.documents?.find((row) => row.id === id)
+  if (!doc) return
+  doc.extractedExpiry = extractedExpiry
+  doc.fieldsLocked = true
+  doc.localUpdatedAt = new Date().toISOString()
+  writeFileSync(file, JSON.stringify(parsed))
+}
+
+/** Keep hand-edited reminder dates in the local snapshot. */
+export async function patchDevDocumentReminders(
+  id: string,
+  reminders: { six: string | null; two: string | null },
+): Promise<void> {
+  if (process.env.NODE_ENV === 'production' || (await supabaseReady())) return
+  const file = join(process.cwd(), '.local', 'ari-mail-ledger.json')
+  if (!existsSync(file)) return
+  const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+    documents?: Array<{
+      id?: string
+      reminderSixAt?: string | null
+      reminderTwoAt?: string | null
+      localUpdatedAt?: string | null
+    }>
+  }
+  const doc = parsed.documents?.find((row) => row.id === id)
+  if (!doc) return
+  doc.reminderSixAt = reminders.six
+  doc.reminderTwoAt = reminders.two
+  doc.localUpdatedAt = new Date().toISOString()
+  writeFileSync(file, JSON.stringify(parsed))
+}
+
+/** Dev-only copy of Ari's mail rows, so the screens can render without a service key. */
+function loadDevLedgerSnapshot(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
+  const file = join(process.cwd(), '.local', 'ari-mail-ledger.json')
+  if (!existsSync(file)) return false
+  const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+    files?: Parameters<typeof replacePersistedOps>[0]['files']
+    documents?: Parameters<typeof replacePersistedOps>[0]['documents']
+  }
+  replacePersistedOps({
+    files: parsed.files ?? [],
+    documents: parsed.documents ?? [],
+  })
+  return true
+}
+
 export async function hydrateOpsLedger(): Promise<void> {
-  if (!(await supabaseReady())) return
+  if (!(await supabaseReady())) {
+    loadDevLedgerSnapshot()
+    return
+  }
   try {
     const supabase = createSystemClient('ops_ledger_read')
     const [files, documents, spends, tasks] = await Promise.all([

@@ -18,11 +18,11 @@ export default async function ActivityPage() {
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
-          title="יומן פעילות"
+          title="מה שכבר קרה"
           status={
             events.length === 0
               ? 'אין אירועים עדיין'
-              : `${events.length} אירועים אחרונים במערכת`
+              : `${events.length} שינויים שכבר נרשמו`
           }
         />
         <ActivityLog events={events} />

@@ -1,40 +1,44 @@
 'use client'
 
+import { AgentBubble } from '@/components/ops/agent-bubble'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   BarChart3,
   Bell,
-  Box,
   CheckSquare,
   ClipboardCheck,
   Ellipsis,
   FileText,
-  HardHat,
   Inbox,
   LayoutDashboard,
   Menu,
+  PanelRightClose,
+  PanelRightOpen,
   MessageSquare,
   Package,
-  QrCode,
   ScrollText,
   Settings,
-  Smartphone,
   Store,
   Truck,
   UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import {
+  sectionChipClass,
+  sectionIconClass,
+  sectionMark,
+} from '@/components/ops/section-palette'
 import type { NavTool } from '@/lib/auth/nav-access'
 import { ALL_NAV_TOOLS } from '@/lib/auth/nav-access'
 import { SideDrawer } from '@/components/ui/overlay'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { BrandMark } from '@/components/brand/brand-mark'
-import { SkipLink } from '@/components/layout/skip-link'
 import { LiveSync } from '@/components/layout/live-sync'
+import { SkipLink } from '@/components/layout/skip-link'
 import { PullToRefresh } from '@/components/layout/pull-to-refresh'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { SystemStatusBanner } from '@/components/ops/system-status-banner'
@@ -71,12 +75,6 @@ const PRIMARY: NavItem[] = [
     icon: ClipboardCheck,
     match: '/ops/approvals',
   },
-  {
-    href: '/ops/tasks',
-    label: 'משימות',
-    icon: CheckSquare,
-    match: '/ops/tasks',
-  },
 ]
 
 const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
@@ -84,8 +82,20 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'תפעול',
     items: [
       {
+        href: '/ops/pilot',
+        label: 'כמה נחסך',
+        icon: Activity,
+        match: '/ops/pilot',
+      },
+      {
+        href: '/ops/tasks',
+        label: 'משימות',
+        icon: CheckSquare,
+        match: '/ops/tasks',
+      },
+      {
         href: '/ops/alerts',
-        label: 'התראות',
+        label: 'מה דורש פעולה',
         icon: Bell,
         match: '/ops/alerts',
       },
@@ -109,12 +119,11 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         match: '/ops/documents',
       },
       {
-        href: '/ops/inventory',
-        label: 'מלאי',
+        href: '/ops/assets',
+        label: 'ציוד וחלקים',
         icon: Package,
-        match: '/ops/inventory',
+        match: '/ops/assets',
       },
-      { href: '/ops/assets', label: 'ציוד', icon: Box, match: '/ops/assets' },
       {
         href: '/ops/vendors',
         label: 'ספקים',
@@ -123,7 +132,7 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
       },
       {
         href: '/ops/activity',
-        label: 'יומן פעילות',
+        label: 'מה שכבר קרה',
         icon: ScrollText,
         match: '/ops/activity',
       },
@@ -133,42 +142,12 @@ const TOOL_GROUPS: { label: string; items: NavItem[] }[] = [
         icon: BarChart3,
         match: '/ops/reports',
       },
-      {
-        href: '/ops/pilot',
-        label: 'ROI',
-        icon: Activity,
-        match: '/ops/pilot',
-      },
     ],
   },
   {
     label: 'מערכת',
     items: [
       { href: '/ops/users', label: 'משתמשים', icon: Users, match: '/ops/users' },
-      {
-        href: '/ops/stores/print-qr',
-        label: 'הדפסת QR',
-        icon: QrCode,
-        match: '/ops/stores/print-qr',
-      },
-      {
-        href: '/ops/lab',
-        label: 'מעבדה',
-        icon: Smartphone,
-        match: '/ops/lab',
-      },
-      {
-        href: '/ops/simulator',
-        label: 'סימולטור WhatsApp',
-        icon: Smartphone,
-        match: '/ops/simulator',
-      },
-      {
-        href: '/tech',
-        label: 'פורטל טכנאי',
-        icon: HardHat,
-        match: '/tech',
-      },
       /** Always last in the system group */
       {
         href: '/ops/settings',
@@ -218,7 +197,6 @@ function filterToolGroups(tools: NavTool[]) {
   const allowed = new Set(tools.map((t) => t.href))
   // Always keep core operational links that live outside ALL_NAV_TOOLS.
   allowed.add('/ops/stores')
-  allowed.add('/tech')
   return TOOL_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => allowed.has(item.href)),
@@ -240,13 +218,17 @@ function SidebarNavLink({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'sidebar-nav-link relative flex h-8 items-center gap-2 rounded-lg px-2 text-sm transition-colors',
-        active
-          ? 'font-medium text-sidebar-accent-foreground'
-          : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
+        'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
+        active ? 'text-ink' : 'text-ink-2',
       )}
     >
-      <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+      <Icon
+        className={cn(
+          'h-4 w-4 shrink-0',
+          active ? 'text-[var(--tenant)]' : 'text-ink-3',
+        )}
+        aria-hidden
+      />
       <NavText href={item.href} fallback={item.label} />
     </Link>
   )
@@ -263,6 +245,7 @@ function DrawerNavLink({
 }) {
   const active = isActive(pathname, item.match)
   const Icon = item.icon
+  const mark = sectionMark(item.href)
 
   return (
     <Link
@@ -270,13 +253,20 @@ function DrawerNavLink({
       aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
       className={cn(
-        'flex min-h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+        't-body flex min-h-[var(--tap)] items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors',
         active
-          ? 'bg-accent font-medium text-accent-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          ? 'bg-[var(--tenant-soft)] font-medium text-[var(--tenant)]'
+          : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
       )}
     >
-      <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+      <span
+        className={cn(
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
+          sectionChipClass[mark],
+        )}
+      >
+        <Icon className={cn('h-4 w-4', sectionIconClass[mark])} aria-hidden />
+      </span>
       <NavText href={item.href} fallback={item.label} />
     </Link>
   )
@@ -297,8 +287,8 @@ function pageTitle(
 function TenantMark() {
   return (
     <BrandMark
-      size={28}
-      className="h-7 w-7 rounded-md"
+      size={36}
+      className="h-9 w-9 rounded-[var(--radius-md)] shadow-[var(--shadow-1)]"
       alt=""
     />
   )
@@ -315,33 +305,73 @@ export function AppShell({
   const t = useT()
   const p = usePhrase()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [navHidden, setNavHidden] = useState(false)
   const toolGroups = useMemo(() => filterToolGroups(tools), [tools])
   const fillMain = pathname.startsWith('/ops/inbox')
   const closeMenu = () => setMenuOpen(false)
 
+  useEffect(() => {
+    try {
+      setNavHidden(localStorage.getItem('mos_nav_hidden') === '1')
+    } catch {
+      /* private mode */
+    }
+  }, [])
+
+  function toggleNav() {
+    setNavHidden((current) => {
+      const next = !current
+      try {
+        localStorage.setItem('mos_nav_hidden', next ? '1' : '0')
+      } catch {
+        /* private mode */
+      }
+      return next
+    })
+  }
+
   return (
-    <div className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden">
+    <div
+      className="ops-atmosphere ops-shell-mobile dvh-screen flex min-w-0 flex-col overflow-x-hidden text-ink md:block md:overflow-x-hidden"
+      style={navHidden ? { ['--nav-w' as string]: '0px' } : undefined}
+    >
       <SkipLink />
       <LiveSync />
       <LargeTitleScrollSync />
       {/* ---------- Desktop sidebar ---------- */}
       <aside
         aria-label={p('תפריט צד')}
-        className="apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e text-sidebar-foreground start-0 md:flex"
+        className={cn(
+          'apple-sidebar fixed inset-block-0 bottom-0 top-0 z-30 hidden flex-col border-e border-border/80 text-ink start-0',
+          navHidden ? 'md:hidden' : 'md:flex',
+        )}
         style={{ width: 'var(--nav-w)' }}
       >
-        <div className="flex h-14 items-center px-4">
-          <Link
-            href="/ops/dashboard"
-            className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <TenantMark />
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">MILO</p>
-          </Link>
+        <div
+          className="border-b border-border/70 px-5"
+          style={{ height: 'var(--topbar-h)' }}
+        >
+          <div className="flex h-full items-center gap-1">
+            <Link
+              href="/ops/dashboard"
+              className="flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-[var(--radius-md)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--tenant)]"
+            >
+              <TenantMark />
+              <p className="t-body-strong truncate text-ink">MILO</p>
+            </Link>
+            <button
+              type="button"
+              aria-label={p('הסתר תפריט')}
+              onClick={toggleNav}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink-2 transition-colors hover:bg-surface-sunken hover:text-ink"
+            >
+              <PanelRightClose className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
         </div>
 
-        <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-2 pb-4">
-          <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{t('nav.control')}</p>
+        <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-3 py-4">
+          <p className="t-caption mb-2 px-2.5 text-ink-3">{t('nav.control')}</p>
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
@@ -351,8 +381,8 @@ export function AppShell({
           </ul>
 
           {toolGroups.map((group) => (
-            <div key={group.label} className="mt-5">
-              <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">
+            <div key={group.label} className="mt-6">
+              <p className="t-caption mb-2 px-2.5 text-ink-3">
                 {group.label === 'מערכת' ? t('nav.system') : t('nav.operations')}
               </p>
               <ul className="flex flex-col gap-1">
@@ -366,16 +396,27 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="border-t p-2">
-          <div className="flex items-center gap-2 rounded-lg px-2 py-2">
-            <TenantMark />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-sidebar-foreground">
-                {t('nav.tenant')}
-              </p>
-            </div>
+        <div className="border-t border-border/70 p-3">
+          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
+            <span className="t-caption text-ink-3">{t('nav.language')}</span>
+            <LocaleSwitcher />
           </div>
-          <LogoutButton className="w-full justify-start" />
+          <div className="flex items-center justify-between gap-2 px-2.5 pb-2">
+            <span className="t-caption text-ink-3">{t('nav.theme')}</span>
+            <ThemeToggle compact />
+          </div>
+          <div className="px-2.5">
+            <LogoutButton className="w-full justify-start px-0 text-ink-2 hover:text-ink" />
+          </div>
+          <div className="mt-1 flex items-center gap-2 px-2.5 py-2">
+            <span
+              aria-hidden
+              className="h-1.5 w-1.5 rounded-full bg-[var(--signal-resolved)]"
+            />
+            <span className="t-caption truncate text-ink-3">
+              {t('nav.tenant')}
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -407,9 +448,9 @@ export function AppShell({
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             onClick={() => setMenuOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink transition-colors hover:bg-surface-sunken"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink transition-colors hover:bg-surface-sunken"
           >
-            <Menu className="h-5 w-5" aria-hidden />
+            <Menu className="h-6 w-6" aria-hidden />
           </button>
         </div>
       </header>
@@ -417,21 +458,11 @@ export function AppShell({
       {/* ---------- Content ---------- */}
       <div
         className={cn(
-          'flex min-h-0 min-w-0 flex-1 flex-col md:ps-[var(--nav-w)]',
+          'flex min-h-0 min-w-0 flex-1 flex-col md:block md:ps-[var(--nav-w)]',
           !fillMain &&
             'max-md:pb-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b))]',
         )}
       >
-        <header className="sticky top-0 z-20 hidden h-12 shrink-0 items-center justify-between gap-3 border-b bg-background px-4 md:flex">
-          <p className="truncate text-sm font-medium text-foreground">
-            {pageTitle(pathname, t)}
-          </p>
-          <div className="flex items-center gap-2">
-            <SystemStatusBanner compact />
-            <LocaleSwitcher />
-            <ThemeToggle compact />
-          </div>
-        </header>
         <PullToRefresh
           disabled={fillMain}
           className={cn(
@@ -443,12 +474,29 @@ export function AppShell({
             id="main-content"
             tabIndex={-1}
             className={cn(
-              'mx-auto min-w-0 w-full max-w-[1280px] outline-none md:px-8',
+              'mx-auto min-w-0 w-full max-w-[1280px] max-md:overflow-x-clip max-md:overscroll-x-none outline-none md:px-8',
+              navHidden && 'md:max-w-none',
               fillMain
                 ? 'ops-main-fill min-h-0 flex-1 px-0 md:px-8'
-                : 'min-h-0 flex-1 overflow-y-auto overscroll-y-auto px-4 pt-4 pb-nav md:overflow-visible md:px-6 md:pt-4',
+                : 'scroll-edge-fade min-h-0 flex-1 overflow-x-clip overflow-y-auto overscroll-x-none overscroll-y-auto px-4 pt-5 pb-nav md:overflow-visible md:pt-7 md:[mask-image:none] md:[-webkit-mask-image:none]',
             )}
           >
+            <div className="mb-4 hidden items-center justify-between md:flex">
+              {navHidden ? (
+                <button
+                  type="button"
+                  aria-label={p('הצג תפריט')}
+                  onClick={toggleNav}
+                  className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink-2 shadow-[var(--shadow-1)] transition-colors hover:text-ink"
+                >
+                  <PanelRightOpen className="h-4 w-4" aria-hidden />
+                  <span className="t-caption">{p('הצג תפריט')}</span>
+                </button>
+              ) : (
+                <span />
+              )}
+              <SystemStatusBanner compact />
+            </div>
             {children}
           </main>
         </PullToRefresh>
@@ -457,10 +505,13 @@ export function AppShell({
       {/* ---------- Mobile bottom navigation ---------- */}
       <nav
         aria-label={p('ניווט תחתון')}
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden"
-        style={{ paddingBottom: 'var(--safe-b)' }}
+        className="phone-tabbar fixed inset-x-3 z-30 md:hidden"
+        style={{ bottom: 'calc(var(--safe-b) + var(--bottomnav-gap))' }}
       >
-        <ul className="flex" style={{ height: 'var(--bottomnav-h)' }}>
+        <ul
+          className="apple-glass flex overflow-hidden rounded-[28px]"
+          style={{ height: 'var(--bottomnav-h)' }}
+        >
           {PRIMARY.map((item) => {
             const active = isActive(pathname, item.match)
             const Icon = item.icon
@@ -474,7 +525,7 @@ export function AppShell({
                     active ? 'nav-pill-active' : 'text-ink-3',
                   )}
                 >
-                  <Icon className="h-5 w-5" aria-hidden />
+                  <Icon className="h-6 w-6" aria-hidden />
                   <span className="t-caption">
                     <NavText href={item.href} fallback={item.label} />
                   </span>
@@ -491,7 +542,7 @@ export function AppShell({
               onClick={() => setMenuOpen(true)}
               className="flex h-full w-full flex-col items-center justify-center gap-1 text-ink-3 transition-colors duration-[var(--dur-1)]"
             >
-              <Ellipsis className="h-5 w-5" aria-hidden />
+              <Ellipsis className="h-6 w-6" aria-hidden />
               <span className="t-caption">{t('nav.more')}</span>
             </button>
           </li>
@@ -537,6 +588,7 @@ export function AppShell({
           <LogoutButton size="touch" variant="secondary" className="w-full" />
         </div>
       </SideDrawer>
+      {pathname.startsWith('/ops') && !pathname.startsWith('/ops/pilot') ? <AgentBubble /> : null}
     </div>
   )
 }

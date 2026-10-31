@@ -6,6 +6,7 @@ import { format, isSameDay, parseISO, startOfDay } from 'date-fns'
 import { he } from 'date-fns/locale'
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState, Panel } from '@/components/ui/primitives'
+import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 import {
   TICKET_STATUS_LABELS_HE,
   type TicketStatus,
@@ -158,117 +159,155 @@ export function ActivityLog({ events }: { events: AuditEvent[] }) {
     }))
   }, [filtered])
 
+  const first = groups[0]
+  const filterOn = Boolean(actionType || actor || date || entity)
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <Field label="סוג פעולה" htmlFor="activity-type">
-          <Select
-            id="activity-type"
-            value={actionType}
-            onChange={(e) => setActionType(e.target.value)}
-            className="min-w-[10rem]"
-          >
-            <option value="">הכל</option>
-            {types.map((t) => (
-              <option key={t} value={t}>
-                {EVENT_HE[t] ?? t}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="משתמש" htmlFor="activity-actor">
-          <Select
-            id="activity-actor"
-            value={actor}
-            onChange={(e) => setActor(e.target.value)}
-            className="min-w-[10rem]"
-          >
-            <option value="">הכל</option>
-            <option value="__system__">מערכת</option>
-            {actors.map((id) => (
-              <option key={id} value={id}>
-                {actorLabel(id)}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="תאריך" htmlFor="activity-date">
-          <Input
-            id="activity-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="min-w-[10rem]"
-          />
-        </Field>
-        <Field label="תקלה / ישות" htmlFor="activity-entity">
-          <Input
-            id="activity-entity"
-            value={entity}
-            onChange={(e) => setEntity(e.target.value)}
-            placeholder="מספר תקלה…"
-            className="min-w-[10rem]"
-          />
-        </Field>
-      </div>
-
-      <Panel flush elevated className="overflow-hidden">
-        {filtered.length === 0 ? (
+      {filtered.length === 0 ? (
+        <Panel flush elevated className="overflow-hidden">
           <EmptyState
             title="אין אירועים"
             description={
-              actionType || actor || date || entity
+              filterOn
                 ? 'נסו לשנות את הסינון.'
                 : 'פעולות על תקלות יופיעו כאן כיומן מרכזי.'
             }
           />
-        ) : (
-          <div className="divide-y divide-border">
-            {groups.map((g) => (
-              <section key={g.key}>
-                <h2 className="t-caption sticky top-0 z-[1] border-b border-border bg-surface-sunken/80 px-4 py-2 text-ink-3 backdrop-blur-sm">
-                  {g.label}
-                  <span className="t-num ms-2">{g.items.length}</span>
-                </h2>
-                <ul>
-                  {g.items.map((e) => (
-                    <li
-                      key={e.id}
-                      className="relative flex gap-3 px-4 py-3 ps-8 before:absolute before:start-[1.15rem] before:top-0 before:h-full before:w-px before:bg-border after:absolute after:start-[0.95rem] after:top-[1.15rem] after:h-2 after:w-2 after:rounded-full after:bg-[var(--signal-progress)] after:ring-2 after:ring-surface"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="t-body-strong text-ink">{phraseEvent(e)}</p>
-                        <p className="t-meta mt-0.5 text-ink-2">
-                          {e.ticket_display || e.ticket_id ? (
-                            <Link
-                              href={`/ops/tickets/${e.ticket_id}`}
-                              className="text-[var(--tenant)] hover:underline"
-                            >
-                              {e.ticket_display || e.ticket_id.slice(0, 8)}
-                            </Link>
-                          ) : (
-                            '—'
-                          )}
-                          <span className="text-ink-3">
-                            {' · '}
-                            {actorLabel(e.actor_id)}
-                          </span>
-                        </p>
-                      </div>
-                      <time
-                        dateTime={e.created_at}
-                        className="t-caption t-num shrink-0 text-ink-3"
-                      >
-                        {fmtTime(e.created_at)}
-                      </time>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+        </Panel>
+      ) : first ? (
+        <Panel flush elevated className="overflow-hidden">
+          <section>
+            <h2 className="t-caption border-b border-border bg-surface-sunken/80 px-4 py-2 text-ink-3">
+              {first.label}
+              <span className="t-num ms-2">{first.items.length}</span>
+            </h2>
+            <ul>
+              {first.items.slice(0, 1).map((e) => (
+                <li key={e.id} className="flex gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="t-body-strong text-ink">{phraseEvent(e)}</p>
+                    <p className="t-meta mt-0.5 text-ink-2">
+                      {e.ticket_display || e.ticket_id ? (
+                        <Link href={`/ops/tickets/${e.ticket_id}`} className="text-[var(--tenant)] hover:underline">
+                          {e.ticket_display || e.ticket_id.slice(0, 8)}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                      <span className="text-ink-3">
+                        {' · '}
+                        {actorLabel(e.actor_id)}
+                      </span>
+                    </p>
+                  </div>
+                  <time dateTime={e.created_at} className="t-caption t-num shrink-0 text-ink-3">
+                    {fmtTime(e.created_at)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </Panel>
+      ) : null}
+
+      <PhoneFoldStack>
+        <PhoneFold title="סינון" summary={filterOn ? 'פעיל' : 'הכל'}>
+          <div className="flex min-w-0 flex-col gap-3">
+            <Field label="סוג פעולה" htmlFor="activity-type">
+              <Select
+                id="activity-type"
+                value={actionType}
+                onChange={(e) => setActionType(e.target.value)}
+                className="w-full min-w-0"
+              >
+                <option value="">הכל</option>
+                {types.map((t) => (
+                  <option key={t} value={t}>
+                    {EVENT_HE[t] ?? t}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="משתמש" htmlFor="activity-actor">
+              <Select
+                id="activity-actor"
+                value={actor}
+                onChange={(e) => setActor(e.target.value)}
+                className="w-full min-w-0"
+              >
+                <option value="">הכל</option>
+                <option value="__system__">מערכת</option>
+                {actors.map((id) => (
+                  <option key={id} value={id}>
+                    {actorLabel(id)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="תאריך" htmlFor="activity-date">
+              <Input
+                id="activity-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full min-w-0 max-w-full"
+              />
+            </Field>
+            <Field label="תקלה / ישות" htmlFor="activity-entity">
+              <Input
+                id="activity-entity"
+                value={entity}
+                onChange={(e) => setEntity(e.target.value)}
+                placeholder="מספר תקלה…"
+                className="w-full min-w-0"
+              />
+            </Field>
           </div>
-        )}
-      </Panel>
+        </PhoneFold>
+        {filtered.length > 1 ? (
+          <PhoneFold
+            title="שאר האירועים"
+            summary={`${filtered.length - 1}`}
+          >
+            <div className="divide-y divide-border">
+              {groups.map((g, index) => (
+                <section key={g.key}>
+                  <h2 className="t-caption px-1 py-2 text-ink-3">
+                    {g.label}
+                    <span className="t-num ms-2">{g.items.length}</span>
+                  </h2>
+                  <ul>
+                    {g.items.slice(index === 0 ? 1 : 0).map((e) => (
+                      <li key={e.id} className="flex gap-3 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="t-body-strong text-ink">{phraseEvent(e)}</p>
+                          <p className="t-meta mt-0.5 text-ink-2">
+                            {e.ticket_display || e.ticket_id ? (
+                              <Link href={`/ops/tickets/${e.ticket_id}`} className="text-[var(--tenant)] hover:underline">
+                                {e.ticket_display || e.ticket_id.slice(0, 8)}
+                              </Link>
+                            ) : (
+                              '—'
+                            )}
+                            <span className="text-ink-3">
+                              {' · '}
+                              {actorLabel(e.actor_id)}
+                            </span>
+                          </p>
+                        </div>
+                        <time dateTime={e.created_at} className="t-caption t-num shrink-0 text-ink-3">
+                          {fmtTime(e.created_at)}
+                        </time>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </PhoneFold>
+        ) : null}
+      </PhoneFoldStack>
     </div>
   )
 }

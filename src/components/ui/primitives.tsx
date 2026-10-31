@@ -11,7 +11,7 @@ export function Panel({
   children,
   className,
   flush,
-  elevated: _elevated,
+  elevated,
   ...rest
 }: {
   children: React.ReactNode
@@ -24,7 +24,9 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-[var(--shadow-1)]',
+        'rounded-[var(--radius-lg)] border border-border bg-surface',
+        elevated && flush && 'shadow-[var(--shadow-1)]',
+        elevated && !flush && 'sheet',
         !flush && 'p-5',
         className,
       )}
@@ -45,12 +47,15 @@ export function PanelHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b px-4">
-      <div className="flex items-baseline gap-2">
-        <h2 className="t-section text-ink">
-          <Tx text={title} />
-        </h2>
-        {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
+    <header className="flex shrink-0 min-h-11 items-center justify-between gap-3 border-b border-border bg-[var(--surface-sunken)] px-4">
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <h2 className="t-section text-ink">
+            <Tx text={title} />
+          </h2>
+          {meta ? <span className="t-caption text-ink-3">{meta}</span> : null}
+        </div>
+        <span aria-hidden className="clay-rule" />
       </div>
       {action}
     </header>
@@ -85,6 +90,7 @@ export function PageHeader({
           </h1>
           {meta ? <span className="t-meta text-ink-3">{meta}</span> : null}
         </div>
+        <span aria-hidden className="clay-rule" />
         {description ? (
           <p className="t-body mt-1 max-w-2xl text-ink-2">
             {typeof description === 'string' ? <Tx text={description} /> : description}
@@ -142,10 +148,7 @@ export function ErrorState({
   action?: React.ReactNode
 }) {
   return (
-    <div
-      role="alert"
-      className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3"
-    >
+    <div className="rounded-[var(--radius-lg)] border border-[var(--signal-critical-line)] bg-[var(--signal-critical-soft)] px-4 py-3">
       <p className="t-body-strong text-[var(--signal-critical)]">
         <Tx text={title} />
       </p>
@@ -248,19 +251,37 @@ export function KeyValue({
   label,
   children,
   ltr,
+  phoneTile = false,
 }: {
   label: string
   children: React.ReactNode
   ltr?: boolean
+  /** Phone: a roomy tile. Desktop stays a single row. */
+  phoneTile?: boolean
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2">
-      <dt className="t-body shrink-0 text-ink-2">
+    <div
+      className={cn(
+        'flex min-w-0 items-start justify-between gap-3 py-2 max-md:min-h-14 max-md:items-center max-md:py-3',
+        phoneTile &&
+          'max-md:min-h-[4.75rem] max-md:flex-col max-md:items-start max-md:justify-center max-md:gap-1 max-md:rounded-[var(--radius-md)] max-md:bg-[var(--surface-sunken)] max-md:px-3 max-md:py-3',
+      )}
+    >
+      <dt
+        className={cn(
+          't-body shrink-0 text-ink-2',
+          phoneTile && 'max-md:t-caption max-md:text-ink-3',
+        )}
+      >
         <Tx text={label} />
       </dt>
       <dd
         dir={ltr ? 'ltr' : undefined}
-        className={cn('t-body text-end text-ink', ltr && 't-num')}
+        className={cn(
+          't-body min-w-0 break-words text-end text-ink',
+          ltr && 't-num',
+          phoneTile && 'max-md:text-start max-md:font-semibold',
+        )}
       >
         {children}
       </dd>

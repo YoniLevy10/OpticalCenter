@@ -15,12 +15,13 @@ export default async function UsersPage() {
 
   return (
     <OpsAppShell>
-      <div className="flex max-w-5xl flex-col gap-5 stagger">
+      <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
           title="משתמשים"
           status="ניהול גישה, תפקידים וסניפים"
         />
         <UsersAdmin
+          actorId={actor?.id ?? null}
           stores={stores.map((s) => ({
             id: s.id,
             code: s.code,

@@ -164,7 +164,7 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                   {!form.wa_business_phone?.replace(/\D/g, '') ? (
                     <Notice tone="warning">
                       בלי מספר עסקי לא ניתן להדפיס QR תקין לחנויות. הזינו את מספר
-                      ה־WhatsApp Business ואז הדפיסו מחדש מ־/ops/stores/print-qr.
+                      ה־WhatsApp Business. ה־QR של כל סניף נמצא בכרטיס שלו.
                     </Notice>
                   ) : (
                     <Notice tone="progress">
@@ -190,6 +190,11 @@ export function SettingsForm({ initial }: { initial: MemSettings }) {
                 </GroupedRow>
               </GroupedSection>
               <GroupedSection title="שעות תגובה (SLA)">
+                <GroupedRow>
+                  <p className="t-meta text-ink-2">
+                    כשהזמן עובר התקלה מסומנת כחורגת, נשלחת תזכורת, והטיפול עולה למנהל הרשת.
+                  </p>
+                </GroupedRow>
                 {(
                   [
                     ['sla_respond_hours_critical', 'קריטי'],

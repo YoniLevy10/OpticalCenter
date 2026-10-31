@@ -22,20 +22,18 @@ function isProductionRuntime(): boolean {
 }
 
 export const ALL_NAV_TOOLS: NavTool[] = [
-  { id: 'alerts', href: '/ops/alerts', label: 'התראות' },
+  { id: 'alerts', href: '/ops/alerts', label: 'מה דורש פעולה' },
   { id: 'inbox', href: '/ops/inbox', label: 'תיבת WhatsApp' },
   { id: 'tasks', href: '/ops/tasks', label: 'משימות' },
   { id: 'approvals', href: '/ops/approvals', label: 'אישורים' },
   { id: 'documents', href: '/ops/documents', label: 'מסמכים' },
-  { id: 'inventory', href: '/ops/inventory', label: 'מלאי' },
-  { id: 'pilot', href: '/ops/pilot', label: 'ROI' },
+  { id: 'pilot', href: '/ops/pilot', label: 'כמה נחסך' },
   { id: 'professionals', href: '/ops/professionals', label: 'אנשי מקצוע' },
-  { id: 'assets', href: '/ops/assets', label: 'נכסים' },
+  { id: 'assets', href: '/ops/assets', label: 'ציוד וחלקים' },
   { id: 'vendors', href: '/ops/vendors', label: 'ספקים' },
-  { id: 'activity', href: '/ops/activity', label: 'יומן פעילות' },
+  { id: 'activity', href: '/ops/activity', label: 'מה שכבר קרה' },
   { id: 'reports', href: '/ops/reports', label: 'דוחות' },
   { id: 'users', href: '/ops/users', label: 'משתמשים' },
-  { id: 'print-qr', href: '/ops/stores/print-qr', label: 'הדפסת QR' },
   { id: 'lab', href: '/ops/lab', label: 'מעבדה' },
   { id: 'simulator', href: '/ops/simulator', label: 'סימולטור WhatsApp' },
   /** Last — always at bottom of tools */
@@ -111,11 +109,6 @@ export function canAccessActivity(actor: Actor | null): boolean {
   return hasHq(actor)
 }
 
-export function canAccessPrintQr(actor: Actor | null): boolean {
-  if (!actor) return true
-  return hasHq(actor)
-}
-
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   alerts: canAccessAlerts,
   inbox: canAccessInbox,
@@ -128,7 +121,6 @@ const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   status: canAccessStatus,
   settings: canAccessSettings,
   users: canAccessUsers,
-  'print-qr': canAccessPrintQr,
   lab: canAccessLab,
   simulator: canAccessSimulator,
 }

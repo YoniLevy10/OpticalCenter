@@ -126,7 +126,7 @@ export async function notifyMonthlyReport(input: {
   const attachments = input.pdfBase64
     ? [
         {
-          filename: `maintainos-monthly-${input.periodStart}.pdf`,
+          filename: `optical-center-${input.periodStart}.pdf`,
           content: input.pdfBase64,
           contentType: 'application/pdf',
         },

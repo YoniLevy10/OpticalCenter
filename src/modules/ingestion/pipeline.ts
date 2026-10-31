@@ -1,3 +1,9 @@
+import {
+  findCalibrations,
+  matchStoreFromLabel,
+  splitCalibrations,
+  type StoreNameRef,
+} from '@/modules/documents/calibrations'
 import { readHearingForm } from '@/modules/documents/read-form'
 
 export type IngestStage = 'identify' | 'extract' | 'assign' | 'validate'
@@ -23,17 +29,17 @@ export type IngestedFile = {
 }
 
 const TYPE_HINTS: { test: RegExp; docType: string }[] = [
-  { test: /כיבוי|אש|fire/i, docType: 'fire' },
+  // אש must not match inside אשדוד / אשקלון.
+  { test: /כיבוי|(?<![\u0590-\u05FF])אש(?![\u0590-\u05FF])|fire/i, docType: 'fire' },
   { test: /חשמל|electric/i, docType: 'electrical' },
-  // C08 — specific calibrations before generic hearing
-  { test: /כיול[\s_\-]*א|hearing[_\s\-]?a(?![a-z])/i, docType: 'hearing_a' },
-  { test: /כיול[\s_\-]*ב|hearing[_\s\-]?b(?![a-z])/i, docType: 'hearing_b' },
-  { test: /כיול[\s_\-]*ג|hearing[_\s\-]?c(?![a-z])/i, docType: 'hearing_c' },
   { test: /שמיעה|hearing/i, docType: 'hearing' },
   { test: /מלאי|inventory|stock/i, docType: 'inventory' },
 ]
 
 export function identifyFile(name: string, mime: string, text?: string | null): string | null {
+  const calibrations = findCalibrations(`${name} ${mime}`, text)
+  if (calibrations.length === 1) return calibrations[0]
+  if (calibrations.length > 1) return null
   if (text?.trim()) {
     const kind = readHearingForm(text).kind
     if (kind) return kind
@@ -51,26 +57,39 @@ export function runIngestPipeline(input: {
   extractedText?: string | null
   knownStoreCodes: string[]
   existingNames: string[]
+  /** When set, a Hebrew city or branch in the filename can assign the store. */
+  stores?: readonly StoreNameRef[]
 }): IngestedFile {
   const text = input.extractedText?.trim() || null
+  const slices = splitCalibrations(input.name, text)
   const read = text ? readHearingForm(text) : null
-  const docType = identifyFile(input.name, input.mime, text)
-  const hinted =
-    input.storeCodeHint?.trim() || (read?.confident ? read.storeCode : null) || null
+  const docType =
+    slices.length === 1
+      ? slices[0].docType
+      : slices.length > 1
+        ? null
+        : identifyFile(input.name, input.mime, text)
+  const hinted = input.storeCodeHint?.trim() || (read?.confident ? read.storeCode : null) || null
   const storeKnown = hinted ? input.knownStoreCodes.includes(hinted) : false
+  const named =
+    !storeKnown && input.stores?.length ? matchStoreFromLabel(input.name, input.stores) : null
+  const storeCode = storeKnown ? hinted : named?.code ?? null
   const duplicate = input.existingNames.includes(input.name)
 
   let status: IngestedFile['status'] = 'ingested'
   let reason: string | null = null
-  if (!docType) {
+  if (!docType && slices.length === 0) {
     status = 'needs_review'
     reason = 'סוג הקובץ לא זוהה'
+  } else if (!storeCode) {
+    status = 'needs_review'
+    reason = 'השיוך לסניף לא ודאי'
   } else if (!text) {
     status = 'needs_review'
     reason = 'לא חולץ טקסט מהקובץ'
-  } else if (!hinted || !storeKnown) {
+  } else if (slices.length > 1) {
     status = 'needs_review'
-    reason = 'השיוך לסניף לא ודאי'
+    reason = 'המסמך כולל כמה כיולים'
   }
 
   return {
@@ -80,7 +99,7 @@ export function runIngestPipeline(input: {
     sourceUrl: input.sourceUrl ?? null,
     stage: 'validate',
     docType,
-    storeCode: storeKnown ? hinted : null,
+    storeCode,
     extractedText: text,
     status,
     reason,

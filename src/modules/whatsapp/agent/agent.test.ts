@@ -60,6 +60,22 @@ describe('intake rules engine', () => {
     expect(r.priority).toBe('low')
   })
 
+  it('model cannot raise priority or relabel a recognized fault', () => {
+    const leak = applyIntakeRules({
+      text: 'נזילה מהכיור',
+      ai: { category: 'cleaning', priority_suggestion: 'critical' },
+    })
+    expect(leak.category).toBe('plumbing')
+    expect(leak.priority).toBe('high')
+
+    const unnamed = applyIntakeRules({
+      text: 'the label machine will not print receipts',
+      ai: { category: 'it', priority_suggestion: 'critical' },
+    })
+    expect(unnamed.category).toBe('it')
+    expect(unnamed.priority).toBe('medium')
+  })
+
   it('AI suggestion cannot undercut safety rule', () => {
     const r = applyIntakeRules({
       text: 'ריח שרוף מהשקע',
@@ -73,5 +89,23 @@ describe('intake rules engine', () => {
     expect(
       descriptionNeedsClarification('המזגן הראשי לא מקרר', false).needs,
     ).toBe(false)
+  })
+
+  it('reads the same hazard in French and English', () => {
+    const french = applyIntakeRules({
+      text: "de l'eau coule près du tableau électrique",
+    })
+    expect(french.priority).toBe('critical')
+    expect(french.category).toBe('electrical_hazard')
+
+    const leak = applyIntakeRules({ text: 'grosse fuite au plafond' })
+    expect(leak.applied.some((rule) => rule.id === 'significant_water_leak')).toBe(true)
+
+    const english = descriptionNeedsClarification('problem', false)
+    expect(english.needs).toBe(true)
+    expect(english.question).toMatch(/What exactly/i)
+
+    const question = descriptionNeedsClarification('panne', false)
+    expect(question.question).toMatch(/panne|marche/i)
   })
 })

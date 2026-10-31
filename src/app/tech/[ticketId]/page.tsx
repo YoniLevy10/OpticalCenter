@@ -24,6 +24,7 @@ import {
 } from '@/lib/auth/ticket-scope'
 import { storeLabel } from '@/components/ops/plain-labels'
 import { TECH_COMPLETION } from '@/modules/tech/completion-copy'
+import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -164,28 +165,36 @@ export default async function TechTicketDetailPage({
           ) : null}
         </Panel>
 
+        <PhoneFoldStack>
         {treatment ? (
+          <PhoneFold title={TECH_COMPLETION.treatmentLabel} summary="יומן">
           <Panel elevated>
             <p className="t-section mb-2 text-ink">
               {TECH_COMPLETION.treatmentLabel}
             </p>
             <p className="t-body whitespace-pre-wrap text-ink-2">{treatment}</p>
           </Panel>
+          </PhoneFold>
         ) : null}
 
         {attachments.length > 0 ? (
+          <PhoneFold title="תיעוד" summary={`${attachments.length}`}>
           <Panel elevated>
             <p className="t-section mb-3 text-ink">תיעוד</p>
             <EvidenceGrid attachments={attachments} />
           </Panel>
+          </PhoneFold>
         ) : ticket.status === 'in_progress' ? (
+          <PhoneFold title="תיעוד" summary="עדיין אין">
           <Panel elevated>
             <EmptyState
               title="עדיין אין הוכחת ביצוע"
               description="בסיום — צרפו תמונה או וידאו יחד עם סיכום הטיפול."
             />
           </Panel>
+          </PhoneFold>
         ) : null}
+        </PhoneFoldStack>
       </div>
     </TechShell>
   )

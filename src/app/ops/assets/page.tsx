@@ -8,6 +8,8 @@ import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { listSpends } from '@/lib/data/ops-ledger'
 import { spendAmountForTrueCost, spendsContributeToTrueCost } from '@/modules/spend/true-cost'
+import { PartsStock } from '../inventory/parts-stock'
+import { PhoneFold } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,9 +48,14 @@ export default async function AssetsPage() {
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
         <OpsPageHero
-          title="ציוד"
-          status="נכסים מקושרים לסניפים ולתקלות"
+          title="ציוד וחלקים"
+          status="למעלה הציוד בסניף. למטה החלקים במחסן."
         />
+        <section id="store" className="flex flex-col gap-3">
+          <div>
+            <h2 className="t-section text-ink">בסניף</h2>
+            <p className="t-meta mt-1 text-ink-2">המזגן, המנעול והקופה, עם העלות שנרשמה עליהם.</p>
+          </div>
         <AssetsAdmin
           stores={stores.map((s) => ({
             id: s.id,
@@ -58,6 +65,10 @@ export default async function AssetsPage() {
           tickets={tickets}
           assetTrueCost={assetTrueCost}
         />
+        </section>
+        <PhoneFold title="חלקים במחסן" summary="מלאי">
+        <PartsStock />
+        </PhoneFold>
       </div>
     </OpsAppShell>
   )

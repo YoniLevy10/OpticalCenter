@@ -8,12 +8,14 @@ import { listVendors } from '@/modules/vendors/service'
 import { listRecentAuditEvents } from '@/modules/audit/service'
 import { listTickets } from '@/modules/tickets/service'
 import { OPEN_TICKET_STATUSES, type TicketStatus } from '@/modules/tickets/constants'
-import { Panel } from '@/components/ui/primitives'
+import { Notice, Panel } from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { listOutcomes } from '@/lib/data/ops-ledger'
+import { formatIsraeliPhoneDisplay, normalizePhoneDigits } from '@/lib/phone'
 import { rankKnownVendors } from '@/modules/vendors/outcomes'
 import { addOutcomeAction } from '../work-actions'
+import { PhoneFold } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,11 +87,19 @@ export default async function VendorsPage() {
           title="ספקים"
           status={`${activeCount} פעילים · ${preferredCount} מועדפים`}
         />
+        <Notice tone="neutral">
+          <span className="t-body-strong block">
+            מאגר מועדפים + אנשי מקצוע ממידרג
+          </span>
+          <span className="t-meta text-ink-2 block mt-1">
+            שמרו אנשי קשר מתקלה — יופיעו מדורגים עם חיוג מהיר.
+          </span>
+        </Notice>
         <VendorsAdmin initialVendors={enriched} />
+        <PhoneFold title="תוצאת טיפול" summary={`${listOutcomes().length}`}>
         <Panel elevated>
-          <details>
-            <summary className="t-body cursor-pointer text-ink">תוצאת טיפול</summary>
-            <form action={addOutcomeAction} className="mt-3 grid gap-2 md:grid-cols-2">
+          <p className="t-section mb-3">תוצאת טיפול</p>
+          <form action={addOutcomeAction} className="grid gap-2 md:grid-cols-2">
             <Input name="vendorName" placeholder="שם ספק" required />
             <Input name="category" placeholder="סוג תקלה" defaultValue="hvac" />
             <Input name="region" placeholder="אזור" />
@@ -101,16 +111,34 @@ export default async function VendorsPage() {
               <input type="checkbox" name="success" defaultChecked /> הצליח
             </label>
             <Button type="submit">שמירה</Button>
-            </form>
-          </details>
-          <ul className="mt-3 space-y-1">
-            {rankKnownVendors(listOutcomes(), 'hvac').map((row) => (
-              <li key={`${row.vendorName}-${row.price}`} className="t-meta text-ink-2">
-                {row.vendorName} · {row.price ?? '—'} · איכות {row.quality ?? '—'}
-              </li>
-            ))}
+          </form>
+          <ul className="mt-3 space-y-2">
+            {rankKnownVendors(listOutcomes(), 'hvac').map((row) => {
+              const phone = enriched.find((vendor) => vendor.name === row.vendorName)?.contact_phone
+              const digits = normalizePhoneDigits(phone)
+              return (
+                <li key={`${row.vendorName}-${row.price}`} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="t-meta text-ink-2">
+                    {row.vendorName} · {row.price ?? '—'} · איכות {row.quality ?? '—'}
+                  </span>
+                  {digits ? (
+                    <a
+                      className="t-meta text-ink"
+                      href={`https://wa.me/${digits}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      וואטסאפ · {formatIsraeliPhoneDisplay(phone || digits)}
+                    </a>
+                  ) : (
+                    <span className="t-caption text-ink-3">אין טלפון — אי אפשר לפנות</span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </Panel>
+        </PhoneFold>
       </div>
     </OpsAppShell>
   )

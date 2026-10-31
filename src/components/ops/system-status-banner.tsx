@@ -51,6 +51,8 @@ export function SystemStatusBanner({
     }
   }, [])
 
+  if (level === 'partial' || level === 'unknown') return null
+
   const label = LEVEL_LABEL[level]
 
   // Status page removed from product nav — keep a quiet health chip only.

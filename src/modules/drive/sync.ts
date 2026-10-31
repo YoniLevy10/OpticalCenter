@@ -6,6 +6,11 @@ import {
   setDriveSync,
   type DriveSyncState,
 } from '@/lib/data/ops-ledger'
+import {
+  calibrationIntake,
+  splitCalibrations,
+  unclassifiedCertificateLabel,
+} from '@/modules/documents/calibrations'
 import type { StoreDocument } from '@/modules/documents/rules'
 import { documentTypeLabel } from '@/modules/documents/rules'
 import { markSourceDeleted, runIngestPipeline, type IngestedFile } from '@/modules/ingestion/pipeline'
@@ -66,9 +71,9 @@ const SHORT_TYPE: Record<string, string> = {
   fire: 'כיבוי',
   electrical: 'חשמל',
   hearing: 'שמיעה',
-  hearing_a: 'כיול-א',
-  hearing_b: 'כיול-ב',
-  hearing_c: 'כיול-ג',
+  hearing_a: 'טימפנומטר',
+  hearing_b: 'אודיומטר',
+  hearing_c: 'תא-אקוסטי',
   hearing_booth: 'תא-שמיעה',
   hearing_meter: 'כיול-אודיומטר',
   hearing_tymp: 'טימפנומטר',
@@ -251,6 +256,13 @@ function ingestRemote(
     storeCodeHint: remote.storeConflict ? null : remote.storeCode,
     extractedText: remote.text,
     knownStoreCodes: knownCodes,
+    stores: remote.storeConflict
+      ? []
+      : ISRAEL_STORES.map((store) => ({
+          code: store.code,
+          name: store.name,
+          city: store.city,
+        })),
     existingNames: existing.map((row) => row.name),
   })
   file.driveFileId = remote.id
@@ -272,6 +284,82 @@ function linkDocument(
   now: string,
   idFactory: () => string,
 ) {
+  const slices = splitCalibrations(file.name, remote.text)
+  if (slices.length > 0) {
+    const meta = storeMeta(file.storeCode)
+    for (const slice of slices) {
+      const intake = calibrationIntake(slice, file.storeCode)
+      const existing = documents.find(
+        (doc) => doc.driveFileId === remote.id && doc.docType === slice.docType && !doc.renewed,
+      )
+      if (existing) {
+        if (existing.fieldsLocked) continue
+        existing.storeId = file.storeCode ? meta.storeId : existing.storeId
+        existing.storeCode = file.storeCode ?? existing.storeCode
+        existing.storeName = file.storeCode ? meta.storeName : existing.storeName
+        existing.docType = slice.docType
+        existing.sourceUrl = file.sourceUrl
+        existing.driveFileId = remote.id
+        if (slice.expiry) existing.extractedExpiry = slice.expiry
+        existing.owner = ownerFromText(remote.text, existing.owner || meta.owner)
+        existing.intakeStatus = intake.intakeStatus
+        existing.intakeReason = intake.intakeReason
+        existing.localUpdatedAt = remote.modifiedTime
+        continue
+      }
+      documents.unshift({
+        id: idFactory(),
+        storeId: meta.storeId,
+        storeCode: file.storeCode ?? '',
+        storeName: meta.storeName,
+        docType: slice.docType,
+        sourceUrl: file.sourceUrl,
+        extractedExpiry: slice.expiry,
+        computedNextCheck: null,
+        owner: ownerFromText(remote.text, meta.owner),
+        intakeStatus: intake.intakeStatus,
+        intakeReason: intake.intakeReason,
+        version: 1,
+        previousId: null,
+        renewed: false,
+        createdAt: now,
+        driveFileId: remote.id,
+        fieldsLocked: false,
+        localUpdatedAt: remote.modifiedTime,
+      })
+    }
+    return
+  }
+  const unclassified = unclassifiedCertificateLabel(file.name, remote.text)
+  if (unclassified && !file.docType) {
+    const meta = storeMeta(file.storeCode)
+    const existing = documents.find((doc) => doc.driveFileId === remote.id && !doc.renewed)
+    if (!existing) {
+      documents.unshift({
+        id: idFactory(),
+        storeId: meta.storeId,
+        storeCode: file.storeCode ?? '',
+        storeName: meta.storeName,
+        docType: unclassified,
+        sourceUrl: file.sourceUrl,
+        extractedExpiry: null,
+        computedNextCheck: null,
+        owner: ownerFromText(remote.text, meta.owner),
+        intakeStatus: 'needs_review',
+        intakeReason: file.storeCode
+          ? 'סוג הכיול לא זוהה — ייתכן אישור שמכסה כמה כיולים'
+          : 'השיוך לסניף לא ודאי',
+        version: 1,
+        previousId: null,
+        renewed: false,
+        createdAt: now,
+        driveFileId: remote.id,
+        fieldsLocked: false,
+        localUpdatedAt: remote.modifiedTime,
+      })
+    }
+    return
+  }
   if (!file.docType || file.docType === 'inventory') return
   const meta = storeMeta(file.storeCode)
   const expiry = file.status === 'ingested' ? expiryFromText(remote.text) : null

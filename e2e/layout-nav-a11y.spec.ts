@@ -22,7 +22,7 @@ test.describe('Navigation & layout', () => {
     await gotoStable(page, '/ops')
     await expect(page).toHaveURL(/\/ops\/dashboard/)
     await expect(
-      page.getByRole('heading', { name: /דשבורד|ראשי|בוקר טוב|צהריים טובים|ערב טוב/ }),
+      page.getByRole('heading', { name: /דשבורד|ראשי|מה לעשות עכשיו|בוקר טוב|צהריים טובים|ערב טוב|לילה טוב/ }),
     ).toBeVisible()
     await gotoStable(page, '/ops/tickets')
     await expect(page.getByRole('heading', { name: 'תקלות' }).first()).toBeVisible()

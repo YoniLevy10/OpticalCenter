@@ -9,10 +9,7 @@
  */
 
 import { isBreached, type QueueTicket } from '@/modules/tickets/queue'
-import {
-  ticketDecision,
-  type DecisionItem,
-} from '@/modules/decisions/queue'
+import { type DecisionItem } from '@/modules/decisions/queue'
 import type { Locale } from '@/lib/i18n/locale'
 import { phrase } from '@/lib/i18n/phrases'
 import type { Actor } from '@/lib/auth/types'
@@ -265,19 +262,14 @@ export function buildOpenAlerts(input: {
   const map = new Map<string, OpsAlert>()
 
   for (const decision of input.decisions) {
+    if (decision.kind === 'ticket') continue
     const ticket = decision.ticketId ? byId.get(decision.ticketId) : undefined
     upsertAlert(map, alertFromDecision(decision, at, locale, ticket, now))
   }
 
-  // Exception / store-confirm tickets that did not produce a decision row.
   for (const ticket of input.tickets) {
-    if (ticket.status === 'resolved') {
-      upsertAlert(map, alertFromStoreConfirm(ticket, locale))
-      continue
-    }
-    const decision = ticketDecision(ticket, now, locale)
-    if (!decision) continue
-    upsertAlert(map, alertFromDecision(decision, at, locale, ticket, now))
+    if (ticket.status !== 'resolved') continue
+    upsertAlert(map, alertFromStoreConfirm(ticket, locale))
   }
 
   return [...map.values()].sort((a, b) => {

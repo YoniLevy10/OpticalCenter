@@ -3,8 +3,8 @@
 **Status:** Normative. Single source of truth for presentation.
 **Source of tokens:** `src/app/globals.css` — do not invent parallel values in screens.
 **Applies to:** every surface in `src/app/**`.
-**Brand:** soft charcoal ink (not pure black), warm white canvas, official diamond red `#d92621`.
-Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or pure-black voids.
+**Brand:** one warm family on every surface, including menus and night. Plaster `#f4f0ea`, espresso `#1f1c19`, clay `#8d4b38`.
+Do not add a second hue (green, blue, teal, or a brighter red).
 
 ---
 
@@ -13,7 +13,7 @@ Do not restyle toward Bamakor blue `#0066FF`, iOS gray `#f2f2f7`, teal ink, or p
 > **Color is a signal, not a surface.**
 
 Ink and space carry hierarchy. Color is spent where a decision is required.
-The product reads as Optical Center: soft charcoal type, white panels, diamond red on the mark and the primary action. Active nav may use `--tenant-soft`. Canvas stays warm white with a light OC-red breath — charcoal and red balance each other.
+The product reads as one surface: plaster canvas, espresso type, clay only on the primary action and an overdue count. Menus use the same surface as the page. Active nav may use `--tenant-soft`.
 
 Two supporting rules:
 
@@ -64,35 +64,35 @@ queue table, stores table). Login brand / modal keep `--shadow-pop`.
 
 | Token | Value | Use |
 |---|---|---|
-| `--canvas` | `#f7f6f2` | app background (warm showroom white) |
-| `--surface` | `#ffffff` | panels, rows, sheets |
-| `--surface-sunken` | `#f0efe9` | table headers, inert fills |
-| `--surface-raised` | `#ffffff` | floating surfaces (popover / dropdown) |
-| `--border` | `#e5e4de` | hairline |
-| `--border-strong` | `#d0cfc8` | emphasis |
-| `--ink` | `#2b2b28` | primary text (soft charcoal) |
-| `--ink-2` | `#5e5e59` | secondary text |
-| `--ink-3` | `#6f6f69` | tertiary / metadata |
+| `--canvas` | `#f4f0ea` | app background (plaster) |
+| `--surface` | `#fffcf9` | panels, rows, sheets, menus |
+| `--surface-sunken` | `#ebe4db` | table headers, inert fills |
+| `--surface-raised` | `#fffcf9` | floating surfaces (popover / dropdown) |
+| `--border` | `#e4dbd1` | hairline |
+| `--border-strong` | `#d4c9bd` | emphasis |
+| `--ink` | `#1f1c19` | primary text (espresso) |
+| `--ink-2` | `#6b625a` | secondary text |
+| `--ink-3` | `#5c554e` | tertiary / metadata |
 
 ### Layer 2 — Signal (identical for every tenant)
 
 | Signal | Base | Soft | Meaning |
 |---|---|---|---|
-| `critical` | `#c01e1e` | `#fef0f0` | breach, critical priority, destructive |
-| `warning` | `#8a5a12` | `#fdf5e6` | approaching breach, blocked |
-| `progress` | `#3b6cb8` | `#eaf1fa` | actively being worked |
-| `resolved` | `#187348` | `#e8f6ee` | done |
-| `idle` | `#8b90a0` | `#f5f6fa` | no attention required |
+| `critical` | `#8d4b38` | `#f3ebe6` | breach, critical priority, destructive |
+| `warning` | `#8d4b38` | `#f3ebe6` | approaching breach, blocked |
+| `progress` | `#1f1c19` | `#ebe4db` | actively being worked |
+| `resolved` | `#1f1c19` | `#ebe4db` | done |
+| `idle` | `#6b625a` | `#ebe4db` | no attention required |
 
 ### Layer 3 — Tenant
 
 | Token | Value |
 |---|---|
-| `--tenant` | `#d92621` |
-| `--tenant-hover` | `#b31c18` |
-| `--tenant-soft` | `#faf0ef` |
-| `--tenant-line` | `#f0c9c7` |
-| `--tenant-contrast` | `#ffffff` |
+| `--tenant` | `#8d4b38` |
+| `--tenant-hover` | `#743c2c` |
+| `--tenant-soft` | `#f3ebe6` |
+| `--tenant-line` | `#e4cfc4` |
+| `--tenant-contrast` | `#fffcf9` |
 
 Permitted: logo mark · primary action fill · active nav (soft fill + indicator).
 **Forbidden** on ticket status, priority, SLA, data rows, charts. Never Bamakor blue.

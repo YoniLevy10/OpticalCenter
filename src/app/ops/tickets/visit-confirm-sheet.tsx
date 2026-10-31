@@ -122,6 +122,9 @@ export function VisitConfirmSheet({
       <div className="flex flex-col gap-4">
         {!result ? (
           <>
+            <p className="t-body text-ink">
+              זה לא רץ לבד. כאן בוחרים ספק ומאשרים שיגור לביקור אחד. בלי לחיצה לא נשלח כלום.
+            </p>
             <dl className="t-caption grid gap-2 text-ink-2">
               <div className="flex justify-between gap-3">
                 <dt>חנות</dt>

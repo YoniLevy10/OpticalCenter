@@ -2,18 +2,23 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { Phone } from 'lucide-react'
+import { MessageCircle, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import type { Professional } from '@/modules/professionals/types'
-import { formatIsraeliPhoneDisplay } from '@/lib/phone'
+import { formatIsraeliPhoneDisplay, normalizePhoneDigits } from '@/lib/phone'
 import { cn } from '@/lib/utils'
 
 function dialHref(phone: string | null | undefined): string | null {
-  if (!phone?.trim()) return null
-  const digits = phone.replace(/[^\d+]/g, '')
+  const digits = normalizePhoneDigits(phone)
   if (!digits) return null
-  return `tel:${digits}`
+  return `tel:+${digits}`
+}
+
+function whatsAppHref(phone: string | null | undefined): string | null {
+  const digits = normalizePhoneDigits(phone)
+  if (!digits) return null
+  return `https://wa.me/${digits}`
 }
 
 function usageLabel(count: number): string {
@@ -50,6 +55,7 @@ export function ProfessionalsBook({
     <ul className="divide-y divide-border">
       {professionals.map((p) => {
         const tel = dialHref(p.phone)
+        const whatsapp = whatsAppHref(p.phone)
         return (
           <li
             key={p.id}
@@ -67,6 +73,21 @@ export function ProfessionalsBook({
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
+              {whatsapp ? (
+                <Button asChild variant="secondary" size="sm" className="min-h-[44px]">
+                  <a
+                    href={whatsapp}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`וואטסאפ אל ${p.full_name}`}
+                    onClick={() => void touch(p.id)}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+                    וואטסאפ
+                  </a>
+                </Button>
+              ) : null}
               {tel ? (
                 <Button
                   asChild

@@ -6,7 +6,7 @@ import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { assign, updateStatus } from '@/modules/tickets/service'
 import { applySpendDecision } from '@/lib/data/ops-ledger'
 import { persistOpsLedger } from '@/lib/data/ops-db'
-import { notifyPhone } from '@/modules/notify/ari'
+import { notifyManagerInWindow } from '@/modules/whatsapp/window-reply'
 import { ISRAEL_STORES } from '@/modules/stores/israel-stores'
 
 async function allow() {
@@ -37,7 +37,7 @@ export async function approveSpendFromQueue(spendId: string) {
   const spend = applySpendDecision(spendId, 'approved', actor?.full_name || 'ארי')
   const store = ISRAEL_STORES.find((row) => row.code === spend.storeCode)
   if (store?.managerPhone) {
-    await notifyPhone(
+    await notifyManagerInWindow(
       store.managerPhone,
       `סניף ${spend.storeCode}: הבקשה «${spend.reason}» אושרה.`,
     )

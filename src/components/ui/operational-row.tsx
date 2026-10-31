@@ -42,7 +42,7 @@ export function OperationalRow({
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="t-caption t-num text-ink-3">{leading}</span>
+        <span className="op-row-kicker t-caption t-num text-ink-3">{leading}</span>
         {trailing}
       </div>
 
@@ -74,7 +74,12 @@ export function RowList({
   className?: string
 }) {
   return (
-    <div className={cn('divide-y divide-border bg-surface', className)}>
+    <div
+      className={cn(
+        'phone-list divide-y divide-border bg-surface max-md:divide-y-0',
+        className,
+      )}
+    >
       {children}
     </div>
   )

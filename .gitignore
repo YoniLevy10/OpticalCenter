@@ -35,6 +35,9 @@ yarn-debug.log*
 .env*.local
 .env.local
 
+# local snapshot of Ari's mail, used only when Supabase keys are absent
+.local/
+
 # vercel
 .vercel
 

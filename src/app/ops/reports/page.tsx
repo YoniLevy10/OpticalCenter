@@ -33,11 +33,13 @@ import {
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
+import { ensurePreviousMonthSnapshot } from '@/modules/reports/ensure-monthly'
 import {
   defaultOrganizationId,
   listReportSnapshots,
 } from '@/modules/reports/snapshots'
 import { cn } from '@/lib/utils'
+import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,6 +103,7 @@ export default async function ReportsPage({
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
 
   const orgId = actor?.memberships[0]?.organization_id ?? defaultOrganizationId()
+  await ensurePreviousMonthSnapshot(orgId).catch(() => null)
 
   const [openResult, doneResult, allResult, techRows, snapshotResult] =
     await Promise.all([
@@ -224,8 +227,12 @@ export default async function ReportsPage({
           }
         />
 
+        <PhoneFoldStack>
+        <PhoneFold title="סינון" summary={rangeLabel}>
         <ReportsFilters from={from} to={to} status={status} />
+        </PhoneFold>
 
+        <PhoneFold title="ייצוא" summary={`${all.length} תקלות`}>
         <Panel elevated className="!p-4 md:!p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -237,6 +244,7 @@ export default async function ReportsPage({
             </div>
           </div>
         </Panel>
+        </PhoneFold>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {metrics.map((c) => (
@@ -250,6 +258,7 @@ export default async function ReportsPage({
           ))}
         </div>
 
+        <PhoneFold title="פירוט" summary={`${all.length} תקלות`}>
         <div className="grid gap-5 lg:grid-cols-2">
           <Panel elevated className="!p-4 md:!p-5">
             <PanelHeader title="התפלגות לפי קטגוריה" meta="תקלות בטווח" />
@@ -546,12 +555,7 @@ export default async function ReportsPage({
           {snapshots.length === 0 ? (
             <EmptyState
               title="אין דוחות שמורים עדיין"
-              description="שמרו דוח לטווח למעלה, או צרו דוח חודשי בעמוד ההיסטוריה."
-              action={
-                <Button asChild variant="secondary" size="sm">
-                  <Link href="/ops/reports/history">יצירת דוח חודשי</Link>
-                </Button>
-              }
+              description="ב-1 לחודש נשמר כאן אוטומטית דוח של החודש שהסתיים."
             />
           ) : (
             <ul className="divide-y divide-border">
@@ -607,6 +611,8 @@ export default async function ReportsPage({
             </ul>
           )}
         </Panel>
+        </PhoneFold>
+        </PhoneFoldStack>
       </div>
     </OpsAppShell>
   )

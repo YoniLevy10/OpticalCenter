@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { ReportsHistoryClient } from './reports-history-client'
+import { PhoneFold } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,9 @@ export default async function ReportsHistoryPage() {
           }
         />
 
+        <PhoneFold title="דוחות שנשמרו" summary="פירוט וייצוא">
         <ReportsHistoryClient />
+        </PhoneFold>
       </div>
     </OpsAppShell>
   )

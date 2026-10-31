@@ -12,39 +12,16 @@ import {
 } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
+import { listSpends } from '@/lib/data/ops-ledger'
+import { recordedTicketAmount } from '@/modules/recommendations/estimate'
 import {
-  TICKET_CATEGORY_LABELS_HE,
-  TICKET_PRIORITY_LABELS_HE,
-  TICKET_STATUS_LABELS_HE,
-  OPEN_TICKET_STATUSES,
-} from '@/modules/tickets/constants'
-import {
+  buildTicketsCsv,
   buildTicketsPdf,
   buildTicketsXlsx,
 } from '@/modules/reports/export-formats'
 import { captureError } from '@/lib/monitoring'
 import { checkRateLimit } from '@/lib/rate-limit'
-
-const CSV_HEADERS = [
-  'מספר',
-  'סטטוס',
-  'עדיפות',
-  'קטגוריה',
-  'קוד חנות',
-  'שם חנות',
-  'נוצר',
-  'נפתר',
-  'טכנאי',
-]
-
-function esc(v: unknown): string {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
-function toCsv(rows: string[][]): string {
-  return rows.map((r) => r.map(esc).join(',')).join('\n')
-}
 
 function monthRange(month: string): { from: string; to: string } | null {
   const m = month.match(/^(\d{4})-(\d{2})$/)
@@ -115,65 +92,54 @@ export async function GET(request: Request) {
     }))
     const kpis = computeDashboardKpis(scoped, technicians)
     const sla = computeSlaReport(scoped)
+    const spends = listSpends()
+    const recorded: Record<string, number> = {}
+    for (const ticket of scoped) {
+      const amount = recordedTicketAmount(spends, ticket.id)
+      if (amount != null) recorded[ticket.id] = amount
+    }
+    const techNames: Record<string, string> = {}
+    for (const tech of technicians) techNames[tech.id] = tech.name
+    const report = {
+      tickets: scoped,
+      kpis,
+      sla,
+      from,
+      to,
+      techNames,
+      recorded,
+    }
 
-    const baseName = month ?? `${from ?? 'all'}-${to ?? 'all'}`
+    const baseName =
+      month ?? (from || to ? `${from ?? 'start'}-${to ?? 'today'}` : 'report')
+    const filename = `optical-center-${baseName}`
 
     if (format === 'xlsx') {
-      const buf = await buildTicketsXlsx({
-        tickets: scoped,
-        kpis,
-        sla,
-        from,
-        to,
-      })
+      const buf = await buildTicketsXlsx(report)
       return new NextResponse(new Uint8Array(buf), {
         headers: {
           'Content-Type':
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': `attachment; filename="maintainos-${baseName}.xlsx"`,
+          'Content-Disposition': `attachment; filename="${filename}.xlsx"`,
         },
       })
     }
 
     if (format === 'pdf') {
-      const buf = await buildTicketsPdf({
-        tickets: scoped,
-        kpis,
-        sla,
-        from,
-        to,
-      })
+      const buf = await buildTicketsPdf(report)
       return new NextResponse(new Uint8Array(buf), {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="maintainos-${baseName}.pdf"`,
+          'Content-Disposition': `attachment; filename="${filename}.pdf"`,
         },
       })
     }
 
-    const rows: string[][] = [
-      CSV_HEADERS,
-      ...scoped.map((t) => [
-        t.display_number ?? (t.number != null ? `OC-${t.number}` : t.id),
-        TICKET_STATUS_LABELS_HE[t.status as keyof typeof TICKET_STATUS_LABELS_HE] ??
-          t.status,
-        TICKET_PRIORITY_LABELS_HE[
-          t.priority as keyof typeof TICKET_PRIORITY_LABELS_HE
-        ] ?? t.priority,
-        TICKET_CATEGORY_LABELS_HE[t.category ?? 'other'] ?? t.category,
-        t.stores?.code ?? '',
-        t.stores?.name ?? '',
-        t.created_at,
-        t.resolved_at ?? '',
-        t.assigned_to ?? '',
-      ]),
-    ]
-
-    const csv = '\uFEFF' + toCsv(rows)
+    const csv = buildTicketsCsv(report)
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="maintainos-${baseName}.csv"`,
+        'Content-Disposition': `attachment; filename="${filename}.csv"`,
       },
     })
   } catch (err) {

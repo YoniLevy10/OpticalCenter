@@ -23,6 +23,9 @@ export type StoreDocument = {
   localUpdatedAt?: string | null
   /** WhatsApp sender to answer after Ari decides. */
   originWaId?: string | null
+  /** Hand-set reminder dates. Empty falls back to six months and two months before expiry. */
+  reminderSixAt?: string | null
+  reminderTwoAt?: string | null
 }
 
 /** Days before due date when month-ahead reminders fire (≈1 calendar month). */
@@ -34,36 +37,39 @@ export type DocumentTypeDef = {
   cycleMonths: number
   /** When true, cron + ops UI surface a month-ahead reminder. */
   monthAheadReminder?: boolean
-  /** Hearing calibration family (כיול א/ב/ג). */
+  /** Hearing calibration family (טימפנומטר / אודיומטר / תא אקוסטי). */
   hearingCalibration?: boolean
 }
 
 /**
- * C08 — hearing calibrations ×3 (Ari-approved placeholders):
- * כיול א · כיול ב · כיול ג. Annual cycle + month-ahead reminder.
- * Legacy `hearing` kept for existing rows / Drive ingest.
+ * Hearing calibrations Ari defined for every hearing store:
+ * hearing_a טימפנומטר — 12 months
+ * hearing_b אודיומטר — 12 months
+ * hearing_c תא אקוסטי — 24 months
+ * Keys stay hearing_a/b/c so existing rows keep their type.
+ * Legacy `hearing` stays readable for older rows.
  */
 export const DOCUMENT_TYPES: readonly DocumentTypeDef[] = [
   { key: 'fire', label: 'כיבוי אש', cycleMonths: 12 },
   { key: 'electrical', label: 'חשמל', cycleMonths: 12 },
   {
     key: 'hearing_a',
-    label: 'כיול א',
+    label: 'טימפנומטר',
     cycleMonths: 12,
     monthAheadReminder: true,
     hearingCalibration: true,
   },
   {
     key: 'hearing_b',
-    label: 'כיול ב',
+    label: 'אודיומטר',
     cycleMonths: 12,
     monthAheadReminder: true,
     hearingCalibration: true,
   },
   {
     key: 'hearing_c',
-    label: 'כיול ג',
-    cycleMonths: 12,
+    label: 'תא אקוסטי',
+    cycleMonths: 24,
     monthAheadReminder: true,
     hearingCalibration: true,
   },
@@ -146,6 +152,59 @@ export function isDocumentDueSoon(doc: StoreDocument, now = new Date()): boolean
 
 export function documentNeedsReminder(doc: StoreDocument, now = new Date()): boolean {
   return isDocumentOverdue(doc, now) || isDocumentDueSoon(doc, now)
+}
+
+export type DocumentReminder = {
+  months: 6 | 2
+  label: string
+  at: string
+}
+
+/** Two reminders on every dated document: half a year before, then two months before. */
+export function documentReminders(expiryIso: string): DocumentReminder[] {
+  return [
+    { months: 6, label: 'חצי שנה לפני', at: shiftMonthsUtc(expiryIso, -6) },
+    { months: 2, label: 'חודשיים לפני', at: shiftMonthsUtc(expiryIso, -2) },
+  ]
+}
+
+/** Computed reminders, replaced when someone edited a date on the card. */
+export function remindersFor(doc: StoreDocument): DocumentReminder[] {
+  const due = documentDueAt(doc)
+  const defaults = due ? documentReminders(due) : []
+  const six = doc.reminderSixAt || defaults.find((row) => row.months === 6)?.at
+  const two = doc.reminderTwoAt || defaults.find((row) => row.months === 2)?.at
+  const rows: DocumentReminder[] = []
+  if (six) rows.push({ months: 6, label: 'חצי שנה לפני', at: six })
+  if (two) rows.push({ months: 2, label: 'חודשיים לפני', at: two })
+  return rows
+}
+
+/** Which reminder has arrived, while the document itself is not yet overdue. */
+export function documentReminderStage(
+  doc: StoreDocument,
+  now = new Date(),
+): 'six' | 'two' | null {
+  const due = documentDueAt(doc)
+  if (doc.renewed || doc.intakeStatus === 'failed') return null
+  if (due && isDocumentOverdue(doc, now)) return null
+  const rows = remindersFor(doc)
+  const nowMs = now.getTime()
+  const two = rows.find((row) => row.months === 2)
+  const six = rows.find((row) => row.months === 6)
+  if (two && nowMs >= new Date(two.at).getTime()) return 'two'
+  if (six && nowMs >= new Date(six.at).getTime()) return 'six'
+  return null
+}
+
+function shiftMonthsUtc(iso: string, months: number): string {
+  const date = new Date(iso)
+  const day = date.getUTCDate()
+  date.setUTCDate(1)
+  date.setUTCMonth(date.getUTCMonth() + months)
+  const last = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(day, last))
+  return date.toISOString()
 }
 
 /** A renewal closes only after a new file is attached and marked ingested. */

@@ -52,10 +52,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   /* Status-bar chrome; ThemeProvider updates meta theme-color at runtime. */
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#e6e2d8' },
-    { media: '(prefers-color-scheme: dark)', color: '#101012' },
-  ],
+  themeColor: '#f4f0ea',
   width: 'device-width',
   initialScale: 1,
   /* Required for safe-area insets to resolve in standalone PWA mode. */

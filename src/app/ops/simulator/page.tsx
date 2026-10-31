@@ -3,12 +3,14 @@ import { PageToolbar } from '@/components/layout/page-toolbar'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Panel } from '@/components/ui/primitives'
 import { SimulatorForm } from './simulator-form'
+import { PhoneDesktopOnly } from '@/components/layout/phone-desktop-only'
 
 export const dynamic = 'force-dynamic'
 
 export default function SimulatorPage() {
   return (
     <OpsAppShell>
+      <PhoneDesktopOnly title="סימולטור">
       <div className="flex flex-col gap-5 stagger">
         <PageToolbar backHref="/ops/lab" backLabel="חזרה" showRefresh />
         <OpsPageHero
@@ -19,6 +21,7 @@ export default function SimulatorPage() {
           <SimulatorForm />
         </Panel>
       </div>
+      </PhoneDesktopOnly>
     </OpsAppShell>
   )
 }

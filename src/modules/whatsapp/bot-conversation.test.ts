@@ -1,6 +1,5 @@
 /**
- * End-to-end conversation contract for store WhatsApp intake:
- * templates (WA_COPY) → optional AI rewrite via Vercel Gateway → ticket open.
+ * Store WhatsApp intake sends the fixed template. The model does not paraphrase it.
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { processInboundMessage } from '@/modules/whatsapp/intake'
@@ -74,7 +73,7 @@ describe('WhatsApp store conversation (Vercel AI Gateway)', () => {
     expect(generateTextMock).not.toHaveBeenCalled()
   })
 
-  it('rewrites ask-store template via Vercel Gateway when enabled', async () => {
+  it('sends the store-code template unchanged even when the rewrite flag is on', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
@@ -91,33 +90,22 @@ describe('WhatsApp store conversation (Vercel AI Gateway)', () => {
     expect(r.ok).toBe(true)
     expect(r.ticketId).toBeFalsy()
     expect(r.state).toBe('awaiting_store')
-    expect(r.reply).toBe('היי! שלחו קוד חנות או סרקו QR ליד הדלפק.')
-    expect(generateTextMock).toHaveBeenCalled()
-    const call = generateTextMock.mock.calls[0]?.[0] as {
-      system?: string
-      prompt?: string
-      model?: string
-    }
-    expect(call.system).toMatch(/MILO|Optical Center/)
-    expect(call.prompt).toContain(WA_COPY.askStore.slice(0, 20))
-    expect(call.model).toMatch(/^anthropic\//)
+    expect(r.reply).toBe(WA_COPY.askStore)
+    expect(generateTextMock).not.toHaveBeenCalled()
   })
 
-  it('falls back to WA_COPY when Gateway call throws', async () => {
+  it('asks one English question for a thin report and does not open a ticket', async () => {
     const waId = `97250${Math.floor(Math.random() * 1e7)
       .toString()
       .padStart(7, '0')}`
-    process.env.WHATSAPP_AI_ENABLED = 'true'
-    process.env.WHATSAPP_AI_INTAKE_ENABLED = 'false'
-    process.env.AI_GATEWAY_API_KEY = 'gw-test'
-    generateTextMock.mockRejectedValue(new Error('boom'))
-
-    const r = await processInboundMessage(msg({ text: 'שלום' }, waId), {
+    await processInboundMessage(msg({ text: 'STORE_172' }, waId), {
+      skipOutboundGraph: true,
+    })
+    const r = await processInboundMessage(msg({ text: 'problem' }, waId), {
       skipOutboundGraph: true,
     })
     expect(r.ok).toBe(true)
     expect(r.ticketId).toBeFalsy()
-    expect(r.state).toBe('awaiting_store')
-    expect(r.reply).toBe(WA_COPY.askStore)
+    expect(r.reply).toMatch(/What exactly is not working/i)
   })
 })

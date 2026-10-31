@@ -33,7 +33,7 @@ export const PRODUCT_ROLE_HELP_HE: Record<ProductRole, string> = {
   global_admin: 'הכל: משתמשים, הגדרות, תפעול, חנויות',
   global_maintenance: 'מרכז שליטה: תקלות, חנויות, דוחות — בלי ניהול משתמשים',
   store_employee: 'פורטל חנות בלבד — דיווח ומעקב',
-  internal_technician: 'פורטל טכנאי — עבודות ששויכו אליו',
+  internal_technician: 'רואה רק עבודות ששויכו אליו',
 }
 
 export const PRODUCT_ROLE_OPTIONS: {

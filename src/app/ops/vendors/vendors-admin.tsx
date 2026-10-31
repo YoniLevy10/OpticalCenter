@@ -9,7 +9,8 @@ import {
   useState,
 } from 'react'
 import Link from 'next/link'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, MessageCircle, Phone, Plus } from 'lucide-react'
+import { formatIsraeliPhoneDisplay, normalizePhoneDigits } from '@/lib/phone'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import {
@@ -53,9 +54,34 @@ function specialtyLabel(raw: string) {
   return TICKET_CATEGORY_LABELS_HE[key] ?? raw
 }
 
-function contactLine(v: VendorRow) {
-  if (v.contact_phone && v.contact_email) return v.contact_phone
-  return v.contact_phone || v.contact_email || '—'
+function reachLinks(phone: string | null) {
+  const digits = normalizePhoneDigits(phone)
+  if (!digits) return null
+  return {
+    tel: `tel:+${digits}`,
+    wa: `https://wa.me/${digits}`,
+    label: formatIsraeliPhoneDisplay(phone || digits),
+  }
+}
+
+function VendorReach({ vendor }: { vendor: VendorRow }) {
+  const links = reachLinks(vendor.contact_phone)
+  if (!links) {
+    return <span className="t-caption text-ink-3">אין טלפון</span>
+  }
+  const icon =
+    'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-ink hover:bg-surface-sunken'
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+      <span dir="ltr" className="t-meta text-ink">{links.label}</span>
+      <a href={links.wa} target="_blank" rel="noreferrer" aria-label={`וואטסאפ אל ${vendor.name}`} className={icon}>
+        <MessageCircle className="h-4 w-4" aria-hidden />
+      </a>
+      <a href={links.tel} aria-label={`התקשר אל ${vendor.name}`} className={icon}>
+        <Phone className="h-4 w-4" aria-hidden />
+      </a>
+    </span>
+  )
 }
 
 function fmtShort(iso: string) {
@@ -499,11 +525,7 @@ export function VendorsAdmin({
                           ? ` · ${v.coverage_regions.join(', ')}`
                           : ''
                       } · ${v.open_tickets} פתוחות`}
-                      footer={
-                        <span dir="ltr" className="t-caption text-ink-3">
-                          {contactLine(v)}
-                        </span>
-                      }
+                      footer={<VendorReach vendor={v} />}
                       trailing={
                         <Button
                           type="button"
@@ -522,14 +544,13 @@ export function VendorsAdmin({
               })}
             </AdminRowList>
 
-            <div className="hidden md:block">
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <THead>
                   <TH>שם</TH>
                   <TH>תחום</TH>
                   <TH>יצירת קשר</TH>
                   <TH>פתוחות</TH>
-                  <TH>זמן תגובה ממוצע</TH>
                   <TH className="w-[120px]">פעולות</TH>
                 </THead>
                 <TBody>
@@ -538,7 +559,7 @@ export function VendorsAdmin({
                     return (
                       <Fragment key={v.id}>
                         <TR>
-                          <TD>
+                          <TD className="whitespace-nowrap">
                             <button
                               type="button"
                               className="flex items-center gap-1.5 text-start"
@@ -562,24 +583,12 @@ export function VendorsAdmin({
                               {specialtyLabel(v.specialties)}
                             </span>
                           </TD>
-                          <TD>
-                            <span className="t-meta block text-ink-2" dir="ltr">
-                              {v.contact_phone || '—'}
-                            </span>
-                            {v.contact_email ? (
-                              <span className="t-caption block text-ink-3" dir="ltr">
-                                {v.contact_email}
-                              </span>
-                            ) : null}
+                          <TD className="whitespace-nowrap">
+                            <VendorReach vendor={v} />
                           </TD>
                           <TD>
                             <span className="t-body-strong t-num text-ink">
                               {v.open_tickets}
-                            </span>
-                          </TD>
-                          <TD>
-                            <span className="t-meta t-num text-ink-2">
-                              {v.avg_response_label || '—'}
                             </span>
                           </TD>
                           <TD>
@@ -597,7 +606,7 @@ export function VendorsAdmin({
                         {open ? (
                           <TR>
                             <td
-                              colSpan={6}
+                              colSpan={5}
                               className="bg-surface-sunken/40 px-0 align-middle"
                             >
                               <VendorExpand v={v} />

@@ -13,8 +13,8 @@
     "browser"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#f5f6fa",
-  "theme_color": "#ffffff",
+  "background_color": "#f4f0ea",
+  "theme_color": "#f4f0ea",
   "shortcuts": [
     {
       "name": "העבודות שלי",

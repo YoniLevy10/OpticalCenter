@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { ChevronDown } from 'lucide-react'
 import {
   TICKET_CATEGORIES,
   TICKET_CATEGORY_LABELS_HE,
@@ -25,6 +26,35 @@ import {
 } from '../../work-actions'
 import { formatIsraeliPhoneDisplay } from '@/lib/phone'
 import { cn } from '@/lib/utils'
+
+function PhoneMore({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="min-w-0 md:contents">
+      <button
+        type="button"
+        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] px-3 text-start md:hidden"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="t-body-strong text-ink">{title}</span>
+        <ChevronDown
+          className={cn('h-5 w-5 shrink-0 text-ink-3', open && 'rotate-180')}
+          aria-hidden
+        />
+      </button>
+      <div className={cn('min-w-0 md:contents', open ? 'mt-2 md:mt-0' : 'max-md:hidden')}>
+        {children}
+      </div>
+    </div>
+  )
+}
 
 type MatchRow = {
   id: string
@@ -272,6 +302,7 @@ export function TicketTrialPanel({
         {error ? <p className="t-caption mt-2 text-[var(--signal-critical)]">{error}</p> : null}
       </Panel>
 
+      <PhoneMore title={t('ticket.classCorrectTitle')}>
       <Panel elevated data-testid="classification-correct">
         <p className="t-section mb-1 text-ink">{t('ticket.classCorrectTitle')}</p>
         <p className="t-meta mb-3 text-ink-2">{t('ticket.classCorrectHint')}</p>
@@ -330,6 +361,7 @@ export function TicketTrialPanel({
           ) : null}
         </div>
       </Panel>
+      </PhoneMore>
 
       <Panel elevated>
         <p
@@ -346,6 +378,7 @@ export function TicketTrialPanel({
         </p>
       </Panel>
 
+      <PhoneMore title={t('ticket.prosTitle')}>
       <Panel elevated>
         <p className="t-section mb-3 text-ink">{t('ticket.prosTitle')}</p>
         {matches.length === 0 ? (
@@ -367,7 +400,9 @@ export function TicketTrialPanel({
           </ul>
         )}
       </Panel>
+      </PhoneMore>
 
+      <PhoneMore title={t('ticket.payTitle')}>
       <Panel elevated>
         <p className="t-section mb-1 text-ink">{t('ticket.payTitle')}</p>
         <p className="t-meta mb-3 text-ink-2">{t('ticket.payHint')}</p>
@@ -391,6 +426,7 @@ export function TicketTrialPanel({
           </Button>
         </form>
       </Panel>
+      </PhoneMore>
     </>
   )
 }

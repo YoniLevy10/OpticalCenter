@@ -8,6 +8,7 @@ import {
 import { Tx } from '@/components/i18n/tx'
 import { SettingsForm } from './settings-form'
 import { getSettings } from '@/modules/settings/service'
+import { PhoneFold } from '@/components/layout/phone-fold'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,9 @@ export default async function SettingsPage() {
           status={`${settings.brand_name} · ${settings.country_label}`}
         />
 
+        <PhoneFold title="עריכה" summary={`${settings.brand_name} · ${settings.country_label}`}>
         <SettingsForm initial={settings} />
+        </PhoneFold>
 
         <GroupedList>
           <GroupedSection title="פריסה">

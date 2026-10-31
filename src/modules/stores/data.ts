@@ -13,6 +13,8 @@ export type StoreRow = {
   manager_name_en?: string | null
   manager_phone?: string | null
   area_manager?: string | null
+  store_phone?: string | null
+  store_email?: string | null
 }
 
 export type TicketRow = {
@@ -76,7 +78,7 @@ export async function fetchStores(opts?: {
     let query = supabase
       .from('stores')
       .select(
-        'id, code, name, city, address, region_id, is_active, manager_name, manager_name_en, manager_phone, area_manager',
+        'id, code, name, city, address, region_id, is_active, manager_name, manager_name_en, manager_phone, area_manager, store_phone, store_email',
       )
       .order('code')
     if (!opts?.includeInactive) {

@@ -27,9 +27,13 @@ describe('whatsapp ai', () => {
     expect(isWhatsAppAiEnabled()).toBe(true)
   })
 
-  it('returns base text when AI disabled', async () => {
+  it('returns the template even when the rewrite flag is on', async () => {
+    process.env.WHATSAPP_AI_ENABLED = 'true'
+    process.env.AI_GATEWAY_API_KEY = 'gw-test'
     const base = 'שלום! שלחו קוד חנות.'
-    await expect(enhanceWhatsAppMessage(base)).resolves.toBe(base)
+    await expect(
+      enhanceWhatsAppMessage(base, { situation: 'intake_ask_store' }),
+    ).resolves.toBe(base)
   })
 
   it('interpolates template vars', () => {

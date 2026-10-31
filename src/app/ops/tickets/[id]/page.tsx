@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
@@ -6,6 +7,7 @@ import {
   KeyValue,
 } from '@/components/ui/primitives'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { Button } from '@/components/ui/button'
 import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import {
@@ -38,7 +40,6 @@ import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 import {
   plainAgoHe,
   plainOpenForHe,
-  storeLabel,
 } from '@/components/ops/plain-labels'
 import { cn } from '@/lib/utils'
 import { listTickets } from '@/modules/tickets/service'
@@ -54,8 +55,11 @@ import { suggestVendorsForTicket } from '@/modules/vendors/service'
 import { windowsFromSettings } from '@/modules/tickets/sla'
 import { getSettings } from '@/modules/settings/service'
 import { spendsForAsset, spendsForTicket } from '@/lib/data/ops-ledger'
+import { formatIls, trueCostBreakdown } from '@/modules/spend/true-cost'
+import { PhoneFold as TicketFold, PhoneFoldStack as TicketFoldStack } from '@/components/layout/phone-fold'
 import { formatQualityHoldHe, isQualityHoldActive } from '@/modules/tickets/quality-hold'
 import { formatRepairEtaHe } from '@/modules/tickets/repair-eta'
+import { ticketDecision } from '@/modules/decisions/queue'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,7 +105,15 @@ export default async function TicketDetailPage({
   const locale = await getLocale()
   const p = (text: string) => phrase(locale, text)
   const openFor = plainOpenForHe(ticket.created_at, ticket, new Date(), locale)
-  const storeHeading = storeLabel(ticket.stores, locale)
+  const decision = ticketDecision(ticket, new Date(), locale)
+  const openTicket = !['resolved', 'closed', 'cancelled'].includes(ticket.status)
+  const verb = decision
+    ? decision.action.split('·')[0]?.trim()
+    : openTicket
+      ? p('לטפל')
+      : null
+  const storeName = ticket.stores?.name?.trim() || p('חנות')
+  const storeCode = ticket.stores?.code?.trim()
   const whatsBroken = ticket.description || ticket.title || p('ללא תיאור')
   const reporter =
     ticket.reporter_name?.trim() ||
@@ -220,17 +232,33 @@ export default async function TicketDetailPage({
     return null
   })()
 
+  const activity = buildActivityDesc(ticket.messages ?? [], ticket.events ?? [])
+  const latest = activity[0]
+  const latestSummary = latest
+    ? [latest.label, latest.body?.trim()].filter(Boolean).join(' · ')
+    : p('אין פעילות')
+  const cost = trueCostBreakdown(ticketSpends)
+  const costSummary =
+    cost.count === 0 ? tx('ticket.trueCostEmpty') : formatIls(cost.total)
+  const vendorSummary = vendors.matches[0]?.name ?? p('אין התאמה עדיין')
+
   return (
     <OpsAppShell>
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-actions-hq md:pb-0">
+      <div className="ari-home mx-auto flex min-w-0 max-w-2xl flex-col gap-3 overflow-x-clip pb-actions-hq md:gap-5 md:pb-0">
         <PageToolbar backHref="/ops/tickets" backLabel="חזרה" showRefresh />
 
         <OpsPageHero
+          compact
           eyebrow={
-            ticket.display_number ||
-            (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+            [
+              ticket.display_number ||
+                (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8)),
+              storeCode,
+            ]
+              .filter(Boolean)
+              .join(' · ')
           }
-          title={storeHeading}
+          title={storeName}
           status={whatsBroken}
           footer={
             <>
@@ -251,175 +279,194 @@ export default async function TicketDetailPage({
           }
         />
 
-        <Panel elevated>
-          <dl className="divide-y divide-border">
-            <KeyValue label={tx('ticket.opened')}>
+        {verb ? (
+          <div className="hidden items-center justify-end px-1 md:flex">
+            {openFor.overdue || !ticket.assigned_to ? (
+              <Button asChild variant="primary" size="sm">
+                <Link href="#ticket-actions">{verb}</Link>
+              </Button>
+            ) : (
+              <Link href="#ticket-actions" className="t-body text-ink">
+                {verb}
+              </Link>
+            )}
+          </div>
+        ) : null}
+
+        <Panel elevated className="max-md:p-3">
+          <dl className="grid grid-cols-2 gap-2 md:block md:divide-y md:divide-border max-md:[&>*:last-child:nth-child(odd)]:col-span-2">
+            <KeyValue phoneTile label={tx('ticket.opened')}>
               {plainAgoHe(ticket.created_at, new Date(), locale)}
             </KeyValue>
-            <KeyValue label={tx('ticket.urgency')}>
+            <KeyValue phoneTile label={tx('ticket.urgency')}>
               {tx(`priority.${priority}`)}
             </KeyValue>
-            <KeyValue label={tx('ticket.tech')}>
+            <KeyValue phoneTile label={tx('ticket.tech')}>
               {assignee ? (
                 assignee.full_name || assignee.email || 'טכנאי'
               ) : (
                 <span className="text-[var(--signal-critical)]">{tx('ticket.unassigned')}</span>
               )}
             </KeyValue>
-            <KeyValue label={tx('ticket.category')}>
+            <KeyValue phoneTile label={tx('ticket.category')}>
               {categoryLabel}
             </KeyValue>
             {etaLabel ? (
-              <KeyValue label={tx('ticket.eta')}>{etaLabel}</KeyValue>
+              <KeyValue phoneTile label={tx('ticket.eta')}>{etaLabel}</KeyValue>
             ) : null}
             {holdLabel && (holdActive || ticket.status === 'resolved') ? (
-              <KeyValue label={tx('ticket.qualityHold')}>{holdLabel}</KeyValue>
+              <KeyValue phoneTile label={tx('ticket.qualityHold')}>{holdLabel}</KeyValue>
             ) : null}
           </dl>
         </Panel>
 
-        {treatmentSummary ? (
-          <Panel elevated>
-            <p className="t-section mb-2 text-ink">
-              {TECH_COMPLETION.treatmentLabel}
-            </p>
-            <p className="t-body whitespace-pre-wrap text-ink-2">
-              {treatmentSummary}
-            </p>
-          </Panel>
-        ) : null}
+        <TicketFoldStack>
+          {treatmentSummary ? (
+            <TicketFold title={TECH_COMPLETION.treatmentLabel} summary={treatmentSummary}>
+              <Panel elevated>
+                <p className="t-section mb-2 text-ink">
+                  {TECH_COMPLETION.treatmentLabel}
+                </p>
+                <p className="t-body whitespace-pre-wrap text-ink-2">
+                  {treatmentSummary}
+                </p>
+              </Panel>
+            </TicketFold>
+          ) : null}
 
-        <TicketTrueCostPanel
-          ticketSpends={ticketSpends}
-          assetSpends={assetSpends}
-          locale={locale}
-        />
+          <TicketFold title={tx('ticket.trueCost')} summary={costSummary}>
+            <TicketTrueCostPanel
+              ticketSpends={ticketSpends}
+              assetSpends={assetSpends}
+              locale={locale}
+            />
+          </TicketFold>
 
-        <TicketEtaPanel
-          ticketId={ticket.id}
-          initialEtaAt={ticket.repair_eta_at ?? null}
-          status={ticket.status}
-        />
+          <TicketFold title={tx('ticket.eta')} summary={etaLabel || tx('ticket.etaEmpty')}>
+            <TicketEtaPanel
+              ticketId={ticket.id}
+              initialEtaAt={ticket.repair_eta_at ?? null}
+              status={ticket.status}
+            />
+          </TicketFold>
 
-        {hits.length > 0 ? (
-          <Panel elevated>
-            <p className="t-section mb-3 text-ink">
-              <Tx text="אירועים דומים" />
-            </p>
-            <p className="t-meta mb-2 text-ink-2">{recurrenceBasis(hits)}</p>
-            <ul className="space-y-1">
-              {hits.slice(0, 5).map((hit) => (
-                <li key={hit.ticket.id} className="t-body text-ink-2">
-                  {hit.ticket.description} · {hit.reason}
-                </li>
-              ))}
-            </ul>
-            {prevention ? <p className="t-body mt-2">{prevention}</p> : null}
-          </Panel>
-        ) : null}
+          {hits.length > 0 ? (
+            <TicketFold
+              title={p('אירועים דומים')}
+              summary={prevention || p(`${hits.length} אירועים קודמים`)}
+            >
+              <Panel elevated>
+                <p className="t-section mb-3 text-ink">
+                  <Tx text="אירועים דומים" />
+                </p>
+                <p className="t-meta mb-2 text-ink-2">{recurrenceBasis(hits)}</p>
+                <ul className="space-y-1">
+                  {hits.slice(0, 5).map((hit) => (
+                    <li key={hit.ticket.id} className="t-body text-ink-2">
+                      {hit.ticket.description} · {hit.reason}
+                    </li>
+                  ))}
+                </ul>
+                {prevention ? <p className="t-body mt-2">{prevention}</p> : null}
+              </Panel>
+            </TicketFold>
+          ) : null}
 
-        {attachments.length > 0 ? (
-          <Panel elevated>
-            <p className="t-section mb-3 text-ink">
-              <Tx text="תיעוד" />
-            </p>
-            <EvidenceGrid attachments={attachments} />
-          </Panel>
-        ) : null}
+          {attachments.length > 0 ? (
+            <TicketFold title={p('תיעוד')} summary={p(`${attachments.length} קבצים`)}>
+              <Panel elevated>
+                <p className="t-section mb-3 text-ink">
+                  <Tx text="תיעוד" />
+                </p>
+                <EvidenceGrid attachments={attachments} />
+              </Panel>
+            </TicketFold>
+          ) : null}
 
-        <Panel elevated flush className="overflow-hidden">
-          <div className="border-b border-border px-5 py-3">
-            <p className="t-section text-ink">
-              <Tx text="מה קרה עד עכשיו" />
-            </p>
-            {storyLines.length > 0 ? (
-              <p className="t-caption mt-1 text-ink-3">
-                {storyLines.join(' · ')}
-              </p>
-            ) : null}
-          </div>
-          <Timeline
-            items={buildActivityDesc(ticket.messages ?? [], ticket.events ?? [])}
-          />
-        </Panel>
+          <TicketFold title={p('מה קרה עד עכשיו')} summary={latestSummary}>
+            <Panel elevated flush className="overflow-hidden">
+              <div className="border-b border-border px-5 py-3">
+                <p className="t-section text-ink">
+                  <Tx text="מה קרה עד עכשיו" />
+                </p>
+                {storyLines.length > 0 ? (
+                  <p className="t-caption mt-1 text-ink-3">
+                    {storyLines.join(' · ')}
+                  </p>
+                ) : null}
+              </div>
+              <Timeline items={activity} />
+            </Panel>
+          </TicketFold>
 
-        <TicketTrialPanel
-          ticketId={ticket.id}
-          description={whatsBroken}
-          priority={priority}
-          category={ticket.category}
-          status={ticket.status}
-          slaRespondBy={ticket.sla_respond_by}
-          slaResolveBy={ticket.sla_resolve_by}
-          firstResponseAt={ticket.first_response_at}
-          resolvedAt={ticket.resolved_at}
-          respondHours={slaWindow.respondHours}
-          resolveHours={slaWindow.resolveHours}
-          storeId={ticket.store_id}
-          storeCode={ticket.stores?.code ?? ''}
-          storeName={ticket.stores?.name ?? storeHeading}
-          assetId={ticket.asset_id ?? null}
-          matches={people}
-          aiRaw={ticket.ai_raw ?? null}
-          aiSummary={ticket.ai_summary ?? null}
-          canCorrect={canCorrectTicketClassification(
-            actor,
-            shouldAllowDemoEntry(),
-          )}
-        />
+          <TicketFold
+            title={p('סיווג וטיפול')}
+            summary={`${categoryLabel} · ${tx(`priority.${priority}`)}`}
+          >
+            <TicketTrialPanel
+              ticketId={ticket.id}
+              description={whatsBroken}
+              priority={priority}
+              category={ticket.category}
+              status={ticket.status}
+              slaRespondBy={ticket.sla_respond_by}
+              slaResolveBy={ticket.sla_resolve_by}
+              firstResponseAt={ticket.first_response_at}
+              resolvedAt={ticket.resolved_at}
+              respondHours={slaWindow.respondHours}
+              resolveHours={slaWindow.resolveHours}
+              storeId={ticket.store_id}
+              storeCode={ticket.stores?.code ?? ''}
+              storeName={storeName}
+              assetId={ticket.asset_id ?? null}
+              matches={people}
+              aiRaw={ticket.ai_raw ?? null}
+              aiSummary={ticket.ai_summary ?? null}
+              canCorrect={canCorrectTicketClassification(
+                actor,
+                shouldAllowDemoEntry(),
+              )}
+            />
+          </TicketFold>
 
-        <PreferredVendorsPanel
-          ticketId={ticket.id}
-          category={ticket.category}
-          regionId={ticket.region_id ?? 'center'}
-          city={ticket.stores?.city ?? null}
-          initialMatches={vendors.matches.slice(0, 4).map((row) => ({
-            id: row.id,
-            name: row.name,
-            specialties: row.specialties,
-            preferred: row.preferred,
-            coverage_regions: row.coverage_regions ?? undefined,
-            contact_phone: row.contact_phone ?? null,
-            notes: row.notes ?? null,
-            score: row.score,
-            reason: row.reason,
-          }))}
-        />
+          <TicketFold title={p('ספקים ואנשי מקצוע')} summary={vendorSummary}>
+            <PreferredVendorsPanel
+              ticketId={ticket.id}
+              category={ticket.category}
+              regionId={ticket.region_id ?? 'center'}
+              city={ticket.stores?.city ?? null}
+              initialMatches={vendors.matches.slice(0, 4).map((row) => ({
+                id: row.id,
+                name: row.name,
+                specialties: row.specialties,
+                preferred: row.preferred,
+                coverage_regions: row.coverage_regions ?? undefined,
+                contact_phone: row.contact_phone ?? null,
+                notes: row.notes ?? null,
+                score: row.score,
+                reason: row.reason,
+                dispatchable: row.dispatchable,
+              }))}
+            />
+          </TicketFold>
 
-        {/* C07: preferred + book pros + Midrag deep-link (replaces orphan Midrag-only panel) */}
-        <PreferredVendorsPanel
-          ticketId={ticket.id}
-          category={ticket.category}
-          regionId={ticket.region_id ?? 'center'}
-          city={ticket.stores?.city ?? null}
-          initialMatches={vendors.matches.slice(0, 4).map((row) => ({
-            id: row.id,
-            name: row.name,
-            specialties: row.specialties,
-            preferred: row.preferred,
-            coverage_regions: row.coverage_regions ?? undefined,
-            contact_phone: row.contact_phone ?? null,
-            notes: row.notes ?? null,
-            score: row.score,
-            reason: row.reason,
-            dispatchable: row.dispatchable,
-          }))}
-        />
-
-        <TicketRfqDraftPanel
-          ticketId={ticket.id}
-          ticketLabel={
-            ticket.display_number ||
-            (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
-          }
-          storeId={ticket.store_id}
-          storeCode={ticket.stores?.code ?? ''}
-          storeName={ticket.stores?.name ?? storeHeading}
-          trade={ticket.category}
-        />
+          <TicketFold title={p('הצעת מחיר')} summary={p('נשמרת ידנית, בלי שליחה')}>
+            <TicketRfqDraftPanel
+              ticketId={ticket.id}
+              ticketLabel={
+                ticket.display_number ||
+                (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+              }
+              storeId={ticket.store_id}
+              storeCode={ticket.stores?.code ?? ''}
+              storeName={storeName}
+              trade={ticket.category}
+            />
+          </TicketFold>
+        </TicketFoldStack>
 
         {/* Single mount: sticky dock on mobile, inline panel on md+ */}
-        <div className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:static md:inset-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+        <div id="ticket-actions" className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:static md:inset-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
           <TicketActions
             ticketId={ticket.id}
             status={ticket.status as TicketStatus}

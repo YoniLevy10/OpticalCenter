@@ -186,6 +186,14 @@ export function memAddMembership(
   return row
 }
 
+export function memDeleteUser(profileId: string): boolean {
+  const mem = store()
+  const had = mem.profiles.has(profileId) || mem.memberships.has(profileId)
+  mem.profiles.delete(profileId)
+  mem.memberships.delete(profileId)
+  return had
+}
+
 export function memUpdateMembership(
   membershipId: string,
   patch: Partial<Pick<Membership, 'role' | 'country_id' | 'region_id' | 'store_id'>>,

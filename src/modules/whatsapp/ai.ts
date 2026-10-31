@@ -1,14 +1,9 @@
 /**
- * AI-powered WhatsApp response generator.
- * Rewrites fixed template text into natural Hebrew while preserving facts.
- *
- * Vercel AI Gateway ONLY (package `ai` + Gateway auth).
- * Enable: WHATSAPP_AI_ENABLED=true + AI_GATEWAY_API_KEY / VERCEL_OIDC_TOKEN
- * Falls back to the base template on any error or when disabled.
+ * Fixed WhatsApp copy. The model does not paraphrase these messages.
+ * Interpolation fills {{placeholders}}. The text that leaves is the template.
  */
 
-import { generateText } from 'ai'
-import { resolveReplyModel, resolveReplyRoute } from './ai-sdk/models'
+import { resolveReplyRoute } from './ai-sdk/models'
 
 export type WhatsAppAiSituation =
   | 'intake_ask_store'
@@ -31,40 +26,6 @@ export type WhatsAppAiSituation =
   | 'lifecycle_closed'
   | 'lifecycle_tech_assigned'
 
-const SYSTEM_PROMPT = `אתה עוזר WhatsApp של MILO — מערכת תחזוקה תפעולית לרשת חנויות Optical Center בישראל.
-תפקידך לשלוח הודעות קצרות, ידידותיות ומקצועיות לעובדי חנות בעברית.
-כללים:
-- עברית בלבד
-- מקסימום 4 משפטים
-- שמור על כל הפרטים החשובים מהתבנית (מספר תקלה, שם חנות, קוד חנות, שם טכנאי, קישורים)
-- אל תוסיף ברכות ארוכות
-- אל תמציא פרטים שלא מופיעים בתבנית
-- אמוג'י — רק אם הם בתבנית המקורית
-- טון: תפעולי, ברור, לא שיווקי`
-
-const SITUATION_HINT: Partial<Record<WhatsAppAiSituation, string>> = {
-  intake_ask_store: 'המשתמש לא זוהה — צריך לבקש קוד חנות או סריקת QR/NFC',
-  intake_store_not_found: 'קוד חנות שנשלח לא נמצא במערכת',
-  intake_ask_description: 'החנות זוהתה — צריך תיאור תקלה',
-  intake_need_description: 'חסר תיאור תקלה',
-  intake_confirmed: 'תקלה נפתחה בהצלחה — אישור לדיווח',
-  intake_media_not_saved: 'התמונה לא נשמרה אך התקלה נקלטה',
-  intake_non_issue_ack:
-    'הלקוח שלח תודה/אישור אחרי דיווח — אל תפתח תקלה; אשר בקצרה שאפשר לדווח תקלה נוספת אם צריך',
-  intake_country_missing: 'שגיאת הגדרות — לא זוהתה מדינה למספר WhatsApp',
-  intake_generic_error: 'שגיאה זמנית בקליטת דיווח',
-  intake_voice_review: 'התקבלה הקלטה שעדיין לא תומללה — לבקש טקסט קצר',
-  intake_status: 'המדווח שואל מה מצב הפנייה — לענות עם המספר והסטטוס, ולהבחין בין נקלט לאושר',
-  intake_follow_up: 'הודעת המשך צורפה לפנייה קיימת — לא נפתחה פנייה חדשה',
-  intake_human_handoff: 'הסוכן לא הבין — הפנייה עברה לאדם',
-  lifecycle_assigned: 'עדכון לעובד החנות — טכנאי שויך לתקלה',
-  lifecycle_in_progress: 'עדכון — הטכנאי התחיל טיפול',
-  lifecycle_waiting_parts: 'עדכון — ממתינים לחלקים',
-  lifecycle_resolved: 'עדכון — התקלה טופלה',
-  lifecycle_closed: 'עדכון — התקלה נסגרה',
-  lifecycle_tech_assigned: 'הודעה לטכנאי על שיוך לתקלה',
-}
-
 export function isWhatsAppAiEnabled(): boolean {
   return (
     process.env.WHATSAPP_AI_ENABLED === 'true' &&
@@ -72,7 +33,7 @@ export function isWhatsAppAiEnabled(): boolean {
   )
 }
 
-/** Interpolate {{key}} placeholders before AI rewrite. */
+/** Interpolate {{key}} placeholders in a fixed template. */
 export function interpolateWhatsAppTemplate(
   text: string,
   vars: Record<string, string> = {},
@@ -84,10 +45,7 @@ export function interpolateWhatsAppTemplate(
   return out
 }
 
-/**
- * Rewrite a base template into natural WhatsApp Hebrew.
- * @param baseText — already-interpolated template (or WA_COPY string)
- */
+/** Fill placeholders and return the template. Situation is kept for callers; it does not rewrite the text. */
 export async function enhanceWhatsAppMessage(
   baseText: string,
   context?: {
@@ -95,42 +53,6 @@ export async function enhanceWhatsAppMessage(
     vars?: Record<string, string>
   },
 ): Promise<string> {
-  const interpolated = context?.vars
-    ? interpolateWhatsAppTemplate(baseText, context.vars)
-    : baseText
-
-  if (!isWhatsAppAiEnabled()) return interpolated
-
-  const resolved = await resolveReplyModel()
-  if (!resolved) return interpolated
-
-  try {
-    const situationHint = context?.situation
-      ? SITUATION_HINT[context.situation]
-      : undefined
-
-    const prompt =
-      `צור הודעת WhatsApp טבעית ויפה למצב הזה.\n` +
-      (situationHint ? `מצב: ${situationHint}\n` : '') +
-      `תבנית בסיסית:\n${interpolated}\n\n` +
-      `החזר רק את טקסט ההודעה, ללא הסברים.`
-
-    const { text } = await generateText({
-      model: resolved.model,
-      system: SYSTEM_PROMPT,
-      prompt,
-      maxOutputTokens: 300,
-      // Hard cap so webhook `after()` is not killed before sendReply runs.
-      abortSignal: AbortSignal.timeout(12_000),
-    })
-
-    if (text?.trim()) return text.trim()
-  } catch (e) {
-    console.warn(
-      '[whatsapp-ai] AI generation failed, using template fallback:',
-      e instanceof Error ? e.message : String(e),
-    )
-  }
-
-  return interpolated
+  void context?.situation
+  return context?.vars ? interpolateWhatsAppTemplate(baseText, context.vars) : baseText
 }

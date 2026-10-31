@@ -1,5 +1,6 @@
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { classifyFaultText } from '@/modules/tickets/classify'
+import { clarificationQuestion } from '../spoken-language'
 import type { IntakeAgentOutput } from './schema'
 
 export type AppliedRule = {
@@ -33,7 +34,7 @@ export const INTAKE_PRIORITY_RULES: RuleDef[] = [
   {
     id: 'water_electric',
     test: (t) =>
-      /(מים|נזיל).{0,24}(חשמל|לוח|שקע|ארון)|(חשמל|לוח|שקע).{0,24}(מים|נזיל)|water\s+near\s+electr/i.test(
+      /(מים|נזיל|eau|fuite).{0,30}(חשמל|לוח|שקע|ארון|[ée]lectr)|(חשמל|לוח|שקע|[ée]lectr).{0,30}(מים|נזיל|eau|fuite)|water\s+near\s+electr/i.test(
         t,
       ),
     priority: 'critical',
@@ -43,7 +44,7 @@ export const INTAKE_PRIORITY_RULES: RuleDef[] = [
   {
     id: 'safety_hazard',
     test: (t) =>
-      /עשן|שריפה|אש\b|להבה|ניצוצ|ריח\s*שרוף|חוט\s*חשוף|smoke|fire|spark|burning\s*smell|exposed\s*wir/i.test(
+      /עשן|שריפה|אש\b|להבה|ניצוצ|ריח\s*שרוף|חוט\s*חשוף|smoke|fire|spark|burning\s*smell|exposed\s*wir|fum[ée]e|incendie|\bfeu\b|flamme|[ée]tincelle|odeur\s+de\s+br[uû]l|fil\s+d[ée]nud/i.test(
         t,
       ),
     priority: 'critical',
@@ -63,7 +64,7 @@ export const INTAKE_PRIORITY_RULES: RuleDef[] = [
   {
     id: 'significant_water_leak',
     test: (t) =>
-      /(נזיל|דליפ|מים\s*זורמ|הצפ).{0,30}(משמעות|חזק|רב|מהתקרה|מהמזגן)|significant\s*leak|major\s*leak/i.test(
+      /(נזיל|דליפ|מים\s*זורמ|הצפ).{0,30}(משמעות|חזק|רב|מהתקרה|מהמזגן)|significant\s*leak|major\s*leak|grosse\s+fuite|fuite\s+importante|fuite.{0,24}(plafond|clim)/i.test(
         t,
       ) || /נזיל.{0,20}(מזגן|תקרה|קיר)/i.test(t),
     priority: 'high',
@@ -92,8 +93,9 @@ function maxPriority(a: TicketPriority, b: TicketPriority): TicketPriority {
 }
 
 /**
- * Merge AI suggestion with keyword classifier + hard rules.
- * Hard rules can raise priority; decorative lighting can lower when no hazard.
+ * Keyword classifier plus hard rules decide category and priority.
+ * The model may name a category only when no keyword matched.
+ * Its priority suggestion is recorded elsewhere and does not change the ticket.
  */
 export function applyIntakeRules(params: {
   text: string
@@ -110,22 +112,19 @@ export function applyIntakeRules(params: {
     },
   ]
 
-  let category = params.ai?.category ?? classified.category
-  let priority: TicketPriority =
-    params.ai?.priority_suggestion ?? classified.priority
-
-  // Keyword classifier is a safety floor when AI is lower
-  priority = maxPriority(priority, classified.priority)
+  let category = classified.category
+  let priority: TicketPriority = classified.priority
   if (
-    classified.category === 'electrical_hazard' ||
-    (!params.ai && classified.category !== 'other')
+    category === 'other' &&
+    params.ai?.category &&
+    params.ai.category !== 'other'
   ) {
-    if (
-      PRIORITY_RANK[classified.priority] >= PRIORITY_RANK[priority] ||
-      classified.category === 'electrical_hazard'
-    ) {
-      category = classified.category
-    }
+    category = params.ai.category
+    applied.push({
+      id: 'ai_category',
+      reason: 'no keyword matched',
+      category,
+    })
   }
 
   let decorativeOnly = false
@@ -161,8 +160,8 @@ export function applyIntakeRules(params: {
 
   // HVAC + leak → ensure at least high (plan example)
   if (
-    /מזגן|מיזוג|hvac|air\s*cond/i.test(text) &&
-    /נזיל|דליפ|מים|leak/i.test(text)
+    /מזגן|מיזוג|hvac|air\s*cond|climatisation|\bclim\b/i.test(text) &&
+    /נזיל|דליפ|מים|leak|fuite|\beau\b/i.test(text)
   ) {
     applied.push({
       id: 'hvac_leak',
@@ -190,16 +189,10 @@ export function descriptionNeedsClarification(
   const t = text.trim()
   if (hasMedia && t.length >= 3) return { needs: false, question: null }
   if (t.length < 6) {
-    return {
-      needs: true,
-      question: 'נא לתאר בקצרה מה התקלה (למשל: מזגן לא מקרר / נזילה).',
-    }
+    return { needs: true, question: clarificationQuestion(t, 'short') }
   }
-  if (/^(תקלה|בעיה|שבור|לא עובד|עזרה)\.?$/i.test(t)) {
-    return {
-      needs: true,
-      question: 'מה בדיוק לא עובד? ציינו מכשיר או מיקום בחנות.',
-    }
+  if (/^(תקלה|בעיה|שבור|לא עובד|עזרה|fault|problem|broken|help|panne|probl[èe]me|aide)\.?$/i.test(t)) {
+    return { needs: true, question: clarificationQuestion(t, 'what') }
   }
   return { needs: false, question: null }
 }

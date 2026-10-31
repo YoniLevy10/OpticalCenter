@@ -8,7 +8,9 @@ export type ReporterTicket = {
 
 export function isStatusQuestion(text: string | null | undefined): boolean {
   if (!text) return false
-  return /מה המצב|מה קורה|סטטוס|איפה הפנ|איפה הפנייה|עודכן/.test(text)
+  return /מה המצב|מה קורה|סטטוס|איפה הפנ|איפה הפנייה|עודכן|what(?:'s| is) the status|o[ùu] en est|quel est le statut/i.test(
+    text,
+  )
 }
 
 export function statusReply(tickets: ReporterTicket[]): string {
@@ -34,5 +36,5 @@ export function handoffReply(): string {
 }
 
 export function voiceNeedsReviewReply(): string {
-  return 'ההקלטה התקבלה. התמלול דורש בדיקה — כתבו בקצרה מה צריך, אם אפשר.'
+  return 'ההקלטה התקבלה. לא הצלחתי להבין אותה — מה התקלה, איפה ומה לא עובד?'
 }

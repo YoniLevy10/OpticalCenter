@@ -35,7 +35,12 @@ import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
 import { translate } from '@/lib/i18n/messages'
 import { listVendors } from '@/modules/vendors/service'
-import { spendForTicket } from '@/lib/data/ops-ledger'
+import { listOutcomes, spendForTicket } from '@/lib/data/ops-ledger'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
+import { listProfessionals } from '@/modules/professionals/service'
+import { recommendBundles, type BundleFault } from '@/modules/whatsapp/agent/bundle'
+import { presentRecommendations } from '@/modules/recommendations/present'
+import { TicketStoreGroups } from './ticket-store-groups'
 import { executionBlockReason } from '@/modules/spend/policy'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +56,23 @@ const TAB_VIEWS = new Set<QueueView>([
   'stuck',
   'resolved',
 ])
+
+function toFault(ticket: QueueTicket): BundleFault {
+  return {
+    id: ticket.id,
+    storeId: ticket.store_id || '',
+    storeName: ticket.stores?.name || ticket.stores?.code || 'סניף',
+    category: ticket.category || 'other',
+    priority: ticket.priority,
+    status: ticket.status,
+    summary: ticket.description,
+    createdAt: ticket.created_at,
+    slaResolveBy: ticket.sla_resolve_by,
+    resolvedAt: ticket.resolved_at,
+    firstResponseAt: ticket.first_response_at,
+    dispatched: ticket.status === 'waiting_vendor',
+  }
+}
 
 function technicianName(
   id: string | null | undefined,
@@ -82,6 +104,7 @@ export default async function TicketsPage({
   if (!actor && !shouldAllowDemoEntry()) {
     redirect('/login')
   }
+  await hydrateOpsLedger()
   const locale = await getLocale()
 
   const resolved = await resolveTicketsSupabase(actor)
@@ -146,6 +169,35 @@ export default async function TicketsPage({
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, totalPages)
   const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const pros =
+    view === 'resolved'
+      ? { professionals: [] as Awaited<ReturnType<typeof listProfessionals>>['professionals'] }
+      : await listProfessionals({ limit: 80 }).catch(() => ({
+          professionals: [],
+          backend: 'memory' as const,
+        }))
+  const storeCodes: Record<string, string> = {}
+  for (const ticket of rows) {
+    if (ticket.store_id && ticket.stores?.code) storeCodes[ticket.store_id] = ticket.stores.code
+  }
+  const bundleCards =
+    view === 'resolved'
+      ? []
+      : presentRecommendations(
+          recommendBundles({
+            open: rows.map(toFault),
+            outcomes: listOutcomes(),
+            professionals: pros.professionals.map((pro) => ({
+              id: pro.id,
+              full_name: pro.full_name,
+              phone: pro.phone,
+              trade: pro.trade,
+              notes: pro.notes,
+              use_count: pro.use_count,
+            })),
+          }),
+          storeCodes,
+        )
 
   const baseHref = queueHref(queueFilters)
 
@@ -179,7 +231,7 @@ export default async function TicketsPage({
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5">
+      <div className="ari-home flex flex-col gap-5">
         <OpsPageHero
           largeTitle
           title={translate(locale, 'tickets.title')}
@@ -203,7 +255,7 @@ export default async function TicketsPage({
             <TicketFilters stores={storeOptions} />
           </Suspense>
         </div>
-        <p className="t-caption text-ink-3">
+        <p className="t-caption hidden text-ink-3 md:block">
           <Tx text="מיון: מהחדש לישן" />
           {canDispatchVisit && view !== 'resolved' ? (
             <>
@@ -250,8 +302,10 @@ export default async function TicketsPage({
                   icon={PartyPopper}
                 />
               ) : (
-                <div className="divide-y divide-border bg-surface">
-                  {rows.map((t) => (
+                <TicketStoreGroups
+                  rows={rows}
+                  cards={bundleCards}
+                  renderRow={(t) => (
                     <TicketQueueItem
                       key={t.id}
                       ticket={t}
@@ -264,8 +318,8 @@ export default async function TicketsPage({
                       selectable
                       canOverrideResolve={canOverrideResolve}
                     />
-                  ))}
-                </div>
+                  )}
+                />
               )}
             </Panel>
           </VisitQueueShell>
@@ -286,8 +340,10 @@ export default async function TicketsPage({
                 icon={PartyPopper}
               />
             ) : (
-              <div className="divide-y divide-border bg-surface">
-                {rows.map((t) => (
+              <TicketStoreGroups
+                rows={rows}
+                cards={bundleCards}
+                renderRow={(t) => (
                   <TicketQueueItem
                     key={t.id}
                     ticket={t}
@@ -299,8 +355,8 @@ export default async function TicketsPage({
                     )}
                     canOverrideResolve={canOverrideResolve}
                   />
-                ))}
-              </div>
+                )}
+              />
             )}
           </Panel>
         )}

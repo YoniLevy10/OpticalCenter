@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation'
 import { Store } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { Panel, EmptyState } from '@/components/ui/primitives'
-import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { OperationalRow, RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { StoreQrAccordion } from './store-qr-accordion'
+import { StoresMobileList } from './stores-mobile-list'
+import { PhoneFold } from '@/components/layout/phone-fold'
 import { fetchStores } from '@/modules/stores/data'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
@@ -74,15 +75,22 @@ export default async function StoresPage({
   }
   const activeCount = stores.filter((s) => s.is_active !== false).length
 
-  const filtered = stores.filter((s) => {
-    if (regionFilter && regionCodeFromId(s.region_id) !== regionFilter) {
-      return false
-    }
-    if (!q) return true
-    const hay =
-      `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''} ${s.manager_name ?? ''} ${s.manager_phone ?? ''} ${s.area_manager ?? ''}`.toLowerCase()
-    return hay.includes(q)
-  })
+  const filtered = stores
+    .filter((s) => {
+      if (regionFilter && regionCodeFromId(s.region_id) !== regionFilter) {
+        return false
+      }
+      if (!q) return true
+      const hay =
+        `${s.code} ${s.name} ${s.city ?? ''} ${s.address ?? ''} ${s.manager_name ?? ''} ${s.manager_phone ?? ''} ${s.area_manager ?? ''}`.toLowerCase()
+      return hay.includes(q)
+    })
+    .sort((a, b) => {
+      const openDelta =
+        (openCountByStore.get(b.id) ?? 0) - (openCountByStore.get(a.id) ?? 0)
+      if (openDelta !== 0) return openDelta
+      return a.name.localeCompare(b.name, 'he')
+    })
 
   const canMutate =
     actor?.memberships.some(
@@ -105,7 +113,7 @@ export default async function StoresPage({
 
   return (
     <OpsAppShell>
-      <div className="flex flex-col gap-5 stagger">
+      <div className="ari-home flex flex-col gap-5">
         <OpsPageHero
           largeTitle
           title="חנויות"
@@ -115,15 +123,23 @@ export default async function StoresPage({
           actions={canMutate ? <StoreCreateForm /> : undefined}
         />
 
+        <PhoneFold
+          title={p('מחוז')}
+          summary={
+            regionFilter
+              ? `${regionLabel(regionFilter, locale)} · ${byRegion.get(regionFilter) ?? 0}`
+              : `${p('הכל')} · ${activeCount}`
+          }
+        >
         <div
           role="group"
           aria-label="סינון לפי מחוז"
-          className="flex flex-wrap gap-1.5 rounded-[var(--radius-md)] border border-border bg-surface-sunken/40 p-1.5"
+          className="flex flex-wrap gap-1.5"
         >
           <Link
             href={regionHref('')}
             className={cn(
-              't-caption rounded-[var(--radius-sm)] px-3 py-2 transition-colors',
+              't-caption inline-flex min-h-[var(--tap)] items-center rounded-[var(--radius-sm)] px-3.5 py-2 transition-colors',
               !regionFilter
                 ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
                 : 'text-ink-3 hover:text-ink',
@@ -136,7 +152,7 @@ export default async function StoresPage({
               key={code}
               href={regionHref(code)}
               className={cn(
-                't-caption rounded-[var(--radius-sm)] px-3 py-2 transition-colors',
+                't-caption inline-flex min-h-[var(--tap)] items-center rounded-[var(--radius-sm)] px-3.5 py-2 transition-colors',
                 regionFilter === code
                   ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
                   : 'text-ink-3 hover:text-ink',
@@ -146,10 +162,36 @@ export default async function StoresPage({
             </Link>
           ))}
         </div>
+        </PhoneFold>
 
         <StoreSearch initialQ={sp.q ?? ''} />
 
-        <Panel flush elevated className="overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="md:hidden">
+            <EmptyState
+              title="לא נמצאו חנויות"
+              description="נסו שם, מספר, עיר או מחוז."
+              icon={Store}
+            />
+          </div>
+        ) : (
+          <StoresMobileList
+            stores={filtered.map((s) => ({
+              id: s.id,
+              code: s.code,
+              name: s.name,
+              city: s.city,
+              address: s.address,
+              is_active: s.is_active,
+              openCount: openCountByStore.get(s.id) ?? 0,
+              waHref: businessPhone
+                ? storeWhatsAppDeepLink(s.code, businessPhone)
+                : null,
+            }))}
+          />
+        )}
+
+        <Panel flush elevated className="hidden overflow-hidden md:block">
           {filtered.length === 0 ? (
             <EmptyState
               title="לא נמצאו חנויות"
@@ -170,7 +212,7 @@ export default async function StoresPage({
                     }
                     trailing={
                       openCount > 0 ? (
-                        <span className="t-caption t-num text-[var(--signal-critical)]">
+                        <span className="t-caption t-num text-ink">
                           {openCount} פתוחות
                         </span>
                       ) : (
@@ -213,9 +255,6 @@ export default async function StoresPage({
             }))}
         />
 
-        <Button asChild variant="ghost" size="touch" className="self-start">
-          <Link href="/ops/stores/print-qr">הדפסת כל ה־QR</Link>
-        </Button>
       </div>
     </OpsAppShell>
   )

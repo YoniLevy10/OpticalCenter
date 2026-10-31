@@ -4,7 +4,6 @@ import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { PageToolbar } from '@/components/layout/page-toolbar'
 import {
   Panel,
-  PanelHeader,
   KeyValue,
   EmptyState,
 } from '@/components/ui/primitives'
@@ -17,35 +16,25 @@ import { getStoreByCode } from '@/modules/stores/service'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { listTickets } from '@/modules/tickets/service'
-import { OPEN_TICKET_STATUSES, TICKET_CATEGORY_LABELS_HE } from '@/modules/tickets/constants'
-import { listAssets } from '@/modules/assets/service'
-import { findRecurrences, type HistoryTicket } from '@/modules/tickets/recurrence'
-import {
-  countedApprovedAmount,
-  countedPendingAmount,
-  formatShekels,
-  summarizeAssetSpend,
-} from '@/modules/spend/asset-cost'
+import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { StoreQrPanel } from '../store-qr-panel'
 import { StoreEditControls } from '../store-edit-controls'
 import { StoreDirectoryPanel } from '../store-directory-panel'
 import { StoreAssetsPanel } from './store-assets-panel'
 import { StoreSecondaryActions } from './store-secondary-actions'
 import { StoreVisitDispatch } from './store-visit-dispatch'
-import { hydrateOpsLedger } from '@/lib/data/ops-db'
+import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 import {
   areaManagerForStore,
   listAudits,
   listContactsForStore,
-  listDocuments,
-  listSpends,
   spendForTicket,
 } from '@/lib/data/ops-ledger'
 import { executionBlockReason } from '@/modules/spend/policy'
-import { documentTypeLabel, isDocumentOverdue } from '@/modules/documents/rules'
 import { regionLabel } from '@/modules/stores/regions'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
+import { ticketDecision } from '@/modules/decisions/queue'
 import { listVendors } from '@/modules/vendors/service'
 
 export const dynamic = 'force-dynamic'
@@ -77,10 +66,6 @@ export default async function StoreDetailPage({
 
   const { store } = await getStoreByCode(code)
   if (!store) notFound()
-  await hydrateOpsLedger()
-  const storeDocuments = listDocuments().filter(
-    (doc) => doc.storeCode === store.code && !doc.renewed,
-  )
 
   const businessPhone = await resolveWhatsAppBusinessPhone()
   const deepLink = businessPhone
@@ -116,66 +101,6 @@ export default async function StoreDetailPage({
   const openTickets = tickets.filter((t) => t.store_id === store.id)
   const openCount = openTickets.length
   const recent = openTickets.slice(0, 12)
-  const historyResult = await listTickets({
-    storeCode: store.code,
-    limit: 80,
-  }).catch(() => ({ tickets: [] as typeof tickets }))
-  const storeTickets = historyResult.tickets.filter(
-    (t) => t.store_id === store.id || t.stores?.code === store.code,
-  )
-  const history: HistoryTicket[] = storeTickets.map((ticket) => ({
-    id: ticket.id,
-    storeId: ticket.store_id,
-    category: ticket.category,
-    assetId: ticket.asset_id ?? null,
-    description: ticket.description,
-    status: ticket.status,
-    createdAt: ticket.created_at,
-    resolvedAt: ticket.resolved_at ?? null,
-  }))
-  const seenRepeats = new Set<string>()
-  const repeatRows: { id: string; title: string; category: string; count: number }[] = []
-  for (const ticket of storeTickets) {
-    const current = history.find((row) => row.id === ticket.id)
-    if (!current) continue
-    const hits = findRecurrences(current, history)
-    if (hits.length === 0) continue
-    const key = `${ticket.category}:${ticket.asset_id ?? ''}`
-    if (seenRepeats.has(key)) continue
-    seenRepeats.add(key)
-    repeatRows.push({
-      id: ticket.id,
-      title: ticket.title || ticket.description,
-      category: TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category,
-      count: hits.length,
-    })
-  }
-  const storeSpends = listSpends().filter((spend) => spend.storeCode === store.code)
-  const approvedSpend = storeSpends.reduce(
-    (sum, spend) => sum + (countedApprovedAmount(spend) ?? 0),
-    0,
-  )
-  const pendingSpend = storeSpends.reduce(
-    (sum, spend) => sum + (countedPendingAmount(spend) ?? 0),
-    0,
-  )
-  const { assets: allAssets } = await listAssets().catch(() => ({
-    assets: [] as Awaited<ReturnType<typeof listAssets>>['assets'],
-  }))
-  const storeAssets = allAssets.filter(
-    (asset) => asset.store_id === store.id || asset.store_code === store.code,
-  )
-  const assetLines = storeAssets.map((asset) => {
-    const cost = summarizeAssetSpend(
-      storeSpends,
-      history.map((row) => ({ id: row.id, assetId: row.assetId })),
-      asset.id,
-    )
-    const repeats = history.filter(
-      (row) => row.assetId === asset.id && findRecurrences(row, history).length > 0,
-    ).length
-    return { asset, cost, repeats }
-  })
 
   return (
     <OpsAppShell>
@@ -207,120 +132,27 @@ export default async function StoreDetailPage({
           }
         />
 
-        <section className="grid grid-cols-3 gap-px overflow-hidden rounded-xl bg-border">
-            <div className="bg-card px-3 py-3">
-            <p className="text-xs text-muted-foreground">{p('פתוחות')}</p>
-            <p className="mt-1 text-sm font-medium tabular-nums">{openCount}</p>
-          </div>
-            <div className="bg-card px-3 py-3">
-            <p className="text-xs text-muted-foreground">{p('חזרו')}</p>
-            <p className="mt-1 text-sm font-medium tabular-nums">{repeatRows.length}</p>
-          </div>
-            <div className="bg-card px-3 py-3">
-            <p className="text-xs text-muted-foreground">{p('שולם')}</p>
-            <p className="mt-1 text-sm font-medium tabular-nums">
-              {approvedSpend > 0 ? formatShekels(approvedSpend) : p('אין עלות')}
-            </p>
-            {pendingSpend > 0 ? (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {p('ממתין')} {formatShekels(pendingSpend)}
-              </p>
-            ) : null}
-          </div>
-        </section>
-
-        <Panel flush>
-          <PanelHeader title="ציוד" meta={storeAssets.length ? String(storeAssets.length) : undefined} />
-          {assetLines.length === 0 ? (
-            <p className="t-body px-4 py-6 text-ink-2">{p('אין ציוד מקושר לסניף הזה.')}</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {assetLines.map(({ asset, cost, repeats }) => (
-                <li key={asset.id} className="flex items-baseline justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="t-body text-ink">{asset.name}</p>
-                    <p className="t-meta text-ink-3">
-                      {TICKET_CATEGORY_LABELS_HE[asset.asset_type] ?? asset.asset_type}
-                      {repeats > 0 ? ` · ${repeats} ${p('חזרו')}` : ''}
-                    </p>
-                  </div>
-                  <span className="t-meta t-num shrink-0 text-ink">
-                    {cost.approved > 0 ? formatShekels(cost.approved) : '—'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel flush>
-          <PanelHeader
-            title="תקלות שחזרו"
-            meta={repeatRows.length ? String(repeatRows.length) : undefined}
-          />
-          {repeatRows.length === 0 ? (
-            <p className="t-body px-4 py-6 text-ink-2">{p('אין תקלה שחזרה בסניף הזה.')}</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {repeatRows.slice(0, 8).map((row) => (
-                <li key={row.id}>
-                  <Link href={`/ops/tickets/${row.id}`} className="block px-4 py-3">
-                    <p className="t-body text-ink">{row.title}</p>
-                    <p className="t-meta text-ink-3">
-                      {row.category} · {row.count} {p('פעמים')}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
+        <PhoneFoldStack>
+        <PhoneFold title="כתובת ואנשי קשר" summary={store.city ?? store.address ?? store.code}>
         <Panel elevated>
           <dl className="divide-y divide-border">
             <KeyValue label="כתובת">{store.address ?? '—'}</KeyValue>
             <KeyValue label="עיר">{store.city ?? '—'}</KeyValue>
+            <KeyValue label="טלפון חנות">{store.store_phone ?? '—'}</KeyValue>
+            <KeyValue label="מייל">{store.store_email ?? '—'}</KeyValue>
             <KeyValue label="מנהל/ת">
               {store.manager_name
                 ? `${store.manager_name}${store.manager_name_en ? ` · ${store.manager_name_en}` : ''}`
                 : '—'}
             </KeyValue>
-            <KeyValue label="טלפון">{store.manager_phone ?? '—'}</KeyValue>
+            <KeyValue label="טלפון מנהל">{store.manager_phone ?? '—'}</KeyValue>
             <KeyValue label="מנהל אזור">{store.area_manager ?? '—'}</KeyValue>
             <KeyValue label="סטטוס">
               {store.is_active === false ? 'מושבת' : 'פעיל'}
             </KeyValue>
           </dl>
         </Panel>
-
-        <Panel elevated>
-          <p className="t-section mb-3 text-ink">תיקיית סניף</p>
-          {storeDocuments.length === 0 ? (
-            <p className="t-meta text-ink-2">אין מסמכים בתיקייה הזו.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {storeDocuments.map((doc) => {
-                const expiry = doc.extractedExpiry?.slice(0, 10)
-                const shown = expiry
-                  ? `${expiry.slice(8, 10)}.${expiry.slice(5, 7)}.${expiry.slice(0, 4)}`
-                  : 'אין תאריך'
-                return (
-                  <li key={doc.id} className="py-3">
-                    <p className="t-body">
-                      {documentTypeLabel(doc.docType)} · {shown}
-                      {isDocumentOverdue(doc) ? ' · באיחור' : ''}
-                    </p>
-                    {doc.sourceUrl ? (
-                      <a className="t-meta text-ink underline" href={doc.sourceUrl} target="_blank" rel="noreferrer">
-                        קובץ המקור
-                      </a>
-                    ) : null}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </Panel>
+        </PhoneFold>
 
         <Panel elevated className="overflow-hidden">
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -337,7 +169,11 @@ export default async function StoreDetailPage({
             <EmptyState title="אין תקלות פתוחות בחנות זו" />
           ) : (
             <ul className="divide-y divide-border">
-              {recent.map((t) => (
+              {recent.map((t) => {
+                const decision = ticketDecision(t, new Date(), locale)
+                const verb =
+                  decision?.action.split('·')[0]?.trim() || p('לטפל')
+                return (
                 <li key={t.id}>
                   <Link
                     href={`/ops/tickets/${t.id}`}
@@ -352,9 +188,11 @@ export default async function StoreDetailPage({
                     <p className="t-body line-clamp-2 text-ink">
                       {t.title || t.description}
                     </p>
+                    <span className="t-meta text-ink">{verb}</span>
                   </Link>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </Panel>
@@ -376,13 +214,18 @@ export default async function StoreDetailPage({
           />
         ) : null}
 
+        <PhoneFold title="הורדת QR" summary={store.code}>
         <Panel elevated className="overflow-hidden" id="store-qr">
           <p className="t-section mb-3 text-ink">הורדת QR</p>
           <StoreQrPanel code={store.code} deepLink={deepLink} />
         </Panel>
+        </PhoneFold>
 
+        <PhoneFold title="ציוד" summary={store.name}>
         <StoreAssetsPanel storeId={store.id} storeCode={store.code} />
+        </PhoneFold>
 
+        <PhoneFold title="סניף ואנשי קשר" summary={store.manager_name ?? store.area_manager ?? '—'}>
         <Panel elevated>
           <p className="t-section mb-3 text-ink">סניף ואנשי קשר</p>
           <StoreDirectoryPanel
@@ -404,8 +247,10 @@ export default async function StoreDetailPage({
               </p>
             ))}
         </Panel>
+        </PhoneFold>
 
         {canEdit ? (
+          <PhoneFold title="עריכה" summary={store.name}>
           <Panel elevated id="store-edit">
             <p className="t-section mb-3 text-ink">עריכה</p>
             <StoreEditControls
@@ -415,7 +260,9 @@ export default async function StoreDetailPage({
               isActive={store.is_active !== false}
             />
           </Panel>
+          </PhoneFold>
         ) : null}
+        </PhoneFoldStack>
       </div>
     </OpsAppShell>
   )

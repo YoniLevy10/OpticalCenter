@@ -185,7 +185,7 @@ export function ReportsHistoryClient() {
         ) : snapshots.length === 0 ? (
           <EmptyState
             title="אין דוחות שמורים"
-            description="צרו דוח חודשי או טווח תאריכים למעלה — הוא יופיע כאן לצפייה והורדה."
+            description="ב-1 לחודש נשמר כאן אוטומטית דוח של החודש שהסתיים. אפשר גם לשמור טווח למעלה."
           />
         ) : (
           <ul className="divide-y divide-border">

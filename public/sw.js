@@ -1,5 +1,5 @@
 /* Minimal MaintainOS service worker — app shell offline fallback */
-const CACHE = 'maintainos-shell-v7'
+const CACHE = 'maintainos-shell-v8'
 const SHELL = [
   '/ops/dashboard',
   '/ops/dashboard?source=pwa',
@@ -52,6 +52,8 @@ self.addEventListener('fetch', (event) => {
   // Network-first for navigations + Next/CSS/JS/manifests so design deploys
   // are not stuck behind stale PWA cache-first hits.
   const path = url.pathname
+  // Reports and other API responses must not stick in the shell cache.
+  if (path.startsWith('/api/')) return
   const isAppAsset =
     path.startsWith('/_next/') ||
     path.endsWith('.css') ||

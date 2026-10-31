@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
   memAddMembership,
   memListUsers,
+  memDeleteUser,
   memUpdateMembership,
   memUpsertProfile,
   type MemUserRow,
@@ -434,6 +435,41 @@ export async function patchUser(
   const row = users.find((u) => u.id === profileId)
   if (!row) throw new Error('משתמש לא נמצא')
   return row
+}
+
+export async function deleteUser(profileId: string, actorId: string): Promise<void> {
+  if (profileId === actorId) {
+    throw new Error('אי אפשר למחוק את המשתמש שמחובר עכשיו')
+  }
+
+  if (!(await supabaseReady())) {
+    if (!memDeleteUser(profileId)) throw new Error('משתמש לא נמצא')
+    return
+  }
+
+  const supabase = createSystemClient('users_delete')
+  const { data: existing, error: findError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (findError) throw new Error(findError.message)
+  if (!existing) throw new Error('משתמש לא נמצא')
+
+  const { error } = await supabase.from('profiles').delete().eq('id', profileId)
+  if (error) throw new Error(error.message)
+
+  try {
+    const admin = createAdminClient()
+    const { error: authError } = await admin.auth.admin.deleteUser(profileId)
+    if (authError && !/not found/i.test(authError.message)) {
+      throw new Error(hebrewAuthError(authError.message))
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Service Role')) return
+    if (err instanceof Error && err.message.startsWith('Missing NEXT_PUBLIC_SUPABASE')) return
+    throw err
+  }
 }
 
 function techDefaultCountry(role: MemberRole): string | null {

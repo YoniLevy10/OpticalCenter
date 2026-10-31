@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { StoreConfirmButton } from '../store-confirm-button'
 import { StoreWaPrimaryNotice } from '../../wa-primary-notice'
+import { PhoneFold } from '@/components/layout/phone-fold'
 import {
   TICKET_CATEGORY_LABELS_HE,
   type TicketStatus,
@@ -50,6 +51,7 @@ export default async function StoreTicketPage({
         footer={<StatusLabel status={ticket.status as TicketStatus} />}
       />
 
+      <PhoneFold title="פרטים" summary={TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category}>
       <Panel elevated>
         <dl className="divide-y divide-border">
           <KeyValue label="סוג">
@@ -68,6 +70,7 @@ export default async function StoreTicketPage({
           ) : null}
         </dl>
       </Panel>
+      </PhoneFold>
 
       {ticket.status === 'resolved' ? (
         <StoreWaPrimaryNotice

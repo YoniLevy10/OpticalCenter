@@ -44,7 +44,7 @@ function actor(role: MemberRole): Actor {
 }
 
 describe('buildOpenAlerts', () => {
-  it('dedupes the same ticket from decisions + exception pass', () => {
+  it('leaves an ordinary open ticket on the home and the queue', () => {
     const now = new Date('2026-10-16T12:00:00.000Z')
     const t = ticket({
       id: 't1',
@@ -72,19 +72,10 @@ describe('buildOpenAlerts', () => {
       now,
     })
 
-    expect(alerts).toHaveLength(1)
-    expect(alerts[0]?.id).toBe('ticket:t1')
-    expect(alerts[0]?.reasons).toEqual(
-      expect.arrayContaining(['חריגת SLA', 'לא משויך', 'דחיפות גבוהה']),
-    )
-    expect(alerts[0]?.bucket).toBe('urgent_overdue')
-    expect(alerts[0]?.href).toBe('/ops/tickets/t1')
-    expect(alerts[0]?.nextAction).toBeTruthy()
-    expect(alerts[0]?.owner).toBeTruthy()
-    expect(alerts[0]?.at).toBeTruthy()
+    expect(alerts).toHaveLength(0)
   })
 
-  it('keeps spend and ticket as separate items', () => {
+  it('keeps a spend and drops the open ticket beside it', () => {
     const now = new Date('2026-10-16T12:00:00.000Z')
     const decisions: DecisionItem[] = [
       {
@@ -117,7 +108,7 @@ describe('buildOpenAlerts', () => {
       decisions,
       now,
     })
-    expect(alerts.map((a) => a.id).sort()).toEqual(['spend:s1', 'ticket:t1'])
+    expect(alerts.map((a) => a.id)).toEqual(['spend:s1'])
   })
 
   it('drops resolved sources that no longer need attention', () => {

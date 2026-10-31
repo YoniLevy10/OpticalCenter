@@ -3,6 +3,9 @@ import {
   DOCUMENT_TYPES,
   documentNeedsReminder,
   documentTypeLabel,
+  documentReminders,
+  documentReminderStage,
+  remindersFor,
   isDocumentDueSoon,
   isDocumentOverdue,
   isHearingCalibrationType,
@@ -32,15 +35,17 @@ function doc(patch: Partial<StoreDocument> = {}): StoreDocument {
 }
 
 describe('C08 hearing calibrations', () => {
-  it('exposes כיול א/ב/ג as selectable types', () => {
+  it('exposes tympanometer, audiometer, and the acoustic booth', () => {
     const keys = selectableDocumentTypes().map((row) => row.key)
     expect(keys).toContain('hearing_a')
     expect(keys).toContain('hearing_b')
     expect(keys).toContain('hearing_c')
     expect(keys).not.toContain('hearing')
-    expect(documentTypeLabel('hearing_a')).toBe('כיול א')
-    expect(documentTypeLabel('hearing_b')).toBe('כיול ב')
-    expect(documentTypeLabel('hearing_c')).toBe('כיול ג')
+    expect(documentTypeLabel('hearing_a')).toBe('טימפנומטר')
+    expect(documentTypeLabel('hearing_b')).toBe('אודיומטר')
+    expect(documentTypeLabel('hearing_c')).toBe('תא אקוסטי')
+    expect(DOCUMENT_TYPES.find((row) => row.key === 'hearing_c')?.cycleMonths).toBe(24)
+    expect(DOCUMENT_TYPES.find((row) => row.key === 'hearing_a')?.cycleMonths).toBe(12)
     expect(isHearingCalibrationType('hearing_a')).toBe(true)
     expect(isHearingCalibrationType('fire')).toBe(false)
   })
@@ -63,6 +68,28 @@ describe('C08 hearing calibrations', () => {
     expect(documentNeedsReminder(soon, now)).toBe(true)
     expect(isDocumentDueSoon(far, now)).toBe(false)
     expect(isDocumentDueSoon(fireSoon, now)).toBe(false)
+  })
+
+  it('sets a reminder half a year before and another two months before', () => {
+    const [half, two] = documentReminders('2027-06-15T00:00:00.000Z')
+    expect(half.at.slice(0, 10)).toBe('2026-12-15')
+    expect(two.at.slice(0, 10)).toBe('2027-04-15')
+    const now = new Date('2027-01-02T00:00:00.000Z')
+    expect(documentReminderStage(doc({ extractedExpiry: '2027-06-15T00:00:00.000Z' }), now)).toBe(
+      'six',
+    )
+    expect(
+      documentReminderStage(doc({ extractedExpiry: '2027-06-15T00:00:00.000Z' }), new Date('2027-05-01T00:00:00.000Z')),
+    ).toBe('two')
+    expect(
+      documentReminderStage(doc({ extractedExpiry: '2027-06-15T00:00:00.000Z' }), new Date('2026-11-01T00:00:00.000Z')),
+    ).toBeNull()
+    const edited = doc({
+      extractedExpiry: '2027-06-15T00:00:00.000Z',
+      reminderSixAt: '2027-02-01T00:00:00.000Z',
+    })
+    expect(remindersFor(edited).find((row) => row.months === 6)?.at.slice(0, 10)).toBe('2027-02-01')
+    expect(remindersFor(edited).find((row) => row.months === 2)?.at.slice(0, 10)).toBe('2027-04-15')
   })
 
   it('does not treat overdue as due-soon', () => {

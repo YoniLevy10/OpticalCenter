@@ -712,7 +712,7 @@ export function InboxClient() {
                           </time>
                           {item.message.direction === 'outbound' ? (
                             <CheckCheck
-                              className="h-3.5 w-3.5 text-[#53bdeb]"
+                              className="h-3.5 w-3.5 text-ink-2"
                               aria-label="נשלח"
                             />
                           ) : null}

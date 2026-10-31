@@ -1,4 +1,9 @@
 import { addDocument, ingestFile } from '@/lib/data/ops-ledger'
+import {
+  calibrationIntake,
+  splitCalibrations,
+  unclassifiedCertificateLabel,
+} from '@/modules/documents/calibrations'
 import type { IngestedFile } from '@/modules/ingestion/pipeline'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
 import {
@@ -63,20 +68,58 @@ export async function importDriveLink(link: string): Promise<{
       knownStoreCodes: codes,
     })
     files.push(ingested)
-    if (ingested.docType && ingested.docType !== 'inventory') {
+    const linkedStore = ingested.storeCode
+      ? ISRAEL_STORES.find((row) => row.code === ingested.storeCode)
+      : store
+    const slices = splitCalibrations(file.name, text)
+    if (slices.length > 0) {
+      for (const slice of slices) {
+        const intake = calibrationIntake(slice, ingested.storeCode)
+        addDocument({
+          storeId: linkedStore ? israelStoreId(linkedStore.code) : '',
+          storeCode: linkedStore?.code ?? '',
+          storeName: linkedStore?.name ?? 'לא שויך',
+          docType: slice.docType,
+          sourceUrl: ingested.sourceUrl,
+          extractedExpiry: slice.expiry,
+          computedNextCheck: null,
+          owner: linkedStore?.managerName ?? 'ארי',
+          intakeStatus: intake.intakeStatus,
+          intakeReason: intake.intakeReason,
+        })
+      }
+    } else if (ingested.docType && ingested.docType !== 'inventory') {
       const expiry = expiryFromText(text)
       addDocument({
-        storeId: store ? israelStoreId(store.code) : '',
-        storeCode: store?.code ?? '',
-        storeName: store?.name ?? 'לא שויך',
+        storeId: linkedStore ? israelStoreId(linkedStore.code) : '',
+        storeCode: linkedStore?.code ?? '',
+        storeName: linkedStore?.name ?? 'לא שויך',
         docType: ingested.docType,
         sourceUrl: ingested.sourceUrl,
         extractedExpiry: expiry,
         computedNextCheck: null,
-        owner: store?.managerName ?? 'ארי',
+        owner: linkedStore?.managerName ?? 'ארי',
         intakeStatus: ingested.status === 'failed' ? 'failed' : ingested.status,
         intakeReason: ingested.reason,
       })
+    } else {
+      const label = unclassifiedCertificateLabel(file.name, text)
+      if (label) {
+        addDocument({
+          storeId: linkedStore ? israelStoreId(linkedStore.code) : '',
+          storeCode: linkedStore?.code ?? '',
+          storeName: linkedStore?.name ?? 'לא שויך',
+          docType: label,
+          sourceUrl: ingested.sourceUrl,
+          extractedExpiry: null,
+          computedNextCheck: null,
+          owner: linkedStore?.managerName ?? 'ארי',
+          intakeStatus: 'needs_review',
+          intakeReason: ingested.storeCode
+            ? 'סוג הכיול לא זוהה — ייתכן אישור שמכסה כמה כיולים'
+            : 'השיוך לסניף לא ודאי',
+        })
+      }
     }
   }
   return {

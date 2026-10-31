@@ -70,7 +70,7 @@ describe('WhatsApp desk loop', () => {
     expect(listSpends().some((row) => row.originWaId === waId)).toBe(false)
   })
 
-  it('lands money on Ari and blocks dispatch until he approves', async () => {
+  it('lands money for Ari in the system and does not let his WhatsApp approve it', async () => {
     const waId = '972501234502'
     const before = memListTickets().length
     const opened = await processInboundMessage(
@@ -91,28 +91,11 @@ describe('WhatsApp desk loop', () => {
       msg({ text: 'לאשר', waId: ARI, messageId: 'ari-approve' }),
       dry,
     )
-    expect(decided.storeReply).toContain('ההוצאה אושרה')
+    expect(decided.reply).toContain('במערכת')
+    expect(decided.storeReply).toBeNull()
     const after = listSpends().find((row) => row.id === spend?.id)
-    expect(after?.status).toBe('approved')
-    expect(canExecuteSpend(after)).toBe(true)
-    expect(after?.ticketId).toBeNull()
-  })
-
-  it('links a money message to the one open ticket on the session', async () => {
-    const waId = '972501234506'
-    await processInboundMessage(msg({ text: 'STORE_6018', waId, messageId: 'link-store' }), dry)
-    const opened = await processInboundMessage(
-      msg({ text: 'המזגן לא עובד', waId, messageId: 'link-fault' }),
-      dry,
-    )
-    expect(opened.ticketId).toBeTruthy()
-    await processInboundMessage(
-      msg({ text: '₪250 לספק', waId, messageId: 'link-money' }),
-      dry,
-    )
-    const spend = listSpends().find((row) => row.originWaId === waId)
-    expect(spend?.ticketId).toBe(opened.ticketId)
-    expect(spend?.status).toBe('pending')
+    expect(after?.status).toBe('pending')
+    expect(canExecuteSpend(after)).toBe(false)
   })
 
   it('holds a PDF without a date for review', async () => {

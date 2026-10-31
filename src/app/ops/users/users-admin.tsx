@@ -9,11 +9,8 @@ import {
   ErrorState,
   Notice,
   Panel,
-  PanelHeader,
   SuccessNotice,
 } from '@/components/ui/primitives'
-import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
-import { AdminRow, AdminRowList } from '@/components/ui/admin-row'
 import { Modal } from '@/components/ui/overlay'
 import { TechFieldLinkCopy } from '@/components/ops/tech-link-copy'
 import type { MemberRole, Membership } from '@/lib/auth/types'
@@ -57,7 +54,13 @@ function formatLastLogin(iso?: string | null) {
   }
 }
 
-export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
+export function UsersAdmin({
+  stores,
+  actorId,
+}: {
+  stores: StoreOpt[]
+  actorId: string | null
+}) {
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +75,7 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     user: UserRow
     nextRole: MemberRole
   } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<UserRow | null>(null)
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(
     'all',
@@ -220,6 +224,26 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     }
   }
 
+  async function removeUser(user: UserRow) {
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'מחיקה נכשלה')
+      setNotice('המשתמש נמחק')
+      setConfirmDelete(null)
+      setEditUser(null)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'מחיקה נכשלה')
+      setConfirmDelete(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   function openEdit(u: UserRow) {
     setEditUser(u)
     setEditPhone(u.phone ?? '')
@@ -275,19 +299,6 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
     }
   }
 
-  function scopeLabel(m?: Membership) {
-    if (!m) return '—'
-    const parts: string[] = []
-    if (m.country_id === IL_COUNTRY) parts.push('ישראל')
-    else if (m.country_id === FR_COUNTRY) parts.push('צרפת')
-    else if (m.country_id) parts.push('מדינה')
-    if (m.store_id) {
-      const s = stores.find((x) => x.id === m.store_id)
-      parts.push(s ? s.name : 'סניף')
-    }
-    return parts.join(' · ') || 'כל הרשת'
-  }
-
   function branchLabel(m?: Membership) {
     if (!m?.store_id) return '—'
     const s = stores.find((x) => x.id === m.store_id)
@@ -337,10 +348,9 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
         </Button>
       </div>
 
-      <Panel flush className="overflow-hidden">
-        <PanelHeader title="משתמשים" meta={`${filtered.length}`} />
+      <Panel flush elevated className="overflow-hidden">
         {loading ? (
-          <p className="t-body px-4 py-8 text-ink-2">טוען…</p>
+          <p className="t-body px-4 py-8 text-ink-3">טוען…</p>
         ) : filtered.length === 0 ? (
           <EmptyState
             title="אין משתמשים להצגה"
@@ -352,130 +362,72 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
             }
           />
         ) : (
-          <>
-            <AdminRowList>
-              {filtered.map((u) => {
-                const m = u.memberships[0]
-                const active = u.active !== false
-                return (
+          <ul className="divide-y divide-border">
+            {filtered.map((u) => {
+              const m = u.memberships[0]
+              const active = u.active !== false
+              const role =
+                ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
+                (m?.role ? roleLabelHe(m.role) : '—')
+              const branch = branchLabel(m)
+              return (
+                <li
+                  key={u.id}
+                  className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <button
-                    key={u.id}
                     type="button"
                     onClick={() => openEdit(u)}
-                    className="block w-full text-start transition-colors hover:bg-surface-sunken/40"
+                    className="min-w-0 flex-1 space-y-1 text-start"
                   >
-                    <AdminRow
-                      title={u.full_name || '—'}
-                      subtitle={u.email || '—'}
-                      footer={
-                        <span className="t-caption text-ink-3">
-                          {ROLE_OPTIONS.find((o) => o.value === m?.role)?.label ??
-                            m?.role}{' '}
-                          · {branchLabel(m)} ·{' '}
-                          {active ? 'פעיל' : 'לא פעיל'} ·{' '}
-                          {(u.phone || 'ללא טלפון') +
-                            ' · ' +
-                            formatLastLogin(u.last_login_at)}
-                        </span>
-                      }
-                      trailing={
-                        <span className="t-caption text-[var(--tenant)]">
-                          עריכה
-                        </span>
-                      }
-                    />
-                  </button>
-                )
-              })}
-            </AdminRowList>
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
-                <THead>
-                  <TH>שם</TH>
-                  <TH>תפקיד</TH>
-                  <TH>טלפון</TH>
-                  <TH>סניף</TH>
-                  <TH>סטטוס</TH>
-                  <TH>התחברות אחרונה</TH>
-                  <TH>קישור שטח</TH>
-                  <TH align="end"> </TH>
-                </THead>
-                <TBody>
-                  {filtered.map((u) => {
-                    const m = u.memberships[0]
-                    const active = u.active !== false
-                    return (
-                      <TR
-                        key={u.id}
-                        className="cursor-pointer transition-colors hover:bg-surface-sunken/40"
-                        onClick={() => openEdit(u)}
+                    <span className="flex items-baseline justify-between gap-3 sm:justify-start">
+                      <span className="t-lead font-semibold text-ink">
+                        {u.full_name || '—'}
+                      </span>
+                      <span
+                        className={
+                          active
+                            ? 't-caption text-[var(--signal-resolved)]'
+                            : 't-caption text-ink-3'
+                        }
                       >
-                        <TD>
-                          <span className="t-body-strong block text-ink">
-                            {u.full_name || '—'}
-                          </span>
-                          <span dir="ltr" className="t-meta t-num text-ink-2">
-                            {u.email || '—'}
-                          </span>
-                        </TD>
-                        <TD>
-                          <span className="t-body text-ink">
-                            {ROLE_OPTIONS.find((o) => o.value === m?.role)
-                              ?.label ??
-                              (m?.role ? roleLabelHe(m.role) : '—')}
-                          </span>
-                          <p className="t-caption mt-1 text-ink-3">
-                            {ROLE_HELP[m?.role ?? ''] ?? scopeLabel(m)}
-                          </p>
-                        </TD>
-                        <TD>
-                          <span dir="ltr" className="t-num t-body text-ink">
-                            {u.phone || '—'}
-                          </span>
-                        </TD>
-                        <TD>
-                          <span className="t-body text-ink">{branchLabel(m)}</span>
-                        </TD>
-                        <TD>
-                          <span
-                            className={
-                              active
-                                ? 't-caption text-[var(--signal-resolved)]'
-                                : 't-caption text-ink-3'
-                            }
-                          >
-                            {active ? 'פעיל' : 'לא פעיל'}
-                          </span>
-                        </TD>
-                        <TD>
-                          <span className="t-meta text-ink-2">
-                            {formatLastLogin(u.last_login_at)}
-                          </span>
-                        </TD>
-                        <TD onClick={(e) => e.stopPropagation()}>
-                          <TechFieldLinkCopy userId={u.id} role={m?.role ?? ''} />
-                        </TD>
-                        <TD
-                          align="end"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            aria-label={`עריכת ${u.full_name || u.email || 'משתמש'}`}
-                            onClick={() => openEdit(u)}
-                          >
-                            עריכה
-                          </Button>
-                        </TD>
-                      </TR>
-                    )
-                  })}
-                </TBody>
-              </Table>
-            </div>
-          </>
+                        {active ? 'פעיל' : 'לא פעיל'}
+                      </span>
+                    </span>
+                    <span className="t-meta block text-ink-2">
+                      <bdi dir="ltr" className="t-num">
+                        {u.email || '—'}
+                      </bdi>
+                    </span>
+                    <span className="t-caption block text-ink-3">
+                      {role}
+                      {branch !== '—' ? ` · ${branch}` : ''}
+                      {' · '}
+                      {u.phone ? (
+                        <bdi dir="ltr" className="t-num">
+                          {u.phone}
+                        </bdi>
+                      ) : (
+                        'ללא טלפון'
+                      )}
+                      {' · '}
+                      {formatLastLogin(u.last_login_at)}
+                    </span>
+                  </button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-[44px] self-start sm:self-center"
+                    aria-label={`עריכת ${u.full_name || u.email || 'משתמש'}`}
+                    onClick={() => openEdit(u)}
+                  >
+                    עריכה
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
         )}
       </Panel>
 
@@ -678,21 +630,73 @@ export function UsersAdmin({ stores }: { stores: StoreOpt[] }) {
               userId={editUser.id}
               role={editUser.memberships[0]?.role ?? ''}
             />
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-2">
+              {editUser.id !== actorId ? (
+                <Button
+                  type="button"
+                  variant="critical"
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(editUser)}
+                >
+                  מחיקה
+                </Button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setEditUser(null)}
+                >
+                  ביטול
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={busy}
+                  onClick={() => void saveEditCard()}
+                >
+                  {busy ? 'שומר…' : 'שמירה'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(confirmDelete)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null)
+        }}
+        title="מחיקת משתמש"
+        description="הוא לא יוכל להתחבר יותר."
+      >
+        {confirmDelete ? (
+          <div className="space-y-4">
+            <Notice tone="warning">
+              למחוק את{' '}
+              <strong>
+                {confirmDelete.full_name || confirmDelete.email || 'המשתמש'}
+              </strong>
+              ?
+            </Notice>
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setEditUser(null)}
+                onClick={() => setConfirmDelete(null)}
               >
                 ביטול
               </Button>
               <Button
                 type="button"
-                variant="primary"
+                variant="critical"
                 disabled={busy}
-                onClick={() => void saveEditCard()}
+                onClick={() => void removeUser(confirmDelete)}
               >
-                {busy ? 'שומר…' : 'שמירה'}
+                {busy ? 'מוחק…' : 'מחיקה'}
               </Button>
             </div>
           </div>

@@ -22,4 +22,16 @@ describe('classifyFaultText', () => {
       priority: 'medium',
     })
   })
+
+  it('reads French and English faults', () => {
+    expect(classifyFaultText("de l'eau près de l'électricité").priority).toBe('critical')
+    expect(classifyFaultText('la climatisation est en panne')).toEqual({
+      category: 'hvac',
+      priority: 'high',
+    })
+    expect(classifyFaultText('there is a leak in the bathroom')).toEqual({
+      category: 'plumbing',
+      priority: 'high',
+    })
+  })
 })

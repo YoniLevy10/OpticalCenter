@@ -3,19 +3,15 @@ import {
   addDocument,
   addTask,
   addTasksFromTranscript,
-  applySpendDecision,
-  deskNotifyPhones,
   createSpend,
-  decideStoredDocument,
   ingestFile,
-  listDocuments,
-  listSpends,
 } from '@/lib/data/ops-ledger'
 import type { SpendRequest } from '@/modules/spend/policy'
 import { expiryFromText } from '@/modules/drive/import'
 import type { StoreDocument } from '@/modules/documents/rules'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
 import { canExecuteSpend } from '@/modules/spend/policy'
+import { replyToAri } from '@/modules/ops/agent-chat'
 import {
   classifyInbound,
   isAriSender,
@@ -24,8 +20,6 @@ import {
   storeCodeFromText,
   type DeskDecision,
 } from './classify'
-import { sendWhatsAppTemplate, sendWhatsAppText } from './send'
-import { defaultSessionTemplateLang, defaultSessionTemplateName } from './templates'
 
 export type DeskStore = { id: string; code: string; name: string }
 
@@ -67,54 +61,9 @@ async function remember(): Promise<void> {
   await persistOpsLedger().catch(() => undefined)
 }
 
-function outsideWindow(error?: string): boolean {
-  return Boolean(error && /24|חלון|template/i.test(error))
-}
-
-async function notifyOneDesk(
-  phone: string,
-  text: string,
-  dryRun: boolean,
-): Promise<void> {
-  // SMS intentionally skipped — pilot cost control (WhatsApp / ops web only).
-  const buttons = [
-    { id: 'desk_approve', title: 'לאשר' },
-    { id: 'desk_reject', title: 'לדחות' },
-    { id: 'desk_info', title: 'לבקש מידע' },
-  ]
-  let sent = await sendWhatsAppText({
-    toWaId: phone,
-    text,
-    purpose: 'status_update',
-    forceDryRun: dryRun,
-    skipFailureQueue: true,
-    buttons,
-  }).catch(() => ({ ok: false as const, error: 'send failed' }))
-  if (!sent.ok && !outsideWindow(sent.error)) {
-    sent = await sendWhatsAppText({
-      toWaId: phone,
-      text,
-      purpose: 'status_update',
-      forceDryRun: dryRun,
-      skipFailureQueue: true,
-    }).catch(() => ({ ok: false as const, error: 'send failed' }))
-  }
-  if (!sent.ok && outsideWindow(sent.error)) {
-    await sendWhatsAppTemplate({
-      toWaId: phone,
-      templateName: defaultSessionTemplateName(),
-      languageCode: defaultSessionTemplateLang(),
-      purpose: 'status_update',
-      forceDryRun: dryRun,
-      skipFailureQueue: true,
-    }).catch(() => undefined)
-  }
-}
-
-export async function notifyAriOnDesk(message: string, dryRun: boolean): Promise<void> {
-  const text = message.trim()
-  if (!text) return
-  await Promise.all(deskNotifyPhones().map((phone) => notifyOneDesk(phone, text, dryRun)))
+/** Ari decides in the app. WhatsApp stays between the store manager and this bot. */
+export async function notifyAriOnDesk(message: string, _dryRun: boolean): Promise<void> {
+  void message
 }
 
 function ariNote(headline: string, store: string, missing: string | null): string {
@@ -128,93 +77,13 @@ function ariNote(headline: string, store: string, missing: string | null): strin
     .join('\n')
 }
 
-async function replyToStore(
-  waId: string | null | undefined,
-  text: string,
-  dryRun: boolean,
-): Promise<void> {
-  if (!waId) return
-  const sent = await sendWhatsAppText({
-    toWaId: waId,
-    text,
-    purpose: 'status_update',
-    forceDryRun: dryRun,
-    skipFailureQueue: true,
-  }).catch(() => ({ ok: false as const, error: 'send failed' }))
-  if (!sent.ok && outsideWindow(sent.error)) {
-    await sendWhatsAppTemplate({
-      toWaId: waId,
-      templateName: defaultSessionTemplateName(),
-      languageCode: defaultSessionTemplateLang(),
-      purpose: 'status_update',
-      forceDryRun: dryRun,
-      skipFailureQueue: true,
-    }).catch(() => undefined)
-  }
-}
-
-function latestOpen():
-  | { kind: 'spend'; row: SpendRequest }
-  | { kind: 'document'; row: StoreDocument }
-  | null {
-  const spends = listSpends().filter(
-    (row) => row.status === 'pending' || row.status === 'needs_info',
-  )
-  const docs = listDocuments().filter(
-    (row) => row.intakeStatus === 'needs_review' && !row.renewed,
-  )
-  const fromChat = [
-    ...spends
-      .filter((row) => row.originWaId)
-      .map((row) => ({ kind: 'spend' as const, row, at: row.createdAt })),
-    ...docs
-      .filter((row) => row.originWaId)
-      .map((row) => ({ kind: 'document' as const, row, at: row.createdAt })),
-  ].sort((a, b) => b.at.localeCompare(a.at))
-  if (fromChat[0]) return fromChat[0]
-  const spend = spends[0]
-  const doc = docs[0]
-  if (spend && doc) {
-    return doc.createdAt > spend.createdAt
-      ? { kind: 'document', row: doc }
-      : { kind: 'spend', row: spend }
-  }
-  if (spend) return { kind: 'spend', row: spend }
-  if (doc) return { kind: 'document', row: doc }
-  return null
-}
-
-function storeAnswer(kind: 'spend' | 'document', decision: DeskDecision): string {
-  if (kind === 'spend') {
-    if (decision === 'approved') return 'ההוצאה אושרה.'
-    if (decision === 'rejected') return 'הבקשה נדחתה. היא עדיין לא אושרה.'
-    return 'ארי ביקש מידע נוסף. הבקשה עדיין לא אושרה.'
-  }
-  if (decision === 'approved') return 'המסמך אושר.'
-  if (decision === 'rejected') return 'המסמך נדחה.'
-  return 'ארי ביקש מידע נוסף על המסמך.'
-}
-
 async function applyAriDecision(
-  decision: DeskDecision,
-  dryRun: boolean,
+  _decision: DeskDecision,
+  _dryRun: boolean,
 ): Promise<DeskRouteResult> {
-  const open = latestOpen()
-  if (!open) {
-    return { reply: 'אין בקשה שממתינה להחלטה.', storeReply: null }
-  }
-  const storeReply = storeAnswer(open.kind, decision)
-  const origin = open.row.originWaId
-  if (open.kind === 'spend') {
-    applySpendDecision(open.row.id, decision, 'ארי')
-  } else {
-    decideStoredDocument(open.row.id, decision)
-  }
-  await remember()
-  await replyToStore(origin, storeReply, dryRun)
   return {
-    reply: `עודכן. ${storeReply}`,
-    storeReply,
+    reply: 'ההחלטה נעשית במערכת. הוואטסאפ כאן הוא מול מנהלי הסניפים.',
+    storeReply: null,
   }
 }
 
@@ -414,6 +283,11 @@ export async function routeInboundToDesk(input: {
   if (isAriSender(input.waId)) {
     const decision = parseDeskDecision(input.text)
     if (decision) return applyAriDecision(decision, input.dryRun)
+    const message = input.text?.trim()
+    if (message) {
+      const answered = await replyToAri({ message, actor: null, locale: 'he', source: 'whatsapp' })
+      return { reply: answered.reply, storeReply: null }
+    }
   }
   const kind = classifyInbound({ text: input.text, mediaKind: input.mediaKind })
   if (kind === 'fault') return null

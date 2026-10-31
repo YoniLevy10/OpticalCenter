@@ -40,8 +40,8 @@ export function StoreSecondaryActions({
       items={[
         {
           key: 'qr-print',
-          label: 'הדפסת QR',
-          href: '/ops/stores/print-qr',
+          label: 'QR של הסניף',
+          href: '?tab=overview#store-qr',
         },
         ...(whatsappHref
           ? [

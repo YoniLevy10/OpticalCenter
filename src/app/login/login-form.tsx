@@ -8,6 +8,7 @@ import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { usePhrase } from '@/components/i18n/locale-provider'
 import { SkipLink } from '@/components/layout/skip-link'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { AirDiamond } from '@/components/brand/air-diamond'
 import { BrandMark, BrandLogoFull } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
@@ -141,7 +142,8 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
   }
 
   return (
-    <div className="login-shell dvh-screen safe-pt safe-pb relative grid min-h-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+    <div className="login-shell dvh-screen safe-pt safe-pb relative grid min-h-0 overflow-hidden md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <AirDiamond drift className="air-diamond-login" />
       <SkipLink />
       <div className="absolute end-3 top-3 z-20 flex items-center gap-2 md:end-5 md:top-5">
         <LocaleSwitcher />
@@ -149,7 +151,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       </div>
       {/* Brand story — desktop hero */}
       <aside
-        className="login-brand-panel relative hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
+        className="login-brand-panel relative z-[1] hidden flex-col justify-between overflow-hidden p-8 md:flex md:p-10 lg:p-12"
         aria-label="MILO"
       >
         <div className="relative">
@@ -193,7 +195,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
       </aside>
 
       {/* Form column */}
-      <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
+      <main id="main-content" tabIndex={-1} className="relative z-[1] flex min-h-0 flex-col items-center justify-center px-4 py-8 outline-none md:px-10 lg:px-14">
         <div className="mb-8 text-center md:hidden">
           <div className="mx-auto mb-4 flex justify-center">
             <BrandMark size={56} priority className="rounded-[var(--radius-xl)] shadow-[var(--shadow-pop)]" />
@@ -270,10 +272,11 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
                     dir="ltr"
                     required
                     autoComplete="current-password"
+                    inputMode="numeric"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    placeholder="••••••••"
+                    minLength={4}
+                    placeholder="1111"
                   />
                 </Field>
                 <Button type="submit" variant="primary" size="block" disabled={busy}>
@@ -284,7 +287,7 @@ export function LoginForm({ demoEntry }: { demoEntry: boolean }) {
 
             {!googleOAuthReady && process.env.NODE_ENV === 'development' ? (
               <p className="t-caption mt-3 text-center text-ink-3">
-                {p('חשבון פיילוט')}: {PILOT_DEMO_EMAIL} · {p('הסיסמה מוגדרת ב־PILOT_LOGIN_PASSWORD')}
+                {p('חשבון פיילוט')}: {PILOT_DEMO_EMAIL} · {p('סיסמה')} 1111
               </p>
             ) : null}
 

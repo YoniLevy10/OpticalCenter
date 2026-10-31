@@ -63,7 +63,7 @@ function VisitBarInner({
   if (!selection) return null
   if (selectedTickets.length === 0) {
     return (
-      <p className="t-caption text-ink-3">
+      <p className="t-caption hidden text-ink-3 md:block">
         {storeFilter
           ? 'סמנו תקלות לשיגור ביקור משולב לחנות זו'
           : 'סננו לפי חנות ואז סמנו תקלות לשיגור ביקור משולב'}

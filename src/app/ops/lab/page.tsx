@@ -4,12 +4,14 @@ import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Panel } from '@/components/ui/primitives'
 import { SeedDemoTicketButton } from '@/components/ops/seed-demo-ticket-button'
 import { Button } from '@/components/ui/button'
+import { PhoneDesktopOnly } from '@/components/layout/phone-desktop-only'
 
 export const dynamic = 'force-dynamic'
 
 export default function LabPage() {
   return (
     <OpsAppShell>
+      <PhoneDesktopOnly title="מעבדה">
       <div className="mx-auto flex max-w-3xl flex-col gap-5 stagger">
         <OpsPageHero
           title="מעבדה"
@@ -41,6 +43,7 @@ export default function LabPage() {
           </Button>
         </Panel>
       </div>
+      </PhoneDesktopOnly>
     </OpsAppShell>
   )
 }

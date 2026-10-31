@@ -1,6 +1,17 @@
 import { parseMetaMediaId } from './media'
+import { reportLanguage, type ReportLanguage } from './spoken-language'
 
 const GRAPH_VERSION = 'v23.0'
+
+const WHISPER_LANGUAGE: Record<string, ReportLanguage> = {
+  he: 'he',
+  iw: 'he',
+  hebrew: 'he',
+  en: 'en',
+  english: 'en',
+  fr: 'fr',
+  french: 'fr',
+}
 
 export async function transcribeVoice(
   mediaUrl: string | null,
@@ -9,9 +20,10 @@ export async function transcribeVoice(
   text: string | null
   status: 'transcribed' | 'needs_review'
   reason: string | null
+  language: ReportLanguage | null
 }> {
   if (!mediaUrl) {
-    return { text: null, status: 'needs_review', reason: 'אין קובץ הקלטה' }
+    return { text: null, status: 'needs_review', reason: 'אין קובץ הקלטה', language: null }
   }
   const audio = await loadAudio(mediaUrl, accessToken)
   if (!audio) {
@@ -19,6 +31,7 @@ export async function transcribeVoice(
       text: null,
       status: 'needs_review',
       reason: 'ההקלטה נשמרה וממתינה לתמלול',
+      language: null,
     }
   }
   const route = transcriptionRoute()
@@ -27,10 +40,57 @@ export async function transcribeVoice(
       text: null,
       status: 'needs_review',
       reason: 'ההקלטה נשמרה וממתינה לתמלול',
+      language: null,
     }
   }
+  const first = await requestWhisper(audio, route, null)
+  if (!first) {
+    return {
+      text: null,
+      status: 'needs_review',
+      reason: 'התמלול נכשל וההקלטה ממתינה לבדיקה',
+      language: null,
+    }
+  }
+  const detected = whisperLanguage(first.language)
+  if (first.text && detected) {
+    return { text: first.text, status: 'transcribed', reason: null, language: detected }
+  }
+  // Whisper often labels Hebrew as Arabic. Retry once in the language the words
+  // already show, otherwise Hebrew — the language of this network.
+  if (first.language && !detected) {
+    const lock = first.text ? reportLanguage(first.text) : 'he'
+    const second = await requestWhisper(audio, route, lock)
+    const text = second?.text || first.text
+    if (text) {
+      return { text, status: 'transcribed', reason: null, language: lock }
+    }
+  }
+  if (first.text) {
+    return {
+      text: first.text,
+      status: 'transcribed',
+      reason: null,
+      language: reportLanguage(first.text),
+    }
+  }
+  return { text: null, status: 'needs_review', reason: 'התמלול יצא ריק', language: null }
+}
+
+function whisperLanguage(value: string | null): ReportLanguage | null {
+  if (!value) return null
+  return WHISPER_LANGUAGE[value.trim().toLowerCase()] ?? null
+}
+
+async function requestWhisper(
+  audio: { bytes: Uint8Array; mime: string },
+  route: { url: string; key: string },
+  language: ReportLanguage | null,
+): Promise<{ text: string | null; language: string | null } | null> {
   const body = new FormData()
   body.set('model', 'whisper-1')
+  body.set('response_format', language ? 'json' : 'verbose_json')
+  if (language) body.set('language', language)
   body.set(
     'file',
     new Blob([audio.bytes as BlobPart], { type: audio.mime }),
@@ -41,19 +101,12 @@ export async function transcribeVoice(
     headers: { authorization: `Bearer ${route.key}` },
     body,
   })
-  if (!res.ok) {
-    return {
-      text: null,
-      status: 'needs_review',
-      reason: 'התמלול נכשל וההקלטה ממתינה לבדיקה',
-    }
+  if (!res.ok) return null
+  const json = (await res.json()) as { text?: string; language?: string }
+  return {
+    text: json.text?.trim() || null,
+    language: json.language ?? language,
   }
-  const json = (await res.json()) as { text?: string }
-  const text = json.text?.trim() || null
-  if (!text) {
-    return { text: null, status: 'needs_review', reason: 'התמלול יצא ריק' }
-  }
-  return { text, status: 'transcribed', reason: null }
 }
 
 function transcriptionRoute(): { url: string; key: string } | null {

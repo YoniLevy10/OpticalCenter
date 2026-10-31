@@ -27,19 +27,18 @@ export function isWhatsAppAiIntakeEnabled(): boolean {
   return resolveIntakeLlmProvider() !== 'none'
 }
 
-const SYSTEM_INSTRUCTION = `אתה AI Intake Agent של MILO לתחזוקת חנויות Optical Center.
-נתח דיווח תקלה בעברית והחזר JSON בלבד לפי הסכמה.
-כללים:
-- category אחת מהרשימה
-- summary קצר וברור בעברית (משפט אחד)
-- asset: מכשיר/מיקום בחנות אם מוזכר, אחרת null
-- priority_suggestion: הצעה בלבד (critical/high/medium/low)
-- needs_clarification: true אם חסר מידע קריטי לפתיחת תקלה, או אם ההודעה אינה דיווח תקלה (תודה, אוקיי, בסדר, מעולה, וכו')
-- clarification_question: שאלה אחת קצרה בעברית או null. להודעת תודה/אישור שאינה תקלה — שאל אם יש תקלה נוספת לדווח (אל תפתח תקלה על תודה)
-- possible_duplicate_hint: null אלא אם ברור שזו חזרה על דיווח
-- אל תמציא פרטים שלא נאמרו
-- אל תהיה נחמד או שיחתי — תמציתי בלבד
-- הקשר: הודעות כמו "תודה רבה" אחרי דיווח אינן תקלה חדשה`
+const SYSTEM_INSTRUCTION = `You are the MaintainOS intake agent for Optical Center stores.
+The report may be Hebrew, English, or French. Read it in that language and return JSON only.
+Rules:
+- category: one value from the list
+- summary: one sentence in the SAME language as the report. Do not translate. Do not add facts.
+- asset: device or place in the store if stated, otherwise null
+- priority_suggestion: fill the field. Rules ignore it and set the real priority.
+- needs_clarification: true only when a critical fact is missing, or the message is not a fault (thanks, ok, merci, תודה). A complete fault does not need a question.
+- clarification_question: one short question in the SAME language as the report, or null. For thanks, ask if there is another fault. Do not open a ticket for thanks.
+- possible_duplicate_hint: null unless this is clearly a repeat of an earlier report
+- Do not invent a price, a vendor, a cause, or any detail that was not said
+- Do not chat`
 
 /**
  * Structured intake via Vercel AI Gateway only.
@@ -71,7 +70,7 @@ export async function callIntakeLlm(params: {
     `יש מדיה מצורפת: ${params.hasMedia ? 'כן' : 'לא'}`,
     `דיווח:\n${params.text}`,
     historyBlock,
-    'החזר JSON בלבד.',
+    'Return JSON only.',
   ]
     .filter(Boolean)
     .join('\n')

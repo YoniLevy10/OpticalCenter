@@ -473,7 +473,7 @@ function store(): GlobalMem {
     sla.sla_respond_hours_medium = 4
     sla.sla_respond_hours_low = 8
   }
-  if (!seedingTrial && !mem.tickets.has('trial-6001-electrical')) {
+  if (!seedingTrial) {
     seedingTrial = true
     try {
       seedTrialFaults(mem)
@@ -741,13 +741,14 @@ function backfillTrialFaults(mem: GlobalMem) {
       })
       ticket.ai_summary = ticket.ai_summary ?? fault.title
     }
-    if (ticket.sla_respond_by && ticket.sla_resolve_by) continue
-    const created = new Date(ticket.created_at)
+    const nowMs = Date.now()
+    const created = new Date(nowMs - fault.hoursAgo * 3600_000)
+    ticket.created_at = created.toISOString()
     const sla = fault.breachHours
       ? {
-          sla_respond_by: new Date(Date.now() - fault.breachHours * 3600_000).toISOString(),
+          sla_respond_by: new Date(nowMs - fault.breachHours * 3600_000).toISOString(),
           sla_resolve_by: new Date(
-            Date.now() - Math.max(1, fault.breachHours - 1) * 3600_000,
+            nowMs - Math.max(1, fault.breachHours - 1) * 3600_000,
           ).toISOString(),
         }
       : computeSlaTimestamps(fault.priority, created)
@@ -779,7 +780,14 @@ function seedTrialFaults(mem: GlobalMem) {
       ai: null,
       original: fault.description,
     })
-    memCreate({
+    const techId =
+      fault.tech === 'michal'
+        ? '22222222-2222-4222-8222-222222222222'
+        : fault.tech === 'yossi' || fault.assignDemoTech
+          ? DEMO_TECH_ID
+          : null
+    const status = fault.status ?? (techId ? 'assigned' : 'new')
+    const ticket = memCreate({
       id: fault.id,
       store,
       description: fault.description,
@@ -790,12 +798,18 @@ function seedTrialFaults(mem: GlobalMem) {
       reporterPhone: branch?.managerPhone,
       title: fault.title,
       createdAt: createdDate.toISOString(),
-      status: fault.assignDemoTech ? 'assigned' : 'new',
-      assigned_to: fault.assignDemoTech ? DEMO_TECH_ID : null,
+      status,
+      assigned_to: techId,
       ai_summary: fault.title,
       ai_raw: aiRaw,
       ...sla,
     })
+    if (fault.resolvedHoursAgo != null) {
+      const at = new Date(nowMs - fault.resolvedHoursAgo * 3600_000).toISOString()
+      ticket.resolved_at = at
+      ticket.updated_at = at
+      if (ticket.status === 'closed') ticket.closed_at = at
+    }
   }
 }
 

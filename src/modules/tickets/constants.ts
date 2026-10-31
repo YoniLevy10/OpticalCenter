@@ -67,6 +67,7 @@ export const TICKET_SOURCE_LABELS_HE: Record<TicketSourceLabel, string> = {
 export const TICKET_CATEGORY_LABELS_HE: Record<string, string> = {
   hvac: 'מיזוג',
   electrical: 'חשמל',
+  electrical_hazard: 'סכנת חשמל',
   plumbing: 'אינסטלציה',
   security: 'אבטחה',
   it: 'מחשוב / קופה',

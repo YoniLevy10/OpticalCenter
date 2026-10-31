@@ -56,12 +56,12 @@ export function QueueTabs({
       role="tablist"
       aria-label={p('סינון תקלות')}
       aria-orientation="horizontal"
-      className="relative flex w-full max-w-full min-w-0 gap-0.5 overflow-x-auto rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
+      className="relative grid w-full min-w-0 max-w-full grid-cols-2 gap-1.5 overflow-hidden rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1.5 md:flex md:flex-nowrap md:gap-0.5 md:overflow-x-auto md:p-1"
     >
       <span
         aria-hidden
         className={cn(
-          'pointer-events-none absolute top-1 bottom-1 rounded-[var(--radius-sm)] bg-surface shadow-[var(--shadow-1)] transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease)]',
+          'pointer-events-none absolute top-1 bottom-1 hidden rounded-[var(--radius-sm)] bg-surface shadow-[var(--shadow-1)] transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease)] md:block',
           !pill.ready && 'opacity-0',
         )}
         style={{ width: pill.w, transform: `translateX(${pill.x}px)` }}
@@ -83,8 +83,10 @@ export function QueueTabs({
               router.push(queueHref(filters, { view: tab.key }))
             }
             className={cn(
-              'relative z-[1] t-control flex min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] px-1.5 py-2.5 text-[0.8125rem] sm:px-2 sm:text-[length:inherit] transition-colors duration-[var(--dur-1)]',
-              selected ? 'text-ink' : 'text-ink-3',
+              'relative z-[1] t-control flex min-h-12 w-full min-w-0 items-center justify-center whitespace-normal rounded-[var(--radius-sm)] px-2 py-2.5 text-center transition-colors duration-[var(--dur-1)] md:w-auto md:flex-1 md:whitespace-nowrap md:px-2',
+              selected
+                ? 'bg-surface text-ink shadow-[var(--shadow-1)] md:bg-transparent md:shadow-none'
+                : 'text-ink-3',
             )}
           >
             {p(tab.label)}

@@ -98,6 +98,8 @@ export type OpsTask = {
   documentId: string | null
   spendId: string | null
   done: boolean
+  /** open · doing · waiting · done. Older rows derive this from done / needsClarification. */
+  status?: 'open' | 'doing' | 'waiting' | 'done' | null
   needsClarification: boolean
   clarification: string | null
   createdAt: string
@@ -194,13 +196,17 @@ function seedLedger(): Ledger {
   }
 }
 
-function opsLedger(): Ledger {
-  const g = globalThis as typeof globalThis & { __maintainosLedger?: Ledger }
-  if (!g.__maintainosLedger) g.__maintainosLedger = seedLedger()
-  return g.__maintainosLedger
+const ledgerGlobal = globalThis as typeof globalThis & { __miloOpsLedger?: Ledger }
+
+/** One ledger for the page and the assistant route. Next keeps those as separate module copies. */
+function sharedLedger(): Ledger {
+  if (!ledgerGlobal.__miloOpsLedger) ledgerGlobal.__miloOpsLedger = seedLedger()
+  return ledgerGlobal.__miloOpsLedger
 }
 
+let ledger = sharedLedger()
 ensureTrialSpends()
+ensureTrialWork()
 
 function trialSpendRows(): SpendRequest[] {
   const now = new Date().toISOString()
@@ -236,8 +242,158 @@ function trialSpendRows(): SpendRequest[] {
 
 function ensureTrialSpends() {
   for (const row of trialSpendRows()) {
-    if (opsLedger().spends.some((spend) => spend.id === row.id)) continue
-    opsLedger().spends.push(row)
+    if (ledger.spends.some((spend) => spend.id === row.id)) continue
+    ledger.spends.push(row)
+  }
+}
+
+function ensureTrialWork() {
+  const now = Date.now()
+  const at = (hours: number) => new Date(now + hours * 3600_000).toISOString()
+  const tasks: OpsTask[] = [
+    {
+      id: 'trial-task-6001',
+      title: 'לוודא שחשמלנט מגיע לכיכר ציון לפני פתיחה',
+      storeId: israelStoreId('6001'),
+      storeCode: '6001',
+      assignee: 'ארי',
+      dueAt: at(6),
+      ticketId: 'trial-6001-electrical',
+      documentId: null,
+      spendId: 'trial-spend-6001',
+      done: false,
+      needsClarification: false,
+      clarification: null,
+      createdAt: at(-4),
+    },
+    {
+      id: 'trial-task-6037',
+      title: 'לאשר ביקור משולב בחיפה הרצל',
+      storeId: israelStoreId('6037'),
+      storeCode: '6037',
+      assignee: 'ארי',
+      dueAt: at(20),
+      ticketId: 'trial-6037-security',
+      documentId: null,
+      spendId: 'trial-spend-bundle-6037',
+      done: false,
+      needsClarification: false,
+      clarification: null,
+      createdAt: at(-2),
+    },
+    {
+      id: 'trial-task-6007',
+      title: 'לבקש הצעת מחיר שנייה למזגן בראשון לציון',
+      storeId: israelStoreId('6007'),
+      storeCode: '6007',
+      assignee: 'ונסה',
+      dueAt: at(48),
+      ticketId: 'trial-6007-hvac',
+      documentId: null,
+      spendId: 'trial-spend-6007',
+      done: false,
+      needsClarification: true,
+      clarification: 'האם להחליף או רק למלא גז',
+      createdAt: at(-8),
+    },
+    {
+      id: 'trial-task-6006',
+      title: 'לסגור את ביקור המיזוג באבן גבירול',
+      storeId: israelStoreId('6006'),
+      storeCode: '6006',
+      assignee: 'יוסי כהן',
+      dueAt: at(-6),
+      ticketId: 'trial-6006-hvac',
+      documentId: null,
+      spendId: null,
+      done: true,
+      needsClarification: false,
+      clarification: null,
+      createdAt: at(-30),
+    },
+  ]
+  for (const task of tasks) {
+    if (ledger.tasks.some((row) => row.id === task.id)) continue
+    ledger.tasks.push(task)
+  }
+
+  const docs: StoreDocument[] = [
+    {
+      id: 'trial-doc-6006-fire',
+      storeId: israelStoreId('6006'),
+      storeCode: '6006',
+      storeName: 'תל אביב אבן גבירול',
+      docType: 'fire',
+      sourceUrl: null,
+      extractedExpiry: at(-48),
+      computedNextCheck: at(-48),
+      owner: 'לילך',
+      intakeStatus: 'needs_review',
+      intakeReason: 'תוקף כיבוי אש עבר',
+      version: 1,
+      previousId: null,
+      renewed: false,
+      createdAt: at(-200),
+      fieldsLocked: true,
+    },
+    {
+      id: 'trial-doc-6010-electrical',
+      storeId: israelStoreId('6010'),
+      storeCode: '6010',
+      storeName: 'חולון',
+      docType: 'electrical',
+      sourceUrl: null,
+      extractedExpiry: at(24 * 12),
+      computedNextCheck: at(24 * 12),
+      owner: 'אנה',
+      intakeStatus: 'ingested',
+      intakeReason: null,
+      version: 1,
+      previousId: null,
+      renewed: false,
+      createdAt: at(-80),
+      fieldsLocked: true,
+    },
+    {
+      id: 'trial-doc-6001-hearing',
+      storeId: israelStoreId('6001'),
+      storeCode: '6001',
+      storeName: 'ירושלים כיכר ציון',
+      docType: 'hearing_a',
+      sourceUrl: null,
+      extractedExpiry: at(24 * 18),
+      computedNextCheck: at(24 * 18),
+      owner: 'קרן',
+      intakeStatus: 'needs_review',
+      intakeReason: 'כיול שמיעה מתקרב',
+      version: 1,
+      previousId: null,
+      renewed: false,
+      createdAt: at(-40),
+      fieldsLocked: false,
+    },
+    {
+      id: 'trial-doc-6037-fire',
+      storeId: israelStoreId('6037'),
+      storeCode: '6037',
+      storeName: 'חיפה הרצל',
+      docType: 'fire',
+      sourceUrl: null,
+      extractedExpiry: at(24 * 40),
+      computedNextCheck: at(24 * 40),
+      owner: 'חיפה הרצל',
+      intakeStatus: 'ingested',
+      intakeReason: null,
+      version: 1,
+      previousId: null,
+      renewed: false,
+      createdAt: at(-10),
+      fieldsLocked: true,
+    },
+  ]
+  for (const doc of docs) {
+    if (ledger.documents.some((row) => row.id === doc.id)) continue
+    ledger.documents.push(doc)
   }
 }
 
@@ -261,34 +417,25 @@ function emptyDriveSync(): DriveSyncState {
   }
 }
 
-function readDriveSync(): DriveSyncState {
-  const g = globalThis as typeof globalThis & { __maintainosDriveSync?: DriveSyncState }
-  if (!g.__maintainosDriveSync) g.__maintainosDriveSync = emptyDriveSync()
-  return g.__maintainosDriveSync
-}
-
-function writeDriveSync(next: DriveSyncState) {
-  const g = globalThis as typeof globalThis & { __maintainosDriveSync?: DriveSyncState }
-  g.__maintainosDriveSync = next
-}
+let driveSync = emptyDriveSync()
 
 export function getDriveSync(): DriveSyncState {
-  return readDriveSync()
+  return driveSync
 }
 
 export function setDriveSync(patch: Partial<DriveSyncState>) {
-  writeDriveSync({ ...readDriveSync(), ...patch })
+  driveSync = { ...driveSync, ...patch }
 }
 
 export function applyDriveMirror(files: IngestedFile[], documents: StoreDocument[]) {
-  opsLedger().files = files
-  opsLedger().documents = documents
+  ledger.files = files
+  ledger.documents = documents
 }
 
 export function resetOpsLedger() {
-  const g = globalThis as typeof globalThis & { __maintainosLedger?: Ledger }
-  g.__maintainosLedger = seedLedger()
-  writeDriveSync(emptyDriveSync())
+  ledger = seedLedger()
+  ledgerGlobal.__miloOpsLedger = ledger
+  driveSync = emptyDriveSync()
   ensureTrialSpends()
 }
 
@@ -298,26 +445,26 @@ export function replacePersistedOps(next: {
   spends?: Ledger['spends']
   tasks?: Ledger['tasks']
 }) {
-  if (next.files) opsLedger().files = next.files
-  if (next.documents) opsLedger().documents = next.documents
-  if (next.spends) opsLedger().spends = next.spends
-  if (next.tasks) opsLedger().tasks = next.tasks
+  if (next.files) ledger.files = next.files
+  if (next.documents) ledger.documents = next.documents
+  if (next.spends) ledger.spends = next.spends
+  if (next.tasks) ledger.tasks = next.tasks
 }
 
 function audit(entry: Omit<AuditEntry, 'id' | 'at'>, at = new Date().toISOString()) {
-  opsLedger().audits.unshift({
-    id: `audit-${opsLedger().audits.length + 1}-${entry.field}`,
+  ledger.audits.unshift({
+    id: `audit-${ledger.audits.length + 1}-${entry.field}`,
     at,
     ...entry,
   })
 }
 
 export function listAudits(): AuditEntry[] {
-  return opsLedger().audits
+  return ledger.audits
 }
 
 export function listContacts(storeId?: string): DirectoryContact[] {
-  return opsLedger().contacts.filter((contact) => {
+  return ledger.contacts.filter((contact) => {
     if (!storeId) return true
     return contact.storeIds.includes(storeId)
   })
@@ -327,7 +474,7 @@ export function listContacts(storeId?: string): DirectoryContact[] {
 export function listContactsForStore(storeId: string, code: string): DirectoryContact[] {
   const canonical = canonicalStoreCode(code)
   const keys = new Set([storeId, israelStoreId(code), israelStoreId(canonical)])
-  return opsLedger().contacts.filter(
+  return ledger.contacts.filter(
     (contact) => contact.isActive && contact.storeIds.some((id) => keys.has(id)),
   )
 }
@@ -350,7 +497,7 @@ export function upsertContact(
 ): DirectoryContact {
   const phone = input.phone.trim()
   if (input.id) {
-    const current = opsLedger().contacts.find((contact) => contact.id === input.id)
+    const current = ledger.contacts.find((contact) => contact.id === input.id)
     if (!current) throw new Error('איש קשר לא נמצא')
     if (current.phone !== phone) {
       audit({
@@ -381,7 +528,7 @@ export function upsertContact(
     storeIds: [...new Set(input.storeIds)],
     isActive: true,
   }
-  opsLedger().contacts.push(contact)
+  ledger.contacts.push(contact)
   audit({
     actor: input.actor,
     entity: 'contact',
@@ -394,7 +541,7 @@ export function upsertContact(
 }
 
 export function setContactActive(id: string, isActive: boolean, actor: string) {
-  const contact = opsLedger().contacts.find((row) => row.id === id)
+  const contact = ledger.contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
   audit({
     actor,
@@ -409,7 +556,7 @@ export function setContactActive(id: string, isActive: boolean, actor: string) {
 }
 
 export function verifyContactPhone(id: string, actor: string) {
-  const contact = opsLedger().contacts.find((row) => row.id === id)
+  const contact = ledger.contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
   audit({
     actor,
@@ -424,9 +571,9 @@ export function verifyContactPhone(id: string, actor: string) {
 }
 
 export function proposeContactPhone(id: string, incoming: string, actor: string) {
-  const contact = opsLedger().contacts.find((row) => row.id === id)
+  const contact = ledger.contacts.find((row) => row.id === id)
   if (!contact) throw new Error('איש קשר לא נמצא')
-  const overlay = opsLedger().overlays.find((row) => row.storeId === contact.storeIds[0])
+  const overlay = ledger.overlays.find((row) => row.storeId === contact.storeIds[0])
   const proposal = proposeSyncedValue({
     field: 'phone',
     current: contact.phone,
@@ -435,8 +582,8 @@ export function proposeContactPhone(id: string, incoming: string, actor: string)
     needsVerification: contact.phoneStatus === 'needs_verification',
   })
   if (proposal.action === 'conflict') {
-    opsLedger().conflicts.unshift({
-      id: `conflict-${opsLedger().conflicts.length + 1}`,
+    ledger.conflicts.unshift({
+      id: `conflict-${ledger.conflicts.length + 1}`,
       entity: 'contact',
       entityId: id,
       field: 'phone',
@@ -462,11 +609,11 @@ export function proposeContactPhone(id: string, incoming: string, actor: string)
 }
 
 export function listConflicts(): FieldConflict[] {
-  return opsLedger().conflicts.filter((row) => !row.resolved)
+  return ledger.conflicts.filter((row) => !row.resolved)
 }
 
 export function resolveConflict(id: string, keep: 'current' | 'incoming', actor: string) {
-  const conflict = opsLedger().conflicts.find((row) => row.id === id)
+  const conflict = ledger.conflicts.find((row) => row.id === id)
   if (!conflict) throw new Error('סתירה לא נמצאה')
   conflict.resolved = true
   audit({
@@ -478,17 +625,17 @@ export function resolveConflict(id: string, keep: 'current' | 'incoming', actor:
     next: keep === 'incoming' ? conflict.incoming : conflict.current,
   })
   if (keep === 'incoming' && conflict.entity === 'contact') {
-    const contact = opsLedger().contacts.find((row) => row.id === conflict.entityId)
+    const contact = ledger.contacts.find((row) => row.id === conflict.entityId)
     if (contact) contact.phone = conflict.incoming
   }
   return conflict
 }
 
 export function setAreaManager(storeId: string, name: string, actor: string) {
-  let overlay = opsLedger().overlays.find((row) => row.storeId === storeId)
+  let overlay = ledger.overlays.find((row) => row.storeId === storeId)
   if (!overlay) {
     overlay = { storeId, areaManager: null, locks: [] }
-    opsLedger().overlays.push(overlay)
+    ledger.overlays.push(overlay)
   }
   audit({
     actor,
@@ -504,31 +651,31 @@ export function setAreaManager(storeId: string, name: string, actor: string) {
 }
 
 export function areaManagerFor(storeId: string): string | null {
-  return opsLedger().overlays.find((row) => row.storeId === storeId)?.areaManager ?? null
+  return ledger.overlays.find((row) => row.storeId === storeId)?.areaManager ?? null
 }
 
 export function listSpends(): SpendRequest[] {
   ensureTrialSpends()
-  return [...opsLedger().spends]
+  return [...ledger.spends]
 }
 
 export function spendForTicket(ticketId: string): SpendRequest | null {
   return (
-    opsLedger().spends.find((row) => row.ticketId === ticketId && row.status !== 'rejected') ??
+    ledger.spends.find((row) => row.ticketId === ticketId && row.status !== 'rejected') ??
     null
   )
 }
 
 /** All non-rejected spends linked to a ticket (for true-cost rollups). */
 export function spendsForTicket(ticketId: string): SpendRequest[] {
-  return opsLedger().spends.filter(
+  return ledger.spends.filter(
     (row) => row.ticketId === ticketId && row.status !== 'rejected',
   )
 }
 
 /** All non-rejected spends linked to an asset. */
 export function spendsForAsset(assetId: string): SpendRequest[] {
-  return opsLedger().spends.filter(
+  return ledger.spends.filter(
     (row) => row.assetId === assetId && row.status !== 'rejected',
   )
 }
@@ -575,7 +722,7 @@ export function createSpend(
     createdAt: now,
     updatedAt: now,
   }
-  opsLedger().spends.unshift(spend)
+  ledger.spends.unshift(spend)
   audit({
     actor: input.actor,
     entity: 'spend',
@@ -593,7 +740,7 @@ export function applySpendDecision(
   actor: string,
   approvedAmount?: number | null,
 ): SpendRequest {
-  const spend = opsLedger().spends.find((row) => row.id === id)
+  const spend = ledger.spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   const previous = spend.status
   const next = decideSpend(spend, decision, actor, approvedAmount)
@@ -613,14 +760,14 @@ export function reviseSpend(
   id: string,
   patch: { requestedAmount?: number; vendorName?: string | null; scope?: string | null },
 ): SpendRequest {
-  const spend = opsLedger().spends.find((row) => row.id === id)
+  const spend = ledger.spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   Object.assign(spend, withCommercialChange(spend, patch))
   return spend
 }
 
 export function recordActualSpend(id: string, actualAmount: number, actor: string): SpendRequest {
-  const spend = opsLedger().spends.find((row) => row.id === id)
+  const spend = ledger.spends.find((row) => row.id === id)
   if (!spend) throw new Error('בקשה לא נמצאה')
   audit({
     actor,
@@ -661,7 +808,6 @@ function branchDocument(row: (typeof BRANCH_CATALOG)[number], now: string): Stor
 }
 
 function ensureBranchDocuments() {
-  const ledger = opsLedger()
   const now = '2026-10-28T00:00:00.000Z'
   const byId = new Map(BRANCH_CATALOG.map((row) => [row.id, row]))
   const fileIds = new Set(BRANCH_CATALOG.map((row) => row.fileId))
@@ -705,14 +851,14 @@ function ensureBranchDocuments() {
 
 export function listDocuments(): StoreDocument[] {
   ensureBranchDocuments()
-  return opsLedger().documents
+  return ledger.documents
 }
 
 export function decideStoredDocument(
   id: string,
   decision: 'approved' | 'rejected' | 'needs_info',
 ): StoreDocument {
-  const doc = opsLedger().documents.find((row) => row.id === id)
+  const doc = ledger.documents.find((row) => row.id === id)
   if (!doc) throw new Error('מסמך לא נמצא')
   if (decision === 'approved') {
     doc.intakeStatus = 'ingested'
@@ -741,7 +887,28 @@ export function addDocument(
     renewed: false,
     createdAt: new Date().toISOString(),
   }
-  opsLedger().documents.unshift(doc)
+  ledger.documents.unshift(doc)
+  return doc
+}
+
+export function setDocumentReminders(
+  id: string,
+  reminders: { six: string | null; two: string | null },
+): StoreDocument {
+  const doc = ledger.documents.find((row) => row.id === id)
+  if (!doc) throw new Error('מסמך לא נמצא')
+  doc.reminderSixAt = reminders.six
+  doc.reminderTwoAt = reminders.two
+  doc.localUpdatedAt = new Date().toISOString()
+  return doc
+}
+
+export function setDocumentExpiry(id: string, extractedExpiry: string): StoreDocument {
+  const doc = ledger.documents.find((row) => row.id === id)
+  if (!doc) throw new Error('מסמך לא נמצא')
+  doc.extractedExpiry = extractedExpiry
+  doc.fieldsLocked = true
+  doc.localUpdatedAt = new Date().toISOString()
   return doc
 }
 
@@ -749,18 +916,18 @@ export function renewStoredDocument(
   id: string,
   nextFile: { sourceUrl: string; extractedExpiry: string | null },
 ) {
-  const current = opsLedger().documents.find((row) => row.id === id)
+  const current = ledger.documents.find((row) => row.id === id)
   if (!current) throw new Error('מסמך לא נמצא')
   const result = renewDocument(current, nextFile)
   result.next.localUpdatedAt = new Date().toISOString()
   result.next.fieldsLocked = true
   Object.assign(current, result.closed)
-  opsLedger().documents.unshift(result.next)
+  ledger.documents.unshift(result.next)
   return result
 }
 
 export function listTasks(): OpsTask[] {
-  return opsLedger().tasks
+  return ledger.tasks
 }
 
 export function addTask(input: Omit<OpsTask, 'id' | 'done' | 'createdAt'>): OpsTask {
@@ -770,7 +937,7 @@ export function addTask(input: Omit<OpsTask, 'id' | 'done' | 'createdAt'>): OpsT
     done: false,
     createdAt: new Date().toISOString(),
   }
-  opsLedger().tasks.unshift(task)
+  ledger.tasks.unshift(task)
   return task
 }
 
@@ -818,15 +985,22 @@ export function addTasksFromTranscript(
 }
 
 export function toggleTask(id: string, done: boolean): OpsTask {
-  const task = opsLedger().tasks.find((row) => row.id === id)
+  return setTaskStatus(id, done ? 'done' : 'open')
+}
+
+export function setTaskStatus(id: string, status: NonNullable<OpsTask['status']>): OpsTask {
+  const task = ledger.tasks.find((row) => row.id === id)
   if (!task) throw new Error('משימה לא נמצאה')
-  task.done = done
+  task.status = status
+  task.done = status === 'done'
+  task.needsClarification = status === 'waiting'
+  if (status === 'waiting' && !task.clarification) task.clarification = 'ממתין להמשך'
   return task
 }
 
 export function listFiles(): IngestedFile[] {
   ensureBranchDocuments()
-  return opsLedger().files
+  return ledger.files
 }
 
 export function ingestFile(input: {
@@ -845,46 +1019,51 @@ export function ingestFile(input: {
     storeCodeHint: input.storeCodeHint,
     extractedText: input.extractedText,
     knownStoreCodes: input.knownStoreCodes,
-    existingNames: opsLedger().files.map((row) => row.name),
+    existingNames: ledger.files.map((row) => row.name),
+    stores: ISRAEL_STORES.map((store) => ({
+      code: store.code,
+      name: store.name,
+      city: store.city,
+    })),
   })
-  opsLedger().files.unshift(file)
+  ledger.files.unshift(file)
   return file
 }
 
 export function noteDriveDeleted(id: string): IngestedFile {
-  const file = opsLedger().files.find((row) => row.id === id)
+  const file = ledger.files.find((row) => row.id === id)
   if (!file) throw new Error('קובץ לא נמצא')
   Object.assign(file, markSourceDeleted(file))
   return file
 }
 
 export function listCatalog(): CatalogItem[] {
-  return opsLedger().catalog
+  return ledger.catalog
 }
 
 export function listStock(): StockQty[] {
-  return opsLedger().stock
+  return ledger.stock
 }
 
 export function addCatalogItem(name: string, sku: string): CatalogItem {
   const item = { id: crypto.randomUUID(), name: name.trim(), sku: sku.trim() }
-  opsLedger().catalog.push(item)
+  ledger.catalog.push(item)
   return item
 }
 
 export function moveStock(movement: Omit<StockMovement, 'id'>): StockQty[] {
   const full = { ...movement, id: crypto.randomUUID() }
-  opsLedger().movements.push(full)
-  opsLedger().stock = applyMovement(opsLedger().stock, full)
-  return opsLedger().stock
+  ledger.movements.push(full)
+  ledger.stock = applyMovement(ledger.stock, full)
+  return ledger.stock
 }
 
 export function listOutcomes(): VendorOutcome[] {
-  return opsLedger().outcomes
+  return ledger.outcomes
 }
 
 export function addOutcome(outcome: VendorOutcome) {
-  opsLedger().outcomes.push(outcome)
+  ledger.outcomes.push(outcome)
   return outcome
 }
 
@@ -900,7 +1079,7 @@ export function recordClassificationCorrection(
     reason?: string | null
   },
 ) {
-  opsLedger().corrections.push({
+  ledger.corrections.push({
     id: crypto.randomUUID(),
     ticketId,
     from,
@@ -915,5 +1094,5 @@ export function recordClassificationCorrection(
 }
 
 export function listClassificationCorrections() {
-  return opsLedger().corrections
+  return ledger.corrections
 }

@@ -18,12 +18,13 @@ import {
   parseStoreCodeFromText,
 } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { createTicket, getTicketForMutation } from '@/modules/tickets/service'
+import { createTicket, listTickets } from '@/modules/tickets/service'
 import {
   findPossibleDuplicateTicket,
   runIntakeAgent,
   type IntakeDecision,
 } from './agent'
+import { intakeBundleHandoff, type BundleFault } from './agent/bundle'
 import { WA_COPY } from './copy'
 import { enhanceWhatsAppMessage, type WhatsAppAiSituation } from './ai'
 import { resolveInboundMediaUrl } from './media'
@@ -35,8 +36,19 @@ import { humanPauseUntilIso, isHumanPauseActive } from './human-pause'
 import { handoffReply, isStatusQuestion, statusReply, voiceNeedsReviewReply } from './intent'
 import { transcribeVoice } from './voice'
 import { spendForTicket } from '@/lib/data/ops-ledger'
+import { hydrateOpsLedger } from '@/lib/data/ops-db'
+import { decideBundleVisit, parseVisitButton } from '@/modules/recommendations/commit'
 import { landVoiceReview, lookupStore, routeInboundToDesk } from './desk-route'
-import { isAriSender } from './classify'
+import { listProfessionals, upsertProfessional } from '@/modules/professionals/service'
+import { send019Sms } from '@/lib/sms/019'
+import { addTask } from '@/lib/data/ops-ledger'
+import {
+  faultsSms,
+  mergeStorePersonNote,
+  parseStorePerson,
+  personForStore,
+} from './store-person'
+import { isAriSender, splitSpokenFaults } from './classify'
 import { isNonIssueAck } from './non-issue'
 import {
   confirmStoreFix,
@@ -1004,6 +1016,27 @@ export async function processInboundMessage(
     await updateSession(supabase, session, {
       last_inbound: text || (message.mediaUrl ? '[media]' : null),
     })
+    const pendingNotice = session.draft_payload?.pending_notice
+    if (typeof pendingNotice === 'string' && pendingNotice.trim()) {
+      const payload = { ...(session.draft_payload ?? {}) }
+      delete payload.pending_notice
+      await updateSession(supabase, session, { draft_payload: payload })
+      session = { ...session, draft_payload: payload }
+      await sendReply(supabase, message, country, pendingNotice, null, options, session)
+    }
+
+    const visitButton = parseVisitButton(message.interactiveId)
+    if (visitButton) {
+      await hydrateOpsLedger()
+      const decided = await decideBundleVisit({
+        spendId: visitButton.spendId,
+        approve: visitButton.approve,
+        actor: 'מנהל סניף',
+        senderPhone: message.waId,
+      })
+      await sendReply(supabase, message, country, decided.reply, null, options, session)
+      return { ok: true, reply: decided.reply, state: session.state }
+    }
 
     const storeCodeHint = text ? parseStoreCodeFromText(text) : null
 
@@ -1389,24 +1422,12 @@ export async function processInboundMessage(
       return { ok: true, reply, ticketId: session.active_ticket_id, state: 'done' }
     }
 
-    let openTicketId: string | null = null
-    if (session.active_ticket_id) {
-      const linked = await getTicketForMutation(session.active_ticket_id).catch(() => null)
-      if (
-        linked &&
-        (OPEN_TICKET_STATUSES as readonly string[]).includes(linked.status)
-      ) {
-        openTicketId = linked.id
-      }
-    }
-
     const desk = await routeInboundToDesk({
       text: spoken ?? null,
       mediaKind: message.mediaKind,
       fileName: message.fileName,
       mediaUrl: message.mediaUrl,
       waId: message.waId,
-      openTicketId,
       sessionStore: session.store_id
         ? {
             id: session.store_id,
@@ -1747,6 +1768,149 @@ export async function processInboundMessage(
   }
 }
 
+async function openFaultsForBundle(): Promise<BundleFault[]> {
+  try {
+    const { tickets } = await listTickets({
+      limit: 200,
+      statuses: [...OPEN_TICKET_STATUSES],
+    })
+    return tickets.map((ticket) => ({
+      id: ticket.id,
+      storeId: ticket.store_id,
+      storeName: '',
+      category: ticket.category,
+      priority: ticket.priority,
+      status: ticket.status,
+      summary: ticket.description,
+      createdAt: ticket.created_at,
+      slaResolveBy: ticket.sla_resolve_by,
+      resolvedAt: ticket.resolved_at,
+      firstResponseAt: ticket.first_response_at,
+      dispatched: ticket.status === 'waiting_vendor',
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** SMS the branch's own person when the fault is urgent or already grouped. The WhatsApp reply stays the ticket confirmation. */
+async function dispatchStorePerson(input: {
+  storeId: string
+  storeName: string
+  storeCode: string
+  category: string
+  description: string
+  priority: string
+  ticketId: string
+}): Promise<void> {
+  try {
+    const handoff = intakeBundleHandoff({
+      ...input,
+      createdAt: new Date().toISOString(),
+      open: await openFaultsForBundle(),
+    })
+    if (handoff === 'wait') return
+    const listed = await listProfessionals({ limit: 200 }).catch(() => ({
+      professionals: [],
+    }))
+    const person = personForStore(listed.professionals, input.storeCode, input.category)
+    if (!person) return
+    const sent = await send019Sms({
+      to: person.phone,
+      message: faultsSms(input.storeName, [input.description]),
+      meta: { storeCode: input.storeCode, ticketId: input.ticketId },
+    }).catch(() => ({ ok: false as const }))
+    addTask({
+      title: sent.ok ? `נשלח SMS ל${person.name}` : `SMS ל${person.name} לא יצא`,
+      storeId: input.storeId,
+      storeCode: input.storeCode,
+      assignee: null,
+      dueAt: null,
+      ticketId: input.ticketId,
+      documentId: null,
+      spendId: null,
+      needsClarification: !sent.ok,
+      clarification: sent.ok ? null : 'המספר שמור והשליחה ב-SMS לא יצאה',
+    })
+  } catch {
+    // The ticket confirmation already went out. A failed handoff stays a task for Ari.
+  }
+}
+
+async function finalizeSpokenFaults(params: {
+  supabase: SupabaseClient | null
+  session: SessionRow
+  store: StoreRow
+  parts: string[]
+  message: InboundMessage
+  source: TicketSource
+  country: CountryRow
+  options?: { skipOutboundGraph?: boolean }
+}): Promise<IntakeResult> {
+  const { supabase, session, store, parts, message, source, country, options } = params
+  const lines: string[] = []
+  let lastId = ''
+  let lastNumber = ''
+  let lastCategory = 'other'
+
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index] ?? ''
+    const decision = await runIntakeAgent({
+      text: part,
+      storeName: store.name,
+      storeCode: store.code,
+      hasMedia: index === 0 && Boolean(message.mediaUrl),
+    })
+    const created = await createTicketFromIntake({
+      store,
+      country,
+      description: part,
+      decision,
+      mediaUrl: index === 0 ? message.mediaUrl : null,
+      mediaKind: index === 0 ? message.mediaKind : null,
+      waId: message.waId,
+      messageId: index === 0 ? message.messageId : `${message.messageId}:${index}`,
+      source,
+      inboundText: part,
+      useMemory: !supabase,
+    })
+    lines.push(decision.summary || part)
+    lastId = created.ticketId
+    lastNumber = created.displayNumber
+    lastCategory = decision.category
+  }
+
+  await updateSession(supabase, session, {
+    state: 'done',
+    pending_description: null,
+    draft_payload: null,
+    active_ticket_id: lastId,
+    pending_media_url: null,
+    pending_media_kind: null,
+    clarification_count: 0,
+  })
+  await linkStorePhone(supabase, country, message.waId, store)
+
+  const reply = `פתחתי ${lines.length} תקלות:\n${lines.map((line) => `• ${line}`).join('\n')}`
+  await dispatchStorePerson({
+    storeId: store.id,
+    storeName: store.name,
+    storeCode: store.code,
+    category: lastCategory,
+    description: lines[lines.length - 1] || '',
+    priority: 'medium',
+    ticketId: lastId,
+  })
+  await sendReply(supabase, message, country, reply, lastId, options, session)
+  return {
+    ok: true,
+    reply,
+    ticketId: lastId,
+    displayNumber: lastNumber,
+    state: 'done',
+  }
+}
+
 async function analyzeAndFinalize(params: {
   supabase: SupabaseClient | null
   session: SessionRow
@@ -1769,6 +1933,39 @@ async function analyzeAndFinalize(params: {
     options,
     forceCreate,
   } = params
+
+  const claimed = !forceCreate ? parseStorePerson(description) : null
+  if (claimed) {
+    const listed = await listProfessionals({ limit: 200 }).catch(() => ({
+      professionals: [],
+    }))
+    const existing = listed.professionals.find((person) => {
+      const saved = (person.phone ?? '').replace(/\D/g, '')
+      return saved.endsWith(claimed.phone.slice(-9))
+    })
+    await upsertProfessional({
+      full_name: claimed.name,
+      phone: claimed.phone,
+      trade: claimed.trade,
+      notes: mergeStorePersonNote(existing?.notes ?? null, store.code, claimed.category),
+      source: 'manual',
+    }).catch(() => null)
+    const reply = `רשמתי את ${claimed.name} ל${claimed.trade} במאגר אנשי המקצוע. כשיש תקלה אשלח לו SMS, וארי לא צריך לתאם.`
+    await updateSession(supabase, session, {
+      state: 'done',
+      pending_description: null,
+      clarification_count: 0,
+    })
+    await sendReply(supabase, message, country, reply, null, options, session)
+    return { ok: true, reply, state: 'done' }
+  }
+
+  if (message.mediaKind === 'audio' && !forceCreate) {
+    const parts = splitSpokenFaults(description)
+    if (parts.length > 1) {
+      return finalizeSpokenFaults({ ...params, parts })
+    }
+  }
 
   // Defense: never open a ticket from gratitude / short ack alone.
   // Keep pending media — a photo waiting for description is not "thanks".
@@ -1940,9 +2137,21 @@ async function finalizeTicket(params: {
     }),
     'intake_confirmed',
   )
+  if (message.mediaKind === 'audio' || effective.mediaKind === 'audio') {
+    reply = `פתחתי תקלה: ${decision.summary}\n${reply}`
+  }
   if (mediaFailed) {
     reply = `${reply}\n\n${await craftIntakeReply(WA_COPY.mediaNotSaved, 'intake_media_not_saved')}`
   }
+  await dispatchStorePerson({
+    storeId: store.id,
+    storeName: store.name,
+    storeCode: store.code,
+    category: decision.category,
+    description: decision.summary || description,
+    priority: decision.priority,
+    ticketId,
+  })
   await sendReply(supabase, message, country, reply, ticketId, options, session)
 
   logEvent('whatsapp:intake', 'info', 'ticket_created', {

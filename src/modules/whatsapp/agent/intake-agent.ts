@@ -4,6 +4,7 @@ import {
   descriptionNeedsClarification,
   type RulesResult,
 } from './rules'
+import { clarificationQuestion as questionInReportLanguage } from '../spoken-language'
 import type { IntakeAgentOutput } from './schema'
 
 export type IntakeDecision = {
@@ -20,8 +21,9 @@ export type IntakeDecision = {
 }
 
 /**
- * AI Intake Agent: LLM structured extract (optional) + rules engine final say.
- * Vision signals reserved for future — not used in MVP.
+ * Read one fault report. Rules set category and priority.
+ * The model may summarize and, when the text is still unclear, ask one question.
+ * Photos are stored. They are not interpreted.
  */
 export async function runIntakeAgent(params: {
   text: string
@@ -29,11 +31,7 @@ export async function runIntakeAgent(params: {
   storeCode?: string | null
   hasMedia?: boolean
   history?: Array<{ role: 'user' | 'assistant'; text: string }>
-  /** Future: visionSignals?: Record<string, unknown> */
-  visionSignals?: Record<string, unknown> | null
 }): Promise<IntakeDecision> {
-  void params.visionSignals // architecture hook — unused in MVP
-
   const text = params.text.trim() || (params.hasMedia ? 'תמונה מצורפת' : '')
   const llm = await callIntakeLlm({
     text,
@@ -60,26 +58,23 @@ export async function runIntakeAgent(params: {
     'דיווח WhatsApp'
 
   const heuristic = descriptionNeedsClarification(text, Boolean(params.hasMedia))
-  let needsClarification = Boolean(ai?.needs_clarification) || heuristic.needs
-  let clarificationQuestion =
-    (ai?.needs_clarification && ai.clarification_question) ||
-    heuristic.question ||
-    null
+  let needsClarification = false
+  let clarificationQuestion: string | null = null
 
-  // Never clarify when we already have a solid summary + category from rules/AI
-  if (
-    !heuristic.needs &&
-    summary.length >= 8 &&
-    rules.category !== 'other' &&
-    !ai?.needs_clarification
+  if (heuristic.needs) {
+    needsClarification = true
+    clarificationQuestion = heuristic.question
+  } else if (
+    (summary.length < 8 || rules.category === 'other') &&
+    ai?.needs_clarification &&
+    ai.clarification_question
   ) {
-    needsClarification = false
-    clarificationQuestion = null
+    needsClarification = true
+    clarificationQuestion = ai.clarification_question
   }
 
-  // Cap: if AI asks clarification but question empty — drop it
   if (needsClarification && !clarificationQuestion) {
-    clarificationQuestion = 'נא להוסיף פרט אחד חשוב על התקלה (מיקום או מה לא עובד).'
+    clarificationQuestion = questionInReportLanguage(text, 'detail')
   }
 
   return {

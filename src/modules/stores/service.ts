@@ -44,11 +44,13 @@ function toRecord(s: MemStore): StoreRecord {
     manager_name_en: s.manager_name_en ?? null,
     manager_phone: s.manager_phone ?? null,
     area_manager: s.area_manager ?? null,
+    store_phone: s.store_phone ?? null,
+    store_email: s.store_email ?? null,
   }
 }
 
 const STORE_COLUMNS =
-  'id, code, name, city, address, region_id, organization_id, country_id, is_active, manager_name, manager_name_en, manager_phone, area_manager'
+  'id, code, name, city, address, region_id, organization_id, country_id, is_active, manager_name, manager_name_en, manager_phone, area_manager, store_phone, store_email'
 
 export async function listStores(opts?: {
   includeInactive?: boolean

@@ -15,6 +15,7 @@ import type {
   OpsAlert,
 } from '@/modules/alerts/types'
 import { filterAlerts, splitAlertBuckets } from '@/modules/alerts/types'
+import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 
 const BUCKETS: { key: AlertBucket | 'open'; label: string }[] = [
   { key: 'open', label: 'פעולות פתוחות' },
@@ -113,7 +114,7 @@ export function AlertsClient({
       <div
         role="tablist"
         aria-label={p('פעולות פתוחות')}
-        className="flex w-full max-w-full gap-0.5 overflow-x-auto rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
+        className="grid w-full grid-cols-2 gap-1 rounded-[var(--radius-md)] border border-border bg-[var(--surface-sunken)]/50 p-1"
       >
         {BUCKETS.map((tab) => {
           const selected = bucket === tab.key
@@ -128,7 +129,7 @@ export function AlertsClient({
               role="tab"
               aria-selected={selected}
               className={cn(
-                'shrink-0 rounded-[var(--radius-sm)] px-3 py-2 t-meta transition-colors',
+                'w-full rounded-[var(--radius-sm)] px-3 py-2 t-meta transition-colors',
                 selected
                   ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
                   : 'text-ink-2 hover:text-ink',
@@ -142,8 +143,10 @@ export function AlertsClient({
         })}
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex min-w-[10rem] flex-1 flex-col gap-1">
+      <PhoneFoldStack>
+      <PhoneFold title={p('סינון')} summary={q || storeCode || source !== 'all' ? p('פעיל') : p('הכל')}>
+      <div className="flex min-w-0 flex-col gap-3">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="t-meta text-ink-3">{p('חיפוש')}</span>
           <input
             value={q}
@@ -152,7 +155,7 @@ export function AlertsClient({
             className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 t-body"
           />
         </label>
-        <label className="flex min-w-[8rem] flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="t-meta text-ink-3">{p('סינון לפי חנות')}</span>
           <select
             value={storeCode}
@@ -167,7 +170,7 @@ export function AlertsClient({
             ))}
           </select>
         </label>
-        <label className="flex min-w-[8rem] flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="t-meta text-ink-3">{p('מקור')}</span>
           <select
             value={source}
@@ -183,6 +186,7 @@ export function AlertsClient({
           </select>
         </label>
       </div>
+      </PhoneFold>
 
       <Panel elevated>
         <PanelHeader
@@ -201,36 +205,21 @@ export function AlertsClient({
               <li key={alert.id}>
                 <Link
                   href={alert.href}
-                  className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-surface-sunken/40"
+                  className="flex flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-sunken/40"
                 >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="t-meta text-ink-3">
-                      {alert.storeCode} · {alert.storeName}
-                    </span>
-                    <span className="t-meta t-num text-ink-3">
-                      {fmtWhen(alert.at)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        't-meta font-medium',
-                        SEVERITY_CLASS[alert.severity],
-                      )}
-                    >
-                      {SOURCE_LABEL[alert.source]} · {alert.severity}
-                    </span>
-                    <span className="t-meta text-ink-2">{alert.owner}</span>
-                  </div>
-                  <p className="t-lead text-ink">{alert.title}</p>
-                  <p className="t-body text-ink-2">
-                    <span className="text-ink-3">{p('סיבות')}: </span>
-                    {alert.reasons.join(' · ')}
-                  </p>
-                  <p className="t-meta text-ink">
-                    <span className="text-ink-3">{p('פעולה הבאה')}: </span>
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="t-body-strong text-ink">{alert.title}</span>
+                    <span className="t-meta t-num shrink-0 text-ink-3">{fmtWhen(alert.at)}</span>
+                  </span>
+                  <span className="t-meta text-ink-2">
+                    {alert.storeName}
+                    {alert.reasons.some((reason) => reason.includes('איחור') || reason.includes('SLA'))
+                      ? ' · באיחור'
+                      : ''}
+                  </span>
+                  <span className={cn('t-meta', SEVERITY_CLASS[alert.severity])}>
                     {alert.nextAction}
-                  </p>
+                  </span>
                 </Link>
               </li>
             ))}
@@ -238,11 +227,8 @@ export function AlertsClient({
         )}
       </Panel>
 
+      <PhoneFold title={p('היסטוריית הודעות')} summary={String(history.length)}>
       <Panel>
-        <PanelHeader
-          title={p('היסטוריית הודעות')}
-          meta={String(history.length)}
-        />
         {history.length === 0 ? (
           <p className="t-body px-4 py-6 text-ink-3">
             {partialFailure && sources.history === 'failed'
@@ -273,6 +259,8 @@ export function AlertsClient({
           </ul>
         )}
       </Panel>
+      </PhoneFold>
+      </PhoneFoldStack>
     </div>
   )
 }

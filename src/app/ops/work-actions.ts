@@ -18,7 +18,10 @@ import {
   recordActualSpend,
   recordClassificationCorrection,
   renewStoredDocument,
+  setDocumentExpiry,
+  setDocumentReminders,
   reviseSpend,
+  setTaskStatus,
   toggleTask,
 } from '@/lib/data/ops-ledger'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
@@ -35,7 +38,8 @@ import { canCorrectTicketClassification } from '@/modules/tickets/classification
 import { importDriveLink } from '@/modules/drive/import'
 import { parseDriveLink } from '@/modules/drive/folder'
 import { syncDriveFolder } from '@/modules/drive/sync'
-import { persistOpsLedger } from '@/lib/data/ops-db'
+import { patchDevDocumentExpiry, patchDevDocumentReminders, persistOpsLedger } from '@/lib/data/ops-db'
+import { isTaskStatus } from '@/modules/tasks/status'
 import { notifyAri, notifyPhone } from '@/modules/notify/ari'
 
 async function actorName() {
@@ -286,6 +290,45 @@ export async function addDocumentAction(formData: FormData) {
   await refresh('/ops/documents')
 }
 
+export async function setDocumentRemindersAction(formData: FormData) {
+  await actorName()
+  const id = String(formData.get('id') || '')
+  const sixRaw = String(formData.get('six') || '')
+  const twoRaw = String(formData.get('two') || '')
+  const six = sixRaw ? expiryInputToIso(sixRaw) : null
+  const two = twoRaw ? expiryInputToIso(twoRaw) : null
+  if ((sixRaw && !six) || (twoRaw && !two)) throw new Error('תאריך התוקף לא ברור')
+  setDocumentReminders(id, { six, two })
+  await patchDevDocumentReminders(id, { six, two })
+  await refresh('/ops/documents')
+}
+
+export async function setDocumentExpiryAction(formData: FormData) {
+  await actorName()
+  const id = String(formData.get('id') || '')
+  const iso = expiryInputToIso(String(formData.get('expiry') || ''))
+  if (!iso) throw new Error('תאריך התוקף לא ברור')
+  setDocumentExpiry(id, iso)
+  await patchDevDocumentExpiry(id, iso)
+  await refresh('/ops/documents')
+}
+
+function expiryInputToIso(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const [year, month, day] = value.split('-').map(Number)
+  if (year < 2020 || year > 2036 || month < 1 || month > 12 || day < 1 || day > 31) return null
+  const iso = `${value}T00:00:00.000Z`
+  const date = new Date(iso)
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return iso
+}
+
 export async function renewDocumentAction(formData: FormData) {
   await actorName()
   renewStoredDocument(String(formData.get('id')), {
@@ -341,6 +384,14 @@ export async function voiceTasksAction(formData: FormData) {
 export async function toggleTaskAction(formData: FormData) {
   await actorName()
   toggleTask(String(formData.get('id')), formData.get('done') === '1')
+  await refresh('/ops/tasks')
+}
+
+export async function setTaskStatusAction(formData: FormData) {
+  await actorName()
+  const status = String(formData.get('status') || '')
+  if (!isTaskStatus(status)) throw new Error('סטטוס לא תקין')
+  setTaskStatus(String(formData.get('id') || ''), status)
   await refresh('/ops/tasks')
 }
 

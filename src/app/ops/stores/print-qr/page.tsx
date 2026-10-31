@@ -11,8 +11,11 @@ import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
+import { PhoneDesktopOnly } from '@/components/layout/phone-desktop-only'
 
 export const dynamic = 'force-dynamic'
+
+/** Archived from the product nav. QR lives on each store card. The route stays for a later bulk print. */
 
 export default async function PrintQrBatchPage() {
   const actor = await getServerActor()
@@ -27,6 +30,7 @@ export default async function PrintQrBatchPage() {
 
   return (
     <OpsAppShell>
+      <PhoneDesktopOnly title="הדפסת QR">
       <div className="flex flex-col gap-5 stagger print:gap-0 print:p-0">
         <PageToolbar backHref="/ops/stores" backLabel="חזרה" />
         <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
@@ -113,6 +117,7 @@ export default async function PrintQrBatchPage() {
           )}
         </Panel>
       </div>
+      </PhoneDesktopOnly>
     </OpsAppShell>
   )
 }

@@ -5,7 +5,7 @@ import {
   requireActor,
 } from '@/lib/auth/request-actor'
 import { AuthError } from '@/lib/auth/types'
-import { patchUser, requireUsersAdmin } from '@/modules/users/service'
+import { deleteUser, patchUser, requireUsersAdmin } from '@/modules/users/service'
 
 const patchSchema = z.object({
   full_name: z.string().min(1).max(120).optional(),
@@ -49,6 +49,26 @@ export async function PATCH(
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     const message = err instanceof Error ? err.message : 'שגיאה בעדכון משתמש'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const actor = await requireActor(request)
+    requireUsersAdmin(actor)
+    const { id } = await context.params
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      return NextResponse.json({ error: 'מזהה לא תקין' }, { status: 400 })
+    }
+    await deleteUser(id, actor.id)
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    if (err instanceof AuthError) return authErrorResponse(err)
+    const message = err instanceof Error ? err.message : 'שגיאה במחיקת משתמש'
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }

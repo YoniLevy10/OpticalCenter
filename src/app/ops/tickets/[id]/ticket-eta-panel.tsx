@@ -68,7 +68,7 @@ export function TicketEtaPanel({
             value={etaLocal}
             onChange={(e) => setEtaLocal(e.target.value)}
             aria-label={t('ticket.eta')}
-            className="max-w-xs"
+            className="w-full min-w-0 max-w-full md:max-w-xs"
           />
           <Button
             type="button"

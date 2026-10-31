@@ -7,10 +7,10 @@ import {
   filterTicketsByDateRange,
 } from '@/modules/ops/dashboard-kpis'
 import type { QueueTicket } from '@/modules/tickets/queue'
+import { ensurePreviousMonthSnapshot } from '@/modules/reports/ensure-monthly'
 import {
   createReportSnapshot,
   defaultOrganizationId,
-  listReportSnapshots,
 } from '@/modules/reports/snapshots'
 import { buildTicketsPdf } from '@/modules/reports/export-formats'
 import { notifyMonthlyReport } from '@/lib/email/ops-notify'
@@ -47,22 +47,14 @@ export async function GET(request: Request) {
     const range = previousMonthRange()
     const orgId = defaultOrganizationId()
 
-    if (!force) {
-      const { snapshots } = await listReportSnapshots(orgId)
-      const already = snapshots.some(
-        (s) =>
-          s.period_start === range.from &&
-          s.period_end === range.to &&
-          s.label.startsWith('דוח חודשי'),
-      )
-      if (already) {
-        return NextResponse.json({
-          ok: true,
-          skipped: true,
-          reason: 'already_snapshotted',
-          month: range.month,
-        })
-      }
+    const ensured = await ensurePreviousMonthSnapshot(orgId)
+    if (!force && !ensured.created) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: 'already_snapshotted',
+        month: range.month,
+      })
     }
 
     const { tickets } = await listTickets({ limit: 5000 })
@@ -71,16 +63,19 @@ export async function GET(request: Request) {
     const kpis = computeDashboardKpis(filtered)
     const sla = computeSlaReport(filtered)
 
-    const snapshot = await createReportSnapshot({
-      organizationId: orgId,
-      periodStart: range.from,
-      periodEnd: range.to,
-      label: range.label,
-      format: 'pdf',
-      kpis,
-      sla,
-      createdBy: null,
-    })
+    const snapshot =
+      force && !ensured.created
+        ? await createReportSnapshot({
+            organizationId: orgId,
+            periodStart: range.from,
+            periodEnd: range.to,
+            label: range.label,
+            format: 'pdf',
+            kpis,
+            sla,
+            createdBy: null,
+          })
+        : ensured.snapshot!
 
     let pdfBase64: string | undefined
     try {
