@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { usePhrase } from '@/components/i18n/locale-provider'
+import { ActionMenu } from '@/components/ui/action-menu'
 import { Button } from '@/components/ui/button'
 import type { DecisionItem } from '@/modules/decisions/queue'
 import {
@@ -96,21 +97,23 @@ function DecisionRow({
             <Button
               type="button"
               size="sm"
-              variant="secondary"
+              variant="primary"
               disabled={pending || !tech}
               onClick={() => run(() => assignFromQueue(item.ticketId!, tech))}
             >
               לשייך
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={pending}
-              onClick={() => run(() => requestInfoFromQueue(item.ticketId!))}
-            >
-              לבקש מידע
-            </Button>
+            <ActionMenu
+              label={p('פעולות נוספות')}
+              items={[
+                {
+                  key: 'request-info',
+                  label: p('לבקש מידע'),
+                  disabled: pending,
+                  onSelect: () => run(() => requestInfoFromQueue(item.ticketId!)),
+                },
+              ]}
+            />
           </>
         ) : null}
         {item.spendId ? (

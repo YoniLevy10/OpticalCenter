@@ -1,27 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  BadgeCheck,
-  CheckCircle2,
-  ClipboardCheck,
-  ClipboardList,
-  Search,
-  Store,
-  type LucideIcon,
-} from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import {
-  Panel,
-  PanelHeader,
-  EmptyState,
-} from '@/components/ui/primitives'
 import { Button } from '@/components/ui/button'
-import { OperationalRow, RowList, Dot } from '@/components/ui/operational-row'
-import { StatusLabel } from '@/components/ui/signal'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
-import { PulseTile } from '@/components/ops/pulse-tile'
+import { StatStrip } from '@/components/ops/stat-strip'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { scopeTicketsForActor } from '@/lib/auth/ticket-scope'
@@ -29,12 +12,8 @@ import { computeDashboardKpis } from '@/modules/ops/dashboard-kpis'
 import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
-import {
-  plainOpenForHe,
-  storeLabel,
-} from '@/components/ops/plain-labels'
 import { DashboardSoftRefresh } from './dashboard-soft-refresh'
-import { DecisionQueue } from './decision-queue'
+import { DecisionPanel } from './decision-panel'
 import { ticketDecision, splitDecisions, type DecisionItem } from '@/modules/decisions/queue'
 import { ledgerDecisions } from '@/modules/decisions/from-ledger'
 import { hydrateOpsLedger } from '@/lib/data/ops-db'
@@ -42,7 +21,6 @@ import { listSpends } from '@/lib/data/ops-ledger'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
 import { Tx } from '@/components/i18n/tx'
-import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,20 +55,6 @@ export default async function OpsDashboardPage() {
     name: t.full_name || t.email || t.id.slice(0, 8),
   }))
   const kpis = computeDashboardKpis(all, technicians)
-  // One attention queue: exceptions + awaiting store confirm, newest → oldest.
-  const attentionById = new Map<string, QueueTicket>()
-  for (const t of [
-    ...kpis.exceptions,
-    ...kpis.awaitingStoreConfirmTickets,
-  ]) {
-    attentionById.set(t.id, t)
-  }
-  const attentionQueue = [...attentionById.values()]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .slice(0, 12)
   const decisions = splitDecisions([
     ...all
       .map((ticket) => ticketDecision(ticket, new Date(), locale))
@@ -118,10 +82,8 @@ export default async function OpsDashboardPage() {
   return (
     <OpsAppShell>
       <DashboardSoftRefresh />
-      <div className="flex flex-col gap-5 stagger">
+      <div className="flex flex-col gap-4 stagger">
         <OpsPageHero
-          showBrand
-          largeTitle
           title="דשבורד"
           status={
             !hasOpen ? (
@@ -134,162 +96,42 @@ export default async function OpsDashboardPage() {
           }
         />
 
-        {/* Primary actions only — secondary routes live in the sidebar. */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <DashShortcut href="/ops/tickets?view=open" label="תקלות" icon={ClipboardList} />
-          <DashShortcut href="/ops/tickets?view=stuck" label="תקועות" icon={AlertTriangle} />
-          <DashShortcut href="/ops/approvals" label="אישורים" icon={ClipboardCheck} />
-          <DashShortcut href="/ops/stores" label="סניפים" icon={Store} />
-        </div>
+        {/* Decisions first — what needs action now. */}
+        <DecisionPanel
+          overdue={decisions.overdue}
+          today={decisions.today}
+          technicians={technicians}
+        />
 
-        {/* General KPIs */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <PulseTile
-            href="/ops/tickets?view=open"
-            value={kpis.open}
-            label="פתוחות"
-            icon={ClipboardList}
-            tone="neutral"
-          />
-          <PulseTile
-            href="/ops/tickets?view=open"
-            value={urgentCount}
-            label="דחופות"
-            icon={AlertTriangle}
-            mark="critical"
-            tone={urgentCount > 0 ? 'critical' : 'neutral'}
-          />
-          <PulseTile
-            href="/ops/tickets?view=open&tech=none"
-            value={unassigned}
-            label="בלי שיוך"
-            icon={Search}
-            mark="warning"
-            tone={unassigned > 0 ? 'warning' : 'neutral'}
-          />
-          <PulseTile
-            href="/ops/approvals"
-            value={awaitingCount}
-            label="ממתינות לאישור"
-            icon={BadgeCheck}
-            mark={awaitingCount > 0 ? 'warning' : 'ok'}
-            tone={awaitingCount > 0 ? 'warning' : 'neutral'}
-          />
-        </div>
-
-        <Panel
-          flush
-          elevated
-          className={cn(
-            'overflow-hidden',
-            decisions.overdue.length > 0 && 'border-s-[3px]',
-          )}
-          style={
-            decisions.overdue.length > 0
-              ? { borderInlineStartColor: 'var(--signal-critical)' }
-              : undefined
-          }
-        >
-          <PanelHeader
-            title="באיחור"
-            meta={decisions.overdue.length ? String(decisions.overdue.length) : undefined}
-          />
-          <DecisionQueue items={decisions.overdue} technicians={technicians} />
-        </Panel>
-
-        <Panel
-          flush
-          elevated
-          className={cn(
-            'overflow-hidden',
-            decisions.today.length > 0 && 'border-s-[3px]',
-          )}
-          style={
-            decisions.today.length > 0
-              ? { borderInlineStartColor: 'var(--signal-warning)' }
-              : undefined
-          }
-        >
-          <PanelHeader
-            title="דורש החלטה היום"
-            meta={decisions.today.length ? String(decisions.today.length) : undefined}
-          />
-          <DecisionQueue items={decisions.today} technicians={technicians} />
-        </Panel>
-
-        <Panel flush elevated className="overflow-hidden">
-          <PanelHeader
-            title="דורש טיפול"
-            meta={
-              attentionQueue.length > 0
-                ? String(attentionQueue.length)
-                : undefined
-            }
-            action={
-              <Link
-                href="/ops/tickets?view=open"
-                className="t-caption font-medium text-[var(--tenant)] hover:underline"
-              >
-                <Tx text="כל הפתוחות" />
-              </Link>
-            }
-          />
-          {attentionQueue.length === 0 ? (
-            <EmptyState
-              title="אין תקלות שדורשות טיפול"
-              icon={CheckCircle2}
-              className="py-12"
-            />
-          ) : (
-            <RowList>
-              {attentionQueue.map((t) => {
-                const openFor = plainOpenForHe(t.created_at, t, new Date(), locale)
-                const awaitingStore = t.status === 'resolved'
-                const num =
-                  t.display_number ||
-                  (t.number != null ? `OC-${t.number}` : null)
-                return (
-                  <OperationalRow
-                    key={t.id}
-                    href={`/ops/tickets/${t.id}`}
-                    priority={t.priority}
-                    leading={
-                      <span className="inline-flex items-center gap-2">
-                        {num ? (
-                          <span className="t-num text-ink">{num}</span>
-                        ) : null}
-                        {num ? <span aria-hidden>·</span> : null}
-                        <span>{storeLabel(t.stores)}</span>
-                      </span>
-                    }
-                    trailing={
-                      <span
-                        className={cn(
-                          't-meta',
-                          openFor.overdue
-                            ? 'text-[var(--signal-critical)]'
-                            : 'text-ink-3',
-                        )}
-                      >
-                        {awaitingStore ? 'ממתינה לאישור' : openFor.text}
-                      </span>
-                    }
-                    title={t.title || t.description}
-                    footer={
-                      <>
-                        <StatusLabel status={t.status} />
-                        <Dot />
-                        <span className="t-meta text-ink-2">
-                          <Tx text={awaitingStore ? 'אישור סניף' : 'לטפל ←'} />
-                        </span>
-                      </>
-                    }
-                  />
-                )
-              })}
-            </RowList>
-          )}
-        </Panel>
+        {/* Thin peer metrics below the decision console. */}
+        <StatStrip
+          items={[
+            {
+              href: '/ops/tickets?view=open',
+              value: kpis.open,
+              label: 'פתוחות',
+              tone: 'neutral',
+            },
+            {
+              href: '/ops/tickets?view=open',
+              value: urgentCount,
+              label: 'דחופות',
+              tone: urgentCount > 0 ? 'critical' : 'neutral',
+            },
+            {
+              href: '/ops/tickets?view=open&tech=none',
+              value: unassigned,
+              label: 'בלי שיוך',
+              tone: unassigned > 0 ? 'warning' : 'neutral',
+            },
+            {
+              href: '/ops/approvals',
+              value: awaitingCount,
+              label: 'ממתינות לאישור',
+              tone: awaitingCount > 0 ? 'warning' : 'neutral',
+            },
+          ]}
+        />
 
         <Button asChild variant="secondary" size="touch" className="w-full">
           <Link href="/ops/tickets" className="inline-flex items-center gap-2">
@@ -305,29 +147,5 @@ export default async function OpsDashboardPage() {
         ) : null}
       </div>
     </OpsAppShell>
-  )
-}
-
-function DashShortcut({
-  href,
-  label,
-  icon: Icon,
-}: {
-  href: string
-  label: string
-  icon: LucideIcon
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex h-14 items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-3 shadow-[var(--shadow-1)] transition-shadow duration-[var(--dur-1)] hover:shadow-[var(--shadow-2)]"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--tenant-soft)] text-[var(--tenant)]">
-        <Icon className="h-4 w-4" aria-hidden />
-      </span>
-      <span className="t-control text-ink">
-        <Tx text={label} />
-      </span>
-    </Link>
   )
 }
