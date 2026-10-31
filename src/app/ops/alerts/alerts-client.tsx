@@ -34,13 +34,6 @@ const SOURCE_LABEL: Record<AlertSource, string> = {
   store_confirm: 'אישור חנות',
 }
 
-const SEVERITY_CLASS: Record<OpsAlert['severity'], string> = {
-  critical: 'text-[var(--signal-critical)]',
-  high: 'text-[var(--signal-warning)]',
-  medium: 'text-ink-2',
-  low: 'text-ink-3',
-}
-
 function fmtWhen(iso: string): string {
   try {
     return format(parseISO(iso), 'd/M HH:mm', { locale: he })
@@ -205,21 +198,20 @@ export function AlertsClient({
               <li key={alert.id}>
                 <Link
                   href={alert.href}
-                  className="flex flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-sunken/40"
+                  className="flex min-h-12 items-center gap-3 px-4 py-2 transition-colors hover:bg-surface-sunken/40"
                 >
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="t-body-strong text-ink">{alert.title}</span>
-                    <span className="t-meta t-num shrink-0 text-ink-3">{fmtWhen(alert.at)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="t-body-strong block truncate text-ink">{alert.title}</span>
+                    <span className="t-meta block truncate text-ink-2">
+                      {alert.storeName}
+                      {alert.reasons.some((reason) => reason.includes('איחור') || reason.includes('SLA'))
+                        ? ' · באיחור'
+                        : ''}
+                      {' · '}
+                      {alert.nextAction}
+                    </span>
                   </span>
-                  <span className="t-meta text-ink-2">
-                    {alert.storeName}
-                    {alert.reasons.some((reason) => reason.includes('איחור') || reason.includes('SLA'))
-                      ? ' · באיחור'
-                      : ''}
-                  </span>
-                  <span className={cn('t-meta', SEVERITY_CLASS[alert.severity])}>
-                    {alert.nextAction}
-                  </span>
+                  <span className="t-meta t-num shrink-0 text-ink-3">{fmtWhen(alert.at)}</span>
                 </Link>
               </li>
             ))}

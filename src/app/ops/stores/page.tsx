@@ -242,6 +242,7 @@ export default async function StoresPage({
           )}
         </Panel>
 
+        <div className="hidden md:block">
         <StoreQrAccordion
           stores={filtered
             .filter((s) => s.is_active !== false)
@@ -254,7 +255,7 @@ export default async function StoresPage({
                 : null,
             }))}
         />
-
+        </div>
       </div>
     </OpsAppShell>
   )
