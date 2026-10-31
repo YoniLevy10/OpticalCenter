@@ -303,7 +303,7 @@ function paintHeader(row: ExcelJS.Row) {
       pattern: 'solid',
       fgColor: { argb: `FF${TENANT}` },
     }
-    cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 2 }
+    cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' }
   })
 }
 
@@ -313,7 +313,7 @@ function paintBody(cell: ExcelJS.Cell, zebra: boolean) {
     horizontal: 'right',
     vertical: 'middle',
     wrapText: true,
-    readingOrder: 2,
+    readingOrder: 'rtl',
   }
   if (zebra) {
     cell.fill = {
@@ -361,7 +361,7 @@ export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
     bold: true,
     color: { argb: `FF${TENANT}` },
   }
-  summary.getCell('A1').alignment = { horizontal: 'right', readingOrder: 2 }
+  summary.getCell('A1').alignment = { horizontal: 'right', readingOrder: 'rtl' }
   summary.getRow(1).height = 32
 
   summary.mergeCells('A2:E2')
@@ -372,12 +372,12 @@ export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
     bold: true,
     color: { argb: `FF${INK}` },
   }
-  summary.getCell('A2').alignment = { horizontal: 'right', readingOrder: 2 }
+  summary.getCell('A2').alignment = { horizontal: 'right', readingOrder: 'rtl' }
 
   summary.mergeCells('A3:E3')
   summary.getCell('A3').value = period
   summary.getCell('A3').font = { name: 'Arial', size: 11, color: { argb: `FF${MUTED}` } }
-  summary.getCell('A3').alignment = { horizontal: 'right', readingOrder: 2 }
+  summary.getCell('A3').alignment = { horizontal: 'right', readingOrder: 'rtl' }
 
   summary.mergeCells('A5:E5')
   summary.getCell('A5').value = [lead, money].filter(Boolean).join(' ')
@@ -385,7 +385,7 @@ export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
   summary.getCell('A5').alignment = {
     horizontal: 'right',
     wrapText: true,
-    readingOrder: 2,
+    readingOrder: 'rtl',
   }
   summary.getRow(5).height = 36
 
@@ -468,11 +468,11 @@ export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
     bold: true,
     color: { argb: `FF${TENANT}` },
   }
-  tickets.getCell('A1').alignment = { horizontal: 'right', readingOrder: 2 }
+  tickets.getCell('A1').alignment = { horizontal: 'right', readingOrder: 'rtl' }
   tickets.mergeCells('A2:J2')
   tickets.getCell('A2').value = period
   tickets.getCell('A2').font = { name: 'Arial', size: 11, color: { argb: `FF${MUTED}` } }
-  tickets.getCell('A2').alignment = { horizontal: 'right', readingOrder: 2 }
+  tickets.getCell('A2').alignment = { horizontal: 'right', readingOrder: 'rtl' }
   const ticketHeader = tickets.getRow(4)
   ticketHeader.values = CSV_HEADERS
   paintHeader(ticketHeader)
@@ -667,7 +667,7 @@ function Heb({
   children: string
   style?: React.ComponentProps<typeof Text>['style']
 }) {
-  return <Text style={style}>{children}</Text>
+  return <Text style={style as never}>{children}</Text>
 }
 
 function wrapLogical(text: string, maxChars: number, maxLines = 2): string[] {
@@ -707,7 +707,7 @@ function HebBlock({
   return (
     <View>
       {wrapLogical(text, max, lines).map((line, index) => (
-        <Text key={`${index}-${line}`} style={style}>
+        <Text key={`${index}-${line}`} style={style as never}>
           {line}
         </Text>
       ))}

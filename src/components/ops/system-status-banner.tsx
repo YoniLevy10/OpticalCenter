@@ -73,18 +73,14 @@ export function SystemStatusBanner({
         className={cn(
           'h-2 w-2 shrink-0 rounded-full',
           level === 'ok' && 'bg-[var(--signal-resolved)]',
-          level === 'partial' && 'bg-[var(--signal-warning)]',
           level === 'issue' && 'bg-[var(--signal-critical)]',
-          level === 'unknown' && 'bg-[var(--signal-idle)]',
         )}
       />
       <span
         className={cn(
           compact ? 't-caption' : 't-body',
           level === 'ok' && 'text-ink-2',
-          level === 'partial' && 'text-[var(--signal-warning)]',
           level === 'issue' && 'text-[var(--signal-critical)]',
-          level === 'unknown' && 'text-ink-3',
         )}
       >
         {compact ? label : `סטטוס מערכת · ${label}`}

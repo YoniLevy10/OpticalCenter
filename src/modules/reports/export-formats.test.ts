@@ -70,7 +70,7 @@ describe('report export', () => {
   it('builds a workbook with a cover and the fault', async () => {
     const buf = await buildTicketsXlsx(data)
     const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buf)
+    await wb.xlsx.load(buf as never)
     expect(wb.getWorksheet('סיכום')?.getCell('A1').value).toBe('Optical Center')
     expect(wb.getWorksheet('סיכום')?.getCell('A2').value).toBe('דוח תפעול')
     expect(String(wb.getWorksheet('סיכום')?.getCell('A5').value)).toContain(

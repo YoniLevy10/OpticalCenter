@@ -650,13 +650,13 @@ function placeInQuestion(question: string, snapshot: OpsSnapshot): string | null
 function papersLine(
   snapshot: OpsSnapshot,
   locale: Locale,
-  storeName?: string,
+  storeName?: string | null,
   required = false,
 ): string {
   const text = copy(locale)
   let rows = snapshot.papers ?? []
   if (storeName) rows = rows.filter((row) => row.storeName === storeName)
-  if (rows.length === 0) return required ? text.noPapers(storeName) : ''
+  if (rows.length === 0) return required ? text.noPapers(storeName ?? undefined) : ''
   const shown = rows.slice(0, 5)
   const lines = shown.map((row) =>
     row.overdue ? text.paperLate(row.label, row.storeName) : text.paperSoon(row.label, row.storeName),
@@ -668,13 +668,13 @@ function papersLine(
 function gearLine(
   snapshot: OpsSnapshot,
   locale: Locale,
-  storeName?: string,
+  storeName?: string | null,
   required = false,
 ): string {
   const text = copy(locale)
   let rows = snapshot.gear ?? []
   if (storeName) rows = rows.filter((row) => row.storeName === storeName)
-  if (rows.length === 0) return required ? text.noGear(storeName) : ''
+  if (rows.length === 0) return required ? text.noGear(storeName ?? undefined) : ''
   const shown = rows.slice(0, 4)
   const lines = shown.map((row) =>
     text.gearFact(row.name, row.storeName, row.times, row.openSummary, row.cost),
