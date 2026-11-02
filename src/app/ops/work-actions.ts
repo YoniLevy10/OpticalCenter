@@ -20,6 +20,7 @@ import {
   renewStoredDocument,
   setDocumentExpiry,
   setDocumentReminders,
+  setDocumentTitle,
   reviseSpend,
   setTaskStatus,
   toggleTask,
@@ -38,7 +39,8 @@ import { canCorrectTicketClassification } from '@/modules/tickets/classification
 import { importDriveLink } from '@/modules/drive/import'
 import { parseDriveLink } from '@/modules/drive/folder'
 import { syncDriveFolder } from '@/modules/drive/sync'
-import { patchDevDocumentExpiry, patchDevDocumentReminders, persistOpsLedger } from '@/lib/data/ops-db'
+import { patchDevDocumentExpiry, patchDevDocumentReminders, patchDevDocumentTitle, persistOpsLedger } from '@/lib/data/ops-db'
+import { cleanDocumentTitle } from '@/modules/documents/rules'
 import { isTaskStatus } from '@/modules/tasks/status'
 import { notifyAri, notifyPhone } from '@/modules/notify/ari'
 
@@ -300,6 +302,16 @@ export async function setDocumentRemindersAction(formData: FormData) {
   if ((sixRaw && !six) || (twoRaw && !two)) throw new Error('תאריך התוקף לא ברור')
   setDocumentReminders(id, { six, two })
   await patchDevDocumentReminders(id, { six, two })
+  await refresh('/ops/documents')
+}
+
+export async function setDocumentTitleAction(formData: FormData) {
+  await actorName()
+  const id = String(formData.get('id') || '')
+  if (!id) throw new Error('מסמך לא נמצא')
+  const title = cleanDocumentTitle(String(formData.get('title') || ''))
+  setDocumentTitle(id, title)
+  await patchDevDocumentTitle(id, title)
   await refresh('/ops/documents')
 }
 

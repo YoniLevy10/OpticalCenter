@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DOCUMENT_TYPES,
   documentNeedsReminder,
+  cleanDocumentTitle,
   documentTypeLabel,
   documentReminders,
   documentReminderStage,
@@ -90,6 +91,12 @@ describe('C08 hearing calibrations', () => {
     })
     expect(remindersFor(edited).find((row) => row.months === 6)?.at.slice(0, 10)).toBe('2027-02-01')
     expect(remindersFor(edited).find((row) => row.months === 2)?.at.slice(0, 10)).toBe('2027-04-15')
+  })
+
+  it('keeps a hand-typed document name and clears a blank one', () => {
+    expect(cleanDocumentTitle('  כיול   אודיומטר  ')).toBe('כיול אודיומטר')
+    expect(cleanDocumentTitle('   ')).toBeNull()
+    expect(() => cleanDocumentTitle('א'.repeat(81))).toThrow('השם ארוך מדי')
   })
 
   it('does not treat overdue as due-soon', () => {

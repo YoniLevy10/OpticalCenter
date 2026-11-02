@@ -711,6 +711,15 @@ export function setDocumentReminders(
   return doc
 }
 
+export function setDocumentTitle(id: string, title: string | null): StoreDocument {
+  const doc = ledger.documents.find((row) => row.id === id)
+  if (!doc) throw new Error('מסמך לא נמצא')
+  doc.title = title
+  doc.fieldsLocked = true
+  doc.localUpdatedAt = new Date().toISOString()
+  return doc
+}
+
 export function setDocumentExpiry(id: string, extractedExpiry: string): StoreDocument {
   const doc = ledger.documents.find((row) => row.id === id)
   if (!doc) throw new Error('מסמך לא נמצא')

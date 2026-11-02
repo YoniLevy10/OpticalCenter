@@ -28,6 +28,18 @@ export type StoreDocument = {
   /** Hand-set reminder dates. Empty falls back to six months and two months before expiry. */
   reminderSixAt?: string | null
   reminderTwoAt?: string | null
+  /** Name Ari typed. Wins over the file name and the document type. */
+  title?: string | null
+}
+
+const DOCUMENT_TITLE_MAX = 80
+
+/** Blank clears the hand-set name. Extra spaces collapse. */
+export function cleanDocumentTitle(value: string): string | null {
+  const clean = value.replace(/\s+/g, ' ').trim()
+  if (!clean) return null
+  if (clean.length > DOCUMENT_TITLE_MAX) throw new Error('השם ארוך מדי')
+  return clean
 }
 
 /** Days before due date when month-ahead reminders fire (≈1 calendar month). */

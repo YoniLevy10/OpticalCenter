@@ -34,6 +34,27 @@ function skipped(err: unknown): boolean {
   )
 }
 
+/** Keep a hand-typed document name in the local snapshot. */
+export async function patchDevDocumentTitle(id: string, title: string | null): Promise<void> {
+  if (process.env.NODE_ENV === 'production' || (await supabaseReady())) return
+  const file = join(process.cwd(), '.local', 'ari-mail-ledger.json')
+  if (!existsSync(file)) return
+  const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+    documents?: Array<{
+      id?: string
+      title?: string | null
+      fieldsLocked?: boolean
+      localUpdatedAt?: string | null
+    }>
+  }
+  const doc = parsed.documents?.find((row) => row.id === id)
+  if (!doc) return
+  doc.title = title
+  doc.fieldsLocked = true
+  doc.localUpdatedAt = new Date().toISOString()
+  writeFileSync(file, JSON.stringify(parsed))
+}
+
 /** Keep a hand-entered expiry in the local snapshot. The next page load rereads that file. */
 export async function patchDevDocumentExpiry(id: string, extractedExpiry: string): Promise<void> {
   if (process.env.NODE_ENV === 'production' || (await supabaseReady())) return
@@ -157,6 +178,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         fieldsLocked: Boolean(row.fields_locked),
         localUpdatedAt: row.local_updated_at ? String(row.local_updated_at) : null,
         originWaId: row.origin_wa_id ? String(row.origin_wa_id) : null,
+        title: row.title ? String(row.title) : null,
       })),
       spends: (spends.data ?? []).map((row) => ({
         id: String(row.client_id || row.id),
@@ -245,6 +267,7 @@ export async function persistOpsLedger(): Promise<void> {
       fields_locked: Boolean(doc.fieldsLocked),
       local_updated_at: doc.localUpdatedAt ?? null,
       origin_wa_id: doc.originWaId ?? null,
+      title: doc.title ?? null,
     }))
     const spends = listSpends().map((spend) => ({
       client_id: spend.id,
@@ -314,6 +337,7 @@ const OPTIONAL_COLUMNS = [
   'origin_wa_id',
   'asset_id',
   'storage_path',
+  'title',
 ] as const
 
 async function upsertFlexible(

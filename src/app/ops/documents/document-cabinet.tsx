@@ -13,7 +13,7 @@ import {
   isDocumentOverdue,
   type StoreDocument,
 } from '@/modules/documents/rules'
-import { renewDocumentAction, setDocumentExpiryAction, setDocumentRemindersAction } from '../work-actions'
+import { renewDocumentAction, setDocumentExpiryAction, setDocumentRemindersAction, setDocumentTitleAction } from '../work-actions'
 import { PhoneFold } from '@/components/layout/phone-fold'
 
 const FILE_STATUS = {
@@ -54,7 +54,6 @@ export function DocumentCabinet({
       className="doc-cabinet"
     >
       {folders.map((folder) => {
-        const numbers = folder.docs.map((_, index) => String(index + 1)).join(', ')
         const dated = folder.docs.filter((doc) => doc.extractedExpiry && !doc.renewed)
         const next = dated
           .map((doc) => doc.extractedExpiry as string)
@@ -65,21 +64,18 @@ export function DocumentCabinet({
             className="doc-folder"
             data-find-group
             data-find-key={folder.key}
-            data-find={`סניף ${folder.name} ${folder.code} ${numbers}`}
+            data-find={`סניף ${folder.name} ${folder.code} ${folder.docs.map((doc) => paperTitle(doc, fileFor(doc, byId))).join(' ')}`}
           >
             <summary>
               <span className="doc-folder-tab">סניף {folder.name}</span>
               <span className="doc-peek" aria-hidden>
-                {folder.docs.slice(0, 3).map((doc, index) => (
+                {folder.docs.slice(0, 3).map((doc) => (
                   <span key={doc.id} className="doc-peek-sheet">
-                    {index + 1}. {paperTitle(doc, fileFor(doc, byId))}
+                    {paperTitle(doc, fileFor(doc, byId))}
                   </span>
                 ))}
               </span>
               <span className="doc-folder-face">
-                <span className="doc-folder-count" dir="ltr">
-                  {numbers}
-                </span>
                 <span className="doc-folder-meta">
                   {folder.code ? `#${folder.code}` : 'בלי קוד'}
                   {next ? ` · הקרוב ${formatDay(next)}` : ''}
@@ -87,10 +83,9 @@ export function DocumentCabinet({
               </span>
             </summary>
             <ol className="doc-folder-pocket">
-              {folder.docs.map((doc, index) => (
+              {folder.docs.map((doc) => (
                 <Paper
                   key={doc.id}
-                  index={index + 1}
                   doc={doc}
                   file={fileFor(doc, byId)}
                   fileHref={documentFileHref(doc, filesOnDisk)}
@@ -105,12 +100,10 @@ export function DocumentCabinet({
 }
 
 function Paper({
-  index,
   doc,
   file,
   fileHref,
 }: {
-  index: number
   doc: StoreDocument
   file: IngestedFile | null
   fileHref: string | null
@@ -127,14 +120,24 @@ function Paper({
     <li
       className={`${overdue ? 'doc-page edge edge-overdue' : 'doc-page'} doc-file-row`}
       data-find-item
-      data-find={`${index} ${title} ${typeLabel} ${expiry ? formatDay(expiry) : ''} ${expiry?.slice(0, 10) ?? ''}`}
+      data-find={`${title} ${typeLabel} ${expiry ? formatDay(expiry) : ''} ${expiry?.slice(0, 10) ?? ''}`}
     >
       <div className="doc-file-head">
-        <span className="doc-file-num" dir="ltr">
-          {index}
-        </span>
         <div className="min-w-0 flex-1">
-          <h3 className="doc-page-title">{title}</h3>
+          <form action={setDocumentTitleAction} className="doc-name-form">
+            <input type="hidden" name="id" value={doc.id} />
+            <input
+              className="doc-name-input"
+              name="title"
+              defaultValue={doc.title?.trim() || title}
+              maxLength={80}
+              aria-label={`שם המסמך ${title}`}
+              placeholder="שם שנוח לארי"
+            />
+            <Button type="submit" size="sm" aria-label={`שמור שם ${title}`}>
+              שמור שם
+            </Button>
+          </form>
           <p className="doc-page-kicker">
             {expiry ? `תוקף ${formatDay(expiry)}` : CLOCK[documentClock(doc)]}
             {typeLabel !== title ? ` · ${typeLabel}` : ''}
@@ -342,6 +345,8 @@ function hasPreview(id: string): boolean {
 }
 
 function paperTitle(doc: StoreDocument, file: IngestedFile | null | undefined): string {
+  const named = doc.title?.trim()
+  if (named) return named
   const fromFile = file?.name?.replace(/\.pdf$/i, '').trim()
   if (fromFile) return fromFile
   return documentTypeLabel(doc.docType)
