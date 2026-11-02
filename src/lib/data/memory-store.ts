@@ -5,6 +5,8 @@ import type { TicketPriority, TicketStatus } from '@/modules/tickets/constants'
 import { buildAiRawFromIntake } from '@/modules/tickets/classification-explain'
 import { applyIntakeRules } from '@/modules/whatsapp/agent/rules'
 import { PREFERRED_VENDOR_SEEDS } from '@/modules/vendors/preferred-seed'
+import fs from 'node:fs'
+import path from 'node:path'
 import { TRIAL_FAULTS } from '@/modules/demo/trial-scenario'
 
 export type MemTicket = {
@@ -394,6 +396,8 @@ type GlobalMem = {
   inboxMessages: Map<string, MemInboxMessage[]>
   settings: MemSettings
   seq: number
+  /** Set after an explicit desk wipe so the trial faults do not come back. */
+  deskCleared?: boolean
 }
 
 export type MemSettings = {
@@ -759,7 +763,34 @@ function backfillTrialFaults(mem: GlobalMem) {
   }
 }
 
+function deskWasCleared(): boolean {
+  try {
+    return fs.existsSync(path.join(process.cwd(), '.local', 'desk-cleared'))
+  } catch {
+    return false
+  }
+}
+
+/** Wipe tickets, approvals in memory, and WhatsApp sessions. Trial faults stay gone. */
+export function clearDeskMemory() {
+  const mem = store()
+  mem.tickets.clear()
+  mem.sessions.clear()
+  mem.processed.clear()
+  mem.inboxMessages.clear()
+  mem.dispatches.clear()
+  mem.rfqDrafts.clear()
+  mem.deskCleared = true
+  const dir = path.join(process.cwd(), '.local')
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(path.join(dir, 'desk-cleared'), new Date().toISOString())
+}
+
 function seedTrialFaults(mem: GlobalMem) {
+  if (mem.deskCleared || deskWasCleared()) {
+    mem.deskCleared = true
+    return
+  }
   const nowMs = Date.now()
   for (const fault of TRIAL_FAULTS) {
     if (mem.tickets.has(fault.id)) continue
