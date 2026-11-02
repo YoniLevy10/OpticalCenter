@@ -1,5 +1,6 @@
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { classifyFaultText } from '@/modules/tickets/classify'
+import { isTicketPriority, priorityIsUrgent } from '@/modules/tickets/urgent'
 import { clarificationQuestion } from '../spoken-language'
 import type { IntakeAgentOutput } from './schema'
 
@@ -16,6 +17,8 @@ export type RulesResult = {
   applied: AppliedRule[]
   /** Final decision after merging AI suggestion with hard rules. */
   fromAi: boolean
+  /** דחוף כשהעדיפות קריטית או גבוהה. */
+  urgent: boolean
 }
 
 type RuleDef = {
@@ -93,9 +96,9 @@ function maxPriority(a: TicketPriority, b: TicketPriority): TicketPriority {
 }
 
 /**
- * Keyword classifier plus hard rules decide category and priority.
+ * Keyword classifier plus hard safety floors decide category and priority.
  * The model may name a category only when no keyword matched.
- * Its priority suggestion is recorded elsewhere and does not change the ticket.
+ * When no safety floor fired, its priority suggestion sets דחוף / לא דחוף.
  */
 export function applyIntakeRules(params: {
   text: string
@@ -173,11 +176,31 @@ export function applyIntakeRules(params: {
     category = 'hvac'
   }
 
+  const floorLocked = applied.some(
+    (rule) =>
+      rule.id === 'water_electric' ||
+      rule.id === 'safety_hazard' ||
+      rule.id === 'entrance_door' ||
+      rule.id === 'significant_water_leak' ||
+      rule.id === 'hvac_leak' ||
+      rule.id === 'decorative_lighting',
+  )
+  const suggested = params.ai?.priority_suggestion
+  if (!floorLocked && suggested && isTicketPriority(suggested)) {
+    priority = suggested
+    applied.push({
+      id: 'ai_priority',
+      reason: 'no hard floor',
+      priority,
+    })
+  }
+
   return {
     category,
     priority,
     applied,
     fromAi: Boolean(params.ai),
+    urgent: priorityIsUrgent(priority),
   }
 }
 

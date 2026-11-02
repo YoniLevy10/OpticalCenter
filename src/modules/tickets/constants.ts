@@ -6,6 +6,7 @@ export const TICKET_STATUSES = [
   'in_progress',
   'waiting_vendor',
   'waiting_parts',
+  'engaged',
   'resolved',
   'closed',
   'cancelled',
@@ -21,6 +22,7 @@ export const TICKET_STATUS_LABELS_HE: Record<TicketStatus, string> = {
   in_progress: 'בטיפול',
   waiting_vendor: 'ממתינה לבעל מקצוע',
   waiting_parts: 'ממתינה להזמנה או לחלקים',
+  engaged: 'אושר — החנות מתאמת',
   resolved: 'טופלה — ממתינה לאימות',
   closed: 'סגורה',
   cancelled: 'בוטלה',
@@ -44,6 +46,7 @@ export const OPEN_TICKET_STATUSES: TicketStatus[] = [
   'in_progress',
   'waiting_vendor',
   'waiting_parts',
+  'engaged',
 ]
 
 export const TICKET_SOURCES = [
@@ -114,6 +117,9 @@ export const TICKET_EVENT_LABELS_HE: Record<string, string> = {
   service_visit_created: 'נוצר ביקור שירות',
   classification_corrected: 'תיקון סיווג',
   priority_changed: 'שינוי דחיפות',
+  urgent_changed: 'שינוי דחוף / לא דחוף',
+  engagement_locked: 'אישור עסקה',
+  engagement_cancelled: 'ביטול אישור',
 }
 
 

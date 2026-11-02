@@ -74,10 +74,12 @@
   --topbar-h: 52px;
   --bottomnav-h: 58px;
   --bottomnav-gap: 12px;
-  --hq-actions-dock-h: 220px;
+  --hq-actions-dock-h: 72px;
   --tap: 44px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -206,7 +208,18 @@ html.dark {
 *,
 ::before,
 ::after {
+  box-sizing: border-box;
   border-color: var(--border);
+}
+
+/* Utilities such as h-6 still win, because this sits in the base layer. */
+@layer base {
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 html {
@@ -396,6 +409,15 @@ body {
   background: var(--border-strong);
   border-radius: 3px;
 }
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 *::-webkit-scrollbar-thumb:hover {
   background: var(--ink-3);
 }
@@ -630,6 +652,35 @@ textarea:focus-visible,
 }
 .safe-pb {
   padding-bottom: var(--safe-b);
+}
+.safe-x {
+  padding-left: max(1rem, var(--safe-l));
+  padding-right: max(1rem, var(--safe-r));
+}
+
+/* Side insets only. Top and bottom already live on the header, the tab bar, and the thumb bar.
+   Padding the body on those axes would stack on top of a 100dvh shell. */
+@media (max-width: 767px) {
+  body {
+    padding-left: var(--safe-l);
+    padding-right: var(--safe-r);
+  }
+  .phone-tabbar,
+  .phone-sheet {
+    left: max(0.75rem, var(--safe-l));
+    right: max(0.75rem, var(--safe-r));
+  }
+  .phone-toast {
+    left: max(1rem, var(--safe-l));
+    right: max(1rem, var(--safe-r));
+  }
+  .phone-drawer {
+    inset-inline-start: max(0.75rem, env(safe-area-inset-inline-start, 0px));
+  }
+  .hq-ticket-dock {
+    padding-left: max(0.75rem, var(--safe-l));
+    padding-right: max(0.75rem, var(--safe-r));
+  }
 }
 
 .pb-nav {
@@ -946,10 +997,31 @@ body:has([role='dialog']) .hq-ticket-dock {
   padding: 12px;
   border-radius: 16px;
   background: var(--canvas);
+  list-style: none;
+}
+.doc-file-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.doc-file-num {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--tenant-soft);
+  color: var(--ink);
+  font-weight: 700;
+}
+.doc-file-row {
+  min-height: 0;
+  list-style: none;
 }
 @media (min-width: 720px) {
   .doc-folder-pocket {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 }
 .doc-page {
@@ -971,6 +1043,12 @@ body:has([role='dialog']) .hq-ticket-dock {
   z-index: 2;
   transform: translateY(-6px);
   box-shadow: var(--shadow-sheet);
+}
+.doc-page.doc-file-row {
+  min-height: 0;
+}
+.doc-page.doc-file-row:hover {
+  transform: none;
 }
 .doc-page-ear {
   position: absolute;
@@ -1130,6 +1208,7 @@ body:has([role='dialog']) .hq-ticket-dock {
   position: absolute;
   z-index: 0;
   width: 200px;
+  max-width: none;
   height: auto;
   pointer-events: none;
   user-select: none;

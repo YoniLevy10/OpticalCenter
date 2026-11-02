@@ -46,6 +46,7 @@ export function canAccessUsers(actor: Actor | null): boolean {
 }
 
 export function canAccessVendors(actor: Actor | null): boolean {
+  if (isProductionRuntime()) return false
   if (!actor) return true
   return hasHq(actor)
 }
@@ -57,6 +58,14 @@ export function canAccessProfessionals(actor: Actor | null): boolean {
 }
 
 export function canAccessAssets(actor: Actor | null): boolean {
+  if (isProductionRuntime()) return false
+  if (!actor) return true
+  return hasHq(actor)
+}
+
+/** Archived savings math. Hidden on the production desk. */
+export function canAccessPilot(actor: Actor | null): boolean {
+  if (isProductionRuntime()) return false
   if (!actor) return true
   return hasHq(actor)
 }
@@ -111,6 +120,7 @@ export function canAccessActivity(actor: Actor | null): boolean {
 
 const ACCESS: Record<string, (actor: Actor | null) => boolean> = {
   alerts: canAccessAlerts,
+  pilot: canAccessPilot,
   inbox: canAccessInbox,
   tasks: canAccessTasks,
   professionals: canAccessProfessionals,

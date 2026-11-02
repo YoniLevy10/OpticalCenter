@@ -29,6 +29,11 @@ export type ReportExportRow = {
   techNames?: Record<string, string>
   /** Recorded amounts only, keyed by ticket id. Missing keys have no price. */
   recorded?: Record<string, number>
+  annualCosts?: {
+    year: number
+    network: number
+    stores: { storeName: string; amount: number }[]
+  }
 }
 
 const INK = '1F1C19'
@@ -75,6 +80,7 @@ const PDF_STATUS: Record<string, string> = {
   in_progress: 'בטיפול',
   waiting_vendor: 'ממתינה לספק',
   waiting_parts: 'ממתינה לחלק',
+  engaged: 'אושר — החנות מתאמת',
   resolved: 'טופלה',
   closed: 'סגורה',
   cancelled: 'בוטלה',
@@ -291,6 +297,14 @@ export function buildTicketsCsv(data: ReportExportRow): string {
       line.amount == null ? '' : String(line.amount),
     ]),
   ]
+  if (data.annualCosts) {
+    rows.push([])
+    rows.push([`עלויות אחזקה ${data.annualCosts.year}`, 'סכום שאושר'])
+    for (const store of data.annualCosts.stores) {
+      rows.push([store.storeName, String(store.amount)])
+    }
+    rows.push(['סה״כ רשת', String(data.annualCosts.network)])
+  }
   return `\uFEFF${rows.map((row) => row.map(esc).join(',')).join('\n')}`
 }
 
@@ -523,6 +537,24 @@ export async function buildTicketsXlsx(data: ReportExportRow): Promise<Buffer> {
     row.values = [store.name, store.total, store.open, store.breached]
     row.eachCell((cell) => paintBody(cell, index % 2 === 1))
   })
+
+  if (data.annualCosts) {
+    const money = wb.addWorksheet('עלויות', {
+      views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }],
+    })
+    money.columns = [{ width: 28 }, { width: 18 }]
+    const header = money.getRow(1)
+    header.values = ['חנות', `עלות ${data.annualCosts.year}`]
+    paintHeader(header)
+    data.annualCosts.stores.forEach((store, index) => {
+      const row = money.getRow(2 + index)
+      row.values = [store.storeName, store.amount]
+      row.eachCell((cell) => paintBody(cell, index % 2 === 1))
+    })
+    const total = money.getRow(2 + data.annualCosts.stores.length)
+    total.values = ['סה״כ רשת', data.annualCosts.network]
+    total.eachCell((cell) => paintBody(cell, false))
+  }
 
   const buf = await wb.xlsx.writeBuffer()
   return Buffer.from(buf)

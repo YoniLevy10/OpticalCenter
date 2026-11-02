@@ -11,7 +11,15 @@ import { expiryFromText } from '@/modules/drive/import'
 import type { StoreDocument } from '@/modules/documents/rules'
 import { ISRAEL_STORES, israelStoreId } from '@/modules/stores/israel-stores'
 import { canExecuteSpend } from '@/modules/spend/policy'
+import { getPublicAppUrl } from '@/lib/auth/app-url'
+import { logEvent } from '@/lib/logging'
+import { notifyAri } from '@/modules/notify/ari'
 import { replyToAri } from '@/modules/ops/agent-chat'
+import {
+  findTicketAwaitingAri,
+  lockEngagement,
+} from '@/modules/engagements/service'
+import { parseEngagementApproval } from '@/modules/engagements/parse'
 import {
   classifyInbound,
   isAriSender,
@@ -61,9 +69,16 @@ async function remember(): Promise<void> {
   await persistOpsLedger().catch(() => undefined)
 }
 
-/** Ari decides in the app. WhatsApp stays between the store manager and this bot. */
-export async function notifyAriOnDesk(message: string, _dryRun: boolean): Promise<void> {
-  void message
+/** Ari decides in the app. This only tells him a desk item is waiting. */
+export async function notifyAriOnDesk(message: string, dryRun: boolean): Promise<void> {
+  const text = message.trim()
+  if (!text) return
+  const link = `${getPublicAppUrl()}/ops/approvals`
+  await notifyAri(`${text}\n${link}`, { dryRun, desk: true }).catch((err: unknown) => {
+    logEvent('desk:notify', 'warn', 'ari_notify_failed', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+  })
 }
 
 function ariNote(headline: string, store: string, missing: string | null): string {
@@ -78,12 +93,59 @@ function ariNote(headline: string, store: string, missing: string | null): strin
 }
 
 async function applyAriDecision(
-  _decision: DeskDecision,
-  _dryRun: boolean,
+  decision: DeskDecision,
+  text: string | null,
 ): Promise<DeskRouteResult> {
-  return {
-    reply: 'ההחלטה נעשית במערכת. הוואטסאפ כאן הוא מול מנהלי הסניפים.',
-    storeReply: null,
+  const waiting = await findTicketAwaitingAri().catch(() => null)
+  if (!waiting) {
+    return {
+      reply: 'אין תקלה דחופה שמחכה לאישור.',
+      storeReply: null,
+    }
+  }
+  const place = waiting.stores?.name || waiting.stores?.code || 'הסניף'
+  if (decision === 'rejected') {
+    return {
+      reply: `התקלה ב${place} נשארת אצלך. לא ננעל מחיר.`,
+      storeReply: null,
+    }
+  }
+  if (decision === 'needs_info') {
+    return {
+      reply: `על ${place} חסר מחיר או טלפון. כתוב: אשר 450 0501234567 שם.`,
+      storeReply: null,
+    }
+  }
+  const parsed = parseEngagementApproval(text ?? '')
+  if (parsed.amount == null || !parsed.phone) {
+    const missing = [
+      parsed.amount == null ? 'מחיר' : null,
+      parsed.phone == null ? 'טלפון' : null,
+    ]
+      .filter(Boolean)
+      .join(' ו')
+    return {
+      reply: `על ${place} חסר ${missing}. כתוב: אשר 450 0501234567 שם.`,
+      storeReply: null,
+    }
+  }
+  try {
+    const locked = await lockEngagement({
+      ticketId: waiting.id,
+      professionalName: parsed.name || 'איש מקצוע',
+      professionalPhone: parsed.phone,
+      approvedAmount: parsed.amount,
+      approvedBy: 'ארי',
+    })
+    return {
+      reply: `נעלתי ${locked.approvedAmount} ש״ח ל${locked.professionalName}. מנהל החנות ב${place} קיבל את הפרטים.`,
+      storeReply: null,
+    }
+  } catch (error) {
+    return {
+      reply: error instanceof Error ? error.message : 'לא הצלחתי לנעול את המחיר.',
+      storeReply: null,
+    }
   }
 }
 
@@ -282,10 +344,16 @@ export async function routeInboundToDesk(input: {
 }): Promise<DeskRouteResult | null> {
   if (isAriSender(input.waId)) {
     const decision = parseDeskDecision(input.text)
-    if (decision) return applyAriDecision(decision, input.dryRun)
+    if (decision) return applyAriDecision(decision, input.text)
     const message = input.text?.trim()
     if (message) {
-      const answered = await replyToAri({ message, actor: null, locale: 'he', source: 'whatsapp' })
+      const answered = await replyToAri({
+        message,
+        actor: null,
+        locale: 'he',
+        source: 'whatsapp',
+        voice: input.mediaKind === 'audio',
+      })
       return { reply: answered.reply, storeReply: null }
     }
   }

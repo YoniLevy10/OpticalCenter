@@ -308,6 +308,39 @@ export async function GET() {
     owner: 'ops',
   })
 
+  const cronSecret = Boolean(process.env.CRON_SECRET?.trim())
+  checks.push({
+    id: 'cron_secret',
+    ok: cronSecret,
+    level: 'must',
+    message: cronSecret
+      ? 'CRON_SECRET מוגדר'
+      : 'חסר CRON_SECRET — cron (כולל סגירת החזקת איכות) יחזיר 401',
+    owner: 'ops',
+  })
+
+  let mediaBucket = false
+  if (ready) {
+    try {
+      const supabase = createSystemClient('pilot_health_media')
+      const { data, error } = await supabase.storage.getBucket('ticket-media')
+      mediaBucket = !error && Boolean(data)
+    } catch {
+      mediaBucket = false
+    }
+  }
+  checks.push({
+    id: 'ticket_media_bucket',
+    ok: !ready || mediaBucket,
+    level: 'must',
+    message: !ready
+      ? 'DB לא מחובר — דילוג על bucket ticket-media'
+      : mediaBucket
+        ? 'bucket ticket-media קיים'
+        : 'חסר bucket ticket-media — הריצו מיגרציית phase5 media',
+    owner: 'build',
+  })
+
   checks.push({
     id: 'force_memory_off',
     ok: process.env.MAINTAINOS_FORCE_MEMORY !== '1',

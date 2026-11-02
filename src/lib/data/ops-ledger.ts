@@ -25,7 +25,6 @@ import {
 import type { VendorOutcome } from '@/modules/vendors/outcomes'
 import { runIngestPipeline, markSourceDeleted, type IngestedFile } from '@/modules/ingestion/pipeline'
 import { splitVoiceTranscript } from '@/modules/tasks/voice-split'
-import { TRIAL_SPENDS } from '@/modules/demo/trial-scenario'
 
 export const AYA_PHONE = '050-22840204'
 export const AYA_STORE_CODE = '6018'
@@ -43,11 +42,13 @@ export function deskDecisionPhones(): string[] {
 }
 
 /**
- * Who receives proactive desk alerts (SMS/WhatsApp).
- * Ari is excluded for now — no spam to 050-9881951 until pilot go-live.
+ * Who receives proactive desk alerts (WhatsApp).
+ * Ari always. The test desk number only when MAINTAINOS_DESK_TEST_PHONE=1.
  */
 export function deskNotifyPhones(): string[] {
-  return [TEST_DESK_PHONE]
+  const phones = [ARI_PHONE]
+  if (process.env.MAINTAINOS_DESK_TEST_PHONE === '1') phones.push(TEST_DESK_PHONE)
+  return phones
 }
 
 /** @deprecated Prefer deskDecisionPhones / deskNotifyPhones. */
@@ -205,197 +206,6 @@ function sharedLedger(): Ledger {
 }
 
 let ledger = sharedLedger()
-ensureTrialSpends()
-ensureTrialWork()
-
-function trialSpendRows(): SpendRequest[] {
-  const now = new Date().toISOString()
-  return TRIAL_SPENDS.map((seed) => {
-    const store = ISRAEL_STORES.find((row) => row.code === seed.storeCode)
-    const approved = seed.status === 'approved'
-    return {
-      id: seed.id,
-      storeId: israelStoreId(seed.storeCode),
-      storeCode: seed.storeCode,
-      storeName: store?.name ?? seed.storeCode,
-      ticketId: seed.ticketId,
-      assetId: seed.assetId ?? null,
-      reason: seed.reason,
-      vendorName: seed.vendorName,
-      requestedAmount: seed.requestedAmount,
-      approvedAmount: approved ? seed.requestedAmount : null,
-      actualAmount: null,
-      scope: seed.scope,
-      status: seed.status,
-      urgent: seed.urgent,
-      requestedBy: store
-        ? `${store.managerName} · ${store.name}`
-        : seed.storeCode,
-      decidedBy: approved ? 'ארי' : null,
-      decidedAt: approved ? now : null,
-      needsReapproval: false,
-      createdAt: now,
-      updatedAt: now,
-    }
-  })
-}
-
-function ensureTrialSpends() {
-  for (const row of trialSpendRows()) {
-    if (ledger.spends.some((spend) => spend.id === row.id)) continue
-    ledger.spends.push(row)
-  }
-}
-
-function ensureTrialWork() {
-  const now = Date.now()
-  const at = (hours: number) => new Date(now + hours * 3600_000).toISOString()
-  const tasks: OpsTask[] = [
-    {
-      id: 'trial-task-6001',
-      title: 'לוודא שחשמלנט מגיע לכיכר ציון לפני פתיחה',
-      storeId: israelStoreId('6001'),
-      storeCode: '6001',
-      assignee: 'ארי',
-      dueAt: at(6),
-      ticketId: 'trial-6001-electrical',
-      documentId: null,
-      spendId: 'trial-spend-6001',
-      done: false,
-      needsClarification: false,
-      clarification: null,
-      createdAt: at(-4),
-    },
-    {
-      id: 'trial-task-6037',
-      title: 'לאשר ביקור משולב בחיפה הרצל',
-      storeId: israelStoreId('6037'),
-      storeCode: '6037',
-      assignee: 'ארי',
-      dueAt: at(20),
-      ticketId: 'trial-6037-security',
-      documentId: null,
-      spendId: 'trial-spend-bundle-6037',
-      done: false,
-      needsClarification: false,
-      clarification: null,
-      createdAt: at(-2),
-    },
-    {
-      id: 'trial-task-6007',
-      title: 'לבקש הצעת מחיר שנייה למזגן בראשון לציון',
-      storeId: israelStoreId('6007'),
-      storeCode: '6007',
-      assignee: 'ונסה',
-      dueAt: at(48),
-      ticketId: 'trial-6007-hvac',
-      documentId: null,
-      spendId: 'trial-spend-6007',
-      done: false,
-      needsClarification: true,
-      clarification: 'האם להחליף או רק למלא גז',
-      createdAt: at(-8),
-    },
-    {
-      id: 'trial-task-6006',
-      title: 'לסגור את ביקור המיזוג באבן גבירול',
-      storeId: israelStoreId('6006'),
-      storeCode: '6006',
-      assignee: 'יוסי כהן',
-      dueAt: at(-6),
-      ticketId: 'trial-6006-hvac',
-      documentId: null,
-      spendId: null,
-      done: true,
-      needsClarification: false,
-      clarification: null,
-      createdAt: at(-30),
-    },
-  ]
-  for (const task of tasks) {
-    if (ledger.tasks.some((row) => row.id === task.id)) continue
-    ledger.tasks.push(task)
-  }
-
-  const docs: StoreDocument[] = [
-    {
-      id: 'trial-doc-6006-fire',
-      storeId: israelStoreId('6006'),
-      storeCode: '6006',
-      storeName: 'תל אביב אבן גבירול',
-      docType: 'fire',
-      sourceUrl: null,
-      extractedExpiry: at(-48),
-      computedNextCheck: at(-48),
-      owner: 'לילך',
-      intakeStatus: 'needs_review',
-      intakeReason: 'תוקף כיבוי אש עבר',
-      version: 1,
-      previousId: null,
-      renewed: false,
-      createdAt: at(-200),
-      fieldsLocked: true,
-    },
-    {
-      id: 'trial-doc-6010-electrical',
-      storeId: israelStoreId('6010'),
-      storeCode: '6010',
-      storeName: 'חולון',
-      docType: 'electrical',
-      sourceUrl: null,
-      extractedExpiry: at(24 * 12),
-      computedNextCheck: at(24 * 12),
-      owner: 'אנה',
-      intakeStatus: 'ingested',
-      intakeReason: null,
-      version: 1,
-      previousId: null,
-      renewed: false,
-      createdAt: at(-80),
-      fieldsLocked: true,
-    },
-    {
-      id: 'trial-doc-6001-hearing',
-      storeId: israelStoreId('6001'),
-      storeCode: '6001',
-      storeName: 'ירושלים כיכר ציון',
-      docType: 'hearing_a',
-      sourceUrl: null,
-      extractedExpiry: at(24 * 18),
-      computedNextCheck: at(24 * 18),
-      owner: 'קרן',
-      intakeStatus: 'needs_review',
-      intakeReason: 'כיול שמיעה מתקרב',
-      version: 1,
-      previousId: null,
-      renewed: false,
-      createdAt: at(-40),
-      fieldsLocked: false,
-    },
-    {
-      id: 'trial-doc-6037-fire',
-      storeId: israelStoreId('6037'),
-      storeCode: '6037',
-      storeName: 'חיפה הרצל',
-      docType: 'fire',
-      sourceUrl: null,
-      extractedExpiry: at(24 * 40),
-      computedNextCheck: at(24 * 40),
-      owner: 'חיפה הרצל',
-      intakeStatus: 'ingested',
-      intakeReason: null,
-      version: 1,
-      previousId: null,
-      renewed: false,
-      createdAt: at(-10),
-      fieldsLocked: true,
-    },
-  ]
-  for (const doc of docs) {
-    if (ledger.documents.some((row) => row.id === doc.id)) continue
-    ledger.documents.push(doc)
-  }
-}
 
 export type DriveSyncState = {
   rootFolderId: string | null
@@ -436,7 +246,6 @@ export function resetOpsLedger() {
   ledger = seedLedger()
   ledgerGlobal.__miloOpsLedger = ledger
   driveSync = emptyDriveSync()
-  ensureTrialSpends()
 }
 
 export function replacePersistedOps(next: {
@@ -655,7 +464,6 @@ export function areaManagerFor(storeId: string): string | null {
 }
 
 export function listSpends(): SpendRequest[] {
-  ensureTrialSpends()
   return [...ledger.spends]
 }
 

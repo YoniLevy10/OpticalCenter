@@ -15,7 +15,9 @@ export async function GET(
   }
   try {
     const bytes = await readFile(join(process.cwd(), '.local', 'doc-previews', `${id}.png`))
-    return new NextResponse(bytes, {
+    const body = new Uint8Array(bytes.byteLength)
+    body.set(bytes)
+    return new NextResponse(body, {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'private, max-age=3600',

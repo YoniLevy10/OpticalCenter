@@ -7,6 +7,8 @@ export type StoreDocument = {
   storeName: string
   docType: string
   sourceUrl: string | null
+  /** Private store-documents path. The file itself, not the mail that carried it. */
+  storagePath?: string | null
   extractedExpiry: string | null
   computedNextCheck: string | null
   owner: string | null

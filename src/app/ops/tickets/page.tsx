@@ -201,6 +201,14 @@ export default async function TicketsPage({
 
   const baseHref = queueHref(queueFilters)
 
+  const viewCountLabel =
+    view === 'urgent'
+      ? 'דחופות'
+      : view === 'attention'
+        ? 'דורשות תשומת לב'
+        : view === 'stuck'
+          ? 'תקועות'
+          : null
   const statusLine =
     view === 'resolved'
       ? filtered.length === 0
@@ -208,7 +216,9 @@ export default async function TicketsPage({
         : translate(locale, 'tickets.resolved', { count: filtered.length })
       : filtered.length === 0
         ? translate(locale, 'tickets.noneOpen')
-        : translate(locale, 'tickets.open', { count: filtered.length })
+        : viewCountLabel
+          ? `${filtered.length} ${viewCountLabel}`
+          : translate(locale, 'tickets.open', { count: filtered.length })
 
   const storeOptions = storesResult.stores.map((s) => ({
     code: s.code,
@@ -290,8 +300,16 @@ export default async function TicketsPage({
                 (t.number != null ? `OC-${t.number}` : t.id.slice(0, 8)),
               title: t.title || t.description,
               spendBlock: executionBlockReason(spendForTicket(t.id)),
+              category: t.category,
+              city: t.stores?.city ?? null,
             }))}
             vendors={vendorOptions}
+            professionals={pros.professionals.map((person) => ({
+              id: person.id,
+              full_name: person.full_name,
+              phone: person.phone,
+              trade: person.trade,
+            }))}
             storeFilter={storeCode}
           >
             <Panel flush elevated className="overflow-hidden">

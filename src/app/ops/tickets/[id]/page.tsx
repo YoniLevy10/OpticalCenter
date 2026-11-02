@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { StatusLabel } from '@/components/ui/signal'
 import { EvidenceGrid } from '@/components/ui/evidence'
 import {
+  normalizeTicketCategory,
   TICKET_CATEGORY_LABELS_HE,
   type TicketPriority,
   type TicketStatus,
@@ -18,24 +19,21 @@ import {
 import {
   getById,
   listInternalTechnicians,
-  countOpenTicketsByAssignee,
 } from '@/modules/tickets/service'
 import {
   fetchTicketAttachments,
   mergeEvidence,
 } from '@/modules/tickets/attachments'
-import { TicketActions } from './ticket-actions'
-import { PreferredVendorsPanel } from './preferred-vendors-panel'
 import { TicketRfqDraftPanel } from './ticket-rfq-draft-panel'
+import { EngagementPanel } from './engagement-panel'
+import { WhoHandles } from './who-handles'
 import { Tx } from '@/components/i18n/tx'
-import { TECH_COMPLETION } from '@/modules/tech/completion-copy'
 import { Timeline } from '@/components/ui/timeline'
 import { buildActivityDesc } from '@/modules/tickets/activity'
 import { phrase } from '@/lib/i18n/phrases'
 import { getServerActor } from '@/lib/auth/server-actor'
 import { shouldAllowDemoEntry } from '@/lib/auth/home-path'
 import { actorCanAccessTicket } from '@/lib/auth/ticket-scope'
-import { canCorrectTicketClassification } from '@/modules/tickets/classification-auth'
 import { resolveTicketsSupabase } from '@/lib/supabase/tickets-client'
 import {
   plainAgoHe,
@@ -46,20 +44,24 @@ import { listTickets } from '@/modules/tickets/service'
 import { findRecurrences, recurrenceBasis, suggestPrevention } from '@/modules/tickets/recurrence'
 import { getLocale } from '@/lib/i18n/server'
 import { translate, type MessageKey } from '@/lib/i18n/messages'
-import { TicketTrialPanel } from './ticket-trial-panel'
 import { TicketTrueCostPanel } from './ticket-true-cost'
-import { TicketEtaPanel } from './ticket-eta-panel'
-import { matchProfessionalsForFault } from '@/modules/professionals/match-fault'
 import { listProfessionals } from '@/modules/professionals/service'
-import { suggestVendorsForTicket } from '@/modules/vendors/service'
-import { windowsFromSettings } from '@/modules/tickets/sla'
-import { getSettings } from '@/modules/settings/service'
-import { spendsForAsset, spendsForTicket } from '@/lib/data/ops-ledger'
+import { listOutcomes, listSpends, spendsForAsset, spendsForTicket } from '@/lib/data/ops-ledger'
 import { formatIls, trueCostBreakdown } from '@/modules/spend/true-cost'
+import {
+  bandFromPrices,
+  categorySamples,
+  estimateFaultCost,
+  formatCostBand,
+} from '@/modules/recommendations/estimate'
 import { PhoneFold as TicketFold, PhoneFoldStack as TicketFoldStack } from '@/components/layout/phone-fold'
 import { formatQualityHoldHe, isQualityHoldActive } from '@/modules/tickets/quality-hold'
 import { formatRepairEtaHe } from '@/modules/tickets/repair-eta'
 import { ticketDecision } from '@/modules/decisions/queue'
+import { lockedEngagementFor } from '@/modules/engagements/service'
+import { loadMidragResults } from '@/modules/vendors/midrag/live-results'
+import { recommendBundles, type BundleFault } from '@/modules/whatsapp/agent/bundle'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,25 +79,14 @@ export default async function TicketDetailPage({
 
   const resolvedClient = await resolveTicketsSupabase(actor)
 
-  const [ticket, technicians, storedAttachments, openCountByTech] =
-    await Promise.all([
-      getById(id, { client: resolvedClient?.client }).catch(() => null),
-      listInternalTechnicians().catch(() => []),
-      fetchTicketAttachments(id).catch(() => []),
-      countOpenTicketsByAssignee({ client: resolvedClient?.client }).catch(
-        () => new Map<string, number>(),
-      ),
-    ])
+  const [ticket, technicians, storedAttachments] = await Promise.all([
+    getById(id, { client: resolvedClient?.client }).catch(() => null),
+    listInternalTechnicians().catch(() => []),
+    fetchTicketAttachments(id).catch(() => []),
+  ])
 
   if (!ticket) notFound()
   if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
-
-  const techOptions = technicians.map((t) => ({
-    id: t.id,
-    full_name: t.full_name,
-    email: t.email,
-    openCount: openCountByTech.get(t.id) ?? 0,
-  }))
 
   const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
   const assignee =
@@ -149,6 +140,57 @@ export default async function TicketDetailPage({
     ticket.status === 'resolved' && isQualityHoldActive(ticket.quality_hold_until)
   const etaLabel = formatRepairEtaHe(ticket.repair_eta_at)
   const prevention = suggestPrevention(hits)
+  const urgent = ticketIsUrgent(ticket)
+  const locked = await lockedEngagementFor(ticket.id).catch(() => null)
+  const midrag =
+    urgent && ticket.status !== 'engaged'
+      ? await loadMidragResults({
+          category: ticket.category,
+          city: ticket.stores?.city ?? null,
+        }).catch(() => null)
+      : null
+  const openForBundle = (history.tickets ?? []).filter((row) => row.id !== ticket.id)
+  const bundleCards = recommendBundles({
+    open: [
+      {
+        id: ticket.id,
+        storeId: ticket.store_id,
+        storeName,
+        category: ticket.category,
+        priority: ticket.priority,
+        status: ticket.status,
+        summary: ticket.description,
+        createdAt: ticket.created_at,
+        regionId: ticket.region_id,
+        urgent,
+      },
+      ...openForBundle.map(
+        (row): BundleFault => ({
+          id: row.id,
+          storeId: row.store_id,
+          storeName: row.stores?.name || row.stores?.code || 'סניף',
+          category: row.category,
+          priority: row.priority,
+          status: row.status,
+          summary: row.title || row.description,
+          createdAt: row.created_at,
+          regionId: row.region_id,
+          urgent: ticketIsUrgent(row),
+        }),
+      ),
+    ],
+  })
+  const companionIds =
+    bundleCards.find((card) => card.kind === 'urgent' && card.ticketIds[0] === ticket.id)
+      ?.ticketIds.slice(1) ?? []
+  const companions = companionIds.map((id) => {
+    const row = openForBundle.find((item) => item.id === id)
+    return {
+      id,
+      storeName: row?.stores?.name || storeName,
+      summary: row?.title || row?.description || 'תקלה',
+    }
+  })
   const tx = (key: MessageKey, vars?: Record<string, string | number>) =>
     translate(locale, key, vars)
   const categoryKey = `category.${ticket.category}` as MessageKey
@@ -166,43 +208,20 @@ export default async function TicketDetailPage({
     ? tx(categoryKey)
     : (TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category)
   const priority = ticket.priority as TicketPriority
-  const [{ settings }, pros, vendors] = await Promise.all([
-    getSettings().catch(() => ({
-      settings: {
-        sla_respond_hours_critical: 1,
-        sla_respond_hours_high: 2,
-        sla_respond_hours_medium: 4,
-        sla_respond_hours_low: 8,
-      },
-    })),
-    listProfessionals({ limit: 40 }).catch(() => ({ professionals: [] })),
-    suggestVendorsForTicket({
-      category: ticket.category,
-      regionId: ticket.region_id,
-    }).catch(() => ({ matches: [] })),
-  ])
-  const slaWindow = windowsFromSettings(settings)[priority]
-  const proMatches = matchProfessionalsForFault(
-    pros.professionals,
-    ticket.category,
-  ).slice(0, 3)
-  const vendorMatches = vendors.matches.slice(0, 2).map((row) => ({
-    id: row.id,
-    name: row.name,
-    detail: row.specialties,
-    phone: row.contact_phone ?? null,
-    reason: row.reason,
-  }))
-  const people = [
-    ...proMatches.map((row) => ({
-      id: row.id,
-      name: row.full_name,
-      detail: row.trade ?? '',
-      phone: row.phone,
-      reason: row.reason,
-    })),
-    ...vendorMatches,
-  ]
+  const pros = await listProfessionals({ limit: 40 }).catch(() => ({ professionals: [] }))
+  const categoryByTicketId: Record<string, string> = {}
+  for (const row of history.tickets ?? []) {
+    if (row.category) categoryByTicketId[row.id] = row.category
+  }
+  categoryByTicketId[ticket.id] = ticket.category
+  const recordedBand = bandFromPrices(
+    categorySamples({
+      outcomes: listOutcomes(),
+      spends: listSpends(),
+      categoryByTicketId,
+    }).get(normalizeTicketCategory(ticket.category)) ?? [],
+  )
+  const faultEstimate = estimateFaultCost(ticket.category, recordedBand)
 
   const storyLines: string[] = [`${p('נפתחה על ידי')} ${reporter}`]
   if (assignee) {
@@ -238,9 +257,12 @@ export default async function TicketDetailPage({
     ? [latest.label, latest.body?.trim()].filter(Boolean).join(' · ')
     : p('אין פעילות')
   const cost = trueCostBreakdown(ticketSpends)
+  const estimateText = formatCostBand(faultEstimate.band)
   const costSummary =
-    cost.count === 0 ? tx('ticket.trueCostEmpty') : formatIls(cost.total)
-  const vendorSummary = vendors.matches[0]?.name ?? p('אין התאמה עדיין')
+    cost.count === 0 ? `משוער ${estimateText}` : formatIls(cost.total)
+  const handleSummary = assignee
+    ? assignee.full_name || assignee.email || 'טכנאי'
+    : 'מהמאגר או מידרג'
 
   return (
     <OpsAppShell>
@@ -320,71 +342,60 @@ export default async function TicketDetailPage({
           </dl>
         </Panel>
 
-        <TicketFoldStack>
-          {treatmentSummary ? (
-            <TicketFold title={TECH_COMPLETION.treatmentLabel} summary={treatmentSummary}>
-              <Panel elevated>
-                <p className="t-section mb-2 text-ink">
-                  {TECH_COMPLETION.treatmentLabel}
-                </p>
-                <p className="t-body whitespace-pre-wrap text-ink-2">
-                  {treatmentSummary}
-                </p>
-              </Panel>
-            </TicketFold>
-          ) : null}
+        {treatmentSummary ? (
+          <p className="t-body px-1 text-ink-2">{treatmentSummary}</p>
+        ) : null}
 
+        <TicketFoldStack>
           <TicketFold title={tx('ticket.trueCost')} summary={costSummary}>
             <TicketTrueCostPanel
               ticketSpends={ticketSpends}
               assetSpends={assetSpends}
               locale={locale}
+              estimate={{ text: estimateText, basis: faultEstimate.basis }}
             />
+            <details className="mt-2 rounded-[var(--radius-lg)] border border-border bg-surface px-3 py-2">
+              <summary className="t-body cursor-pointer text-ink">הצעת מחיר</summary>
+              <div className="pt-3">
+                <TicketRfqDraftPanel
+                  ticketId={ticket.id}
+                  ticketLabel={
+                    ticket.display_number ||
+                    (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
+                  }
+                  storeId={ticket.store_id}
+                  storeCode={ticket.stores?.code ?? ''}
+                  storeName={storeName}
+                  trade={ticket.category}
+                />
+              </div>
+            </details>
           </TicketFold>
 
-          <TicketFold title={tx('ticket.eta')} summary={etaLabel || tx('ticket.etaEmpty')}>
-            <TicketEtaPanel
-              ticketId={ticket.id}
-              initialEtaAt={ticket.repair_eta_at ?? null}
-              status={ticket.status}
+          <TicketFold title="מי מטפל" summary={handleSummary}>
+            <WhoHandles
+              category={ticket.category}
+              city={ticket.stores?.city ?? null}
+              professionals={pros.professionals.map((person) => ({
+                id: person.id,
+                full_name: person.full_name,
+                phone: person.phone,
+                trade: person.trade,
+              }))}
             />
           </TicketFold>
-
-          {hits.length > 0 ? (
-            <TicketFold
-              title={p('אירועים דומים')}
-              summary={prevention || p(`${hits.length} אירועים קודמים`)}
-            >
-              <Panel elevated>
-                <p className="t-section mb-3 text-ink">
-                  <Tx text="אירועים דומים" />
-                </p>
-                <p className="t-meta mb-2 text-ink-2">{recurrenceBasis(hits)}</p>
-                <ul className="space-y-1">
-                  {hits.slice(0, 5).map((hit) => (
-                    <li key={hit.ticket.id} className="t-body text-ink-2">
-                      {hit.ticket.description} · {hit.reason}
-                    </li>
-                  ))}
-                </ul>
-                {prevention ? <p className="t-body mt-2">{prevention}</p> : null}
-              </Panel>
-            </TicketFold>
-          ) : null}
-
-          {attachments.length > 0 ? (
-            <TicketFold title={p('תיעוד')} summary={p(`${attachments.length} קבצים`)}>
-              <Panel elevated>
-                <p className="t-section mb-3 text-ink">
-                  <Tx text="תיעוד" />
-                </p>
-                <EvidenceGrid attachments={attachments} />
-              </Panel>
-            </TicketFold>
-          ) : null}
 
           <TicketFold title={p('מה קרה עד עכשיו')} summary={latestSummary}>
             <Panel elevated flush className="overflow-hidden">
+              {hits.length > 0 ? (
+                <div className="border-b border-border px-5 py-3">
+                  <p className="t-body-strong text-ink">
+                    <Tx text="אירועים דומים" />
+                  </p>
+                  <p className="t-meta mt-1 text-ink-2">{recurrenceBasis(hits)}</p>
+                  {prevention ? <p className="t-body mt-2 text-ink">{prevention}</p> : null}
+                </div>
+              ) : null}
               <div className="border-b border-border px-5 py-3">
                 <p className="t-section text-ink">
                   <Tx text="מה קרה עד עכשיו" />
@@ -399,85 +410,28 @@ export default async function TicketDetailPage({
             </Panel>
           </TicketFold>
 
-          <TicketFold
-            title={p('סיווג וטיפול')}
-            summary={`${categoryLabel} · ${tx(`priority.${priority}`)}`}
-          >
-            <TicketTrialPanel
-              ticketId={ticket.id}
-              description={whatsBroken}
-              priority={priority}
-              category={ticket.category}
-              status={ticket.status}
-              slaRespondBy={ticket.sla_respond_by}
-              slaResolveBy={ticket.sla_resolve_by}
-              firstResponseAt={ticket.first_response_at}
-              resolvedAt={ticket.resolved_at}
-              respondHours={slaWindow.respondHours}
-              resolveHours={slaWindow.resolveHours}
-              storeId={ticket.store_id}
-              storeCode={ticket.stores?.code ?? ''}
-              storeName={storeName}
-              assetId={ticket.asset_id ?? null}
-              matches={people}
-              aiRaw={ticket.ai_raw ?? null}
-              aiSummary={ticket.ai_summary ?? null}
-              canCorrect={canCorrectTicketClassification(
-                actor,
-                shouldAllowDemoEntry(),
-              )}
-            />
-          </TicketFold>
-
-          <TicketFold title={p('ספקים ואנשי מקצוע')} summary={vendorSummary}>
-            <PreferredVendorsPanel
-              ticketId={ticket.id}
-              category={ticket.category}
-              regionId={ticket.region_id ?? 'center'}
-              city={ticket.stores?.city ?? null}
-              initialMatches={vendors.matches.slice(0, 4).map((row) => ({
-                id: row.id,
-                name: row.name,
-                specialties: row.specialties,
-                preferred: row.preferred,
-                coverage_regions: row.coverage_regions ?? undefined,
-                contact_phone: row.contact_phone ?? null,
-                notes: row.notes ?? null,
-                score: row.score,
-                reason: row.reason,
-                dispatchable: row.dispatchable,
-              }))}
-            />
-          </TicketFold>
-
-          <TicketFold title={p('הצעת מחיר')} summary={p('נשמרת ידנית, בלי שליחה')}>
-            <TicketRfqDraftPanel
-              ticketId={ticket.id}
-              ticketLabel={
-                ticket.display_number ||
-                (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
-              }
-              storeId={ticket.store_id}
-              storeCode={ticket.stores?.code ?? ''}
-              storeName={storeName}
-              trade={ticket.category}
-            />
-          </TicketFold>
+          {attachments.length > 0 ? (
+            <TicketFold title={p('תיעוד')} summary={p(`${attachments.length} קבצים`)}>
+              <Panel elevated>
+                <p className="t-section mb-3 text-ink">
+                  <Tx text="תיעוד" />
+                </p>
+                <EvidenceGrid attachments={attachments} />
+              </Panel>
+            </TicketFold>
+          ) : null}
         </TicketFoldStack>
 
-        {/* Single mount: sticky dock on mobile, inline panel on md+ */}
-        <div id="ticket-actions" className="hq-ticket-dock fixed inset-x-0 border-t border-border bg-surface/95 p-3 shadow-[var(--shadow-2)] backdrop-blur-md md:static md:inset-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
-          <TicketActions
+        <div id="ticket-actions">
+          <EngagementPanel
             ticketId={ticket.id}
-            status={ticket.status as TicketStatus}
-            assignedTo={ticket.assigned_to}
-            assigneeName={
-              assignee?.full_name || assignee?.email || null
-            }
-            technicians={techOptions}
-            canOverrideResolve={Boolean(
-              actor?.memberships.some((m) => m.role === 'global_maintenance'),
-            )}
+            urgent={urgent}
+            status={ticket.status}
+            locked={locked}
+            pros={midrag?.pros ?? []}
+            searchUrl={midrag?.searchUrl ?? 'https://www.midrag.co.il/Search/InSector'}
+            fallback={midrag?.fallback ?? true}
+            companions={companions}
           />
         </div>
       </div>

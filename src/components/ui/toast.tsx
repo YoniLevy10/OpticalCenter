@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         role="status"
         aria-live="polite"
         className={cn(
-          'pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2.5 md:inset-x-auto md:bottom-6 md:items-start md:start-6',
+          'phone-toast pointer-events-none fixed inset-x-4 z-[60] flex flex-col items-center gap-2.5 md:inset-x-auto md:bottom-6 md:items-start md:start-6',
           isTechRoute
             ? 'bottom-[calc(var(--safe-b)+16px)]'
             : 'bottom-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b)+16px)] max-md:bottom-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b)+16px)]',

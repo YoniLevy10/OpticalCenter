@@ -82,6 +82,49 @@ export function AlertsClient({
 
   const counts = splitAlertBuckets(open)
 
+  const storeGroups = useMemo(() => {
+    const rank = (severity: OpsAlert['severity']) =>
+      severity === 'critical' ? 0 : severity === 'high' ? 1 : severity === 'medium' ? 2 : 3
+    const map = new Map<string, OpsAlert[]>()
+    for (const alert of filtered) {
+      const key = alert.storeCode && alert.storeCode !== '—' ? alert.storeCode : 'none'
+      const list = map.get(key) ?? []
+      list.push(alert)
+      map.set(key, list)
+    }
+    return [...map.entries()].map(([key, alerts]) => {
+      const hottest = [...alerts].sort((a, b) => rank(a.severity) - rank(b.severity))[0]
+      return {
+        key,
+        name: hottest?.storeName || 'בלי סניף',
+        alerts,
+        hottest: hottest?.nextAction ?? '',
+      }
+    })
+  }, [filtered])
+
+  function alertRow(alert: OpsAlert, withStore = false) {
+    const late = alert.reasons.some((reason) => reason.includes('איחור') || reason.includes('SLA'))
+    return (
+      <li key={alert.id}>
+        <Link
+          href={alert.href}
+          className="flex min-h-12 items-center gap-3 px-4 py-2 transition-colors hover:bg-surface-sunken/40"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="t-body-strong block truncate text-ink">{alert.title}</span>
+            <span className="t-meta block truncate text-ink-2">
+              {withStore && alert.storeName ? `${alert.storeName} · ` : ''}
+              {late ? 'באיחור · ' : ''}
+              {alert.nextAction}
+            </span>
+          </span>
+          <span className="t-meta t-num shrink-0 text-ink-3">{fmtWhen(alert.at)}</span>
+        </Link>
+      </li>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {partialFailure ? (
@@ -193,29 +236,24 @@ export function AlertsClient({
             {p('לא ניתן להציג «הכל שקט» — טעינת מקור נכשלה.')}
           </p>
         ) : (
-          <ul className="divide-y divide-border">
-            {filtered.map((alert) => (
-              <li key={alert.id}>
-                <Link
-                  href={alert.href}
-                  className="flex min-h-12 items-center gap-3 px-4 py-2 transition-colors hover:bg-surface-sunken/40"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="t-body-strong block truncate text-ink">{alert.title}</span>
-                    <span className="t-meta block truncate text-ink-2">
-                      {alert.storeName}
-                      {alert.reasons.some((reason) => reason.includes('איחור') || reason.includes('SLA'))
-                        ? ' · באיחור'
-                        : ''}
-                      {' · '}
-                      {alert.nextAction}
-                    </span>
-                  </span>
-                  <span className="t-meta t-num shrink-0 text-ink-3">{fmtWhen(alert.at)}</span>
-                </Link>
-              </li>
+          <>
+          <div className="md:hidden">
+            {storeGroups.map((group) => (
+              <PhoneFold
+                key={group.key}
+                title={group.name}
+                summary={`${group.alerts.length} · ${group.hottest}`}
+              >
+                <ul className="divide-y divide-border">
+                  {group.alerts.map((alert) => alertRow(alert))}
+                </ul>
+              </PhoneFold>
             ))}
+          </div>
+          <ul className="hidden divide-y divide-border md:block">
+            {filtered.map((alert) => alertRow(alert, true))}
           </ul>
+          </>
         )}
       </Panel>
 

@@ -88,7 +88,7 @@ export function TechShell({
           className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background"
           style={{ paddingBottom: 'var(--safe-b)' }}
         >
-          <div className="mx-auto w-full max-w-xl px-4 py-3">{actions}</div>
+          <div className="safe-x mx-auto w-full max-w-xl py-3">{actions}</div>
         </div>
       ) : null}
     </div>

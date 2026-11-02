@@ -81,8 +81,14 @@ describe('Ari control center', () => {
     expect(desk?.storeIds).toEqual([])
   })
 
-  it('notifies only the test desk phone, while Ari can still decide', () => {
-    expect(deskNotifyPhones()).toEqual([TEST_DESK_PHONE])
+  it('notifies Ari, and the test desk phone only when enabled', () => {
+    const prev = process.env.MAINTAINOS_DESK_TEST_PHONE
+    delete process.env.MAINTAINOS_DESK_TEST_PHONE
+    expect(deskNotifyPhones()).toEqual([ARI_PHONE])
+    process.env.MAINTAINOS_DESK_TEST_PHONE = '1'
+    expect(deskNotifyPhones()).toEqual([ARI_PHONE, TEST_DESK_PHONE])
+    if (prev === undefined) delete process.env.MAINTAINOS_DESK_TEST_PHONE
+    else process.env.MAINTAINOS_DESK_TEST_PHONE = prev
     expect(deskDecisionPhones()).toEqual([ARI_PHONE, TEST_DESK_PHONE])
   })
 

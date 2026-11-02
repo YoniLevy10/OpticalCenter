@@ -14,6 +14,11 @@ import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { DashboardSoftRefresh } from './dashboard-soft-refresh'
 import { AriHomeBoard } from './ari-home'
+import { AriProductionStrip } from './production-strip'
+import { duePapersFrom } from '@/modules/ops/agent-chat'
+import { listDocuments } from '@/lib/data/ops-ledger'
+import { recommendBundles, type BundleFault } from '@/modules/whatsapp/agent/bundle'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 import { getLocale } from '@/lib/i18n/server'
 import { phrase } from '@/lib/i18n/phrases'
 
@@ -94,6 +99,34 @@ export default async function OpsDashboardPage({
       <DashboardSoftRefresh />
       <div className="ari-home flex flex-col gap-4">
         <OpsPageHero compact mark title={ariGreeting()} />
+        <AriProductionStrip
+          urgent={openTickets
+            .filter((ticket) => ticketIsUrgent(ticket) && ticket.status !== 'engaged')
+            .slice(0, 6)
+            .map((ticket) => ({
+              id: ticket.id,
+              storeName: ticket.stores?.name || ticket.stores?.code || 'סניף',
+              summary: ticket.title || ticket.description,
+            }))}
+          bundles={recommendBundles({
+            open: openTickets.map(
+              (ticket): BundleFault => ({
+                id: ticket.id,
+                storeId: ticket.store_id || '',
+                storeName: ticket.stores?.name || ticket.stores?.code || 'סניף',
+                category: ticket.category || 'other',
+                priority: ticket.priority,
+                status: ticket.status,
+                summary: ticket.title || ticket.description,
+                createdAt: ticket.created_at,
+                regionId: ticket.region_id,
+                urgent: ticketIsUrgent(ticket),
+                dispatched: ticket.status === 'engaged' || ticket.status === 'waiting_vendor',
+              }),
+            ),
+          })}
+          papers={duePapersFrom(listDocuments())}
+        />
         <AriHomeBoard
           model={home}
           stats={{

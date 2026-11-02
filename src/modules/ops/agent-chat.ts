@@ -16,6 +16,8 @@ import { listProfessionals } from '@/modules/professionals/service'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { listTickets } from '@/modules/tickets/service'
 import { actForAri } from '@/modules/ops/agent-actions'
+import { speakableFaultSummary } from '@/modules/ops/speakable-faults'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 import {
   recommendBundles,
   type BundleCard,
@@ -32,6 +34,7 @@ export type SnapshotFault = {
   summary: string
   displayNumber: string | null
   priority?: string
+  urgent?: boolean
   overdue?: boolean
   assigned?: boolean
   statusLabel?: string
@@ -261,7 +264,9 @@ export async function loadOpsSnapshot(actor: Actor | null, locale: Locale = 'he'
     slaResolveBy: ticket.sla_resolve_by,
     resolvedAt: ticket.resolved_at,
     firstResponseAt: ticket.first_response_at,
-    dispatched: ticket.status === 'waiting_vendor',
+    regionId: ticket.region_id,
+    urgent: ticketIsUrgent(ticket),
+    dispatched: ticket.status === 'waiting_vendor' || ticket.status === 'engaged',
   }))
   const cards = recommendBundles({
     open: openFaults,
@@ -299,6 +304,7 @@ export async function loadOpsSnapshot(actor: Actor | null, locale: Locale = 'he'
         summary: fault.summary,
         displayNumber: ticket?.display_number ?? null,
         priority: fault.priority,
+        urgent: fault.urgent === true || (fault.urgent !== false && (fault.priority === 'critical' || fault.priority === 'high')),
         overdue: ticket ? isBreached(ticket, now) : false,
         assigned: ticket ? Boolean(ticket.assigned_to) : undefined,
         verb: verb || (ticket?.assigned_to ? 'לטפל' : 'לשייך'),
@@ -337,15 +343,31 @@ export async function loadOpsSnapshot(actor: Actor | null, locale: Locale = 'he'
   }
 }
 
+function snapshotSpeakable(snapshot: OpsSnapshot): string {
+  return speakableFaultSummary(
+    snapshot.open.map((fault) => ({
+      urgent: fault.urgent === true,
+      storeName: fault.storeName,
+      category: fault.category,
+    })),
+  )
+}
+
 export async function replyToAri(input: {
   message: string
   history?: ChatTurn[]
   actor: Actor | null
   locale?: Locale
   source?: 'web_fallback' | 'whatsapp'
+  /** Transcribed voice note — answer with a short list the phone can read. */
+  voice?: boolean
 }): Promise<{ reply: string; links: { href: string; label: string }[] }> {
   const locale = input.locale ?? 'he'
   const snapshot = await loadOpsSnapshot(input.actor, locale)
+  const spoken = snapshotSpeakable(snapshot)
+  if (locale === 'he' && /^(מה פתוח|מה יש פתוח|סיכום תקלות)\s*\??$/.test(input.message.trim())) {
+    return { reply: spoken, links: [] }
+  }
   if (locale === 'he') {
     const acted = await actForAri({
       message: input.message,
@@ -358,7 +380,14 @@ export async function replyToAri(input: {
       })),
       source: input.source ?? 'web_fallback',
     })
-    if (acted) return acted
+    if (acted) {
+      return input.voice
+        ? { reply: `${acted.reply}\n${spoken}`, links: acted.links }
+        : acted
+    }
+  }
+  if (input.voice && locale === 'he') {
+    return { reply: spoken, links: [] }
   }
   if (asksPapersOrGear(input.message)) {
     return {

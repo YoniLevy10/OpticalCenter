@@ -11,11 +11,10 @@ import {
   documentTypeLabel,
   isDocumentDueSoon,
   isDocumentOverdue,
-  isHearingCalibrationType,
   type StoreDocument,
 } from '@/modules/documents/rules'
 import { renewDocumentAction, setDocumentExpiryAction, setDocumentRemindersAction } from '../work-actions'
-import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
+import { PhoneFold } from '@/components/layout/phone-fold'
 
 const FILE_STATUS = {
   ingested: 'נקלט',
@@ -45,7 +44,7 @@ export function DocumentCabinet({
 }) {
   const byId = new Map(files.map((file) => [file.id, file]))
   const filesOnDisk = certificateIds()
-  const folders = groupByStore(documents)
+  const folders = groupByStore(preferStoredFiles(documents))
 
   return (
     <ListFinder
@@ -54,53 +53,64 @@ export function DocumentCabinet({
       many="תיקיות"
       className="doc-cabinet"
     >
-      <PhoneFoldStack>
       {folders.map((folder) => {
+        const numbers = folder.docs.map((_, index) => String(index + 1)).join(', ')
         const dated = folder.docs.filter((doc) => doc.extractedExpiry && !doc.renewed)
-        const missing = folder.docs.filter((doc) => !doc.renewed && !doc.extractedExpiry).length
         const next = dated
           .map((doc) => doc.extractedExpiry as string)
           .sort()[0]
-        const summary = missing
-          ? `${missing} בלי תאריך תוקף`
-          : next
-            ? `הקרוב ${formatDay(next)}`
-            : 'התיקייה מעודכנת'
         return (
-          <div
+          <details
             key={folder.key}
+            className="doc-folder"
             data-find-group
             data-find-key={folder.key}
-            data-find={`${folder.name} ${folder.code}`}
+            data-find={`סניף ${folder.name} ${folder.code} ${numbers}`}
           >
-            <PhoneFold
-              title={`${folder.name}${folder.code ? ` · ${folder.code}` : ''}`}
-              summary={summary}
-            >
-            <PhoneFoldStack>
-              {folder.docs.map((doc) => (
+            <summary>
+              <span className="doc-folder-tab">סניף {folder.name}</span>
+              <span className="doc-peek" aria-hidden>
+                {folder.docs.slice(0, 3).map((doc, index) => (
+                  <span key={doc.id} className="doc-peek-sheet">
+                    {index + 1}. {paperTitle(doc, fileFor(doc, byId))}
+                  </span>
+                ))}
+              </span>
+              <span className="doc-folder-face">
+                <span className="doc-folder-count" dir="ltr">
+                  {numbers}
+                </span>
+                <span className="doc-folder-meta">
+                  {folder.code ? `#${folder.code}` : 'בלי קוד'}
+                  {next ? ` · הקרוב ${formatDay(next)}` : ''}
+                </span>
+              </span>
+            </summary>
+            <ol className="doc-folder-pocket">
+              {folder.docs.map((doc, index) => (
                 <Paper
                   key={doc.id}
+                  index={index + 1}
                   doc={doc}
-                  file={byId.get(`file-${doc.id}`) ?? null}
-                  fileHref={filesOnDisk.has(doc.id) ? `/api/ops/document-file/${doc.id}` : null}
+                  file={fileFor(doc, byId)}
+                  fileHref={documentFileHref(doc, filesOnDisk)}
                 />
               ))}
-            </PhoneFoldStack>
-            </PhoneFold>
-          </div>
+            </ol>
+          </details>
         )
       })}
-      </PhoneFoldStack>
     </ListFinder>
   )
 }
 
 function Paper({
+  index,
   doc,
   file,
   fileHref,
 }: {
+  index: number
   doc: StoreDocument
   file: IngestedFile | null
   fileHref: string | null
@@ -114,28 +124,33 @@ function Paper({
   const dueSoon = isDocumentDueSoon(doc)
   const expiryId = `expiry-${doc.id}`
   return (
-    <article
-      className={overdue ? 'doc-page edge edge-overdue' : 'doc-page'}
+    <li
+      className={`${overdue ? 'doc-page edge edge-overdue' : 'doc-page'} doc-file-row`}
       data-find-item
-      data-find={`${title} ${typeLabel} ${expiry ? formatDay(expiry) : ''} ${expiry?.slice(0, 10) ?? ''}`}
+      data-find={`${index} ${title} ${typeLabel} ${expiry ? formatDay(expiry) : ''} ${expiry?.slice(0, 10) ?? ''}`}
     >
-      <span className="doc-page-ear" aria-hidden />
-      <p className="doc-page-kicker">
-        {isHearingCalibrationType(doc.docType) ? 'כיול שמיעה' : 'אישור'}
-        {typeLabel !== title ? ` · ${typeLabel}` : ''}
-      </p>
-      <h3 className="doc-page-title">
+      <div className="doc-file-head">
+        <span className="doc-file-num" dir="ltr">
+          {index}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="doc-page-title">{title}</h3>
+          <p className="doc-page-kicker">
+            {expiry ? `תוקף ${formatDay(expiry)}` : CLOCK[documentClock(doc)]}
+            {typeLabel !== title ? ` · ${typeLabel}` : ''}
+          </p>
+        </div>
         {fileHref ? (
-          <a href={fileHref} target="_blank" rel="noreferrer">
-            {title}
-            <span className="sr-only">, נפתח בלשונית חדשה</span>
-          </a>
-        ) : (
-          title
-        )}
-      </h3>
+          <Button asChild size="sm">
+            <a href={fileHref} target="_blank" rel="noreferrer">
+              פתח את המסמך
+              <span className="sr-only">, נפתח בלשונית חדשה</span>
+            </a>
+          </Button>
+        ) : null}
+      </div>
+      <PhoneFold title="פרטים" summary={expiry ? formatDay(expiry) : 'תוקף ותזכורת'}>
       {expiry ? <p className="doc-page-stamp">תוקף {formatDay(expiry)}</p> : null}
-      <PhoneFold title="קובץ והערות" summary={expiry ? formatDay(expiry) : CLOCK[documentClock(doc)]}>
       <div className="doc-page-body">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -181,15 +196,6 @@ function Paper({
         {overdue && expiry ? ' · באיחור' : ''}
         {dueSoon ? ' · תזכורת חודש מראש' : ''}
         {doc.renewed ? ' · הוחלף' : ''}
-        {fileHref ? (
-          <>
-            {' · '}
-            <a className="underline" href={fileHref} target="_blank" rel="noreferrer">
-              פתח את המסמך
-              <span className="sr-only">, נפתח בלשונית חדשה</span>
-            </a>
-          </>
-        ) : null}
       </p>
       {!doc.renewed ? (
         <details className="doc-renew">
@@ -205,8 +211,27 @@ function Paper({
         </details>
       ) : null}
       </PhoneFold>
-    </article>
+    </li>
   )
+}
+
+function fileFor(doc: StoreDocument, byId: Map<string, IngestedFile>): IngestedFile | null {
+  return (
+    byId.get(`file-${doc.id}`) ??
+    byId.get(doc.id.replace(/^ari-cert-/, 'ari-file-')) ??
+    (doc.sourceUrl ? [...byId.values()].find((file) => file.sourceUrl === doc.sourceUrl) ?? null : null)
+  )
+}
+
+/** A link that opens the certificate itself. Mail threads are not the file. */
+function documentFileHref(doc: StoreDocument, filesOnDisk: Set<string>): string | null {
+  const url = doc.sourceUrl?.trim() ?? ''
+  if (url.startsWith('/') && !url.includes('..')) return url
+  if (/^https?:\/\//i.test(url) && !/mail\.google\.com|google\.com\/mail/i.test(url)) return url
+  if (/^ari-cert-[a-f0-9]{24}$/.test(doc.id) && (doc.storagePath || filesOnDisk.has(doc.id))) {
+    return `/api/ops/document-file/${doc.id}`
+  }
+  return null
 }
 
 function ReminderMenu({ doc, title }: { doc: StoreDocument; title: string }) {
@@ -265,6 +290,21 @@ function ReminderField({
       />
     </div>
   )
+}
+
+/** The uploaded certificate is the file. Catalog copies of the same store stay out of its folder. */
+export function preferStoredFiles(documents: StoreDocument[]): StoreDocument[] {
+  const storedStores = new Set(
+    documents
+      .filter((doc) => doc.storagePath || doc.id.startsWith('ari-cert-'))
+      .map((doc) => doc.storeCode?.trim() || '')
+      .filter(Boolean),
+  )
+  return documents.filter((doc) => {
+    if (!doc.id.startsWith('branch-')) return true
+    const code = doc.storeCode?.trim() || ''
+    return !code || !storedStores.has(code)
+  })
 }
 
 function groupByStore(documents: StoreDocument[]): Folder[] {

@@ -1,5 +1,6 @@
 import { persistOpsLedger } from '@/lib/data/ops-db'
-import { addTask, listTasks } from '@/lib/data/ops-ledger'
+import { addDocument, addTask, listTasks } from '@/lib/data/ops-ledger'
+import { expiryFromText } from '@/modules/drive/import'
 import { ISRAEL_STORES, israelStoreId, type IsraelStoreSeed } from '@/modules/stores/israel-stores'
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { createTicket, formatDisplayNumber, type TicketSource } from '@/modules/tickets/service'
@@ -31,7 +32,8 @@ export async function actForAri(input: {
   const message = input.message.trim()
   const task = CREATE_TASK.test(message)
   const ticket = CREATE_TICKET.test(message)
-  if (!task && !ticket) return null
+  const permit = /כיבוי אש|אישור כיבוי|רישיון/.test(message)
+  if (!task && !ticket && !permit) return null
 
   const historyText = (input.history ?? [])
     .filter((turn) => turn.role === 'assistant')
@@ -46,6 +48,46 @@ export async function actForAri(input: {
 
   if (named.ambiguous.length > 1) {
     return say(`באיזה סניף? יש ${named.ambiguous.map((row) => row.name).slice(0, 3).join(' ו')}.`)
+  }
+
+  if (!ticket && permit) {
+    const title = (body.length >= 3 ? body : blurb) || 'חידוש אישור'
+    if (!store) {
+      const created = addTask({
+        title: title.slice(0, 200),
+        storeId: null,
+        storeCode: null,
+        assignee: null,
+        dueAt: null,
+        ticketId: null,
+        documentId: null,
+        spendId: null,
+        needsClarification: true,
+        clarification: 'באיזה סניף האישור?',
+      })
+      await persistOpsLedger().catch(() => undefined)
+      return say(`רשמתי משימה לחידוש אישור. חסר סניף.`, taskLink(created.id))
+    }
+    const expiry = expiryFromText(message)
+    const doc = addDocument({
+      storeId: israelStoreId(store.stableKey ?? store.code),
+      storeCode: store.code,
+      storeName: store.name,
+      docType: /חשמל/.test(message) ? 'electrical' : 'fire',
+      sourceUrl: null,
+      extractedExpiry: expiry,
+      computedNextCheck: null,
+      owner: null,
+      intakeStatus: expiry ? 'ingested' : 'needs_review',
+      intakeReason: expiry ? null : 'תאריך התוקף לא ברור',
+    })
+    await persistOpsLedger().catch(() => undefined)
+    return say(
+      expiry
+        ? `רשמתי ${doc.docType === 'electrical' ? 'אישור חשמל' : 'אישור כיבוי אש'} בסניף ${store.name}.`
+        : `רשמתי אישור לסניף ${store.name}. חסר תאריך תוקף.`,
+      { href: '/ops/documents', label: 'מסמכים' },
+    )
   }
 
   if (task) {

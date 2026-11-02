@@ -40,6 +40,9 @@ import {
 } from '@/modules/reports/snapshots'
 import { cn } from '@/lib/utils'
 import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
+import { annualMaintenanceCost } from '@/modules/engagements/cost'
+import { closedEngagementCosts } from '@/modules/engagements/service'
+import { formatIls } from '@/modules/spend/true-cost'
 
 export const dynamic = 'force-dynamic'
 
@@ -212,6 +215,12 @@ export default async function ReportsPage({
     },
   ]
 
+  const costYear = Number((from ?? '').slice(0, 4)) || new Date().getFullYear()
+  const annual = annualMaintenanceCost(
+    await closedEngagementCosts().catch(() => []),
+    costYear,
+  )
+
   return (
     <OpsAppShell>
       <div className="flex flex-col gap-5 stagger">
@@ -226,6 +235,25 @@ export default async function ReportsPage({
             <ReportsExportActions query={exportQuery} count={all.length} />
           }
         />
+
+        <Panel elevated className="!p-4 md:!p-5">
+          <PanelHeader
+            title={`עלויות אחזקה ${annual.year}`}
+            meta={`סה״כ רשת ${formatIls(annual.network)}`}
+          />
+          {annual.stores.length === 0 ? (
+            <EmptyState title="אין עדיין ביקורים שנסגרו השנה" />
+          ) : (
+            <ul className="mt-4 grid gap-2">
+              {annual.stores.map((store) => (
+                <li key={store.storeCode || store.storeName} className="flex justify-between gap-3">
+                  <span className="t-body text-ink">{store.storeName}</span>
+                  <span className="t-body-strong t-num text-ink">{formatIls(store.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
 
         <PhoneFoldStack>
         <PhoneFold title="סינון" summary={rangeLabel}>

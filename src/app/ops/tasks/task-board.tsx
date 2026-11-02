@@ -46,25 +46,31 @@ function TaskCard({ task, now }: { task: OpsTask; now: Date }) {
       id={`task-${task.id}`}
       className={
         overdue
-          ? 'sheet scroll-mt-24 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface edge edge-overdue'
-          : 'sheet scroll-mt-24 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface'
+          ? 'max-md:contents md:sheet md:scroll-mt-24 md:overflow-hidden md:rounded-[var(--radius-lg)] md:border md:border-border md:bg-surface md:edge md:edge-overdue'
+          : 'max-md:contents md:sheet md:scroll-mt-24 md:overflow-hidden md:rounded-[var(--radius-lg)] md:border md:border-border md:bg-surface'
       }
     >
-      <div className="flex flex-col gap-2 px-4 py-3">
-        <p className="t-meta text-ink-2">
+      <PhoneFold
+        title={task.title}
+        summary={`${store?.name || 'בלי סניף'} · ${formatDue(task.dueAt)}`}
+      >
+      <div className="flex flex-col gap-2 px-4 py-3 max-md:px-0 max-md:py-0">
+        <p className="t-meta hidden text-ink-2 md:block">
           {store?.name || 'בלי סניף'}
           {task.storeCode ? ` · ${task.storeCode}` : ''}
           {task.assignee ? ` · ${task.assignee}` : ' · בלי אחראי'}
         </p>
-        <h2 className={status === 'done' ? 't-body text-ink-3 line-through' : 't-body text-ink'}>
+        <h2 className={`hidden md:block ${status === 'done' ? 't-body text-ink-3 line-through' : 't-body text-ink'}`}>
           {task.title}
         </h2>
-        <span aria-hidden className="clay-rule" />
+        <span aria-hidden className="clay-rule hidden md:block" />
         <p className="t-meta text-ink-2">
           <StatusChip status={status} overdue={overdue} />
-          {' · '}
-          {formatDue(task.dueAt)}
-          {overdue ? ' · באיחור' : ''}
+          <span className="hidden md:inline">
+            {' · '}
+            {formatDue(task.dueAt)}
+            {overdue ? ' · באיחור' : ''}
+          </span>
         </p>
         {task.clarification ? <p className="t-meta text-ink">{task.clarification}</p> : null}
         {task.spendId ? (
@@ -72,7 +78,6 @@ function TaskCard({ task, now }: { task: OpsTask; now: Date }) {
             לבקשת הכסף
           </Link>
         ) : null}
-        <PhoneFold title="פעולה" summary={TASK_STATUS_LABEL[status]}>
         <div className="mt-1 flex flex-wrap gap-2">
           {moves.map((move) => (
             <form key={move.status} action={setTaskStatusAction}>
@@ -84,8 +89,8 @@ function TaskCard({ task, now }: { task: OpsTask; now: Date }) {
             </form>
           ))}
         </div>
-        </PhoneFold>
       </div>
+      </PhoneFold>
     </article>
   )
 }

@@ -33,6 +33,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/quality-hold-close",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/drive-sync",
       "schedule": "*/15 * * * *"
     }

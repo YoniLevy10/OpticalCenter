@@ -23,6 +23,7 @@ export type TicketRow = {
   display_number: string | null
   status: string
   priority: string
+  urgent?: boolean | null
   category: string
   description: string
   source: string

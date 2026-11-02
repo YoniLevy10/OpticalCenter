@@ -91,7 +91,7 @@ describe('WhatsApp desk loop', () => {
       msg({ text: 'לאשר', waId: ARI, messageId: 'ari-approve' }),
       dry,
     )
-    expect(decided.reply).toContain('במערכת')
+    expect(decided.reply).toContain('אין תקלה דחופה')
     expect(decided.storeReply).toBeNull()
     const after = listSpends().find((row) => row.id === spend?.id)
     expect(after?.status).toBe('pending')
@@ -121,7 +121,7 @@ describe('WhatsApp desk loop', () => {
     expect(ledgerDecisions().some((item) => item.id === `doc:${doc?.id}`)).toBe(true)
   })
 
-  it('opens a placeholder ticket with audio when transcription fails and store is known', async () => {
+  it('keeps a failed transcript as a review task and does not open a fault', async () => {
     const waId = '972501234504'
     const before = memListTickets().length
     await processInboundMessage(msg({ text: 'STORE_6018', waId }), dry)
@@ -136,18 +136,11 @@ describe('WhatsApp desk loop', () => {
       dry,
     )
     expect(opened.reply).toContain('ההקלטה התקבלה')
-    expect(opened.ticketId).toBeTruthy()
-    expect(memListTickets().length).toBe(before + 1)
-    const ticket = memListTickets().find((t) => t.id === opened.ticketId)
-    expect(ticket?.description).toMatch(/תמלול/)
-    expect(
-      ticket?.messages.some(
-        (m) => m.media_url === 'https://example.com/voice-review.ogg',
-      ),
-    ).toBe(true)
+    expect(opened.ticketId).toBeUndefined()
+    expect(memListTickets().length).toBe(before)
     const task = listTasks().find((row) => row.title.includes('תמלול'))
     expect(task?.needsClarification).toBe(true)
-    expect(task?.ticketId).toBe(opened.ticketId)
+    expect(task?.ticketId).toBeNull()
     expect(ledgerDecisions().some((item) => item.id === `task:${task?.id}`)).toBe(true)
   })
 

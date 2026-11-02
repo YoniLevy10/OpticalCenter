@@ -60,20 +60,32 @@ describe('intake rules engine', () => {
     expect(r.priority).toBe('low')
   })
 
-  it('model cannot raise priority or relabel a recognized fault', () => {
+  it('keeps the category of a recognized fault and lets AI set urgency when no floor fired', () => {
     const leak = applyIntakeRules({
       text: 'נזילה מהכיור',
       ai: { category: 'cleaning', priority_suggestion: 'critical' },
     })
     expect(leak.category).toBe('plumbing')
-    expect(leak.priority).toBe('high')
+    expect(leak.priority).toBe('critical')
+    expect(leak.urgent).toBe(true)
 
     const unnamed = applyIntakeRules({
       text: 'the label machine will not print receipts',
       ai: { category: 'it', priority_suggestion: 'critical' },
     })
     expect(unnamed.category).toBe('it')
-    expect(unnamed.priority).toBe('medium')
+    expect(unnamed.priority).toBe('critical')
+    expect(unnamed.urgent).toBe(true)
+  })
+
+  it('lets AI mark a plain HVAC fault as not urgent', () => {
+    const cool = applyIntakeRules({
+      text: 'המזגן לא מקרר',
+      ai: { category: 'hvac', priority_suggestion: 'medium' },
+    })
+    expect(cool.category).toBe('hvac')
+    expect(cool.priority).toBe('medium')
+    expect(cool.urgent).toBe(false)
   })
 
   it('AI suggestion cannot undercut safety rule', () => {

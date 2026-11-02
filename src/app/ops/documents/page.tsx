@@ -11,7 +11,7 @@ import { hydrateOpsLedger } from '@/lib/data/ops-db'
 import { selectableDocumentTypes } from '@/modules/documents/rules'
 import { driveCanWrite, driveFolderUrl } from '@/modules/drive/folder'
 import { addDocumentAction, ingestFileAction } from '../work-actions'
-import { DocumentCabinet } from './document-cabinet'
+import { DocumentCabinet, preferStoredFiles } from './document-cabinet'
 import { DriveImportForm } from './drive-import-form'
 import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 
@@ -21,7 +21,7 @@ export default async function DocumentsPage() {
   const actor = await getServerActor()
   if (!actor && !shouldAllowDemoEntry()) redirect('/login')
   await hydrateOpsLedger()
-  const documents = listDocuments()
+  const documents = preferStoredFiles(listDocuments())
   const files = listFiles()
   const review = files.filter((file) => file.status !== 'ingested').length
   const folderCount = new Set(documents.map((doc) => doc.storeCode?.trim() || `unassigned:${doc.storeName}`)).size

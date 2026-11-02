@@ -36,6 +36,7 @@ import {
 import { mergeAiRawAfterManualCorrection } from '@/modules/tickets/classification-explain'
 import { getSettings } from '@/modules/settings/service'
 import { assertTransition, isTicketStatus } from '@/modules/tickets/transitions'
+import { priorityIsUrgent } from '@/modules/tickets/urgent'
 import type { TicketRow } from '@/modules/stores/data'
 
 export { computeSlaTimestamps } from '@/modules/tickets/sla'
@@ -58,6 +59,8 @@ export type TicketRecord = {
   display_number: string | null
   category: string
   priority: TicketPriority
+  /** Stored דחוף flag. Absent on rows from before the column existed. */
+  urgent?: boolean | null
   status: TicketStatus
   title: string | null
   description: string
@@ -133,6 +136,8 @@ export type CreateTicketInput = {
   aiSummary?: string | null
   /** Raw AI + rules audit payload (optional column). */
   aiRaw?: Record<string, unknown> | null
+  /** Overrides the priority-derived דחוף flag. */
+  urgent?: boolean
 }
 
 export function formatDisplayNumber(n: number | null | undefined) {
@@ -151,6 +156,7 @@ function memToRecord(t: MemTicket): TicketRecord {
     display_number: t.display_number,
     category: t.category,
     priority: t.priority as TicketPriority,
+    urgent: t.urgent,
     status: t.status as TicketStatus,
     title: t.title,
     description: t.description,
@@ -190,7 +196,7 @@ export type ListTicketsQuery = {
 
 /** Columns needed for queue / dashboard rows — skip city/address bloat. */
 const LIST_SELECT_BASE =
-  'id, number, display_number, status, priority, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, asset_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at'
+  'id, number, display_number, status, priority, urgent, category, description, source, created_at, updated_at, organization_id, country_id, region_id, store_id, asset_id, assigned_to, title, sla_respond_by, sla_resolve_by, first_response_at, resolved_at'
 
 /** Lean row for lifecycle mutations / RBAC — no messages or events.
  * B03/B04 columns are loaded via select('*') fallback when present. */
@@ -238,7 +244,33 @@ async function queryTicketsList(
   if (filters.assignedTo === 'none') query = query.is('assigned_to', null)
   else if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
 
-  const { data, error } = await query
+  let { data, error } = await query
+  if (error && /urgent/i.test(error.message)) {
+    const lean = LIST_SELECT_BASE.replace(', urgent', '')
+    let retry = supabase
+      .from('tickets')
+      .select(`${lean}, ${storeJoin}`)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(limit * (filters.q ? 2 : 1), 1), 1000))
+    if (filters.statuses && filters.statuses.length > 0) {
+      retry = retry.in('status', filters.statuses)
+    } else if (filters.status) {
+      retry = retry.eq('status', filters.status)
+    }
+    if (filters.priority) retry = retry.eq('priority', filters.priority)
+    if (filters.storeCode) {
+      const code = canonicalStoreCode(filters.storeCode)
+      retry =
+        code === filters.storeCode
+          ? retry.eq('stores.code', code)
+          : retry.in('stores.code', [code, filters.storeCode])
+    }
+    if (filters.assignedTo === 'none') retry = retry.is('assigned_to', null)
+    else if (filters.assignedTo) retry = retry.eq('assigned_to', filters.assignedTo)
+    const second = await retry
+    data = second.data as typeof data
+    error = second.error
+  }
   if (error) return { rows: [], error: error.message }
   let rows = (data ?? []) as unknown as TicketRow[]
   if (filters.q?.trim()) {
@@ -517,6 +549,7 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
   if (!description) throw new Error('תיאור התקלה נדרש')
   const priority = input.priority ?? 'medium'
   if (!TICKET_PRIORITIES.includes(priority)) throw new Error('עדיפות לא חוקית')
+  const urgent = input.urgent ?? priorityIsUrgent(priority)
   const sla = computeSlaTimestamps(priority)
 
   if (await supabaseReady()) {
@@ -534,6 +567,7 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
       asset_id: input.assetId ?? null,
       category: input.category ?? 'other',
       priority,
+      urgent,
       status: 'new',
       title: input.title?.trim() || null,
       description,
@@ -553,11 +587,8 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
       .single()
 
     // Pre-migration environments: retry without AI columns
-    if (
-      error &&
-      (input.aiSummary != null || input.aiRaw != null) &&
-      /ai_summary|ai_raw|column/i.test(error.message)
-    ) {
+    if (error && /urgent|ai_summary|ai_raw|column/i.test(error.message)) {
+      delete insertRow.urgent
       delete insertRow.ai_summary
       delete insertRow.ai_raw
       ;({ data, error } = await supabase
@@ -605,6 +636,7 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketReco
       assetId: input.assetId ?? null,
       ai_summary: input.aiSummary ?? null,
       ai_raw: input.aiRaw ?? null,
+      urgent,
       ...sla,
     }),
   )
@@ -718,6 +750,51 @@ export async function updatePriority(
     windows,
   })
   return memToRecord(memUpdatePriority(id, priority, sla, actorId ?? null))
+}
+
+/** Ari flips דחוף / לא דחוף without rewriting the safety priority. */
+export async function setTicketUrgent(
+  id: string,
+  urgent: boolean,
+  actorId?: string | null,
+): Promise<TicketRecord> {
+  if (await supabaseReady()) {
+    const current = await getTicketForMutation(id)
+    if (!current) throw new Error('תקלה לא נמצאה')
+    const supabase = createSystemClient('tickets_service')
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ urgent })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) {
+      if (/urgent|column/i.test(error.message)) {
+        return updatePriority(id, urgent ? 'high' : 'medium', actorId)
+      }
+      throw new Error(error.message)
+    }
+    await appendEvent(id, 'urgent_changed', actorId ?? null, {
+      from: (current as TicketRecord).urgent ?? priorityIsUrgent(current.priority),
+      to: urgent,
+    })
+    return data as TicketRecord
+  }
+
+  const current = memGet(id)
+  if (!current) throw new Error('תקלה לא נמצאה')
+  const from = current.urgent ?? priorityIsUrgent(current.priority)
+  current.urgent = urgent
+  current.updated_at = new Date().toISOString()
+  current.events.push({
+    id: `${id}-ev-${current.events.length + 1}`,
+    ticket_id: id,
+    event_type: 'urgent_changed',
+    actor_id: actorId ?? null,
+    payload: { from, to: urgent },
+    created_at: current.updated_at,
+  })
+  return memToRecord(current)
 }
 
 export type CorrectClassificationInput = {

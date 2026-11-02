@@ -74,9 +74,9 @@ export function TicketQueueItem({
         selected && 'bg-[var(--tenant-soft)]/40',
       )}
     >
-      <div className="flex gap-3 px-4 pt-3">
+      <div className="flex items-center gap-3 px-4 py-2 md:items-start md:pt-3">
         {selectable && visitSelection ? (
-          <label className="flex shrink-0 items-center self-start pt-1">
+          <label className="flex shrink-0 items-center self-center md:self-start md:pt-1">
             <input
               type="checkbox"
               className="h-6 w-6 accent-[var(--tenant)]"
@@ -89,22 +89,23 @@ export function TicketQueueItem({
 
         <Link
           href={`/ops/tickets/${ticket.id}`}
-          className="min-w-0 flex-1 space-y-1.5"
+          className="min-w-0 flex-1 space-y-0.5 md:space-y-1.5"
         >
-          <p className="t-body line-clamp-2 text-ink">
+          <p className="t-body line-clamp-1 text-ink md:line-clamp-2">
             {ticket.title || ticket.description}
           </p>
           <p
             className={cn(
-              't-meta',
+              't-meta truncate',
               openFor.overdue ? 'font-semibold text-[var(--tenant)]' : 'text-ink-3',
             )}
           >
             {openFor.text}
             <span className="text-ink-3"> · </span>
             <span className="text-ink-2">{assigneeLabel}</span>
+            <span className="text-ink md:hidden"> · {verb}</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             <StatusLabel status={ticket.status} />
             {openFor.overdue ? (
               <span className="t-body-strong text-[var(--tenant)]">{p('דחוף')}</span>
@@ -112,7 +113,7 @@ export function TicketQueueItem({
           </div>
         </Link>
       </div>
-      <div className="flex justify-end px-4 pb-3 pt-2">
+      <div className="hidden justify-end px-4 pb-3 pt-2 md:flex">
         {openFor.overdue ? (
           <Button asChild variant="primary" size="sm">
             <Link href={`/ops/tickets/${ticket.id}`}>{verb}</Link>

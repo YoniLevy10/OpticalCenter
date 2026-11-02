@@ -81,6 +81,6 @@ export function parseDeskDecision(text: string | null): DeskDecision | null {
   if (!value) return null
   if (/לבקש מידע|צריך פרטים|מידע נוסף/.test(value)) return 'needs_info'
   if (/לדחות|נדחה/.test(value)) return 'rejected'
-  if (/(?:^|\s)(?:לאשר|מאשר)(?:\s|$)|^(?:לאשר|מאשר)$/.test(value)) return 'approved'
+  if (/(?:^|\s)(?:לאשר|מאשר|אשר)(?:\s|$)/.test(value)) return 'approved'
   return null
 }

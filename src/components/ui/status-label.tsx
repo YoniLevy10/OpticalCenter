@@ -11,6 +11,7 @@ function statusTreatment(status: string): string {
       return 'bg-[var(--signal-critical-soft)] text-[var(--signal-critical)]'
     case 'waiting_parts':
     case 'waiting_vendor':
+    case 'engaged':
     case 'awaiting_info':
     case 'assigned':
     case 'triaged':

@@ -18,6 +18,23 @@ export function qualityHoldUntilFrom(
   return until
 }
 
+export type QualityCloseCandidate = {
+  status: string
+  store_confirmed_at?: string | null
+  quality_hold_until?: string | null
+}
+
+/** Store already confirmed, and the 30-day hold has ended. */
+export function eligibleForQualityClose(
+  ticket: QualityCloseCandidate,
+  now: Date = new Date(),
+): boolean {
+  if (ticket.status !== 'resolved') return false
+  if (!ticket.store_confirmed_at) return false
+  if (!ticket.quality_hold_until) return false
+  return !isQualityHoldActive(ticket.quality_hold_until, now)
+}
+
 export function isQualityHoldActive(
   holdUntil: string | Date | null | undefined,
   now: Date = new Date(),

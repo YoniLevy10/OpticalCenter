@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SpendRequest } from '@/modules/spend/policy'
 import {
   bandFromPrices,
+  estimateFaultCost,
   formatCostBand,
   formatRecordedAmount,
   recordedTicketAmount,
@@ -30,6 +31,20 @@ function spend(partial: Partial<SpendRequest> & Pick<SpendRequest, 'id'>): Spend
     ...partial,
   }
 }
+
+describe('estimateFaultCost', () => {
+  it('uses a recorded band before the kind range', () => {
+    expect(estimateFaultCost('plumbing', { low: 300, high: 300 })).toEqual({
+      band: { low: 300, high: 300 },
+      basis: 'recorded',
+    })
+  })
+
+  it('falls back to a kind range when nothing was paid', () => {
+    expect(estimateFaultCost('it', null).basis).toBe('kind')
+    expect(estimateFaultCost('not-a-kind', null).band).toEqual({ low: 200, high: 800 })
+  })
+})
 
 describe('formatCostBand', () => {
   it('keeps one recorded price as a point', () => {

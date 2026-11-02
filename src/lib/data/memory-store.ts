@@ -18,6 +18,8 @@ export type MemTicket = {
   display_number: string | null
   category: string
   priority: string
+  /** Ari's urgent / not-urgent flag. Defaults from priority. */
+  urgent?: boolean
   status: string
   title: string | null
   description: string
@@ -1023,6 +1025,7 @@ export function memCreate(input: {
   createdAt?: string
   ai_summary?: string | null
   ai_raw?: Record<string, unknown> | null
+  urgent?: boolean
 }): MemTicket {
   const mem = store()
   if (input.id && mem.tickets.has(input.id)) {
@@ -1049,6 +1052,9 @@ export function memCreate(input: {
     display_number: `OC-${number}`,
     category: input.category ?? 'other',
     priority: input.priority,
+    urgent:
+      input.urgent ??
+      (input.priority === 'critical' || input.priority === 'high'),
     status: input.status ?? 'new',
     title: input.title?.trim() || null,
     description: input.description,

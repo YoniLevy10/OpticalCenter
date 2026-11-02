@@ -145,7 +145,7 @@ export function BottomSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="fixed inset-x-3 z-50 flex animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
+          className="phone-sheet fixed inset-x-3 z-50 flex animate-slide-up flex-col overflow-hidden rounded-[var(--radius-xl)] border border-white/60 bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.75),var(--shadow-pop)]"
           style={{
             bottom:
               'var(--sheet-bottom, calc(var(--safe-b) + 10px))',
@@ -206,7 +206,7 @@ export function SideDrawer({
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
-          className="safe-pt safe-pb fixed inset-y-3 start-3 z-50 flex w-[min(86vw,320px)] animate-drawer-in flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface text-ink outline-none"
+          className="phone-drawer safe-pt safe-pb fixed inset-y-3 start-3 z-50 flex w-[min(86vw,320px)] animate-drawer-in flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface text-ink outline-none"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
             <Dialog.Title className="t-section text-ink">{p(title)}</Dialog.Title>

@@ -138,8 +138,41 @@ describe('recommendBundles', () => {
         fault({ id: 'c', summary: 'ניאגרה' }),
       ],
     })
-    expect(cards.find((card) => card.kind === 'urgent')?.ticketIds).toEqual(['a'])
-    expect(cards.find((card) => card.kind === 'bundle')?.ticketIds).toEqual(['b', 'c'])
+    expect(cards.find((card) => card.kind === 'urgent')?.ticketIds).toEqual(['a', 'b', 'c'])
+    expect(cards.find((card) => card.kind === 'urgent')?.sentence).toContain('לא דחופות')
+    expect(cards.find((card) => card.kind === 'bundle')).toBeUndefined()
+  })
+
+  it('suggests a non-urgent fault in the same district, at another store', () => {
+    const cards = recommendBundles({
+      open: [
+        fault({
+          id: 'a',
+          summary: 'המזגן כבה',
+          priority: 'high',
+          regionId: 'north',
+        }),
+        fault({
+          id: 'b',
+          summary: 'ניקיון ויטרינה',
+          category: 'cleaning',
+          priority: 'low',
+          storeId: 'store-2',
+          storeName: 'נהריה',
+          regionId: 'north',
+        }),
+        fault({
+          id: 'c',
+          summary: 'שלט',
+          category: 'electrical',
+          priority: 'low',
+          storeId: 'store-3',
+          storeName: 'אילת',
+          regionId: 'south',
+        }),
+      ],
+    })
+    expect(cards.find((card) => card.kind === 'urgent')?.ticketIds).toEqual(['a', 'b'])
   })
 
   it('turns a repeat into a check, not another bundled call', () => {

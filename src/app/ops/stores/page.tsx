@@ -4,6 +4,7 @@ import { Store } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
 import { Panel, EmptyState } from '@/components/ui/primitives'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
+import { Button } from '@/components/ui/button'
 import { OperationalRow, RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
@@ -120,7 +121,16 @@ export default async function StoresPage({
           status={`${activeCount} ${p('סניפים פעילים')}${
             openStores > 0 ? ` · ${openStores} ${p('עם תקלות פתוחות')}` : ''
           }`}
-          actions={canMutate ? <StoreCreateForm /> : undefined}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" size="sm" asChild>
+                <Link href="/api/stores/qr-batch?format=pdf" target="_blank" rel="noopener">
+                  הדפסת QR לכל הרשת
+                </Link>
+              </Button>
+              {canMutate ? <StoreCreateForm /> : null}
+            </div>
+          }
         />
 
         <PhoneFold

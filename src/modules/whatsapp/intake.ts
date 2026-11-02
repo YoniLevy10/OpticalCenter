@@ -14,17 +14,15 @@ import {
 import { logEvent } from '@/lib/logging'
 import {
   normalizeTicketCategory,
-  OPEN_TICKET_STATUSES,
   parseStoreCodeFromText,
 } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
-import { createTicket, listTickets } from '@/modules/tickets/service'
+import { createTicket } from '@/modules/tickets/service'
 import {
   findPossibleDuplicateTicket,
   runIntakeAgent,
   type IntakeDecision,
 } from './agent'
-import { intakeBundleHandoff, type BundleFault } from './agent/bundle'
 import { WA_COPY } from './copy'
 import { enhanceWhatsAppMessage, type WhatsAppAiSituation } from './ai'
 import { resolveInboundMediaUrl } from './media'
@@ -40,13 +38,9 @@ import { hydrateOpsLedger } from '@/lib/data/ops-db'
 import { decideBundleVisit, parseVisitButton } from '@/modules/recommendations/commit'
 import { landVoiceReview, lookupStore, routeInboundToDesk } from './desk-route'
 import { listProfessionals, upsertProfessional } from '@/modules/professionals/service'
-import { send019Sms } from '@/lib/sms/019'
-import { addTask } from '@/lib/data/ops-ledger'
 import {
-  faultsSms,
   mergeStorePersonNote,
   parseStorePerson,
-  personForStore,
 } from './store-person'
 import { isAriSender, splitSpokenFaults } from './classify'
 import { isNonIssueAck } from './non-issue'
@@ -1085,77 +1079,8 @@ export async function processInboundMessage(
       )
       if (!transcribed.text) {
         const deskStore = lookupStore(session.store_code)
-        const store = session.store_code
-          ? await resolveStoreByCode(
-              supabase,
-              country.id || session.country_id || MEM_COUNTRY_ID,
-              session.store_code,
-            )
-          : null
-        // Stash Meta media before the URL expires — prefer a placeholder ticket
-        // with the audio attached + Ari review task when the store is known.
-        let reviewTicketId: string | null = null
-        if (store && message.mediaUrl) {
-          try {
-            const opened = await createTicketFromIntake({
-              store,
-              country,
-              description:
-                'הקלטה ממתינה לתמלול — נדרשת בדיקת ארי',
-              decision: {
-                summary: 'הקלטה ממתינה לתמלול',
-                category: 'other',
-                priority: 'medium',
-                asset: null,
-                needsClarification: true,
-                clarificationQuestion: 'מה התקלה בהקלטה?',
-                possibleDuplicateHint: null,
-                ai: null,
-                rules: {
-                  category: 'other',
-                  priority: 'medium',
-                  applied: [
-                    {
-                      id: 'voice_needs_review',
-                      reason: 'הקלטה ללא תמלול',
-                    },
-                  ],
-                  fromAi: false,
-                },
-                provider: 'rules',
-              },
-              mediaUrl: message.mediaUrl,
-              mediaKind: 'audio',
-              waId: message.waId,
-              messageId: message.messageId,
-              source: inferSourceFromText(message.text) || 'whatsapp',
-              inboundText: null,
-              useMemory: !supabase,
-            })
-            reviewTicketId = opened.ticketId
-            await updateSession(supabase, session, {
-              state: 'done',
-              active_ticket_id: opened.ticketId,
-              pending_media_url: null,
-              pending_media_kind: null,
-            })
-            session = {
-              ...session,
-              state: 'done',
-              active_ticket_id: opened.ticketId,
-              pending_media_url: null,
-              pending_media_kind: null,
-            }
-          } catch (err) {
-            logEvent('whatsapp:intake', 'warn', 'voice_placeholder_ticket_failed', {
-              error: err instanceof Error ? err.message : String(err),
-            })
-            await updateSession(supabase, session, {
-              pending_media_url: message.mediaUrl,
-              pending_media_kind: 'audio',
-            })
-          }
-        } else if (message.mediaUrl) {
+        // A failed transcript is a review task, not a break-fix ticket.
+        if (message.mediaUrl) {
           await updateSession(supabase, session, {
             pending_media_url: message.mediaUrl,
             pending_media_kind: 'audio',
@@ -1165,7 +1090,7 @@ export async function processInboundMessage(
           waId: message.waId,
           store: deskStore,
           dryRun: options?.skipOutboundGraph === true,
-          ticketId: reviewTicketId,
+          ticketId: null,
         })
         const reply = await craftIntakeReply(
           voiceNeedsReviewReply(),
@@ -1176,14 +1101,13 @@ export async function processInboundMessage(
           message,
           country,
           reply,
-          reviewTicketId,
+          null,
           options,
           session,
         )
         return {
           ok: true,
           reply,
-          ticketId: reviewTicketId ?? undefined,
           state: session.state,
         }
       }
@@ -1768,75 +1692,6 @@ export async function processInboundMessage(
   }
 }
 
-async function openFaultsForBundle(): Promise<BundleFault[]> {
-  try {
-    const { tickets } = await listTickets({
-      limit: 200,
-      statuses: [...OPEN_TICKET_STATUSES],
-    })
-    return tickets.map((ticket) => ({
-      id: ticket.id,
-      storeId: ticket.store_id,
-      storeName: '',
-      category: ticket.category,
-      priority: ticket.priority,
-      status: ticket.status,
-      summary: ticket.description,
-      createdAt: ticket.created_at,
-      slaResolveBy: ticket.sla_resolve_by,
-      resolvedAt: ticket.resolved_at,
-      firstResponseAt: ticket.first_response_at,
-      dispatched: ticket.status === 'waiting_vendor',
-    }))
-  } catch {
-    return []
-  }
-}
-
-/** SMS the branch's own person when the fault is urgent or already grouped. The WhatsApp reply stays the ticket confirmation. */
-async function dispatchStorePerson(input: {
-  storeId: string
-  storeName: string
-  storeCode: string
-  category: string
-  description: string
-  priority: string
-  ticketId: string
-}): Promise<void> {
-  try {
-    const handoff = intakeBundleHandoff({
-      ...input,
-      createdAt: new Date().toISOString(),
-      open: await openFaultsForBundle(),
-    })
-    if (handoff === 'wait') return
-    const listed = await listProfessionals({ limit: 200 }).catch(() => ({
-      professionals: [],
-    }))
-    const person = personForStore(listed.professionals, input.storeCode, input.category)
-    if (!person) return
-    const sent = await send019Sms({
-      to: person.phone,
-      message: faultsSms(input.storeName, [input.description]),
-      meta: { storeCode: input.storeCode, ticketId: input.ticketId },
-    }).catch(() => ({ ok: false as const }))
-    addTask({
-      title: sent.ok ? `נשלח SMS ל${person.name}` : `SMS ל${person.name} לא יצא`,
-      storeId: input.storeId,
-      storeCode: input.storeCode,
-      assignee: null,
-      dueAt: null,
-      ticketId: input.ticketId,
-      documentId: null,
-      spendId: null,
-      needsClarification: !sent.ok,
-      clarification: sent.ok ? null : 'המספר שמור והשליחה ב-SMS לא יצאה',
-    })
-  } catch {
-    // The ticket confirmation already went out. A failed handoff stays a task for Ari.
-  }
-}
-
 async function finalizeSpokenFaults(params: {
   supabase: SupabaseClient | null
   session: SessionRow
@@ -1851,7 +1706,6 @@ async function finalizeSpokenFaults(params: {
   const lines: string[] = []
   let lastId = ''
   let lastNumber = ''
-  let lastCategory = 'other'
 
   for (let index = 0; index < parts.length; index += 1) {
     const part = parts[index] ?? ''
@@ -1877,7 +1731,6 @@ async function finalizeSpokenFaults(params: {
     lines.push(decision.summary || part)
     lastId = created.ticketId
     lastNumber = created.displayNumber
-    lastCategory = decision.category
   }
 
   await updateSession(supabase, session, {
@@ -1892,15 +1745,6 @@ async function finalizeSpokenFaults(params: {
   await linkStorePhone(supabase, country, message.waId, store)
 
   const reply = `פתחתי ${lines.length} תקלות:\n${lines.map((line) => `• ${line}`).join('\n')}`
-  await dispatchStorePerson({
-    storeId: store.id,
-    storeName: store.name,
-    storeCode: store.code,
-    category: lastCategory,
-    description: lines[lines.length - 1] || '',
-    priority: 'medium',
-    ticketId: lastId,
-  })
   await sendReply(supabase, message, country, reply, lastId, options, session)
   return {
     ok: true,
@@ -2143,15 +1987,6 @@ async function finalizeTicket(params: {
   if (mediaFailed) {
     reply = `${reply}\n\n${await craftIntakeReply(WA_COPY.mediaNotSaved, 'intake_media_not_saved')}`
   }
-  await dispatchStorePerson({
-    storeId: store.id,
-    storeName: store.name,
-    storeCode: store.code,
-    category: decision.category,
-    description: decision.summary || description,
-    priority: decision.priority,
-    ticketId,
-  })
   await sendReply(supabase, message, country, reply, ticketId, options, session)
 
   logEvent('whatsapp:intake', 'info', 'ticket_created', {

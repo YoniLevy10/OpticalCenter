@@ -126,24 +126,21 @@ export function TicketActions({
   }
 
   return (
-    <div className="space-y-3">
-      {!unassigned && shownAssignee ? (
-        <p className="t-body rounded-[var(--radius-md)] bg-surface-sunken px-3 py-2 text-ink">
-          משויך ל: <span className="t-body-strong">{shownAssignee}</span>
-        </p>
-      ) : null}
+    <div className="flex items-center gap-2">
+      <p className="t-meta min-w-0 flex-1 truncate text-ink-2">
+        {shownAssignee ? `משויך ל ${shownAssignee}` : 'לא משויך'}
+      </p>
 
       {unassigned ? (
         <Button
           type="button"
           variant="primary"
-          size="touch"
-          className="w-full"
+          size="sm"
           disabled={disabled || sortedTechs.length === 0}
           onClick={() => setAssignOpen(true)}
         >
           <UserPlus className="h-4 w-4" aria-hidden />
-          שייך טכנאי
+          שייך
         </Button>
       ) : null}
 
@@ -151,13 +148,12 @@ export function TicketActions({
         <Button
           type="button"
           variant="secondary"
-          size="touch"
-          className="w-full"
+          size="sm"
           disabled={disabled || sortedTechs.length === 0}
           onClick={() => setAssignOpen(true)}
         >
           <UserRoundPen className="h-4 w-4" aria-hidden />
-          החלף טכנאי
+          החלף
         </Button>
       ) : null}
 
@@ -165,8 +161,7 @@ export function TicketActions({
         <Button
           type="button"
           variant="secondary"
-          size="touch"
-          className="w-full"
+          size="sm"
           disabled={disabled}
           onClick={() =>
             void (async () => {
@@ -194,10 +189,7 @@ export function TicketActions({
       ) : null}
 
       {sortedTechs.length === 0 && unassigned ? (
-        <p className="t-body text-ink-2">
-          אין טכנאים זמינים. הוסיפו טכנאים במסך המשתמשים, או שמרו אנשי מקצוע
-          בלשונית «אנשי מקצוע».
-        </p>
+        <p className="t-meta text-ink-3">אין טכנאי</p>
       ) : null}
 
       {error ? <ErrorState title="לא ניתן לעדכן" description={error} /> : null}

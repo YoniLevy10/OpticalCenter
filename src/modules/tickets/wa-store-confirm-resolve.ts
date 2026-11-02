@@ -70,7 +70,7 @@ function memAwaitingForSender(waId: string): AwaitingConfirmTicket[] {
   const linked = memResolveStoreByWaId(waId, null)
   return memListTickets()
     .filter((ticket) => {
-      if (ticket.status !== 'resolved') return false
+      if (ticket.status !== 'resolved' && ticket.status !== 'engaged') return false
       if (ticket.store_confirmed_at) return false
       if (reporterPhoneMatches(waId, ticket.reporter_phone)) return true
       if (linked && ticket.store_id === linked.id) return true
@@ -207,7 +207,7 @@ export async function listAwaitingStoreConfirm(input: {
     .select(
       'id, status, store_id, reporter_phone, store_confirmed_at, display_number, number, updated_at',
     )
-    .eq('status', 'resolved')
+    .in('status', ['resolved', 'engaged'])
     .is('store_confirmed_at', null)
     .or(orParts.join(','))
     .order('updated_at', { ascending: false })
@@ -264,7 +264,10 @@ async function authorizeBoundTicket(input: {
   if (!allowed) return { outcome: 'unauthorized' }
 
   if (input.requireResolved) {
-    if (ticket.status !== 'resolved' || ticket.store_confirmed_at) {
+    if (
+      (ticket.status !== 'resolved' && ticket.status !== 'engaged') ||
+      ticket.store_confirmed_at
+    ) {
       return { outcome: 'none' }
     }
   }

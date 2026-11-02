@@ -8,6 +8,11 @@ import {
 import { createSystemClient } from '@/lib/supabase/system'
 import { isSupabaseSchemaError } from '@/lib/supabase/schema-fallback'
 import { updateStatus, appendEvent, getById } from '@/modules/tickets/service'
+import {
+  engagementTicketIds,
+  markEngagementClosed,
+  cancelEngagement,
+} from '@/modules/engagements/service'
 import { notifyReporter } from '@/modules/notifications/lifecycle-notify'
 import {
   isQualityHoldActive,
@@ -58,8 +63,11 @@ export async function confirmStoreFix(input: {
       quality_hold_until: (row.quality_hold_until as string) ?? null,
     }
   }
-  if (row.status !== 'resolved') {
-    throw new Error('ניתן לאשר רק תקלה שנפתרה')
+  if (row.status !== 'resolved' && row.status !== 'engaged') {
+    throw new Error('ניתן לאשר רק אחרי שהטיפול אושר או סומן כנפתר')
+  }
+  if (row.status === 'engaged') {
+    return closeEngagedTickets(input.ticketId, now, actorLabel)
   }
 
   const { error: updErr } = await supabase
@@ -118,8 +126,11 @@ async function confirmStoreFixMemoryFallback(
       quality_hold_until: ticket.quality_hold_until ?? null,
     }
   }
-  if (ticket.status !== 'resolved') {
-    throw new Error('ניתן לאשר רק תקלה שנפתרה')
+  if (ticket.status !== 'resolved' && ticket.status !== 'engaged') {
+    throw new Error('ניתן לאשר רק אחרי שהטיפול אושר או סומן כנפתר')
+  }
+  if (ticket.status === 'engaged') {
+    return closeEngagedTickets(input.ticketId, now, actorLabel)
   }
   ticket.store_confirmed_at = now
   ticket.store_confirmed_by = actorLabel
@@ -168,6 +179,50 @@ export function storeConfirmUrl(ticketId: string): string {
  * Store reports the fix did not hold → back to in_progress.
  * Preserves ticket history (events/messages); only clears resolved_at via status transition.
  */
+async function closeEngagedTickets(
+  ticketId: string,
+  now: string,
+  actorLabel: string,
+) {
+  const ids = await engagementTicketIds(ticketId)
+  let closedId = ticketId
+  let status = 'closed'
+  for (const id of ids) {
+    const ticket = await getById(id)
+    if (!ticket || ticket.status === 'closed' || ticket.status !== 'engaged') continue
+    if (await supabaseReady()) {
+      const supabase = createSystemClient('store_confirm')
+      await supabase
+        .from('tickets')
+        .update({
+          store_confirmed_at: now,
+          store_confirmed_by: actorLabel,
+          updated_at: now,
+        })
+        .eq('id', id)
+    } else {
+      const mem = memGet(id)
+      if (mem) {
+        mem.store_confirmed_at = now
+        mem.store_confirmed_by = actorLabel
+      }
+    }
+    await appendEvent(id, 'store_confirmed', null, { by: actorLabel })
+    const closed = await updateStatus(id, 'closed')
+    closedId = closed.id
+    status = closed.status
+  }
+  await markEngagementClosed(ticketId, now)
+  const detail = await getById(ticketId)
+  if (detail) await notifyReporter(detail, 'closed')
+  return {
+    id: closedId,
+    status,
+    store_confirmed_at: now,
+    pending_final_close: false as const,
+  }
+}
+
 export async function rejectStoreFix(input: {
   ticketId: string
   actorLabel?: string | null
@@ -177,19 +232,7 @@ export async function rejectStoreFix(input: {
   const reason = input.reason?.trim() || 'לא נפתר — דיווח חנות בוואטסאפ'
 
   if (!(await supabaseReady())) {
-    const ticket = memGet(input.ticketId)
-    if (!ticket) throw new Error('תקלה לא נמצאה')
-    if (ticket.status !== 'resolved') {
-      throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
-    }
-    memAddEvent(
-      ticket.id,
-      'store_rejected',
-      { by: actorLabel, reason },
-      null,
-    )
-    const reopened = await updateStatus(ticket.id, 'in_progress')
-    return { id: reopened.id, status: reopened.status }
+    return rejectStoreFixMemoryFallback(input, actorLabel, reason)
   }
 
   const supabase = createSystemClient('store_confirm')
@@ -206,14 +249,18 @@ export async function rejectStoreFix(input: {
     throw new Error(error.message)
   }
   if (!row) throw new Error('תקלה לא נמצאה')
-  if (row.status !== 'resolved') {
-    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
+  if (row.status !== 'resolved' && row.status !== 'engaged') {
+    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה שממתינה לאישור החנות')
   }
 
   await appendEvent(input.ticketId, 'store_rejected', null, {
     by: actorLabel,
     reason,
   })
+  if (row.status === 'engaged') {
+    await cancelEngagement(input.ticketId)
+    return { id: input.ticketId, status: 'new' }
+  }
   const reopened = await updateStatus(input.ticketId, 'in_progress')
   return { id: reopened.id, status: reopened.status }
 }
@@ -225,10 +272,14 @@ async function rejectStoreFixMemoryFallback(
 ) {
   const ticket = memGet(input.ticketId)
   if (!ticket) throw new Error('תקלה לא נמצאה')
-  if (ticket.status !== 'resolved') {
-    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה בסטטוס נפתרה')
+  if (ticket.status !== 'resolved' && ticket.status !== 'engaged') {
+    throw new Error('ניתן לדווח «לא נפתר» רק על תקלה שממתינה לאישור החנות')
   }
   memAddEvent(ticket.id, 'store_rejected', { by: actorLabel, reason }, null)
+  if (ticket.status === 'engaged') {
+    await cancelEngagement(ticket.id)
+    return { id: ticket.id, status: 'new' }
+  }
   const reopened = await updateStatus(ticket.id, 'in_progress')
   return { id: reopened.id, status: reopened.status }
 }

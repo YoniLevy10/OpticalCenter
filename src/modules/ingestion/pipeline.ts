@@ -13,6 +13,8 @@ export type IngestedFile = {
   name: string
   mime: string
   sourceUrl: string | null
+  /** Private store-documents path when the bytes live in our bucket. */
+  storagePath?: string | null
   stage: IngestStage
   docType: string | null
   storeCode: string | null

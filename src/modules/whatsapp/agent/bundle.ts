@@ -47,6 +47,10 @@ export type BundleFault = {
   slaResolveBy?: string | null
   resolvedAt?: string | null
   firstResponseAt?: string | null
+  /** Store district. Used to suggest a combined visit nearby. */
+  regionId?: string | null
+  /** Ari's flag. When set, it wins over priority. */
+  urgent?: boolean | null
   /** Already on a service visit or waiting for a vendor. */
   dispatched?: boolean
 }
@@ -81,7 +85,9 @@ export function categoryNoun(category: string, singular = false): string {
 }
 
 export function faultNeedsNow(fault: BundleFault, now = new Date()): boolean {
-  if (fault.priority === 'critical') return true
+  if (fault.urgent === false) return false
+  if (fault.urgent === true) return true
+  if (fault.priority === 'critical' || fault.priority === 'high') return true
   const breach = getSlaBreachKind({
     sla_resolve_by: fault.slaResolveBy,
     status: fault.status,
@@ -146,9 +152,14 @@ function toHistory(fault: BundleFault): HistoryTicket {
   }
 }
 
+function samePlace(anchor: BundleFault, other: BundleFault): boolean {
+  if (other.storeId === anchor.storeId) return true
+  return Boolean(anchor.regionId && other.regionId && anchor.regionId === other.regionId)
+}
+
 /**
- * Same store + same trade, at least two open faults, no active dispatch.
- * Urgent faults and repeats become their own cards and stay out of the bundle.
+ * An urgent fault suggests open non-urgent faults in the same store or district.
+ * Leftover non-urgent faults of the same trade at one store can still be grouped.
  */
 export function recommendBundles(input: {
   open: BundleFault[]
@@ -163,29 +174,48 @@ export function recommendBundles(input: {
   const history = (input.history ?? []).map(toHistory)
   const cards: BundleCard[] = []
   const groups = new Map<string, BundleFault[]>()
+  const urgent: BundleFault[] = []
+  const later: BundleFault[] = []
 
   for (const fault of input.open) {
     if (!fault.storeId || fault.dispatched || !OPEN.has(fault.status)) continue
     const category = normalizeTicketCategory(fault.category)
-    if (faultNeedsNow(fault, now)) {
-      cards.push({
-        id: `urgent:${fault.id}`,
-        kind: 'urgent',
-        storeId: fault.storeId,
-        storeName: fault.storeName,
-        category,
-        ticketIds: [fault.id],
-        sentence: `לטפל עכשיו בסניף ${fault.storeName}. לא מחכים לעוד תקלות.`,
-        costLine: null,
-        professionalName: null,
-        professionalId: null,
-        professionalSource: null,
-      })
-      continue
-    }
-    const key = `${fault.storeId}:${category}`
+    const row = { ...fault, category }
+    if (faultNeedsNow(row, now)) urgent.push(row)
+    else later.push(row)
+  }
+
+  const claimed = new Set<string>()
+  for (const fault of urgent) {
+    const companions = later.filter(
+      (other) => !claimed.has(other.id) && samePlace(fault, other),
+    )
+    for (const companion of companions) claimed.add(companion.id)
+    const count = companions.length
+    const sentence =
+      count === 0
+        ? `דחוף בסניף ${fault.storeName}. אין עכשיו תקלה לא דחופה לשלב.`
+        : `דחוף בסניף ${fault.storeName}. אפשר לסגור גם ${count} תקלות לא דחופות באותה חנות או מחוז.`
+    cards.push({
+      id: `urgent:${fault.id}`,
+      kind: 'urgent',
+      storeId: fault.storeId,
+      storeName: fault.storeName,
+      category: fault.category,
+      ticketIds: [fault.id, ...companions.map((row) => row.id)],
+      sentence,
+      costLine: null,
+      professionalName: null,
+      professionalId: null,
+      professionalSource: null,
+    })
+  }
+
+  for (const fault of later) {
+    if (claimed.has(fault.id)) continue
+    const key = `${fault.storeId}:${fault.category}`
     const list = groups.get(key) ?? []
-    list.push({ ...fault, category })
+    list.push(fault)
     groups.set(key, list)
   }
 

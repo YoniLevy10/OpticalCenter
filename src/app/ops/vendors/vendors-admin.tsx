@@ -520,13 +520,22 @@ export function VendorsAdmin({
                           </span>
                         </button>
                       }
-                      subtitle={`${specialtyLabel(v.specialties)}${
-                        v.coverage_regions?.length
-                          ? ` · ${v.coverage_regions.join(', ')}`
-                          : ''
-                      } · ${v.open_tickets} פתוחות`}
-                      footer={<VendorReach vendor={v} />}
-                      trailing={
+                      subtitle={
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate">{specialtyLabel(v.specialties)}</span>
+                          <VendorReach vendor={v} />
+                        </span>
+                      }
+                    />
+                    {open ? (
+                      <div className="space-y-3 border-b border-border px-4 py-3">
+                        <p className="t-meta text-ink-2">
+                          {v.coverage_regions?.length
+                            ? v.coverage_regions.join(', ')
+                            : 'בלי כיסוי'}
+                          {' · '}
+                          {v.open_tickets} פתוחות
+                        </p>
                         <Button
                           type="button"
                           size="sm"
@@ -536,9 +545,9 @@ export function VendorsAdmin({
                         >
                           {v.active ? 'השבתה' : 'הפעלה'}
                         </Button>
-                      }
-                    />
-                    {open ? <VendorExpand v={v} /> : null}
+                        <VendorExpand v={v} />
+                      </div>
+                    ) : null}
                   </div>
                 )
               })}

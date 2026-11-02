@@ -76,18 +76,15 @@ export default async function ApprovalsPage({
         {waiting.length === 0 ? (
           <p className="t-body text-ink-2">אין הזמנות שמחכות.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {waitingOrdered.map((spend) => {
+          <div className="flex flex-col gap-3">
+            {waitingOrdered.map((spend, index) => {
               const brief = approvalBrief(
                 spend,
                 spend.ticketId ? faultById.get(spend.ticketId) ?? null : null,
               )
               const bundle = Boolean(parseBundleScope(spend.scope))
-              return (
-                <li
-                  key={spend.id}
-                  className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]"
-                >
+              const actions = (
+                <>
                   <div>
                     <p className="t-caption text-ink-3">מה</p>
                     <p className="t-body text-ink">{brief.what}</p>
@@ -114,14 +111,37 @@ export default async function ApprovalsPage({
                       <Button type="submit" size="sm" variant="secondary">{tx('approvals.needsInfo')}</Button>
                     </form>
                   </div>
+                </>
+              )
+              if (index > 0) {
+                return (
+                  <PhoneFold
+                    key={spend.id}
+                    title={brief.what}
+                    summary={String(spend.requestedAmount)}
+                  >
+                    <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]">
+                      {actions}
+                      <p className="t-body text-ink">{brief.who}</p>
+                      <p className="t-meta text-ink-2">{brief.whom}</p>
+                    </div>
+                  </PhoneFold>
+                )
+              }
+              return (
+                <div
+                  key={spend.id}
+                  className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-1)]"
+                >
+                  {actions}
                   <PhoneFold title="פירוט" summary={`${brief.who} · ${brief.whom}`}>
                     <p className="t-body text-ink">{brief.who}</p>
                     <p className="t-meta text-ink-2">{brief.whom}</p>
                   </PhoneFold>
-                </li>
+                </div>
               )
             })}
-          </ul>
+          </div>
         )}
           <PhoneFold title={tx('approvals.title')} summary="לא לשימוש יומיומי">
           <p className="t-meta mb-2 text-ink-2">{tx('approvals.onBehalf')}</p>

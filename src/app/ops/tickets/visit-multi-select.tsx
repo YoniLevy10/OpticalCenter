@@ -3,7 +3,10 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Truck } from 'lucide-react'
+import { MidragSearchAction } from '@/components/ops/midrag-search-action'
 import { Button } from '@/components/ui/button'
+import { BottomSheet } from '@/components/ui/overlay'
+import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { useToast } from '@/components/ui/toast'
 import {
   VisitConfirmSheet,
@@ -19,12 +22,20 @@ import {
 } from './visit-selection-context'
 
 type VendorOption = { id: string; name: string }
+type PersonOption = {
+  id: string
+  full_name: string
+  phone: string | null
+  trade: string | null
+}
 
 function VisitBarInner({
   vendors,
+  professionals,
   storeFilter,
 }: {
   vendors: VendorOption[]
+  professionals: PersonOption[]
   storeFilter?: string
 }) {
   const router = useRouter()
@@ -32,6 +43,7 @@ function VisitBarInner({
   const selection = useVisitSelection()
   const [, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
+  const [peopleOpen, setPeopleOpen] = useState(false)
   const [vendorId, setVendorId] = useState(vendors[0]?.id ?? '')
   const [notes, setNotes] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
@@ -55,10 +67,9 @@ function VisitBarInner({
     [selectedTickets],
   )
 
-  const canOpen =
-    selectedTickets.length > 0 &&
-    storeIds.length === 1 &&
-    Boolean(storeFilter || storeCodes.length === 1)
+  const sameStore = storeCodes.length === 1 && storeIds.length <= 1
+  const canChoosePerson = selectedTickets.length > 0 && sameStore
+  const canOpen = canChoosePerson && storeIds.length === 1
 
   if (!selection) return null
   if (selectedTickets.length === 0) {
@@ -183,13 +194,58 @@ function VisitBarInner({
           type="button"
           variant="primary"
           size="sm"
-          disabled={!canOpen || vendors.length === 0}
-          onClick={openSheet}
+          disabled={!canChoosePerson}
+          onClick={() => {
+            if (vendors.length === 0 || !canOpen) {
+              setPeopleOpen(true)
+              return
+            }
+            openSheet()
+          }}
         >
           <Truck className="h-3.5 w-3.5" aria-hidden />
-          שיגור ביקור
+          {vendors.length === 0 ? 'בחר איש מקצוע' : 'שיגור ביקור'}
         </Button>
       </div>
+
+      <BottomSheet
+        open={peopleOpen}
+        onOpenChange={setPeopleOpen}
+        title="איש מקצוע"
+        description="אין ספק לשיגור אוטומטי. בחרו מהמאגר, או חפשו במידרג."
+        detent="half"
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <p className="t-body-strong text-ink">מהמאגר שלנו</p>
+            {professionals.length === 0 ? (
+              <p className="t-meta text-ink-2">אין עדיין אנשי מקצוע שמורים.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {professionals.slice(0, 5).map((person) => (
+                  <li key={person.id} className="flex items-center justify-between gap-3 py-2">
+                    <span className="min-w-0">
+                      <span className="t-body block truncate text-ink">{person.full_name}</span>
+                      {person.trade ? (
+                        <span className="t-meta block text-ink-3">{person.trade}</span>
+                      ) : null}
+                    </span>
+                    {person.phone ? <PhoneCallLink phone={person.phone} label="חיוג" /> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <p className="t-body-strong text-ink">מידרג</p>
+            <MidragSearchAction
+              category={selectedTickets[0]?.category || 'other'}
+              city={selectedTickets[0]?.city}
+              compact
+            />
+          </div>
+        </div>
+      </BottomSheet>
 
       <VisitConfirmSheet
         open={open}
@@ -244,15 +300,21 @@ function VisitBarInner({
 export function VisitMultiSelectBar({
   tickets,
   vendors,
+  professionals = [],
   storeFilter,
 }: {
   tickets: VisitSelectableTicket[]
   vendors: VendorOption[]
+  professionals?: PersonOption[]
   storeFilter?: string
 }) {
   return (
     <VisitSelectionProvider tickets={tickets}>
-      <VisitBarInner vendors={vendors} storeFilter={storeFilter} />
+      <VisitBarInner
+        vendors={vendors}
+        professionals={professionals}
+        storeFilter={storeFilter}
+      />
     </VisitSelectionProvider>
   )
 }
@@ -261,18 +323,24 @@ export function VisitMultiSelectBar({
 export function VisitQueueShell({
   tickets,
   vendors,
+  professionals = [],
   storeFilter,
   children,
 }: {
   tickets: VisitSelectableTicket[]
   vendors: VendorOption[]
+  professionals?: PersonOption[]
   storeFilter?: string
   children: React.ReactNode
 }) {
   return (
     <VisitSelectionProvider tickets={tickets}>
       <div className="flex flex-col gap-3">
-        <VisitBarInner vendors={vendors} storeFilter={storeFilter} />
+        <VisitBarInner
+          vendors={vendors}
+          professionals={professionals}
+          storeFilter={storeFilter}
+        />
         {children}
       </div>
     </VisitSelectionProvider>

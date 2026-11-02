@@ -4,15 +4,17 @@ import type { SpendRequest } from '@/modules/spend/policy'
 import { translate, type MessageKey } from '@/lib/i18n/messages'
 import type { Locale } from '@/lib/i18n/locale'
 
-/** B01 — true cost panel for ticket (and optional asset rollup). */
+/** Recorded spend, with an estimate beside it until a quote is written. */
 export function TicketTrueCostPanel({
   ticketSpends,
   assetSpends,
   locale,
+  estimate,
 }: {
   ticketSpends: SpendRequest[]
   assetSpends?: SpendRequest[]
   locale: Locale
+  estimate?: { text: string; basis: 'recorded' | 'kind' } | null
 }) {
   const t = (key: MessageKey) => translate(locale, key)
   const ticket = trueCostBreakdown(ticketSpends)
@@ -21,6 +23,16 @@ export function TicketTrueCostPanel({
   return (
     <Panel elevated>
       <p className="t-section mb-3 text-ink">{t('ticket.trueCost')}</p>
+      {estimate ? (
+        <p className="t-body mb-3 text-ink">
+          משוער <span className="t-num font-medium">{estimate.text}</span>
+          <span className="t-meta mt-1 block text-ink-3">
+            {estimate.basis === 'recorded'
+              ? 'לפי מה שכבר שולם על תקלות מאותו סוג'
+              : 'לפי סוג התקלה. מחיר שנרשם מחליף את ההערכה.'}
+          </span>
+        </p>
+      ) : null}
       {ticket.count === 0 ? (
         <p className="t-meta text-ink-2">{t('ticket.trueCostEmpty')}</p>
       ) : (

@@ -1,8 +1,37 @@
 'use client'
 
+import Link from 'next/link'
 import { createContext, useContext, useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+/** Two-line list row. No card frame. */
+export function PhoneRow({
+  href,
+  title,
+  summary,
+  trailing,
+}: {
+  href: string
+  title: string
+  summary?: string
+  trailing?: React.ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-12 min-w-0 items-center gap-3 border-b border-border px-4 py-2 text-start last:border-b-0"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="t-body-strong block truncate text-ink">{title}</span>
+        {summary ? (
+          <span className="t-meta mt-0.5 block truncate text-ink-2">{summary}</span>
+        ) : null}
+      </span>
+      {trailing}
+    </Link>
+  )
+}
 
 const FoldCtx = createContext<{
   openId: string | null
@@ -48,7 +77,7 @@ export function PhoneFold({
         onClick={toggle}
       >
         <span className="min-w-0 flex-1">
-          <span className="t-body-strong block text-ink">{title}</span>
+          <span className="t-body-strong block truncate text-ink">{title}</span>
           {summary && !open ? (
             <span className="t-meta mt-0.5 block truncate text-ink-2">{summary}</span>
           ) : null}

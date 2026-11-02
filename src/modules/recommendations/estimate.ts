@@ -42,6 +42,32 @@ export function formatCostBand(band: CostBand | null): string {
   return `${formatIls(band.low)}–${formatIls(band.high)}`
 }
 
+/** Starting range by fault type, used only when nothing has been paid yet. */
+const KIND_ESTIMATE: Record<string, CostBand> = {
+  hvac: { low: 450, high: 1800 },
+  electrical: { low: 250, high: 900 },
+  electrical_hazard: { low: 400, high: 1500 },
+  plumbing: { low: 280, high: 850 },
+  security: { low: 350, high: 1200 },
+  it: { low: 200, high: 900 },
+  cleaning: { low: 150, high: 450 },
+  other: { low: 200, high: 800 },
+}
+
+/**
+ * A price to show before a quote is written.
+ * Recorded payments of the same fault type win. Otherwise the range is the
+ * kind estimate, labeled as such by the caller.
+ */
+export function estimateFaultCost(
+  category: string,
+  recorded: CostBand | null,
+): { band: CostBand; basis: 'recorded' | 'kind' } {
+  if (recorded && recorded.low > 0) return { band: recorded, basis: 'recorded' }
+  const key = normalizeTicketCategory(category)
+  return { band: KIND_ESTIMATE[key] ?? KIND_ESTIMATE.other!, basis: 'kind' }
+}
+
 export function bandFromPrices(prices: number[]): CostBand | null {
   const clean = prices.filter((price) => price > 0).map((price) => Math.round(price))
   if (clean.length === 0) return null

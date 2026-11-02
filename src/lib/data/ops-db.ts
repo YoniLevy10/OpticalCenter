@@ -131,6 +131,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         versionOf: row.version_of ? String(row.version_of) : null,
         deletedInSource: Boolean(row.deleted_in_source),
         driveFileId: row.drive_file_id ? String(row.drive_file_id) : null,
+        storagePath: row.storage_path ? String(row.storage_path) : null,
         driveModifiedTime: row.drive_modified_time ? String(row.drive_modified_time) : null,
         origin: row.origin === 'maintainos' || row.origin === 'drive' ? row.origin : null,
         localUpdatedAt: row.local_updated_at ? String(row.local_updated_at) : null,
@@ -152,6 +153,7 @@ export async function hydrateOpsLedger(): Promise<void> {
         renewed: Boolean(row.renewed),
         createdAt: String(row.created_at),
         driveFileId: row.drive_file_id ? String(row.drive_file_id) : null,
+        storagePath: row.storage_path ? String(row.storage_path) : null,
         fieldsLocked: Boolean(row.fields_locked),
         localUpdatedAt: row.local_updated_at ? String(row.local_updated_at) : null,
         originWaId: row.origin_wa_id ? String(row.origin_wa_id) : null,
@@ -218,6 +220,7 @@ export async function persistOpsLedger(): Promise<void> {
       extracted_text: file.extractedText,
       stage: file.stage,
       drive_file_id: file.driveFileId,
+      ...(file.storagePath ? { storage_path: file.storagePath } : {}),
       drive_modified_time: file.driveModifiedTime,
       origin: file.origin,
       local_updated_at: file.localUpdatedAt,
@@ -238,6 +241,7 @@ export async function persistOpsLedger(): Promise<void> {
       previous_client_id: doc.previousId,
       renewed: doc.renewed,
       drive_file_id: doc.driveFileId ?? null,
+      ...(doc.storagePath ? { storage_path: doc.storagePath } : {}),
       fields_locked: Boolean(doc.fieldsLocked),
       local_updated_at: doc.localUpdatedAt ?? null,
       origin_wa_id: doc.originWaId ?? null,
@@ -309,6 +313,7 @@ const OPTIONAL_COLUMNS = [
   'fields_locked',
   'origin_wa_id',
   'asset_id',
+  'storage_path',
 ] as const
 
 async function upsertFlexible(

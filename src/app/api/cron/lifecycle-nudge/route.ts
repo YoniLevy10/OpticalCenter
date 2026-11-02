@@ -46,7 +46,7 @@ async function loadResolvedAwaitingConfirm(): Promise<Candidate[]> {
     const { data, error } = await supabase
       .from('tickets')
       .select('id, status, resolved_at, updated_at, reporter_phone, store_confirmed_at')
-      .eq('status', 'resolved')
+      .in('status', ['resolved', 'engaged'])
       .is('store_confirmed_at', null)
       .limit(200)
     if (!error && data) {
@@ -60,7 +60,10 @@ async function loadResolvedAwaitingConfirm(): Promise<Candidate[]> {
     }
   }
   return memListTickets()
-    .filter((t) => t.status === 'resolved' && !t.store_confirmed_at)
+    .filter(
+      (t) =>
+        (t.status === 'resolved' || t.status === 'engaged') && !t.store_confirmed_at,
+    )
     .map((t) => ({
       id: t.id,
       status: t.status,

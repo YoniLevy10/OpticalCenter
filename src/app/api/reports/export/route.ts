@@ -14,6 +14,8 @@ import { listTickets, listInternalTechnicians } from '@/modules/tickets/service'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { OPEN_TICKET_STATUSES } from '@/modules/tickets/constants'
 import { listSpends } from '@/lib/data/ops-ledger'
+import { annualMaintenanceCost } from '@/modules/engagements/cost'
+import { closedEngagementCosts } from '@/modules/engagements/service'
 import { recordedTicketAmount } from '@/modules/recommendations/estimate'
 import {
   buildTicketsCsv,
@@ -100,6 +102,8 @@ export async function GET(request: Request) {
     }
     const techNames: Record<string, string> = {}
     for (const tech of technicians) techNames[tech.id] = tech.name
+    const year = Number((from ?? '').slice(0, 4)) || new Date().getFullYear()
+    const annual = annualMaintenanceCost(await closedEngagementCosts().catch(() => []), year)
     const report = {
       tickets: scoped,
       kpis,
@@ -108,6 +112,14 @@ export async function GET(request: Request) {
       to,
       techNames,
       recorded,
+      annualCosts: {
+        year: annual.year,
+        network: annual.network,
+        stores: annual.stores.map((store) => ({
+          storeName: store.storeName,
+          amount: store.amount,
+        })),
+      },
     }
 
     const baseName =
