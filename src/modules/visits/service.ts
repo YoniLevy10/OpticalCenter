@@ -12,6 +12,7 @@ import { logEvent } from '@/lib/logging'
 import { appendEvent, getById } from '@/modules/tickets/service'
 import { dispatchToVendor } from '@/modules/vendors/dispatch'
 import { getVendorSecret } from '@/modules/vendors/service'
+import { sendVisitFaultsSms } from '@/modules/visits/send-visit-sms'
 import { executionBlockReason } from '@/modules/spend/policy'
 import { spendForTicket } from '@/lib/data/ops-ledger'
 
@@ -22,6 +23,8 @@ export type VisitItemOutcome = {
   dispatch_id: string | null
   error: string | null
   can_retry: boolean
+  /** Ari can clear this block from the visit sheet. A retry cannot. */
+  needs_approval?: boolean
 }
 
 export type ServiceVisit = {
@@ -38,6 +41,9 @@ export type ServiceVisit = {
   ticket_ids: string[]
   dispatch_ids: string[]
   items: VisitItemOutcome[]
+  sms?: { ok: boolean; line: string } | null
+  /** Set only on a visit that was just dispatched. Stripped before return. */
+  notifySms?: boolean
 }
 
 type MemVisit = ServiceVisit
@@ -200,29 +206,83 @@ export async function createServiceVisit(
   }
 
   const idempotencyKey = input.idempotencyKey?.trim() || null
+  const loaded = tickets as NonNullable<(typeof tickets)[number]>[]
+  const storeName =
+    loaded[0]?.stores?.name?.trim() || loaded[0]?.stores?.city?.trim() || 'חנות'
+  const smsContext = {
+    vendorName: vendor.name,
+    vendorPhone: vendor.contact_phone,
+    storeName,
+    tickets: loaded,
+  }
 
   if (!(await supabaseReady())) {
-    return createVisitMemory({
-      ...input,
-      ticketIds,
-      orgId,
-      idempotencyKey,
-      tickets: tickets as NonNullable<(typeof tickets)[number]>[],
-    })
+    return finishVisit(
+      await createVisitMemory({
+        ...input,
+        ticketIds,
+        orgId,
+        idempotencyKey,
+        tickets: loaded,
+      }),
+      smsContext,
+    )
   }
 
   try {
-    return await createVisitSupabase({
-      ...input,
-      ticketIds,
-      orgId,
-      idempotencyKey,
-      tickets: tickets as NonNullable<(typeof tickets)[number]>[],
-    })
+    return await finishVisit(
+      await createVisitSupabase({
+        ...input,
+        ticketIds,
+        orgId,
+        idempotencyKey,
+        tickets: loaded,
+      }),
+      smsContext,
+    )
   } catch (err) {
     if (isSupabaseSchemaError(err)) throw schemaDurableError(err)
     throw err
   }
+}
+
+async function finishVisit(
+  visit: ServiceVisit,
+  input: {
+    vendorName: string
+    vendorPhone: string | null
+    storeName: string
+    tickets: {
+      id: string
+      title?: string | null
+      description?: string | null
+      display_number?: string | null
+      number?: number | null
+    }[]
+  },
+): Promise<ServiceVisit> {
+  const { notifySms, ...rest } = visit
+  if (!notifySms) return rest
+  const byId = new Map(input.tickets.map((ticket) => [ticket.id, ticket]))
+  const sms = await sendVisitFaultsSms({
+    vendorName: input.vendorName,
+    vendorPhone: input.vendorPhone,
+    storeName: input.storeName,
+    visitId: rest.id,
+    faults: rest.items.map((item) => {
+      const ticket = byId.get(item.ticket_id)
+      const display =
+        item.display_number ||
+        (ticket?.number != null ? `OC-${ticket.number}` : '')
+      return {
+        display,
+        title: ticket?.title?.trim() || ticket?.description?.trim() || '',
+        status: item.status,
+        error: item.error,
+      }
+    }),
+  })
+  return { ...rest, sms }
 }
 
 async function dispatchVisitTickets(input: {
@@ -275,7 +335,8 @@ async function dispatchVisitTickets(input: {
         status: 'blocked',
         dispatch_id: null,
         error: block,
-        can_retry: true,
+        can_retry: false,
+        needs_approval: block !== 'הבקשה נדחתה',
       })
       continue
     }
@@ -382,7 +443,7 @@ async function createVisitMemory(input: {
         .filter((id): id is string => Boolean(id))
       existing.status = visitStatusFromItems(merged)
       memVisits.set(existing.id, existing)
-      return existing
+      return { ...existing, notifySms: true }
     }
   }
 
@@ -419,7 +480,7 @@ async function createVisitMemory(input: {
     .filter((id): id is string => Boolean(id))
   visit.status = visitStatusFromItems(items)
   memVisits.set(visit.id, visit)
-  return visit
+  return { ...visit, notifySms: true }
 }
 
 async function loadVisitItemsFromDb(
@@ -563,6 +624,7 @@ async function createVisitSupabase(input: {
           .map((i) => i.dispatch_id)
           .filter((id): id is string => Boolean(id)),
         items,
+        notifySms: Boolean(input.retryFailedOnly),
       }
     }
   }
@@ -649,6 +711,7 @@ async function createVisitSupabase(input: {
       .map((i) => i.dispatch_id)
       .filter((id): id is string => Boolean(id)),
     items,
+    notifySms: true,
   }
 }
 

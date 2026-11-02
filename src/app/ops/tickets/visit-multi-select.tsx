@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { BottomSheet } from '@/components/ui/overlay'
 import { PhoneCallLink } from '@/components/ui/phone-call-link'
 import { useToast } from '@/components/ui/toast'
+import { approveVisitCommitments } from './visit-approval-actions'
 import {
   VisitConfirmSheet,
   buildVisitIdempotencyKey,
@@ -21,7 +22,13 @@ import {
   type VisitSelectableTicket,
 } from './visit-selection-context'
 
-type VendorOption = { id: string; name: string }
+type VendorOption = {
+  id: string
+  name: string
+  specialties?: string
+  coverage?: string[] | null
+  phone?: string | null
+}
 type PersonOption = {
   id: string
   full_name: string
@@ -174,6 +181,25 @@ function VisitBarInner({
     })
   }
 
+  async function approveAndSend(ticketIds: string[]) {
+    const vendorName = vendors.find((row) => row.id === vendorId)?.name ?? ''
+    let approved = false
+    await run(async () => {
+      try {
+        await approveVisitCommitments(ticketIds, vendorName)
+        approved = true
+      } catch (error) {
+        toast.push({
+          title: error instanceof Error ? error.message : 'האישור נכשל',
+          tone: 'critical',
+        })
+      }
+    })
+    if (approved) {
+      await postVisit({ retryFailedOnly: true, retryTicketIds: ticketIds })
+    }
+  }
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--tenant-line)] bg-[var(--tenant-soft)] px-3 py-2.5">
@@ -262,6 +288,9 @@ function VisitBarInner({
           spendBlock: t.spendBlock,
         }))}
         vendors={vendors}
+        city={selectedTickets[0]?.city}
+        region={selectedTickets[0]?.region}
+        category={selectedTickets[0]?.category}
         vendorId={vendorId}
         onVendorIdChange={(id) => {
           setVendorId(id)
@@ -292,6 +321,7 @@ function VisitBarInner({
             retryTicketIds: [ticketId],
           })
         }
+        onApprove={(ticketIds) => void approveAndSend(ticketIds)}
       />
     </>
   )

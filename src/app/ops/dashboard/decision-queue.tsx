@@ -7,11 +7,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { SegmentedButtons } from '@/components/ui/segmented'
 import type { DecisionItem } from '@/modules/decisions/queue'
-import {
-  approveSpendFromQueue,
-  assignFromQueue,
-  requestInfoFromQueue,
-} from './decision-actions'
+import { approveSpendFromQueue } from './decision-actions'
 
 export function DecisionBoard({
   overdue,
@@ -128,10 +124,9 @@ export function PhoneDecisions({ items }: { items: DecisionItem[] }) {
 
 export function DecisionQueue({
   items,
-  technicians,
 }: {
   items: DecisionItem[]
-  technicians: { id: string; name: string }[]
+  technicians?: { id: string; name: string }[]
 }) {
   const p = usePhrase()
   if (items.length === 0) {
@@ -140,21 +135,14 @@ export function DecisionQueue({
   return (
     <ul className="divide-y divide-border">
       {items.map((item) => (
-        <DecisionRow key={item.id} item={item} technicians={technicians} />
+        <DecisionRow key={item.id} item={item} />
       ))}
     </ul>
   )
 }
 
-function DecisionRow({
-  item,
-  technicians,
-}: {
-  item: DecisionItem
-  technicians: { id: string; name: string }[]
-}) {
+function DecisionRow({ item }: { item: DecisionItem }) {
   const p = usePhrase()
-  const [tech, setTech] = useState(technicians[0]?.id ?? '')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -186,40 +174,9 @@ function DecisionRow({
       <p className="t-meta text-ink-2">{item.action}</p>
       <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
         {item.ticketId ? (
-          <>
-            <select
-              className="field-text min-h-[var(--tap)] w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink md:w-auto"
-              value={tech}
-              onChange={(event) => setTech(event.target.value)}
-              aria-label={p('בחירת אחראי')}
-            >
-              {technicians.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-            <Button
-              type="button"
-              size="touch"
-              variant="primary"
-              className="w-full md:w-auto"
-              disabled={pending || !tech}
-              onClick={() => run(() => assignFromQueue(item.ticketId!, tech))}
-            >
-              לשייך
-            </Button>
-            <Button
-              type="button"
-              size="touch"
-              variant="secondary"
-              className="w-full md:w-auto"
-              disabled={pending}
-              onClick={() => run(() => requestInfoFromQueue(item.ticketId!))}
-            >
-              לבקש מידע
-            </Button>
-          </>
+          <Button asChild variant="primary" size="touch" className="w-full md:w-auto">
+            <Link href={item.href}>{item.action.split('·')[0]?.trim() || p('לאשר')}</Link>
+          </Button>
         ) : null}
         {item.spendId ? (
           <Button

@@ -29,7 +29,7 @@ describe('WhatsApp intake matrix (memory)', () => {
     process.env.MAINTAINOS_FORCE_MEMORY = '1'
   })
 
-  it('WA-01 known phone skips store ask (memory store_phones)', async () => {
+  it('WA-01 a saved test phone still asks which store', async () => {
     const { MEM_KNOWN_EMPLOYEE_WA, MEM_WA_PHONE_IL } = await import(
       '@/lib/data/memory-store'
     )
@@ -43,10 +43,28 @@ describe('WhatsApp intake matrix (memory)', () => {
       { skipOutboundGraph: true },
     )
     expect(r.ok).toBe(true)
+    expect(r.ticketId).toBeFalsy()
+    expect(memListTickets().length).toBe(before)
+    expect(r.reply || '').toMatch(/חנות|קוד|STORE/i)
+  })
+
+  it('WA-01b the store manager phone opens on that store', async () => {
+    const before = memListTickets().length
+    const r = await processInboundMessage(
+      msg({
+        text: 'המזגן לא עובד',
+        waId: '972543034415',
+        phoneNumberId: 'wa_phone_il_demo',
+      }),
+      { skipOutboundGraph: true },
+    )
+    expect(r.ok).toBe(true)
     expect(r.ticketId).toBeTruthy()
     expect(memListTickets().length).toBe(before + 1)
     const ticket = memListTickets().find((t) => t.id === r.ticketId)
     expect(ticket?.stores?.code).toBe('6006')
+    expect(r.reply || '').toContain('תל אביב אבן גבירול')
+    expect(r.reply || '').not.toMatch(/חנות 6006|חנות 172/)
   })
 
   it('WA-02 unknown phone asks for store; no ticket', async () => {
@@ -78,12 +96,22 @@ describe('WhatsApp intake matrix (memory)', () => {
   })
 
   it('WA-05 store + issue same message creates ticket', async () => {
+    const waId = `97250${Math.floor(Math.random() * 1e7)
+      .toString()
+      .padStart(7, '0')}`
     const r = await processInboundMessage(
-      msg({ text: 'STORE_172 המזגן לא עובד' }),
+      msg({ text: 'STORE_172 המזגן לא עובד', waId }),
       { skipOutboundGraph: true },
     )
     expect(r.ok).toBe(true)
     expect(r.ticketId).toBeTruthy()
+    expect(r.reply || '').toContain('תל אביב אבן גבירול')
+    const again = await processInboundMessage(
+      msg({ text: 'יש נזילה בברז', waId, messageId: 'next-fault' }),
+      { skipOutboundGraph: true },
+    )
+    expect(again.ticketId).toBeFalsy()
+    expect(again.state).toBe('awaiting_store')
   })
 
   it('WA-06 invalid store then recover', async () => {
@@ -414,10 +442,12 @@ describe('WhatsApp intake matrix (memory)', () => {
     )
     expect(r.ok).toBe(true)
     expect(r.reply).toBeTruthy()
-    expect(memListTickets().length).toBeGreaterThan(before)
+    expect(r.state).toBe('awaiting_store')
+    expect(memListTickets().length).toBe(before)
     const session = memGetSession(waId)
     expect(session?.human_takeover).toBe(false)
     expect(session?.human_takeover_until ?? null).toBeNull()
+    expect(session?.store_code).toBeNull()
   })
 
   it('WA-13c expired until timestamp resumes bot on that number', async () => {

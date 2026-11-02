@@ -294,7 +294,7 @@ export async function addDocumentAction(formData: FormData) {
 
 export async function setDocumentRemindersAction(formData: FormData) {
   await actorName()
-  const id = String(formData.get('id') || '')
+  const id = documentIdFrom(formData)
   const sixRaw = String(formData.get('six') || '')
   const twoRaw = String(formData.get('two') || '')
   const six = sixRaw ? expiryInputToIso(sixRaw) : null
@@ -305,9 +305,13 @@ export async function setDocumentRemindersAction(formData: FormData) {
   await refresh('/ops/documents')
 }
 
+function documentIdFrom(formData: FormData) {
+  return String(formData.get('documentId') || formData.get('id') || '')
+}
+
 export async function setDocumentTitleAction(formData: FormData) {
   await actorName()
-  const id = String(formData.get('id') || '')
+  const id = documentIdFrom(formData)
   if (!id) throw new Error('מסמך לא נמצא')
   const title = cleanDocumentTitle(String(formData.get('title') || ''))
   setDocumentTitle(id, title)
@@ -317,7 +321,7 @@ export async function setDocumentTitleAction(formData: FormData) {
 
 export async function setDocumentExpiryAction(formData: FormData) {
   await actorName()
-  const id = String(formData.get('id') || '')
+  const id = documentIdFrom(formData)
   const iso = expiryInputToIso(String(formData.get('expiry') || ''))
   if (!iso) throw new Error('תאריך התוקף לא ברור')
   setDocumentExpiry(id, iso)
@@ -343,7 +347,7 @@ function expiryInputToIso(value: string): string | null {
 
 export async function renewDocumentAction(formData: FormData) {
   await actorName()
-  renewStoredDocument(String(formData.get('id')), {
+  renewStoredDocument(documentIdFrom(formData), {
     sourceUrl: String(formData.get('sourceUrl') || ''),
     extractedExpiry: String(formData.get('expiry') || '') || null,
   })

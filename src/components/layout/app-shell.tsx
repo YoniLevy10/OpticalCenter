@@ -46,6 +46,8 @@ import { LargeTitleScrollSync } from '@/components/ops/large-title'
 import { LocaleSwitcher } from '@/components/i18n/locale-switcher'
 import { usePhrase, useT } from '@/components/i18n/locale-provider'
 import type { MessageKey } from '@/lib/i18n/messages'
+import { DeskBell } from '@/components/layout/desk-bell'
+import type { DeskNotices } from '@/modules/ops/desk-notices'
 import { cn } from '@/lib/utils'
 
 /**
@@ -203,20 +205,47 @@ function filterToolGroups(tools: NavTool[]) {
   })).filter((group) => group.items.length > 0)
 }
 
+function alertCount(href: string, notices: DeskNotices): number {
+  if (href === '/ops/approvals') return notices.approvals
+  if (href === '/ops/documents') return notices.documents
+  return 0
+}
+
+function NavAlert({ count }: { count: number }) {
+  if (count <= 0) return null
+  const label = count > 99 ? '99+' : String(count)
+  return (
+    <span className="nav-alert" aria-hidden>
+      {label}
+    </span>
+  )
+}
+
+function waitingLabel(name: string, count: number) {
+  return count > 0 ? `${name}, ${count} ממתינים` : undefined
+}
+
 function SidebarNavLink({
   item,
   pathname,
+  notices,
 }: {
   item: NavItem
   pathname: string
+  notices: DeskNotices
 }) {
   const active = isActive(pathname, item.match)
   const Icon = item.icon
+  const count = alertCount(item.href, notices)
+  const t = useT()
+  const key = HREF_KEY[item.href]
+  const name = key ? t(key) : item.label
 
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      aria-label={waitingLabel(name, count)}
       className={cn(
         'sidebar-nav-link t-control relative flex h-9 items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors duration-[var(--dur-1)]',
         active ? 'text-ink' : 'text-ink-2',
@@ -230,6 +259,7 @@ function SidebarNavLink({
         aria-hidden
       />
       <NavText href={item.href} fallback={item.label} />
+      <NavAlert count={count} />
     </Link>
   )
 }
@@ -237,20 +267,27 @@ function SidebarNavLink({
 function DrawerNavLink({
   item,
   pathname,
+  notices,
   onNavigate,
 }: {
   item: NavItem
   pathname: string
+  notices: DeskNotices
   onNavigate: () => void
 }) {
   const active = isActive(pathname, item.match)
   const Icon = item.icon
   const mark = sectionMark(item.href)
+  const count = alertCount(item.href, notices)
+  const t = useT()
+  const key = HREF_KEY[item.href]
+  const name = key ? t(key) : item.label
 
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      aria-label={waitingLabel(name, count)}
       onClick={onNavigate}
       className={cn(
         't-body flex min-h-[var(--tap)] items-center gap-2.5 rounded-[var(--radius-md)] px-3 transition-colors',
@@ -268,6 +305,7 @@ function DrawerNavLink({
         <Icon className={cn('h-4 w-4', sectionIconClass[mark])} aria-hidden />
       </span>
       <NavText href={item.href} fallback={item.label} />
+      <NavAlert count={count} />
     </Link>
   )
 }
@@ -294,12 +332,16 @@ function TenantMark() {
   )
 }
 
+const QUIET_NOTICES: DeskNotices = { approvals: 0, documents: 0, bundles: [] }
+
 export function AppShell({
   children,
   tools = ALL_NAV_TOOLS,
+  notices = QUIET_NOTICES,
 }: {
   children: React.ReactNode
   tools?: NavTool[]
+  notices?: DeskNotices
 }) {
   const pathname = usePathname() ?? ''
   const t = useT()
@@ -371,11 +413,11 @@ export function AppShell({
         </div>
 
         <nav aria-label={p('ניווט עיקרי')} className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="t-caption mb-2 px-2.5 text-ink-3">{t('nav.control')}</p>
+          <DeskBell label={t('nav.control')} items={notices.bundles} />
           <ul className="flex flex-col gap-1">
             {PRIMARY.map((item) => (
               <li key={item.href}>
-                <SidebarNavLink item={item} pathname={pathname} />
+                <SidebarNavLink item={item} pathname={pathname} notices={notices} />
               </li>
             ))}
           </ul>
@@ -388,7 +430,7 @@ export function AppShell({
               <ul className="flex flex-col gap-1">
                 {group.items.map((item) => (
                   <li key={item.href}>
-                    <SidebarNavLink item={item} pathname={pathname} />
+                    <SidebarNavLink item={item} pathname={pathname} notices={notices} />
                   </li>
                 ))}
               </ul>
@@ -520,6 +562,10 @@ export function AppShell({
                 <Link
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
+                  aria-label={waitingLabel(
+                    HREF_KEY[item.href] ? t(HREF_KEY[item.href]) : item.label,
+                    alertCount(item.href, notices),
+                  )}
                   className={cn(
                     'press-scale flex h-full flex-col items-center justify-center gap-1 transition-colors duration-[var(--dur-1)]',
                     active ? 'nav-pill-active' : 'text-ink-3',
@@ -554,13 +600,14 @@ export function AppShell({
           <span className="t-caption text-ink-3">{t('nav.language')}</span>
           <LocaleSwitcher />
         </div>
-        <p className="t-caption mb-1.5 px-3 text-ink-3">{t('nav.control')}</p>
+        <DeskBell label={t('nav.control')} items={notices.bundles} />
         <ul className="mb-4 flex flex-col gap-0.5">
           {PRIMARY.map((item) => (
             <li key={item.href}>
               <DrawerNavLink
                 item={item}
                 pathname={pathname}
+                notices={notices}
                 onNavigate={closeMenu}
               />
             </li>
@@ -577,6 +624,7 @@ export function AppShell({
                   <DrawerNavLink
                     item={item}
                     pathname={pathname}
+                    notices={notices}
                     onNavigate={closeMenu}
                   />
                 </li>

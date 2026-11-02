@@ -113,6 +113,100 @@ export function mergeEvidence(
   return out
 }
 
+/** Photos already on these faults. Missing storage returns an empty map. */
+export async function photosForTickets(
+  ticketIds: string[],
+): Promise<Record<string, TicketEvidence[]>> {
+  const ids = [...new Set(ticketIds.filter(Boolean))]
+  const out: Record<string, TicketEvidence[]> = {}
+  if (ids.length === 0) return out
+
+  const { supabaseReady, memListTickets } = await import('@/lib/data/memory-store')
+  if (!(await supabaseReady())) {
+    const wanted = new Set(ids)
+    for (const ticket of memListTickets()) {
+      if (!wanted.has(ticket.id)) continue
+      const photos = mergeEvidence([], ticket.messages).filter(
+        (item) => item.kind === 'image' || item.kind == null,
+      )
+      if (photos.length > 0) out[ticket.id] = photos
+    }
+    return out
+  }
+
+  try {
+    const supabase = createAdminClient()
+    let attachmentRows: {
+      id: string
+      ticket_id: string
+      url: string
+      kind?: string | null
+      proof_role?: string | null
+    }[] = []
+    const primary = await supabase
+      .from('ticket_attachments')
+      .select('id, ticket_id, url, kind, proof_role')
+      .in('ticket_id', ids)
+    if (primary.error) {
+      const fallback = await supabase
+        .from('ticket_attachments')
+        .select('id, ticket_id, url, kind')
+        .in('ticket_id', ids)
+      attachmentRows = (fallback.data ?? []) as typeof attachmentRows
+    } else {
+      attachmentRows = (primary.data ?? []) as typeof attachmentRows
+    }
+
+    type MessageRow = MessageLike & { ticket_id: string }
+    let messageRows: MessageRow[] = []
+    const withRole = await supabase
+      .from('ticket_messages')
+      .select('id, ticket_id, media_url, body, proof_role')
+      .in('ticket_id', ids)
+      .not('media_url', 'is', null)
+    if (withRole.error) {
+      const fallback = await supabase
+        .from('ticket_messages')
+        .select('id, ticket_id, media_url, body')
+        .in('ticket_id', ids)
+        .not('media_url', 'is', null)
+      messageRows = (fallback.data ?? []) as unknown as MessageRow[]
+    } else {
+      messageRows = (withRole.data ?? []) as unknown as MessageRow[]
+    }
+
+    const attachmentsByTicket = new Map<string, TicketEvidence[]>()
+    for (const row of attachmentRows) {
+      const list = attachmentsByTicket.get(row.ticket_id) ?? []
+      list.push({
+        id: row.id,
+        url: row.url,
+        kind: row.kind,
+        proof_role: row.proof_role,
+      })
+      attachmentsByTicket.set(row.ticket_id, list)
+    }
+    const messagesByTicket = new Map<string, MessageLike[]>()
+    for (const row of messageRows) {
+      const list = messagesByTicket.get(row.ticket_id) ?? []
+      list.push(row)
+      messagesByTicket.set(row.ticket_id, list)
+    }
+
+    for (const id of ids) {
+      const photos = mergeEvidence(
+        attachmentsByTicket.get(id) ?? [],
+        messagesByTicket.get(id) ?? [],
+      ).filter((item) => item.kind === 'image' || item.kind == null)
+      if (photos.length > 0) out[id] = photos
+    }
+  } catch {
+    return out
+  }
+
+  return out
+}
+
 /** Attach store-submitted photos from the public report form. */
 export async function attachReportPhotos(
   ticketId: string,

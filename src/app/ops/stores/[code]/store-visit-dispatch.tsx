@@ -13,23 +13,35 @@ import {
   useSubmitGuard,
   type VisitResult,
 } from '@/app/ops/tickets/visit-confirm-sheet'
+import { approveVisitCommitments } from '@/app/ops/tickets/visit-approval-actions'
 
 type TicketOpt = {
   id: string
   label: string
   title: string
   spendBlock?: string | null
+  category?: string | null
 }
-type VendorOpt = { id: string; name: string }
+type VendorOpt = {
+  id: string
+  name: string
+  specialties?: string
+  coverage?: string[] | null
+  phone?: string | null
+}
 
 export function StoreVisitDispatch({
   storeId,
   storeCode,
+  city,
+  region,
   tickets,
   vendors,
 }: {
   storeId: string
   storeCode: string
+  city?: string | null
+  region?: string | null
   tickets: TicketOpt[]
   vendors: VendorOpt[]
 }) {
@@ -141,6 +153,25 @@ export function StoreVisitDispatch({
     })
   }
 
+  async function approveAndSend(ticketIds: string[]) {
+    const vendorName = vendors.find((row) => row.id === vendorId)?.name ?? ''
+    let approved = false
+    await run(async () => {
+      try {
+        await approveVisitCommitments(ticketIds, vendorName)
+        approved = true
+      } catch (error) {
+        toast.push({
+          title: error instanceof Error ? error.message : 'האישור נכשל',
+          tone: 'critical',
+        })
+      }
+    })
+    if (approved) {
+      await postVisit({ retryFailedOnly: true, retryTicketIds: ticketIds })
+    }
+  }
+
   return (
     <Panel elevated>
       <p className="t-section mb-1 text-ink">שיגור ביקור משולב</p>
@@ -201,6 +232,9 @@ export function StoreVisitDispatch({
         storeLabel={`חנות #${storeCode}`}
         tickets={selectedList}
         vendors={vendors}
+        city={city}
+        region={region}
+        category={selectedList[0]?.category}
         vendorId={vendorId}
         onVendorIdChange={(id) => {
           setVendorId(id)
@@ -227,6 +261,7 @@ export function StoreVisitDispatch({
             retryTicketIds: [ticketId],
           })
         }
+        onApprove={(ticketIds) => void approveAndSend(ticketIds)}
       />
     </Panel>
   )

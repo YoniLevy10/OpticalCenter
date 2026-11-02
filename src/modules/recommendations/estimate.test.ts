@@ -4,6 +4,7 @@ import {
   bandFromPrices,
   estimateFaultCost,
   formatCostBand,
+  repairRangeLine,
   formatRecordedAmount,
   recordedTicketAmount,
 } from './estimate'
@@ -43,6 +44,14 @@ describe('estimateFaultCost', () => {
   it('falls back to a kind range when nothing was paid', () => {
     expect(estimateFaultCost('it', null).basis).toBe('kind')
     expect(estimateFaultCost('not-a-kind', null).band).toEqual({ low: 200, high: 800 })
+  })
+})
+
+describe('repairRangeLine', () => {
+  it('gives every fault type a range before any price is written', () => {
+    expect(repairRangeLine('hvac')).toContain('טווח משוער לתיקון')
+    expect(repairRangeLine('other')).toContain('₪')
+    expect(repairRangeLine('plumbing', { low: 400, high: 700 })).toContain('לפי מה שכבר שולם')
   })
 })
 

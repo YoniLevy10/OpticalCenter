@@ -141,7 +141,7 @@ export function ReportsFilters({
             <option value="resolved">נפתרו / נסגרו</option>
           </select>
         </Field>
-        <Button type="submit" variant="secondary" size="sm">
+        <Button type="submit" variant="secondary" size="sm" className="max-md:w-full">
           החלת טווח
         </Button>
         {(from || to || status) && (

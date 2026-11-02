@@ -18,6 +18,15 @@ export type PreferredVendorSeed = {
  */
 export const PREFERRED_VENDOR_SEEDS: readonly PreferredVendorSeed[] = [
   {
+    id: 'vendor-yoni-hvac',
+    name: 'יוני לוי · מיזוג',
+    contact_phone: '0548102688',
+    specialties: 'hvac',
+    coverage_regions: [...IL_REGION_CODES],
+    preferred: true,
+    notes: 'טכנאי מזגנים · מספר לבדיקה',
+  },
+  {
     id: 'vendor-pref-hvac-center',
     name: 'קלימה סנטר · מיזוג',
     contact_phone: '972501100101',

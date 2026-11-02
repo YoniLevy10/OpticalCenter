@@ -17,6 +17,7 @@ import {
   parseStoreCodeFromText,
 } from '@/modules/tickets/constants'
 import { canonicalStoreCode } from '@/modules/stores/israel-stores'
+import { soleManagerStore } from '@/modules/stores/manager-identity'
 import { createTicket } from '@/modules/tickets/service'
 import {
   findPossibleDuplicateTicket,
@@ -424,6 +425,8 @@ async function linkStorePhone(
   store: StoreRow,
 ) {
   if (!waId || !store.id) return
+  const manager = soleManagerStore(waId)
+  if (!manager || canonicalStoreCode(manager.code) !== canonicalStoreCode(store.code)) return
   if (!supabase) {
     memLinkStorePhone(waId, store.id, country.id)
     return
@@ -1438,7 +1441,7 @@ export async function processInboundMessage(
       }
     }
 
-    // New text issue after a completed ticket, same store still known.
+    // A finished report keeps the store only for that store's manager.
     if (
       session.state === 'done' &&
       session.store_id &&
@@ -1447,6 +1450,26 @@ export async function processInboundMessage(
       !storeCodeFromText &&
       !message.mediaUrl
     ) {
+      const manager = soleManagerStore(message.waId)
+      const sameStore =
+        manager != null &&
+        canonicalStoreCode(manager.code) === canonicalStoreCode(session.store_code)
+      if (!sameStore) {
+        await updateSession(supabase, session, {
+          store_id: null,
+          store_code: null,
+          state: 'awaiting_store',
+          active_ticket_id: null,
+          pending_description: null,
+          draft_payload: null,
+          pending_media_url: null,
+          pending_media_kind: null,
+          clarification_count: 0,
+        })
+        const reply = await craftIntakeReply(WA_COPY.askStore, 'intake_ask_store')
+        await sendReply(supabase, message, country, reply, null, options, session)
+        return { ok: true, reply, state: 'awaiting_store' as const }
+      }
       await updateSession(supabase, session, {
         state: 'awaiting_description',
         active_ticket_id: null,
@@ -1468,13 +1491,12 @@ export async function processInboundMessage(
       }
     }
 
-    // Hybrid identity: known phone → store
+    // A store manager's phone is the only number that skips the store question.
     if ((!session.store_id || session.state === 'awaiting_store') && !storeCodeFromText) {
-      const byPhone = await resolveStoreByWaId(
-        supabase,
-        message.waId,
-        country.id,
-      )
+      const manager = soleManagerStore(message.waId)
+      const byPhone = manager
+        ? await resolveStoreByCode(supabase, country.id, manager.code)
+        : null
       if (byPhone) {
         await updateSession(supabase, session, {
           store_id: byPhone.id,
@@ -1489,7 +1511,7 @@ export async function processInboundMessage(
         }
         if (!text && !message.mediaUrl && !session.pending_media_url) {
           const reply = await craftIntakeReply(
-            WA_COPY.askDescription(byPhone.name, byPhone.code),
+            WA_COPY.askDescription(byPhone.name),
             'intake_ask_description',
           )
           await sendReply(supabase, message, country, reply, null, options, session)
@@ -1534,7 +1556,7 @@ export async function processInboundMessage(
       // Media on *this* message (photo+store together) can proceed immediately.
       if (isIdentityOnly(text, store.code) && !message.mediaUrl) {
         const reply = await craftIntakeReply(
-          WA_COPY.askDescription(store.name, store.code),
+          WA_COPY.askDescription(store.name),
           'intake_ask_description',
         )
         await sendReply(supabase, message, country, reply, null, options, session)
@@ -1972,11 +1994,12 @@ async function finalizeTicket(params: {
   let reply = await craftIntakeReply(
     WA_COPY.confirmedIntake({
       displayNumber,
-      storeCode: store.code,
+      storeName: store.name,
       summary: decision.asset
         ? `${decision.asset} — ${decision.summary}`
         : decision.summary,
       priority: decision.priority,
+      category: decision.category,
       duplicateHint,
     }),
     'intake_confirmed',

@@ -133,7 +133,7 @@ describe('buildAriHome', () => {
 
     expect(home.stores[0]?.name).toBe('באיחור')
     expect(home.stores[0]?.categories[0]?.urgent).toBe(true)
-    expect(home.stores[0]?.categories[0]?.advice).toContain('לשייך')
+    expect(home.stores[0]?.categories[0]?.advice).toContain('לאשר')
     expect(home.stores).toHaveLength(ARI_HOME_STORE_CAP)
     expect(home.moreStores).toBe(1)
   })

@@ -1,8 +1,16 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { BottomSheet } from '@/components/ui/overlay'
+import { buildMidragSearchUrl } from '@/modules/vendors/external-search'
+import {
+  groupVisitVendors,
+  suggestVisitVendor,
+  tradeLabel,
+  visitPlaceLabel,
+  type VisitPoolVendor,
+} from '@/modules/vendors/visit-pick'
 
 export type VisitConfirmTicket = {
   id: string
@@ -11,7 +19,7 @@ export type VisitConfirmTicket = {
   spendBlock?: string | null
 }
 
-export type VisitConfirmVendor = { id: string; name: string }
+export type VisitConfirmVendor = VisitPoolVendor
 
 export type VisitItemResult = {
   ticket_id: string
@@ -19,12 +27,14 @@ export type VisitItemResult = {
   status: string
   error: string | null
   can_retry: boolean
+  needs_approval?: boolean
 }
 
 export type VisitResult = {
   id: string
   status: string
   items: VisitItemResult[]
+  sms?: { ok: boolean; line: string } | null
 }
 
 function statusLabel(status: string): string {
@@ -68,6 +78,9 @@ export function VisitConfirmSheet({
   storeLabel,
   tickets,
   vendors,
+  city,
+  region,
+  category,
   vendorId,
   onVendorIdChange,
   notes,
@@ -80,6 +93,7 @@ export function VisitConfirmSheet({
   onSubmit,
   onRetryFailed,
   onRetryTicket,
+  onApprove,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -87,6 +101,9 @@ export function VisitConfirmSheet({
   storeLabel: string
   tickets: VisitConfirmTicket[]
   vendors: VisitConfirmVendor[]
+  city?: string | null
+  region?: string | null
+  category?: string | null
   vendorId: string
   onVendorIdChange: (id: string) => void
   notes: string
@@ -99,7 +116,29 @@ export function VisitConfirmSheet({
   onSubmit: () => void
   onRetryFailed: () => void
   onRetryTicket: (ticketId: string) => void
+  onApprove?: (ticketIds: string[]) => void
 }) {
+  const place = useMemo(
+    () => ({ city, region, category }),
+    [city, region, category],
+  )
+  const suggestion = useMemo(
+    () => suggestVisitVendor(vendors, place),
+    [vendors, place],
+  )
+  const groups = useMemo(() => groupVisitVendors(vendors, place), [vendors, place])
+  const placeName = visitPlaceLabel(place)
+  const midragUrl = buildMidragSearchUrl({ category: category || 'other', city })
+  const armed = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      armed.current = false
+      return
+    }
+    if (armed.current || !suggestion) return
+    armed.current = true
+    if (vendorId !== suggestion.id) onVendorIdChange(suggestion.id)
+  }, [open, suggestion, vendorId, onVendorIdChange])
   const approvalNeeds = useMemo(
     () => tickets.filter((t) => Boolean(t.spendBlock)),
     [tickets],
@@ -107,6 +146,8 @@ export function VisitConfirmSheet({
   const vendorName =
     vendors.find((v) => v.id === vendorId)?.name ?? '—'
   const failed = result?.items.filter((i) => i.can_retry) ?? []
+  const awaitingApproval =
+    result?.items.filter((item) => item.needs_approval) ?? []
 
   return (
     <BottomSheet
@@ -169,25 +210,46 @@ export function VisitConfirmSheet({
               </p>
             ) : null}
 
-            <label className="flex flex-col gap-1.5">
-              <span className="t-caption text-ink-2">ספק / בעל מקצוע</span>
+            <div className="flex flex-col gap-2">
+              <span className="t-caption text-ink-2">מהמאגר שלנו</span>
+              {suggestion ? (
+                <p className="rounded-[var(--radius-md)] bg-[var(--tenant-soft)] px-3 py-2 text-ink">
+                  יש לנו איש מקצוע ל{tradeLabel(category)}
+                  {placeName ? ` ב${placeName}` : ''}: {suggestion.name}
+                </p>
+              ) : (
+                <p className="t-meta text-ink-2">
+                  אין במאגר התאמה
+                  {placeName ? ` ל${placeName}` : ''}.
+                </p>
+              )}
               <select
                 className="t-control min-h-[var(--tap)] rounded-[var(--radius-md)] border border-border bg-surface px-3 text-ink"
                 value={vendorId}
                 onChange={(e) => onVendorIdChange(e.target.value)}
-                disabled={busy}
+                disabled={busy || vendors.length === 0}
+                aria-label="בחירה מהמאגר לפי עיר"
               >
                 {vendors.length === 0 ? (
                   <option value="">אין ספקים פעילים</option>
                 ) : (
-                  vendors.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
+                  groups.map((group) => (
+                    <optgroup key={group.city} label={group.city}>
+                      {group.vendors.map((vendor) => (
+                        <option key={`${group.city}-${vendor.id}`} value={vendor.id}>
+                          {vendor.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))
                 )}
               </select>
-            </label>
+              <Button asChild variant="secondary" size="touch" className="w-full">
+                <a href={midragUrl} target="_blank" rel="noreferrer">
+                  חיפוש במדרג{placeName ? ` · ${placeName}` : ''}
+                </a>
+              </Button>
+            </div>
 
             <label className="flex flex-col gap-1.5">
               <span className="t-caption text-ink-2">מועד מתוכנן (אופציונלי)</span>
@@ -224,6 +286,13 @@ export function VisitConfirmSheet({
           </>
         ) : (
           <>
+            {result.sms ? (
+              <p
+                className={`t-body font-semibold ${result.sms.ok ? 'text-[var(--signal-success)]' : 'text-[var(--signal-critical)]'}`}
+              >
+                {result.sms.line}
+              </p>
+            ) : null}
             <p className={`t-body font-semibold ${statusTone(result.status)}`}>
               {statusLabel(result.status)}
               {result.status === 'partial'
@@ -249,7 +318,17 @@ export function VisitConfirmSheet({
                       </p>
                     ) : null}
                   </div>
-                  {item.can_retry ? (
+                  {item.needs_approval && onApprove ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => onApprove([item.ticket_id])}
+                    >
+                      אשר
+                    </Button>
+                  ) : item.can_retry ? (
                     <Button
                       type="button"
                       variant="secondary"
@@ -263,10 +342,24 @@ export function VisitConfirmSheet({
                 </li>
               ))}
             </ul>
-            {failed.length > 0 ? (
+            {awaitingApproval.length > 0 && onApprove ? (
               <Button
                 type="button"
                 variant="primary"
+                size="touch"
+                className="w-full"
+                disabled={busy}
+                onClick={() =>
+                  onApprove(awaitingApproval.map((item) => item.ticket_id))
+                }
+              >
+                אשר ושלח ({awaitingApproval.length})
+              </Button>
+            ) : null}
+            {failed.length > 0 ? (
+              <Button
+                type="button"
+                variant={awaitingApproval.length > 0 ? 'secondary' : 'primary'}
                 size="touch"
                 className="w-full"
                 disabled={busy}
@@ -274,7 +367,7 @@ export function VisitConfirmSheet({
               >
                 נסה שוב את הכושלים ({failed.length})
               </Button>
-            ) : (
+            ) : awaitingApproval.length > 0 ? null : (
               <Button
                 type="button"
                 variant="secondary"

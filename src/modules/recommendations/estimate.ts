@@ -68,6 +68,16 @@ export function estimateFaultCost(
   return { band: KIND_ESTIMATE[key] ?? KIND_ESTIMATE.other!, basis: 'kind' }
 }
 
+/** Every new fault gets a repair range, even before a quote is written. */
+export function repairRangeLine(category: string, recorded: CostBand | null = null): string {
+  const estimate = estimateFaultCost(category, recorded)
+  const text = formatCostBand(estimate.band)
+  if (estimate.basis === 'recorded') {
+    return `טווח משוער לתיקון, לפי מה שכבר שולם על אותו סוג: ${text}.`
+  }
+  return `טווח משוער לתיקון: ${text}.`
+}
+
 export function bandFromPrices(prices: number[]): CostBand | null {
   const clean = prices.filter((price) => price > 0).map((price) => Math.round(price))
   if (clean.length === 0) return null

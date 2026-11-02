@@ -201,15 +201,21 @@ export default async function StoreDetailPage({
           <StoreVisitDispatch
             storeId={store.id}
             storeCode={store.code}
+            city={store.city}
+            region={store.region_id}
             tickets={recent.map((t) => ({
               id: t.id,
               label: displayNum(t),
               title: t.title || t.description,
               spendBlock: executionBlockReason(spendForTicket(t.id)),
+              category: t.category,
             }))}
             vendors={(vendorsResult.vendors ?? []).map((v) => ({
               id: v.id,
               name: v.name,
+              specialties: v.specialties,
+              coverage: v.coverage_regions,
+              phone: v.contact_phone,
             }))}
           />
         ) : null}

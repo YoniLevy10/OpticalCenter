@@ -1,3 +1,4 @@
+import { repairRangeLine } from '@/modules/recommendations/estimate'
 import type { TicketPriority } from '@/modules/tickets/constants'
 import { TICKET_PRIORITY_LABELS_HE } from '@/modules/tickets/constants'
 
@@ -6,24 +7,26 @@ export const WA_COPY = {
     'שלום! לדיווח תקלה יש לשלוח את קוד החנות (למשל 172) או לסרוק את ה־QR / NFC בחנות.',
   storeNotFound: (code: string) =>
     `לא מצאתי חנות עם הקוד ${code}. בדקו את הקוד ונסו שוב (מספרים בלבד).`,
-  askDescription: (storeName: string, storeCode: string) =>
-    `זוהתה חנות: ${storeName} (${storeCode}).\nתארו בקצרה את התקלה. אפשר גם לצרף תמונה.`,
+  askDescription: (storeName: string) =>
+    `זוהתה חנות: ${storeName}.\nתארו בקצרה את התקלה. אפשר גם לצרף תמונה.`,
   needDescription: 'נא לתאר את התקלה בטקסט (או לצרף תמונה עם תיאור קצר).',
   confirmed: (displayNumber: string, storeName: string) =>
     `הדיווח התקבל ✓\nמספר תקלה: ${displayNumber}\nחנות: ${storeName}\nהצוות קיבל את הדיווח.`,
   /** Rich confirmation after AI intake. */
   confirmedIntake: (params: {
     displayNumber: string
-    storeCode: string
+    storeName: string
     summary: string
     priority: TicketPriority
+    category?: string | null
     duplicateHint?: string | null
   }) => {
     const assetLine = params.summary.replace(/\s+/g, ' ').trim()
     const lines = [
       `פתחתי תקלה #${params.displayNumber} ✅`,
-      `${assetLine} · חנות ${params.storeCode}`,
+      `${assetLine} · חנות ${params.storeName}`,
       `עדיפות ${TICKET_PRIORITY_LABELS_HE[params.priority]}`,
+      repairRangeLine(params.category || 'other'),
       'צוות התחזוקה קיבל את הדיווח.',
     ]
     if (params.duplicateHint) {

@@ -46,9 +46,12 @@ function isAudio(a: Attachment): boolean {
 export function EvidenceGrid({
   attachments,
   className,
+  wide = false,
 }: {
   attachments: Attachment[]
   className?: string
+  /** One photo across the card, instead of a square thumbnail grid. */
+  wide?: boolean
 }) {
   const [active, setActive] = useState<Attachment | null>(null)
   const [failed, setFailed] = useState<Set<string>>(new Set())
@@ -136,7 +139,7 @@ export function EvidenceGrid({
       ) : null}
 
       {images.length > 0 ? (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className={wide ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-3 gap-2 sm:grid-cols-4'}>
           {images.map((a) => {
             const broken = failed.has(a.id)
             return (
@@ -146,7 +149,9 @@ export function EvidenceGrid({
                   aria-label="הגדלת תמונה"
                   onClick={() => !broken && setActive(a)}
                   className={cn(
-                    'relative block aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-sunken transition-opacity duration-[var(--dur-1)]',
+                    wide
+                      ? 'relative block aspect-[16/9] w-full overflow-hidden bg-sunken transition-opacity duration-[var(--dur-1)]'
+                      : 'relative block aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-sunken transition-opacity duration-[var(--dur-1)]',
                     !broken && 'hover:opacity-90',
                   )}
                 >

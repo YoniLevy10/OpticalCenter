@@ -15,6 +15,7 @@ import {
 } from '@/modules/documents/rules'
 import { renewDocumentAction, setDocumentExpiryAction, setDocumentRemindersAction, setDocumentTitleAction } from '../work-actions'
 import { PhoneFold } from '@/components/layout/phone-fold'
+import { Pencil } from 'lucide-react'
 
 const FILE_STATUS = {
   ingested: 'נקלט',
@@ -123,26 +124,26 @@ function Paper({
       data-find={`${title} ${typeLabel} ${expiry ? formatDay(expiry) : ''} ${expiry?.slice(0, 10) ?? ''}`}
     >
       <div className="doc-file-head">
-        <div className="min-w-0 flex-1">
-          <form action={setDocumentTitleAction} className="doc-name-form">
-            <input type="hidden" name="id" value={doc.id} />
-            <input
-              className="doc-name-input"
-              name="title"
-              defaultValue={doc.title?.trim() || title}
-              maxLength={80}
-              aria-label={`שם המסמך ${title}`}
-              placeholder="שם שנוח לארי"
-            />
-            <Button type="submit" size="sm" aria-label={`שמור שם ${title}`}>
-              שמור שם
-            </Button>
-          </form>
-          <p className="doc-page-kicker">
-            {expiry ? `תוקף ${formatDay(expiry)}` : CLOCK[documentClock(doc)]}
-            {typeLabel !== title ? ` · ${typeLabel}` : ''}
-          </p>
-        </div>
+        <form action={setDocumentTitleAction} className="doc-name-form">
+          <input type="hidden" name="documentId" value={doc.id} />
+          <input
+            className="doc-name-input"
+            name="title"
+            defaultValue={doc.title?.trim() || title}
+            maxLength={80}
+            aria-label={`שם המסמך ${title}`}
+            placeholder="שם שנוח לארי"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            className="w-8 px-0"
+            aria-label={`שמור שם ${title}`}
+            title="שמור שם"
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+          </Button>
+        </form>
         {fileHref ? (
           <Button asChild size="sm">
             <a href={fileHref} target="_blank" rel="noreferrer">
@@ -152,6 +153,10 @@ function Paper({
           </Button>
         ) : null}
       </div>
+      <p className="doc-page-kicker">
+        {expiry ? `תוקף ${formatDay(expiry)}` : CLOCK[documentClock(doc)]}
+        {typeLabel !== title ? ` · ${typeLabel}` : ''}
+      </p>
       <PhoneFold title="פרטים" summary={expiry ? formatDay(expiry) : 'תוקף ותזכורת'}>
       {expiry ? <p className="doc-page-stamp">תוקף {formatDay(expiry)}</p> : null}
       <div className="doc-page-body">
@@ -175,7 +180,7 @@ function Paper({
       </div>
       {!doc.renewed ? (
         <form action={setDocumentExpiryAction} className={expiry ? 'doc-expiry-quick' : 'doc-expiry-quick is-open'}>
-          <input type="hidden" name="id" value={doc.id} />
+          <input type="hidden" name="documentId" value={doc.id} />
           <label className={expiry ? 'sr-only' : 'doc-expiry-label'} htmlFor={expiryId}>
             {expiry ? `תוקף ${title}` : 'תוקף'}
           </label>
@@ -187,7 +192,7 @@ function Paper({
             required
             defaultValue={expiry ? expiry.slice(0, 10) : undefined}
           />
-          <Button type="submit" size="sm" aria-label={`שמור תוקף ${title}`}>
+          <Button type="submit" size="sm" aria-label={`שמור תוקף ${title}`} className="max-md:w-full">
             שמור
           </Button>
         </form>
@@ -204,7 +209,7 @@ function Paper({
         <details className="doc-renew">
           <summary>חידוש</summary>
           <form action={renewDocumentAction} className="mt-2 grid gap-2">
-            <input type="hidden" name="id" value={doc.id} />
+            <input type="hidden" name="documentId" value={doc.id} />
             <Input name="sourceUrl" placeholder="קישור למסמך המעודכן" aria-label="קישור למסמך המעודכן" required />
             <Input name="expiry" type="date" aria-label="תוקף חדש" />
             <Button type="submit" size="sm">
@@ -248,13 +253,13 @@ function ReminderMenu({ doc, title }: { doc: StoreDocument; title: string }) {
         {stage === 'two' ? 'תזכורת חודשיים' : stage === 'six' ? 'תזכורת חצי שנה' : 'תזכורות'}
       </summary>
       <form action={setDocumentRemindersAction} className="doc-reminder-form">
-        <input type="hidden" name="id" value={doc.id} />
+        <input type="hidden" name="documentId" value={doc.id} />
         <ReminderField id={doc.id} label="חצי שנה לפני" name="six" value={six} title={title} />
         <ReminderField id={doc.id} label="חודשיים לפני" name="two" value={two} title={title} />
         {doc.extractedExpiry ? (
           <p className="doc-reminder-empty">שדה ריק חוזר לחישוב לפי תאריך התוקף.</p>
         ) : null}
-        <Button type="submit" size="sm" aria-label={`שמור תזכורות ${title}`}>
+        <Button type="submit" size="sm" aria-label={`שמור תזכורות ${title}`} className="max-md:w-full">
           שמור
         </Button>
       </form>

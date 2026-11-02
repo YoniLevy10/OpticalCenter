@@ -34,11 +34,12 @@ export function ReportsExportActions({
   }
 
   return (
-    <div className={className ?? 'flex flex-wrap items-center gap-2'}>
+    <div className={className ?? 'flex flex-wrap items-center gap-2 max-md:flex-col max-md:items-stretch'}>
       <Button
         type="button"
         variant="secondary"
         size="sm"
+        className="max-md:w-full"
         onClick={() => download('csv')}
       >
         ייצוא CSV{count > 0 ? ` (${count})` : ''}
@@ -47,6 +48,7 @@ export function ReportsExportActions({
         type="button"
         variant="secondary"
         size="sm"
+        className="max-md:w-full"
         onClick={() => download('xlsx')}
       >
         Excel
@@ -55,6 +57,7 @@ export function ReportsExportActions({
         type="button"
         variant="secondary"
         size="sm"
+        className="max-md:w-full"
         onClick={() => download('pdf')}
       >
         PDF

@@ -5,6 +5,7 @@ import {
   TICKET_CATEGORY_LABELS_HE,
 } from '@/modules/tickets/constants'
 import { isBreached, type QueueTicket } from '@/modules/tickets/queue'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 import {
   findRecurrences,
   suggestPrevention,
@@ -91,10 +92,11 @@ export function countClosedToday(
 }
 
 function severity(ticket: QueueTicket, now: Date): number {
-  const overdue = isBreached(ticket, now) ? 0 : 40
-  const unassigned = ticket.assigned_to ? 8 : 0
+  const waiting =
+    ticketIsUrgent(ticket) && ticket.status !== 'engaged' ? 0 : 30
+  const overdue = isBreached(ticket, now) ? 0 : 10
   const priority = PRIORITY_RANK[ticket.priority] ?? 2
-  return overdue + unassigned + priority
+  return waiting + overdue + priority
 }
 
 function actionVerb(ticket: QueueTicket, now: Date, locale: Locale): string {
@@ -159,7 +161,7 @@ export function buildAriHome(input: {
         findRecurrences(toHistory(lead), history, 180, now),
       )
       const urgent = ordered.some(
-        (ticket) => isBreached(ticket, now) || !ticket.assigned_to,
+        (ticket) => ticketIsUrgent(ticket) && ticket.status !== 'engaged',
       )
       const category: AriHomeCategory = {
         key,

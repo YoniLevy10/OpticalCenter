@@ -16,17 +16,12 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from '@/modules/tickets/constants'
-import {
-  getById,
-  listInternalTechnicians,
-} from '@/modules/tickets/service'
+import { getById } from '@/modules/tickets/service'
 import {
   fetchTicketAttachments,
   mergeEvidence,
 } from '@/modules/tickets/attachments'
-import { TicketRfqDraftPanel } from './ticket-rfq-draft-panel'
 import { EngagementPanel } from './engagement-panel'
-import { WhoHandles } from './who-handles'
 import { Tx } from '@/components/i18n/tx'
 import { Timeline } from '@/components/ui/timeline'
 import { buildActivityDesc } from '@/modules/tickets/activity'
@@ -45,7 +40,6 @@ import { findRecurrences, recurrenceBasis, suggestPrevention } from '@/modules/t
 import { getLocale } from '@/lib/i18n/server'
 import { translate, type MessageKey } from '@/lib/i18n/messages'
 import { TicketTrueCostPanel } from './ticket-true-cost'
-import { listProfessionals } from '@/modules/professionals/service'
 import { listOutcomes, listSpends, spendsForAsset, spendsForTicket } from '@/lib/data/ops-ledger'
 import { formatIls, trueCostBreakdown } from '@/modules/spend/true-cost'
 import {
@@ -79,9 +73,8 @@ export default async function TicketDetailPage({
 
   const resolvedClient = await resolveTicketsSupabase(actor)
 
-  const [ticket, technicians, storedAttachments] = await Promise.all([
+  const [ticket, storedAttachments] = await Promise.all([
     getById(id, { client: resolvedClient?.client }).catch(() => null),
-    listInternalTechnicians().catch(() => []),
     fetchTicketAttachments(id).catch(() => []),
   ])
 
@@ -89,10 +82,6 @@ export default async function TicketDetailPage({
   if (actor && !actorCanAccessTicket(actor, ticket)) notFound()
 
   const attachments = mergeEvidence(storedAttachments, ticket.messages ?? [])
-  const assignee =
-    ticket.assignee ??
-    technicians.find((t) => t.id === ticket.assigned_to) ??
-    null
   const locale = await getLocale()
   const p = (text: string) => phrase(locale, text)
   const openFor = plainOpenForHe(ticket.created_at, ticket, new Date(), locale)
@@ -208,7 +197,6 @@ export default async function TicketDetailPage({
     ? tx(categoryKey)
     : (TICKET_CATEGORY_LABELS_HE[ticket.category] ?? ticket.category)
   const priority = ticket.priority as TicketPriority
-  const pros = await listProfessionals({ limit: 40 }).catch(() => ({ professionals: [] }))
   const categoryByTicketId: Record<string, string> = {}
   for (const row of history.tickets ?? []) {
     if (row.category) categoryByTicketId[row.id] = row.category
@@ -224,11 +212,6 @@ export default async function TicketDetailPage({
   const faultEstimate = estimateFaultCost(ticket.category, recordedBand)
 
   const storyLines: string[] = [`${p('נפתחה על ידי')} ${reporter}`]
-  if (assignee) {
-    storyLines.push(
-      `${p('שויכה ל')} ${assignee.full_name || assignee.email || p('טכנאי')}`,
-    )
-  }
   if (ticket.status === 'resolved' || ticket.status === 'closed') {
     storyLines.push(p('הסתיימה'))
   }
@@ -260,9 +243,12 @@ export default async function TicketDetailPage({
   const estimateText = formatCostBand(faultEstimate.band)
   const costSummary =
     cost.count === 0 ? `משוער ${estimateText}` : formatIls(cost.total)
-  const handleSummary = assignee
-    ? assignee.full_name || assignee.email || 'טכנאי'
-    : 'מהמאגר או מידרג'
+  const stepLabel =
+    ticket.status === 'engaged'
+      ? 'החנות מתאמת'
+      : urgent
+        ? 'מחכה לאישור'
+        : 'לא דחוף'
 
   return (
     <OpsAppShell>
@@ -301,17 +287,11 @@ export default async function TicketDetailPage({
           }
         />
 
-        {verb ? (
-          <div className="hidden items-center justify-end px-1 md:flex">
-            {openFor.overdue || !ticket.assigned_to ? (
-              <Button asChild variant="primary" size="sm">
-                <Link href="#ticket-actions">{verb}</Link>
-              </Button>
-            ) : (
-              <Link href="#ticket-actions" className="t-body text-ink">
-                {verb}
-              </Link>
-            )}
+        {verb === 'לאשר' ? (
+          <div className="flex items-center justify-end px-1">
+            <Button asChild variant="primary" size="sm">
+              <Link href="#ticket-actions">לאשר</Link>
+            </Button>
           </div>
         ) : null}
 
@@ -323,12 +303,8 @@ export default async function TicketDetailPage({
             <KeyValue phoneTile label={tx('ticket.urgency')}>
               {tx(`priority.${priority}`)}
             </KeyValue>
-            <KeyValue phoneTile label={tx('ticket.tech')}>
-              {assignee ? (
-                assignee.full_name || assignee.email || 'טכנאי'
-              ) : (
-                <span className="text-[var(--signal-critical)]">{tx('ticket.unassigned')}</span>
-              )}
+            <KeyValue phoneTile label="השלב">
+              {stepLabel}
             </KeyValue>
             <KeyValue phoneTile label={tx('ticket.category')}>
               {categoryLabel}
@@ -353,35 +329,6 @@ export default async function TicketDetailPage({
               assetSpends={assetSpends}
               locale={locale}
               estimate={{ text: estimateText, basis: faultEstimate.basis }}
-            />
-            <details className="mt-2 rounded-[var(--radius-lg)] border border-border bg-surface px-3 py-2">
-              <summary className="t-body cursor-pointer text-ink">הצעת מחיר</summary>
-              <div className="pt-3">
-                <TicketRfqDraftPanel
-                  ticketId={ticket.id}
-                  ticketLabel={
-                    ticket.display_number ||
-                    (ticket.number != null ? `OC-${ticket.number}` : ticket.id.slice(0, 8))
-                  }
-                  storeId={ticket.store_id}
-                  storeCode={ticket.stores?.code ?? ''}
-                  storeName={storeName}
-                  trade={ticket.category}
-                />
-              </div>
-            </details>
-          </TicketFold>
-
-          <TicketFold title="מי מטפל" summary={handleSummary}>
-            <WhoHandles
-              category={ticket.category}
-              city={ticket.stores?.city ?? null}
-              professionals={pros.professionals.map((person) => ({
-                id: person.id,
-                full_name: person.full_name,
-                phone: person.phone,
-                trade: person.trade,
-              }))}
             />
           </TicketFold>
 

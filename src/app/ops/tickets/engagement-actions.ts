@@ -45,6 +45,7 @@ export async function lockEngagementAction(formData: FormData) {
     approvedBy: actor.name,
   })
   revalidatePath(`/ops/tickets/${ticketId}`)
+  revalidatePath('/ops/approvals')
   revalidatePath('/ops/dashboard')
   revalidatePath('/ops/reports')
 }
@@ -54,6 +55,7 @@ export async function cancelEngagementAction(formData: FormData) {
   const ticketId = String(formData.get('ticketId') ?? '')
   await cancelEngagement(ticketId)
   revalidatePath(`/ops/tickets/${ticketId}`)
+  revalidatePath('/ops/approvals')
   revalidatePath('/ops/dashboard')
 }
 
@@ -63,5 +65,6 @@ export async function setUrgentAction(formData: FormData) {
   const urgent = formData.get('urgent') === '1'
   await setTicketUrgent(ticketId, urgent, actor.id)
   revalidatePath(`/ops/tickets/${ticketId}`)
+  revalidatePath('/ops/approvals')
   revalidatePath('/ops/dashboard')
 }

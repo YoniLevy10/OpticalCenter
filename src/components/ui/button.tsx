@@ -29,8 +29,8 @@ const buttonVariants = cva(
           'bg-[var(--signal-resolved)] text-white shadow-[var(--shadow-1)] hover:bg-[color-mix(in_srgb,var(--signal-resolved)_88%,black)]',
       },
       size: {
-        sm: 'h-8 px-2.5',
-        md: 'h-9 px-3.5',
+        sm: 'h-8 px-2.5 max-md:h-auto max-md:min-h-[var(--tap)]',
+        md: 'h-9 px-3.5 max-md:h-auto max-md:min-h-[var(--tap)]',
         /** Touch target floor for mobile and technician surfaces (48px). */
         touch: 'h-12 max-md:h-14 px-4 t-control-lg',
         block: 'h-12 w-full px-4 t-control-lg',

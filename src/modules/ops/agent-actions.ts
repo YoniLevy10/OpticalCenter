@@ -3,6 +3,7 @@ import { addDocument, addTask, listTasks } from '@/lib/data/ops-ledger'
 import { expiryFromText } from '@/modules/drive/import'
 import { ISRAEL_STORES, israelStoreId, type IsraelStoreSeed } from '@/modules/stores/israel-stores'
 import type { TicketPriority } from '@/modules/tickets/constants'
+import { repairRangeLine } from '@/modules/recommendations/estimate'
 import { createTicket, formatDisplayNumber, type TicketSource } from '@/modules/tickets/service'
 
 type Turn = { role: 'user' | 'assistant'; text: string }
@@ -135,11 +136,12 @@ export async function actForAri(input: {
   }
 
   try {
+    const category = guessCategory(`${message} ${description}`)
     const created = await createTicket({
       storeCode: store.code,
       description,
       title: description.slice(0, 80),
-      category: guessCategory(`${message} ${description}`),
+      category,
       priority: guessPriority(message),
       source: input.source ?? 'web_fallback',
       reporterName: 'ארי',
@@ -147,7 +149,10 @@ export async function actForAri(input: {
     })
     const number = created.display_number || formatDisplayNumber(created.number) || ''
     const label = number ? `${number}. ` : ''
-    return say(`פתחתי תקלה ב${store.name}: ${description}. ${label}היא חדשה, והצעד הוא לשייך.`, {
+    const next = /נזיל|חשמל|מזגן|מיזוג|אבטחה|מצלמ|דלת/.test(message)
+      ? 'הצעד הוא לאשר איש מקצוע ומחיר.'
+      : 'היא נשארת בתור לשילוב ביקור.'
+    return say(`פתחתי תקלה ב${store.name}: ${description}. ${label}${next} ${repairRangeLine(category)}`, {
       href: `/ops/tickets/${created.id}`,
       label: number || 'לתקלה',
     })

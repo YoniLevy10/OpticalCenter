@@ -1,5 +1,6 @@
 import { isBreached, type QueueTicket } from '@/modules/tickets/queue'
 import { plainStatus } from '@/components/ops/plain-labels'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 import type { Locale } from '@/lib/i18n/locale'
 import { phrase } from '@/lib/i18n/phrases'
 
@@ -38,29 +39,31 @@ export function ticketDecision(
   const followLate = followUp ? new Date(followUp).getTime() < startOfDay(now) : false
   const needs =
     breached ||
-    !ticket.assigned_to ||
     ticket.status === 'awaiting_info' ||
     ticket.status === 'waiting_vendor' ||
     ticket.status === 'waiting_parts' ||
-    ticket.priority === 'critical' ||
-    ticket.priority === 'high' ||
+    ticketIsUrgent(ticket) ||
     followLate
   if (!needs) return null
   const overdue = breached || followLate
-  const action = !ticket.assigned_to
-    ? phrase(locale, 'לשייך')
-    : ticket.status === 'awaiting_info'
-      ? phrase(locale, 'לבקש מידע')
-      : ticket.status === 'waiting_vendor'
-        ? phrase(locale, 'לעקוב אחרי בעל המקצוע')
-        : phrase(locale, 'לטפל')
+  const action =
+    ticket.status === 'engaged'
+      ? phrase(locale, 'החנות מתאמת')
+      : ticketIsUrgent(ticket)
+        ? phrase(locale, 'לאשר')
+        : phrase(locale, 'בתור')
   return {
     id: `ticket:${ticket.id}`,
     kind: 'ticket',
     title: ticket.title || ticket.description,
     storeCode: ticket.stores?.code ?? '—',
     storeName: ticket.stores?.name ?? phrase(locale, 'סניף'),
-    owner: ticket.assigned_to ? phrase(locale, 'משויך') : phrase(locale, 'לא משויך'),
+    owner:
+      ticket.status === 'engaged'
+        ? phrase(locale, 'החנות מתאמת')
+        : ticketIsUrgent(ticket)
+          ? phrase(locale, 'דחוף')
+          : phrase(locale, 'לא דחוף'),
     urgency: overdue ? 'overdue' : 'today',
     action: `${action} · ${plainStatus(ticket.status, locale)}`,
     href: `/ops/tickets/${ticket.id}`,

@@ -219,7 +219,8 @@ describe('createServiceVisit — C01 reliability', () => {
     const blockedItem = visit.items.find((i) => i.ticket_id === blocked.id)!
     expect(okItem.status).toBe('labeled')
     expect(blockedItem.status).toBe('blocked')
-    expect(blockedItem.can_retry).toBe(true)
+    expect(blockedItem.can_retry).toBe(false)
+    expect(blockedItem.needs_approval).toBe(true)
     expect(okItem.can_retry).toBe(false)
   })
 
@@ -302,8 +303,11 @@ describe('createServiceVisit — C01 reliability', () => {
     })
     expect(first.status).toBe('partial')
     const firstOk = first.items.find((i) => i.ticket_id === ok.id)!
+    const held = first.items.find((i) => i.ticket_id === later.id)!
     expect(firstOk.status).toBe('labeled')
     expect(firstOk.dispatch_id).toBeTruthy()
+    expect(held.needs_approval).toBe(true)
+    expect(held.can_retry).toBe(false)
 
     approveSpendForTicket({
       ticketId: later.id,
@@ -318,6 +322,7 @@ describe('createServiceVisit — C01 reliability', () => {
       vendorId: vendor.id,
       idempotencyKey: key,
       retryFailedOnly: true,
+      retryTicketIds: [later.id],
     })
 
     expect(retried.id).toBe(first.id)

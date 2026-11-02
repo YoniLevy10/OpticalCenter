@@ -229,6 +229,9 @@ export default async function TicketsPage({
     .map((v) => ({
       id: v.id,
       name: v.name,
+      specialties: v.specialties,
+      coverage: v.coverage_regions,
+      phone: v.contact_phone,
     }))
 
   const tabActive =
@@ -302,6 +305,7 @@ export default async function TicketsPage({
               spendBlock: executionBlockReason(spendForTicket(t.id)),
               category: t.category,
               city: t.stores?.city ?? null,
+              region: t.region_id,
             }))}
             vendors={vendorOptions}
             professionals={pros.professionals.map((person) => ({

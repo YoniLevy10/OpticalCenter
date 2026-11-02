@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth/request-actor'
 import { AuthError, actorHasHqAccess } from '@/lib/auth/types'
 import { listTickets } from '@/modules/tickets/service'
+import { repairRangeLine } from '@/modules/recommendations/estimate'
 import { createTicket } from '@/modules/tickets/service'
 import { TICKET_PRIORITIES } from '@/modules/tickets/constants'
 import { captureError } from '@/lib/monitoring'
@@ -78,7 +79,10 @@ export async function POST(request: Request) {
     }
 
     const ticket = await createTicket(parsed.data)
-    return NextResponse.json({ ticket }, { status: 201 })
+    return NextResponse.json(
+      { ticket, repairRange: repairRangeLine(parsed.data.category || 'other') },
+      { status: 201 },
+    )
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     const message = err instanceof Error ? err.message : 'שגיאה ביצירת תקלה'

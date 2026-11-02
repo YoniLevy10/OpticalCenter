@@ -76,9 +76,14 @@ export function EngagementPanel({
               <p className="t-meta text-ink-3">טווח מידרג הוא לא המחיר שאושר.</p>
               <ul className="grid max-h-72 gap-2 overflow-y-auto">
                 {pros.map((pro) => (
-                  <li key={pro.id} className="rounded-[var(--radius-md)] border border-border px-3 py-2">
-                    <label className="flex items-start gap-2">
-                      <input type="radio" name="midrag" value={`${pro.id}::${encodeURIComponent(pro.name)}`} />
+                  <li key={pro.id} className="rounded-[var(--radius-md)] border border-border px-3">
+                    <label className="flex min-h-[var(--tap)] items-center gap-3 py-2">
+                      <input
+                        type="radio"
+                        name="midrag"
+                        value={`${pro.id}::${encodeURIComponent(pro.name)}`}
+                        className="h-5 w-5 shrink-0"
+                      />
                       <span className="min-w-0">
                         <span className="t-body block text-ink">
                           {pro.name}
@@ -127,7 +132,7 @@ export function EngagementPanel({
             <span className="t-meta text-ink-2">שם אחרי השיחה</span>
             <input
               name="professional_name"
-              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3"
+              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3 text-base"
               placeholder="אם לא בחרת מהרשימה"
             />
           </label>
@@ -137,7 +142,7 @@ export function EngagementPanel({
               name="professional_phone"
               required
               inputMode="tel"
-              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3"
+              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3 text-base"
               placeholder="המספר שארי קיבל"
             />
           </label>
@@ -147,11 +152,11 @@ export function EngagementPanel({
               name="approved_amount"
               required
               inputMode="decimal"
-              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3"
+              className="min-h-11 rounded-[var(--radius-md)] border border-border bg-canvas px-3 text-base"
               placeholder="₪"
             />
           </label>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="primary" className="max-md:w-full">
             אשר עסקה
           </Button>
         </form>

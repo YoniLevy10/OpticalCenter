@@ -75,6 +75,7 @@ export function TicketReportForm({
     description?: string
   }>({})
   const [ticketId, setTicketId] = useState<string | null>(null)
+  const [repairRange, setRepairRange] = useState<string | null>(null)
   const [display, setDisplay] = useState<string | null>(null)
   const storeRef = useRef<HTMLSelectElement>(null)
   const descriptionRef = useRef<HTMLTextAreaElement>(null)
@@ -204,6 +205,7 @@ export function TicketReportForm({
       }
       setTicketId(id ?? null)
       setDisplay(displayNumber)
+      setRepairRange(typeof json.repairRange === 'string' ? json.repairRange : null)
       if (id) onCreated?.({ id, display_number: displayNumber })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שליחה נכשלה')
@@ -215,6 +217,7 @@ export function TicketReportForm({
   function resetForm() {
     setTicketId(null)
     setDisplay(null)
+    setRepairRange(null)
     setDescription('')
     setName('')
     setPhone('')
@@ -238,6 +241,7 @@ export function TicketReportForm({
           התקלה נפתחה
           {display ? ` · ${display}` : ''}
         </Notice>
+          {repairRange ? <p className="t-body text-ink">{repairRange}</p> : null}
           <p className="t-body text-ink-2">אפשר לשייך טכנאי או להמשיך לטפל מהתור.</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild variant="primary" size="block">
@@ -267,6 +271,7 @@ export function TicketReportForm({
           הדיווח התקבל
           {display ? ` · ${display}` : ''}
         </Notice>
+        {repairRange ? <p className="t-body text-ink">{repairRange}</p> : null}
         <p className="t-body text-ink-2">
           צוות התחזוקה יטפל בתקלה.
           {phone.trim()

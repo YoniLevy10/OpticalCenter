@@ -3,7 +3,6 @@
 import { usePhrase } from '@/components/i18n/locale-provider'
 import { MessageSquare, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { AgentCreate } from '@/components/ops/agent-create'
 import { AgentHistoryButton, AgentHistoryList } from '@/components/ops/agent-history'
 import { AgentTurns } from '@/components/ops/agent-turn'
 import { useAgentThreads } from '@/components/ops/use-agent-threads'
@@ -90,12 +89,12 @@ export function AgentBubble() {
   }
 
   return (
-    <div className="fixed right-4 z-40 bottom-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b)+12px)] md:bottom-6 md:right-[calc(var(--nav-w)+1rem)]">
+    <div className="fixed left-4 z-40 bottom-[calc(var(--bottomnav-h)+var(--bottomnav-gap)+var(--safe-b)+12px)] md:bottom-6 md:left-auto md:right-[calc(var(--nav-w)+1rem)]">
       {open ? (
         <section
           role="dialog"
           aria-label={p('העוזר של ארי')}
-          className="absolute bottom-16 right-0 flex h-[min(32rem,70dvh)] w-[min(22rem,calc(100dvw-2rem))] max-w-[calc(100dvw-2rem)] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface text-ink shadow-[var(--shadow-2)]"
+          className="absolute bottom-16 left-0 flex h-[min(32rem,70dvh)] w-[min(22rem,calc(100dvw-2rem))] max-w-[calc(100dvw-2rem)] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface text-ink shadow-[var(--shadow-2)] md:left-auto md:right-0"
         >
           <header className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-sm font-medium">{p('העוזר של ארי')}</p>
@@ -128,15 +127,14 @@ export function AgentBubble() {
               {error ? <p className="text-sm text-[var(--signal-critical)]">{error}</p> : null}
             </div>
           )}
-          <div className="flex flex-wrap gap-2 px-3 pb-2">
-            <AgentCreate disabled={pending} onCreate={(message) => void send(message)} />
+          <div className="flex flex-nowrap gap-2 overflow-x-auto px-3 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {starters.map((starter) => (
               <button
                 key={starter}
                 type="button"
                 disabled={pending}
                 onClick={() => send(starter)}
-                className="rounded-full border border-border px-3 py-1 text-xs text-ink-2"
+                className="shrink-0 whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs text-ink-2"
               >
                 {starter}
               </button>

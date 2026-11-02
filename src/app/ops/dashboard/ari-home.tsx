@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
-import { PhoneFold, PhoneFoldStack } from '@/components/layout/phone-fold'
 import { usePhrase } from '@/components/i18n/locale-provider'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,7 +11,7 @@ export type AriHomeStats = {
   open: number
   closedToday: number
   overdue: number
-  unassigned: number
+  awaitingApproval: number
 }
 
 export function AriHomeBoard({
@@ -57,10 +56,10 @@ export function AriHomeBoard({
       accent: stats.overdue > 0,
     },
     {
-      href: '/ops/tickets?view=open&tech=none',
-      label: p('בלי שיוך'),
-      value: stats.unassigned,
-      accent: false,
+      href: '/ops/tickets?view=urgent',
+      label: p('מחכות לאישור'),
+      value: stats.awaitingApproval,
+      accent: stats.awaitingApproval > 0,
     },
   ]
 
@@ -149,21 +148,17 @@ export function AriHomeBoard({
                     <div className="border-t border-border">
                       <div className="px-4 py-4">
                         <p className="t-caption text-ink-3">{p('נרשם')}</p>
-                        <p className="t-title t-num mt-1 text-ink">
-                          {range || p('אין עדיין מחיר')}
-                        </p>
+                        {range ? (
+                          <p className="t-title t-num mt-1 text-ink">{range}</p>
+                        ) : (
+                          <p className="t-meta mt-1 text-ink-2">{p('אין עדיין מחיר')}</p>
+                        )}
                         <p className="t-meta mt-1 text-ink-2">
                           {p('רק סכום שנרשם על התקלות האלה')}
                         </p>
                       </div>
-                      <PhoneFoldStack>
                       {store.categories.map((category) => (
-                        <PhoneFold
-                          key={category.key}
-                          title={category.label}
-                          summary={`${category.rows.length} · ${category.advice}`}
-                        >
-                        <div className="border-t border-border first:border-t-0">
+                        <div key={category.key} className="border-t border-border first:border-t-0">
                           <p className="t-caption px-4 pt-3 text-ink-3">{category.label}</p>
                           <ul>
                             {category.rows.map((row) => (
@@ -200,10 +195,10 @@ export function AriHomeBoard({
                               </li>
                             ))}
                           </ul>
-                          <div className="flex items-center justify-between gap-3 px-4 pb-3">
+                          <div className="flex items-center justify-between gap-3 px-4 pb-3 max-md:flex-col max-md:items-stretch">
                             <p className="t-meta min-w-0 text-ink-2">{category.advice}</p>
                             {category.urgent ? (
-                              <Button asChild variant="primary" size="sm" className="shrink-0">
+                              <Button asChild variant="primary" size="sm" className="shrink-0 max-md:w-full">
                                 <Link href={category.actionHref}>{category.actionLabel}</Link>
                               </Button>
                             ) : (
@@ -219,9 +214,7 @@ export function AriHomeBoard({
                             <p className="t-meta px-4 pb-3 text-ink-2">{category.prevention}</p>
                           ) : null}
                         </div>
-                        </PhoneFold>
                       ))}
-                      </PhoneFoldStack>
                     </div>
                   ) : null}
                 </article>

@@ -8,6 +8,7 @@ import { AuthError } from '@/lib/auth/types'
 import { classifyFaultText } from '@/modules/tickets/classify'
 import { normalizeTicketCategory } from '@/modules/tickets/constants'
 import { attachReportPhotos } from '@/modules/tickets/attachments'
+import { repairRangeLine } from '@/modules/recommendations/estimate'
 import { createTicket } from '@/modules/tickets/service'
 import { captureError } from '@/lib/monitoring'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -101,7 +102,10 @@ export async function POST(request: Request) {
       await attachReportPhotos(ticket.id, parsed.data.photos)
     }
 
-    return NextResponse.json({ ticket }, { status: 201 })
+    return NextResponse.json(
+      { ticket, repairRange: repairRangeLine(category) },
+      { status: 201 },
+    )
   } catch (err) {
     if (err instanceof AuthError) return authErrorResponse(err)
     captureError(err, { route: 'POST /api/store/tickets' })

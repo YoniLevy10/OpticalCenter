@@ -10,6 +10,7 @@ import { StatusLabel } from '@/components/ui/signal'
 import { cn } from '@/lib/utils'
 import { plainOpenForHe } from '@/components/ops/plain-labels'
 import { ticketDecision } from '@/modules/decisions/queue'
+import { ticketIsUrgent } from '@/modules/tickets/urgent'
 import type { QueueTicket } from '@/modules/tickets/queue'
 import { useVisitSelection } from './visit-selection-context'
 
@@ -102,7 +103,7 @@ export function TicketQueueItem({
           >
             {openFor.text}
             <span className="text-ink-3"> · </span>
-            <span className="text-ink-2">{assigneeLabel}</span>
+            <span className="text-ink-2">{verb}</span>
             <span className="text-ink md:hidden"> · {verb}</span>
           </p>
           <div className="hidden items-center gap-2 md:flex">
@@ -113,9 +114,9 @@ export function TicketQueueItem({
           </div>
         </Link>
       </div>
-      <div className="hidden justify-end px-4 pb-3 pt-2 md:flex">
-        {openFor.overdue ? (
-          <Button asChild variant="primary" size="sm">
+      <div className="flex justify-end px-4 pb-3 pt-2">
+        {ticketIsUrgent(ticket) && ticket.status !== 'engaged' ? (
+          <Button asChild variant="primary" size="sm" className="max-md:w-full">
             <Link href={`/ops/tickets/${ticket.id}`}>{verb}</Link>
           </Button>
         ) : (

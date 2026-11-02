@@ -307,7 +307,7 @@ export async function loadOpsSnapshot(actor: Actor | null, locale: Locale = 'he'
         urgent: fault.urgent === true || (fault.urgent !== false && (fault.priority === 'critical' || fault.priority === 'high')),
         overdue: ticket ? isBreached(ticket, now) : false,
         assigned: ticket ? Boolean(ticket.assigned_to) : undefined,
-        verb: verb || (ticket?.assigned_to ? 'לטפל' : 'לשייך'),
+        verb: verb || (fault.priority === 'critical' || fault.priority === 'high' ? 'לאשר' : 'בתור'),
         statusLabel: ticket ? plainStatus(ticket.status, locale) : undefined,
       }
     }),
