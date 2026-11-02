@@ -532,6 +532,8 @@ const PHRASES: Record<string, { en: string; fr: string }> = {
   'חזרה לחנויות': { en: 'Back to stores', fr: 'Retour aux magasins' },
   'תקלות פתוחות בחנות זו': { en: 'open faults at this store', fr: 'pannes ouvertes dans ce magasin' },
   'חנות מושבתת': { en: 'Store inactive', fr: 'Magasin inactif' },
+  מושבת: { en: 'Inactive', fr: 'Inactif' },
+  'בלי מחוז': { en: 'No region', fr: 'Sans région' },
   אישורים: { en: 'Approvals', fr: 'Approbations' },
   'מתנתק…': { en: 'Signing out…', fr: 'Déconnexion…' },
   'בחירת אחראי': { en: 'Choose an owner', fr: 'Choisir un responsable' },

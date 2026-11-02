@@ -4,14 +4,21 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { SearchField } from '@/components/ui/input'
 
-function hrefFor(q: string) {
+function hrefFor(q: string, region: string) {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
+  if (region) params.set('region', region)
   const s = params.toString()
   return s ? `/ops/stores?${s}` : '/ops/stores'
 }
 
-export function StoreSearch({ initialQ }: { initialQ: string }) {
+export function StoreSearch({
+  initialQ,
+  region = '',
+}: {
+  initialQ: string
+  region?: string
+}) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [q, setQ] = useState(initialQ)
@@ -20,7 +27,7 @@ export function StoreSearch({ initialQ }: { initialQ: string }) {
     if (q === initialQ) return
     const id = setTimeout(() => {
       startTransition(() => {
-        router.replace(hrefFor(q), { scroll: false })
+        router.replace(hrefFor(q, region), { scroll: false })
       })
     }, 220)
     return () => clearTimeout(id)

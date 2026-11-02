@@ -2,15 +2,13 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Store } from 'lucide-react'
 import { OpsAppShell } from '@/components/layout/ops-app-shell'
-import { Panel, EmptyState } from '@/components/ui/primitives'
+import { EmptyState } from '@/components/ui/primitives'
 import { OpsPageHero } from '@/components/ops/ops-page-hero'
 import { Button } from '@/components/ui/button'
-import { OperationalRow, RowList } from '@/components/ui/operational-row'
 import { StoreSearch } from './store-search'
 import { StoreCreateForm } from './store-create-form'
 import { StoreQrAccordion } from './store-qr-accordion'
-import { StoresMobileList } from './stores-mobile-list'
-import { PhoneFold } from '@/components/layout/phone-fold'
+import { StoreBoard, type StoreGroupModel } from './store-board'
 import { fetchStores } from '@/modules/stores/data'
 import { resolveWhatsAppBusinessPhone } from '@/modules/stores/business-phone'
 import { storeWhatsAppDeepLink } from '@/modules/stores/whatsapp-link'
@@ -112,6 +110,34 @@ export default async function StoresPage({
     (s) => (openCountByStore.get(s.id) ?? 0) > 0,
   ).length
 
+  function toCard(s: (typeof filtered)[number]) {
+    const openCount = openCountByStore.get(s.id) ?? 0
+    const inactive = s.is_active === false
+    return {
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      city: s.city,
+      inactive,
+      openCount,
+      status: inactive
+        ? p('מושבת')
+        : openCount > 0
+          ? `${openCount} ${openCount === 1 ? p('פתוחה') : p('פתוחות')}`
+          : p('שקט'),
+    }
+  }
+
+  const groups: StoreGroupModel[] = IL_REGION_CODES.flatMap((code) => {
+    const rows = filtered.filter((s) => regionCodeFromId(s.region_id) === code)
+    if (rows.length === 0) return []
+    return [{ code, label: regionLabel(code, locale), stores: rows.map(toCard) }]
+  })
+  const ungrouped = filtered.filter((s) => !regionCodeFromId(s.region_id))
+  if (ungrouped.length > 0) {
+    groups.push({ code: 'other', label: p('בלי מחוז'), stores: ungrouped.map(toCard) })
+  }
+
   return (
     <OpsAppShell>
       <div className="ari-home flex flex-col gap-5">
@@ -133,26 +159,18 @@ export default async function StoresPage({
           }
         />
 
-        <PhoneFold
-          title={p('מחוז')}
-          summary={
-            regionFilter
-              ? `${regionLabel(regionFilter, locale)} · ${byRegion.get(regionFilter) ?? 0}`
-              : `${p('הכל')} · ${activeCount}`
-          }
-        >
         <div
           role="group"
           aria-label="סינון לפי מחוז"
-          className="flex flex-wrap gap-1.5"
+          className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
         >
           <Link
             href={regionHref('')}
             className={cn(
-              't-caption inline-flex min-h-[var(--tap)] items-center rounded-[var(--radius-sm)] px-3.5 py-2 transition-colors',
+              't-body inline-flex min-h-[var(--tap)] shrink-0 items-center rounded-full px-4',
               !regionFilter
-                ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                : 'text-ink-3 hover:text-ink',
+                ? 'bg-ink text-[var(--tenant-contrast)]'
+                : 'bg-surface text-ink-2',
             )}
           >
             הכל · {activeCount}
@@ -162,95 +180,28 @@ export default async function StoresPage({
               key={code}
               href={regionHref(code)}
               className={cn(
-                't-caption inline-flex min-h-[var(--tap)] items-center rounded-[var(--radius-sm)] px-3.5 py-2 transition-colors',
+                't-body inline-flex min-h-[var(--tap)] shrink-0 items-center rounded-full px-4',
                 regionFilter === code
-                  ? 'bg-surface text-ink shadow-[var(--shadow-1)]'
-                  : 'text-ink-3 hover:text-ink',
+                  ? 'bg-ink text-[var(--tenant-contrast)]'
+                  : 'bg-surface text-ink-2',
               )}
             >
               {regionLabel(code, locale)} · {byRegion.get(code) ?? 0}
             </Link>
           ))}
         </div>
-        </PhoneFold>
 
-        <StoreSearch initialQ={sp.q ?? ''} />
+        <StoreSearch initialQ={sp.q ?? ''} region={regionFilter} />
 
-        {filtered.length === 0 ? (
-          <div className="md:hidden">
-            <EmptyState
-              title="לא נמצאו חנויות"
-              description="נסו שם, מספר, עיר או מחוז."
-              icon={Store}
-            />
-          </div>
-        ) : (
-          <StoresMobileList
-            stores={filtered.map((s) => ({
-              id: s.id,
-              code: s.code,
-              name: s.name,
-              city: s.city,
-              address: s.address,
-              is_active: s.is_active,
-              openCount: openCountByStore.get(s.id) ?? 0,
-              waHref: businessPhone
-                ? storeWhatsAppDeepLink(s.code, businessPhone)
-                : null,
-            }))}
+        {groups.length === 0 ? (
+          <EmptyState
+            title="לא נמצאו חנויות"
+            description="נסו שם, מספר, עיר או מחוז."
+            icon={Store}
           />
+        ) : (
+          <StoreBoard groups={groups} />
         )}
-
-        <Panel flush elevated className="hidden overflow-hidden md:block">
-          {filtered.length === 0 ? (
-            <EmptyState
-              title="לא נמצאו חנויות"
-              description="נסו שם, מספר, עיר או מחוז."
-              icon={Store}
-            />
-          ) : (
-            <RowList>
-              {filtered.map((s) => {
-                const openCount = openCountByStore.get(s.id) ?? 0
-                return (
-                  <OperationalRow
-                    key={s.id}
-                    href={`/ops/stores/${encodeURIComponent(s.code)}`}
-                    priority={openCount > 0 ? 'high' : 'medium'}
-                    leading={
-                      <span className="t-num text-ink">#{s.code}</span>
-                    }
-                    trailing={
-                      openCount > 0 ? (
-                        <span className="t-caption t-num text-ink">
-                          {openCount} פתוחות
-                        </span>
-                      ) : (
-                        <span className="t-caption text-ink-3">שקט</span>
-                      )
-                    }
-                    title={s.name}
-                    subtitle={
-                      [
-                        regionLabel(s.region_id, locale),
-                        s.city,
-                        s.manager_name,
-                        s.manager_phone,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || undefined
-                    }
-                    footer={
-                      s.is_active === false ? (
-                        <span className="t-meta text-ink-3">מושבת</span>
-                      ) : undefined
-                    }
-                  />
-                )
-              })}
-            </RowList>
-          )}
-        </Panel>
 
         <div className="hidden md:block">
         <StoreQrAccordion
