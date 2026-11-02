@@ -159,11 +159,16 @@ export function midragAreaIdForCity(city: string | null | undefined): number {
 }
 
 /** Resolve OC ticket category to Midrag serviceId + label. */
+const MIDRAG_CATEGORY_ALIAS: Record<string, string> = {
+  electrical_hazard: 'electrical',
+}
+
 export function midragServiceMatchForCategory(
   category: string,
 ): MidragServiceMatch | null {
   const key = category.trim().toLowerCase()
-  return MIDRAG_SERVICE_BY_CATEGORY[key] ?? null
+  const mapped = MIDRAG_CATEGORY_ALIAS[key] ?? key
+  return MIDRAG_SERVICE_BY_CATEGORY[mapped] ?? null
 }
 
 export function midragServiceIdForCategory(category: string): number | null {

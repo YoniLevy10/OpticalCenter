@@ -188,11 +188,11 @@ export async function lockEngagement(input: {
 
   const ticket = await getById(input.ticketId)
   if (!ticket) throw new Error('תקלה לא נמצאה')
-  if (!WAITING.has(ticket.status) && ticket.status !== 'in_progress') {
-    throw new Error('התקלה כבר לא ממתינה לאישור')
-  }
   if (await lockedEngagementFor(ticket.id)) {
     throw new Error('המחיר כבר נעול. לשינוי צריך לבטל ולחזור לתור')
+  }
+  if (!WAITING.has(ticket.status) && ticket.status !== 'in_progress') {
+    throw new Error('התקלה כבר לא ממתינה לאישור')
   }
 
   const bundled = [...new Set(input.bundledTicketIds ?? [])].filter(

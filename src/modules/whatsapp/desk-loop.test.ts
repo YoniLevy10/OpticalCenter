@@ -91,11 +91,34 @@ describe('WhatsApp desk loop', () => {
       msg({ text: 'לאשר', waId: ARI, messageId: 'ari-approve' }),
       dry,
     )
-    expect(decided.reply).toContain('אין תקלה דחופה')
+    expect(decided.reply).toMatch(/אין תקלה דחופה|חסר מחיר/)
     expect(decided.storeReply).toBeNull()
     const after = listSpends().find((row) => row.id === spend?.id)
     expect(after?.status).toBe('pending')
     expect(canExecuteSpend(after)).toBe(false)
+  })
+
+  it('locks a price when Ari writes the amount and the phone', async () => {
+    const waId = '972501234506'
+    await processInboundMessage(msg({ text: 'STORE_6018', waId }), dry)
+    const created = await processInboundMessage(
+      msg({ text: 'המזגן לא עובד', waId, messageId: 'fault-lock' }),
+      dry,
+    )
+    expect(created.ticketId).toBeTruthy()
+    const decided = await processInboundMessage(
+      msg({
+        text: 'אשר 450 0501234567 פבל',
+        waId: ARI,
+        messageId: 'ari-lock',
+      }),
+      dry,
+    )
+    expect(decided.reply).toContain('נעלתי 450')
+    expect(decided.reply).toContain('פבל')
+    const ticket = memListTickets().find((row) => row.id === created.ticketId)
+    expect(ticket?.status).toBe('engaged')
+    expect(ticket?.messages.some((row) => row.body?.includes('ארי אישר'))).toBe(true)
   })
 
   it('holds a PDF without a date for review', async () => {

@@ -195,7 +195,7 @@ export function recommendBundles(input: {
     const sentence =
       count === 0
         ? `דחוף בסניף ${fault.storeName}. אין עכשיו תקלה לא דחופה לשלב.`
-        : `דחוף בסניף ${fault.storeName}. אפשר לסגור גם ${count} תקלות לא דחופות באותה חנות או מחוז.`
+        : `דחוף בסניף ${fault.storeName}. אפשר לסגור גם ${count === 1 ? 'תקלה לא דחופה אחת' : `${count} תקלות לא דחופות`} באותה חנות או מחוז.`
     cards.push({
       id: `urgent:${fault.id}`,
       kind: 'urgent',
