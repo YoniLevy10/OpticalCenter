@@ -1,9 +1,9 @@
-# MILO
+# OPC
 
-**Maintenance Intelligence & Logistics Operations**
+**Operations for multi-location retail**
 
 מערכת הפעלה תפעולית לרשתות מרובות סניפים — לא עוד מערכת Ticketing.  
-**Optical Center** = deployment ראשון (פיילוט ישראל).
+הפיילוט הראשון רץ בישראל, תחת המותג הציבורי OPC.
 
 בידול ופילטר החלטות: [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md).
 
@@ -13,8 +13,8 @@
 - זיהוי חנות: **QR + NFC + קוד מספרי** (למשל `172`)
 - מספר WhatsApp **לכל מדינה** (לא לכל חנות)
 - שפה: **עברית**
-- צוות תחזוקה פנימי של Optical Center
-- מיתוג ניטרלי (MILO)
+- צוות תחזוקה פנימי של הרשת
+- מיתוג ציבורי: OPC
 
 ## Stack
 
@@ -71,9 +71,9 @@ MAINTAINOS_FORCE_MEMORY=1
 ## מסמכים
 
 - [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md) — בידול, ליבה אחידה, Digital Twin, פילטר פיצ׳רים
-- [`docs/MILO_REBRAND.md`](docs/MILO_REBRAND.md) — מיתוג MILO + Midrag / ספר אנשי מקצוע
+- [`docs/MILO_REBRAND.md`](docs/MILO_REBRAND.md) — מיתוג פנימי וספר אנשי מקצוע
 - [`docs/FIGMA_REDESIGN_PLAN.md`](docs/FIGMA_REDESIGN_PLAN.md) — תוכנית עיצוב Figma (Alive Ops)
-- [`docs/ARI_MEETING_BRIEF.md`](docs/ARI_MEETING_BRIEF.md) — בריף פגישה עם ארי (Optical Center): התנגדויות → הוכחות
+- [`docs/ARI_MEETING_BRIEF.md`](docs/ARI_MEETING_BRIEF.md) — בריף פגישת פיילוט: התנגדויות → הוכחות
 - [`docs/CORE_FEATURES_ROADMAP.md`](docs/CORE_FEATURES_ROADMAP.md) — חיזוק ליבה + פיצ׳רים (בלי Zapier)
 - [`docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md`](docs/OPTICAL_CENTER_ARCHITECTURE_RESEARCH.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
