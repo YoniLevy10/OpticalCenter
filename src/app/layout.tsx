@@ -23,13 +23,16 @@ const rubik = Rubik({
 })
 
 export const metadata: Metadata = {
-  title: 'MILO',
-  description: 'MILO — Maintenance Intelligence & Logistics Operations · Optical Center',
+  title: {
+    default: 'OPC — מערכת תפעול לרשתות',
+    template: '%s · OPC',
+  },
+  description: 'מערכת תפעול לרשתות מרובות סניפים. OPC נמצאת בשלבי פיתוח.',
   manifest: '/manifest.webmanifest',
-  applicationName: 'MILO',
+  applicationName: 'OPC',
   appleWebApp: {
     capable: true,
-    title: 'Optical Center',
+    title: 'OPC',
     statusBarStyle: 'default',
   },
   formatDetection: { telephone: false },
@@ -44,9 +47,10 @@ export const metadata: Metadata = {
     shortcut: ['/icons/apple-touch-icon.png'],
   },
   openGraph: {
-    title: 'MILO · Optical Center',
-    description: 'MILO · תחזוקה תפעולית לרשת Optical Center',
-    images: [{ url: '/brand/oc-mark.png', width: 512, height: 512 }],
+    type: 'website',
+    locale: 'he_IL',
+    title: 'OPC — מערכת תפעולית לרשתות מרובות סניפים',
+    description: 'חיבור בין דיווח, טיפול ותמונה תפעולית ברשת. נמצאת בשלבי פיתוח.',
   },
 }
 

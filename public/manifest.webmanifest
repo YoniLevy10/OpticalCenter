@@ -1,7 +1,7 @@
 {
-  "name": "MILO",
-  "short_name": "MILO",
-  "description": "תחזוקה תפעולית — Optical Center",
+  "name": "OPC",
+  "short_name": "OPC",
+  "description": "מערכת תפעולית לרשתות מרובות סניפים",
   "lang": "he",
   "dir": "rtl",
   "start_url": "/ops/dashboard?source=pwa",
