@@ -1,0 +1,14 @@
+{
+  "title": "Milo",
+  "description": "Tools for a retail chain to coordinate store maintenance and headquarters work, with clearer status across locations.",
+  "status": "Pilot",
+  "visibility": true,
+  "featured": true,
+  "category": "ERP",
+  "website": "",
+  "logo": "",
+  "cover": "",
+  "video": "",
+  "technologies": ["Next.js", "TypeScript", "Supabase", "WhatsApp"],
+  "tags": ["retail", "maintenance", "multi-location"]
+}
