@@ -1,11 +1,9 @@
+import { OpcLandingPage } from '@/components/marketing/opc-landing-page'
 import { redirect } from 'next/navigation'
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
-/**
- * HQ home is the operational dashboard.
- * Also forwards auth callbacks that landed on Site URL root (`/?code=` or token_hash).
- */
+/** Keep auth callbacks working while the root route serves the public landing page. */
 export default async function HomePage({
   searchParams,
 }: {
@@ -26,5 +24,5 @@ export default async function HomePage({
     redirect(`/auth/callback?code=${encodeURIComponent(code)}`)
   }
 
-  redirect('/ops/dashboard')
+  return <OpcLandingPage />
 }
